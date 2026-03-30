@@ -1,0 +1,447 @@
+/* Google Fonts: Noto Sans Khmer（クメール語）*/
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;700&family=Noto+Sans:wght@400;500;700&display=swap');
+
+/* ── リセット & ベース ─────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --color-primary: #0d6e4c;
+    --color-primary-dk: #09513a;
+    --color-primary-lt: #e6f4ef;
+    --color-danger: #e53e3e;
+    --color-text: #1a1a1a;
+    --color-text-sub: #666;
+    --color-border: #ddd;
+    --color-bg: #f7f8fa;
+    --color-surface: #ffffff;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 2px 12px rgba(0, 0, 0, .08);
+    --font-base: 'Noto Sans', sans-serif;
+    --font-km: 'Noto Sans Khmer', 'Noto Sans', sans-serif;
+}
+
+html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-base);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* クメール語のときフォントを切り替え */
+body[data-lang="km"] {
+    font-family: var(--font-km);
+}
+
+/* ── レイアウト ──────────────────────────────────────────────── */
+.page {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 16px 80px;
+    min-height: 100vh;
+}
+
+.page-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 24px 16px;
+}
+
+/* ── カード ──────────────────────────────────────────────────── */
+.card {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px 20px;
+    width: 100%;
+}
+
+.card__title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+/* ── ロゴ ────────────────────────────────────────────────────── */
+.logo {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.logo__icon {
+    font-size: 48px;
+    line-height: 1;
+}
+
+.logo__name {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.logo__tagline {
+    font-size: 13px;
+    color: var(--color-text-sub);
+    margin-top: 4px;
+}
+
+/* ── フォームパーツ ──────────────────────────────────────────── */
+.form-group {
+    margin-bottom: 16px;
+}
+
+label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-sub);
+    margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="password"],
+select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    font-family: inherit;
+    background: var(--color-surface);
+    color: var(--color-text);
+    transition: border-color .15s;
+    appearance: none;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.input-hint {
+    font-size: 12px;
+    color: var(--color-text-sub);
+    margin-top: 4px;
+}
+
+/* ── ボタン ──────────────────────────────────────────────────── */
+.btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    transition: background .15s, opacity .15s;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: var(--color-primary-dk);
+}
+
+.btn-primary:active {
+    opacity: .9;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--color-primary);
+    color: var(--color-primary);
+}
+
+.btn-outline:hover {
+    background: var(--color-primary-lt);
+}
+
+.btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+/* ── ロール選択 ──────────────────────────────────────────────── */
+.role-select {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.role-option {
+    position: relative;
+}
+
+.role-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+}
+
+.role-option__label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 12px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    text-align: center;
+    gap: 8px;
+}
+
+.role-option__label:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-lt);
+}
+
+.role-option input:checked+.role-option__label {
+    border-color: var(--color-primary);
+    background: var(--color-primary-lt);
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
+.role-option__icon {
+    font-size: 32px;
+}
+
+.role-option__text {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ── 地図エリア ──────────────────────────────────────────────── */
+.map-container {
+    width: 100%;
+    height: 220px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--color-border);
+    overflow: hidden;
+    margin-bottom: 8px;
+    background: #e8f0e8;
+    position: relative;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+.map-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--color-text-sub);
+    font-size: 14px;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.location-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--color-text-sub);
+    padding: 8px 0;
+}
+
+.location-status.set {
+    color: var(--color-primary);
+}
+
+.location-status__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-border);
+}
+
+.location-status.set .location-status__dot {
+    background: var(--color-primary);
+}
+
+/* ── エラー表示 ──────────────────────────────────────────────── */
+.error-msg {
+    background: #fff5f5;
+    border: 1.5px solid #feb2b2;
+    border-radius: var(--radius-sm);
+    color: var(--color-danger);
+    font-size: 13px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: none;
+}
+
+.error-msg.show {
+    display: block;
+}
+
+/* ── リンクテキスト ──────────────────────────────────────────── */
+.link-text {
+    text-align: center;
+    font-size: 13px;
+    color: var(--color-text-sub);
+    margin-top: 20px;
+}
+
+.link-text a {
+    color: var(--color-primary);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.link-text a:hover {
+    text-decoration: underline;
+}
+
+/* ── 言語セレクター ──────────────────────────────────────────── */
+.lang-selector-wrap {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+}
+
+#lang-selector {
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    background: var(--color-surface);
+    color: var(--color-text-sub);
+    cursor: pointer;
+}
+
+/* ── ローディング ────────────────────────────────────────────── */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, .8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.loading-overlay.show {
+    display: flex;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--color-primary-lt);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ── 下部ナビゲーション ──────────────────────────────────────── */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    z-index: 100;
+}
+
+.bottom-nav__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0 12px;
+    color: var(--color-text-sub);
+    text-decoration: none;
+    font-size: 11px;
+    gap: 3px;
+    transition: color .15s;
+}
+
+.bottom-nav__item.active {
+    color: var(--color-primary);
+}
+
+.bottom-nav__icon {
+    font-size: 22px;
+}
+
+/* iPhone等のノッチ対応 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .bottom-nav {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* ── ページヘッダー ──────────────────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 0;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.page-header__title {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.page-header__back {
+    font-size: 22px;
+    color: var(--color-text-sub);
+    text-decoration: none;
+}
+
+/* ── セクション区切り ────────────────────────────────────────── */
+.divider {
+    height: 1px;
+    background: #eee;
+    margin: 20px 0;
+}
+
+.section-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-sub);
+    margin-bottom: 10px;
+}

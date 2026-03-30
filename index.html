@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+    <!-- スタイル -->
+    <link rel="stylesheet" href="/css/style.css">
+
+    <!-- i18next（CDN） -->
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+</head>
+
+<body>
+
+    <!-- 言語セレクター -->
+    <div class="lang-selector-wrap">
+        <select id="lang-selector">
+            <option value="km">ខ្មែរ</option>
+            <option value="en">EN</option>
+            <option value="ja">JA</option>
+        </select>
+    </div>
+
+    <!-- ローディング -->
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="page-center">
+        <div style="width:100%; max-width:400px;">
+
+            <!-- ロゴ -->
+            <div class="logo">
+                <div class="logo__icon">🐟</div>
+                <div class="logo__name">FishLink</div>
+                <div class="logo__tagline" data-i18n="app.tagline"></div>
+            </div>
+
+            <!-- ログインカード -->
+            <div class="card">
+                <h1 class="card__title" data-i18n="login.title"></h1>
+
+                <!-- エラーメッセージ -->
+                <div class="error-msg" id="error-msg"></div>
+
+                <!-- ログインID -->
+                <div class="form-group">
+                    <label for="login-id" data-i18n="login.loginId"></label>
+                    <input type="text" id="login-id" autocapitalize="none" spellcheck="false">
+                </div>
+
+                <!-- パスワード -->
+                <div class="form-group">
+                    <label for="password" data-i18n="login.password"></label>
+                    <input type="password" id="password" autocomplete="current-password">
+                </div>
+
+                <!-- ログインボタン -->
+                <button class="btn btn-primary" id="login-btn" data-i18n="login.submit"></button>
+            </div>
+
+            <!-- 新規登録リンク -->
+            <div class="link-text">
+                <span data-i18n="login.noAccount"></span>
+                <a href="/register.html" data-i18n="login.register"></a>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { login, watchAuthState } from '/js/auth.js';
+
+        // PWA Service Worker 登録
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(console.error);
+        }
+
+        // ログイン済みならダッシュボードへ
+        watchAuthState({ requireAuth: false, redirectIfLoggedIn: true });
+
+        // i18n 初期化
+        await initI18n();
+        initLangSelector();
+
+        // ── ログイン処理 ───────────────────────────────────────────
+        const loginBtn = document.getElementById('login-btn');
+        const errorMsg = document.getElementById('error-msg');
+        const loading = document.getElementById('loading');
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.classList.add('show');
+        }
+
+        loginBtn.addEventListener('click', async () => {
+            errorMsg.classList.remove('show');
+            const loginId = document.getElementById('login-id').value.trim();
+            const password = document.getElementById('password').value;
+
+            loginBtn.disabled = true;
+            loading.classList.add('show');
+
+            try {
+                await login(loginId, password);
+            } catch (err) {
+                showError(i18next.t(err.message) || i18next.t('error.loginFailed'));
+            } finally {
+                loginBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+
+        // Enterキーでログイン
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') loginBtn.click();
+        });
+    </script>
+
+</body>
+
+</html>

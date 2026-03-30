@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="stylesheet" href="/css/style.css">
+
+    <!-- i18next -->
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+
+    <!-- Google Maps API
+       ※ YOUR_GOOGLE_MAPS_API_KEY を差し替えてください -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap" async defer>
+    </script>
+</head>
+
+<body>
+
+    <!-- 言語セレクター -->
+    <div class="lang-selector-wrap">
+        <select id="lang-selector">
+            <option value="km">ខ្មែរ</option>
+            <option value="en">EN</option>
+            <option value="ja">JA</option>
+        </select>
+    </div>
+
+    <!-- ローディング -->
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="page-center" style="padding-top:60px; padding-bottom:40px;">
+        <div style="width:100%; max-width:440px;">
+
+            <!-- ロゴ（小） -->
+            <div style="text-align:center; margin-bottom:24px;">
+                <div style="font-size:32px;">🐟</div>
+                <div style="font-size:22px; font-weight:700; color:var(--color-primary);">FishLink</div>
+            </div>
+
+            <div class="card">
+                <h1 class="card__title" data-i18n="register.title"></h1>
+
+                <!-- エラーメッセージ -->
+                <div class="error-msg" id="error-msg"></div>
+
+                <!-- ① ログインID -->
+                <div class="form-group">
+                    <label for="login-id" data-i18n="register.loginId"></label>
+                    <input type="text" id="login-id" autocapitalize="none" spellcheck="false"
+                        placeholder="e.g. sakana_farm">
+                    <div class="input-hint" data-i18n="register.loginIdHint"></div>
+                </div>
+
+                <!-- ② 表示名 -->
+                <div class="form-group">
+                    <label for="display-name" data-i18n="register.displayName"></label>
+                    <input type="text" id="display-name">
+                    <div class="input-hint" data-i18n="register.displayNameHint"></div>
+                </div>
+
+                <!-- ③ パスワード -->
+                <div class="form-group">
+                    <label for="password" data-i18n="register.password"></label>
+                    <input type="password" id="password" autocomplete="new-password">
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- ④ ロール選択 -->
+                <div class="form-group">
+                    <div class="section-title" data-i18n="register.role"></div>
+                    <div class="role-select">
+                        <div class="role-option">
+                            <input type="radio" name="role" id="role-farmer" value="farmer">
+                            <label class="role-option__label" for="role-farmer">
+                                <span class="role-option__icon">🎣</span>
+                                <span class="role-option__text" data-i18n="register.roleFarmer"></span>
+                            </label>
+                        </div>
+                        <div class="role-option">
+                            <input type="radio" name="role" id="role-restaurant" value="restaurant">
+                            <label class="role-option__label" for="role-restaurant">
+                                <span class="role-option__icon">🍽️</span>
+                                <span class="role-option__text" data-i18n="register.roleRestaurant"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- ⑤ 位置情報 -->
+                <div class="form-group">
+                    <div class="section-title" data-i18n="register.location"></div>
+                    <div class="input-hint" style="margin-bottom:8px;" data-i18n="register.locationHint"></div>
+                    <div class="map-container">
+                        <div id="map"></div>
+                        <div class="map-placeholder" id="map-placeholder" style="display:none;">
+                            <span style="font-size:28px;">🗺️</span>
+                            <span>Google Maps API key required</span>
+                        </div>
+                    </div>
+                    <div class="location-status" id="location-status">
+                        <div class="location-status__dot"></div>
+                        <span id="location-status-text" data-i18n="register.locationHint"></span>
+                    </div>
+                </div>
+
+                <!-- ⑥ 言語設定 -->
+                <div class="form-group">
+                    <label for="lang-pref" data-i18n="register.lang"></label>
+                    <select id="lang-pref">
+                        <option value="km">ភាសាខ្មែរ (Khmer)</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                    </select>
+                </div>
+
+                <!-- 登録ボタン -->
+                <button class="btn btn-primary" id="register-btn" style="margin-top:8px;"
+                    data-i18n="register.submit"></button>
+            </div>
+
+            <!-- ログインリンク -->
+            <div class="link-text">
+                <span data-i18n="register.hasAccount"></span>
+                <a href="/index.html" data-i18n="register.login"></a>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector, saveLang } from '/js/i18n.js';
+        import { register, watchAuthState } from '/js/auth.js';
+
+        // PWA Service Worker 登録
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(console.error);
+        }
+
+        // ログイン済みならダッシュボードへ
+        watchAuthState({ requireAuth: false, redirectIfLoggedIn: true });
+
+        // i18n 初期化
+        await initI18n();
+        initLangSelector();
+
+        // ── Google Maps 初期化 ─────────────────────────────────────
+        let selectedLocation = null;
+        const CAMBODIA_CENTER = { lat: 11.5564, lng: 104.9282 };
+
+        window.initMap = function () {
+            const map = new google.maps.Map(document.getElementById('map'), {
+                center: CAMBODIA_CENTER,
+                zoom: 7,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+            });
+
+            // 現在地があれば中心に移動
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                        map.setZoom(13);
+                    },
+                    () => { }
+                );
+            }
+
+            let marker = null;
+
+            // 地図クリックでピンを置く
+            map.addListener('click', (e) => {
+                if (marker) marker.setMap(null);
+                marker = new google.maps.Marker({
+                    position: e.latLng,
+                    map,
+                    animation: google.maps.Animation.DROP,
+                });
+                selectedLocation = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+
+                // ステータス表示を更新
+                const statusEl = document.getElementById('location-status');
+                statusEl.classList.add('set');
+                document.getElementById('location-status-text').textContent = i18next.t('register.locationSet');
+            });
+        };
+
+        // Google Maps APIキーエラー時のフォールバック
+        window.gm_authFailure = function () {
+            document.getElementById('map').style.display = 'none';
+            document.getElementById('map-placeholder').style.display = 'flex';
+        };
+
+        // ── 登録処理 ───────────────────────────────────────────────
+        const registerBtn = document.getElementById('register-btn');
+        const errorMsg = document.getElementById('error-msg');
+        const loading = document.getElementById('loading');
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.classList.add('show');
+            errorMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        registerBtn.addEventListener('click', async () => {
+            errorMsg.classList.remove('show');
+
+            const loginId = document.getElementById('login-id').value.trim();
+            const displayName = document.getElementById('display-name').value.trim();
+            const password = document.getElementById('password').value;
+            const roleEl = document.querySelector('input[name="role"]:checked');
+            const role = roleEl ? roleEl.value : '';
+            const langPref = document.getElementById('lang-pref').value;
+
+            registerBtn.disabled = true;
+            loading.classList.add('show');
+
+            try {
+                await register({ loginId, displayName, password, role, location: selectedLocation, lang: langPref });
+                saveLang(langPref);
+                // 登録成功 → auth.js 内の redirectByRole でダッシュボードへ遷移
+            } catch (err) {
+                showError(i18next.t(err.message) || i18next.t('error.registerFailed'));
+                registerBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+    </script>
+
+</body>
+
+</html>
