@@ -14,9 +14,55 @@
     <!-- i18next -->
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
 
-    <!-- Google Maps API -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&callback=initMap" async defer>
+    <script>
+        function initMap() {
+            const map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 11.5564, lng: 104.9282 },
+                zoom: 7,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+            });
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                        map.setZoom(13);
+                    },
+                    () => { }
+                );
+            }
+
+            let marker = null;
+
+            map.addListener('click', (e) => {
+                if (marker) marker.setMap(null);
+                marker = new google.maps.Marker({
+                    position: e.latLng,
+                    map,
+                    animation: google.maps.Animation.DROP,
+                });
+
+                // module側の変数に値を渡す
+                window.selectedLocation = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+
+                const statusEl = document.getElementById('location-status');
+                statusEl.classList.add('set');
+                document.getElementById('location-status-text').textContent = '位置情報を設定済み';
+            });
+        }
+
+        window.gm_authFailure = function () {
+            document.getElementById('map').style.display = 'none';
+            document.getElementById('map-placeholder').style.display = 'flex';
+        };
     </script>
+
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&callback=initMap"
+        async defer>
+        </script>
 </head>
 
 <body>
@@ -154,9 +200,6 @@
         initLangSelector();
 
         // ── Google Maps 初期化 ─────────────────────────────────────
-        let selectedLocation = null;
-        const CAMBODIA_CENTER = { lat: 11.5564, lng: 104.9282 };
-
         window.initMap = function () {
             const map = new google.maps.Map(document.getElementById('map'), {
                 center: CAMBODIA_CENTER,
@@ -227,7 +270,7 @@
             loading.classList.add('show');
 
             try {
-                await register({ loginId, displayName, password, role, location: selectedLocation, lang: langPref });
+                await register({ loginId, displayName, password, role, location: window.selectedLocation, lang: langPref });
                 saveLang(langPref);
                 // 登録成功 → auth.js 内の redirectByRole でダッシュボードへ遷移
             } catch (err) {
@@ -238,6 +281,6 @@
         });
     </script>
 
-    </body>
+</body>
 
 </html>
