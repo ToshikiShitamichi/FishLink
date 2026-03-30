@@ -1,0 +1,56 @@
+{
+    "app": {
+        "name": "FishLink",
+        "tagline": "農家とレストランをつなぐ"
+    },
+    "lang": {
+        "ja": "日本語",
+        "en": "English",
+        "km": "ភាសាខ្មែរ"
+    },
+    "role": {
+        "farmer": "養殖農家",
+        "restaurant": "レストラン"
+    },
+    "login": {
+        "title": "ログイン",
+        "loginId": "ログインID",
+        "password": "パスワード",
+        "submit": "ログイン",
+        "noAccount": "アカウントをお持ちでない方",
+        "register": "新規登録"
+    },
+    "register": {
+        "title": "新規登録",
+        "loginId": "ログインID（英数字・アンダースコアのみ）",
+        "loginIdHint": "例：sakana_farm（3〜20文字）",
+        "displayName": "表示名",
+        "displayNameHint": "例：ヒレナマズ農場",
+        "password": "パスワード（6文字以上）",
+        "role": "ロールを選択",
+        "roleFarmer": "養殖農家",
+        "roleRestaurant": "レストラン",
+        "location": "位置情報を設定",
+        "locationHint": "地図上でピンを置いてください",
+        "locationSet": "位置情報を設定済み",
+        "lang": "言語",
+        "submit": "登録する",
+        "hasAccount": "すでにアカウントをお持ちの方",
+        "login": "ログイン"
+    },
+    "error": {
+        "invalidLoginId": "ログインIDは英数字とアンダースコアのみ（3〜20文字）で入力してください",
+        "displayNameRequired": "表示名を入力してください",
+        "passwordTooShort": "パスワードは6文字以上で入力してください",
+        "roleRequired": "ロールを選択してください",
+        "locationRequired": "位置情報を設定してください",
+        "loginIdTaken": "このログインIDはすでに使われています",
+        "fieldsRequired": "すべての項目を入力してください",
+        "userNotFound": "ユーザーが見つかりません",
+        "loginFailed": "ログインに失敗しました。IDまたはパスワードを確認してください",
+        "registerFailed": "登録に失敗しました。しばらくしてから再試行してください"
+    },
+    "nav": {
+        "logout": "ログアウト"
+    }
+}

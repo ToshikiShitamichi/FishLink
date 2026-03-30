@@ -1,0 +1,56 @@
+{
+    "app": {
+        "name": "FishLink",
+        "tagline": "ភ្ជាប់កសិករនិងភោជនីយដ្ឋាន"
+    },
+    "lang": {
+        "ja": "日本語",
+        "en": "English",
+        "km": "ភាសាខ្មែរ"
+    },
+    "role": {
+        "farmer": "កសិករចិញ្ចឹមត្រី",
+        "restaurant": "ភោជនីយដ្ឋាន"
+    },
+    "login": {
+        "title": "ចូលគណនី",
+        "loginId": "លេខសម្គាល់",
+        "password": "ពាក្យសម្ងាត់",
+        "submit": "ចូល",
+        "noAccount": "មិនទាន់មានគណនី?",
+        "register": "ចុះឈ្មោះ"
+    },
+    "register": {
+        "title": "បង្កើតគណនី",
+        "loginId": "លេខសម្គាល់ (អក្សរឡាតាំង លេខ និង _ ប៉ុណ្ណោះ)",
+        "loginIdHint": "ឧ. sakana_farm (3–20 តួអក្សរ)",
+        "displayName": "ឈ្មោះបង្ហាញ",
+        "displayNameHint": "ឧ. ចំការត្រីកង្ហារ",
+        "password": "ពាក្យសម្ងាត់ (យ៉ាងហោចណាស់ 6 តួ)",
+        "role": "ជ្រើសរើសតួនាទី",
+        "roleFarmer": "កសិករចិញ្ចឹមត្រី",
+        "roleRestaurant": "ភោជនីយដ្ឋាន",
+        "location": "កំណត់ទីតាំង",
+        "locationHint": "ដាក់ pin លើផែនទី",
+        "locationSet": "បានកំណត់ទីតាំងរួចហើយ",
+        "lang": "ភាសា",
+        "submit": "ចុះឈ្មោះ",
+        "hasAccount": "មានគណនីរួចហើយ?",
+        "login": "ចូល"
+    },
+    "error": {
+        "invalidLoginId": "លេខសម្គាល់ត្រូវមាន 3–20 តួ ជាអក្សរ លេខ ឬ _ ប៉ុណ្ណោះ",
+        "displayNameRequired": "សូមបំពេញឈ្មោះបង្ហាញ",
+        "passwordTooShort": "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ 6 តួ",
+        "roleRequired": "សូមជ្រើសរើសតួនាទី",
+        "locationRequired": "សូមកំណត់ទីតាំងលើផែនទី",
+        "loginIdTaken": "លេខសម្គាល់នេះត្រូវបានប្រើប្រាស់រួចហើយ",
+        "fieldsRequired": "សូមបំពេញគ្រប់ប្រអប់",
+        "userNotFound": "រកមិនឃើញអ្នកប្រើ",
+        "loginFailed": "ចូលបរាជ័យ។ សូមពិនិត្យ ID និងពាក្យសម្ងាត់",
+        "registerFailed": "ចុះឈ្មោះបរាជ័យ។ សូមព្យាយាមម្តងទៀត"
+    },
+    "nav": {
+        "logout": "ចាកចេញ"
+    }
+}

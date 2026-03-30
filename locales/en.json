@@ -1,0 +1,56 @@
+{
+    "app": {
+        "name": "FishLink",
+        "tagline": "Connecting Farmers and Restaurants"
+    },
+    "lang": {
+        "ja": "日本語",
+        "en": "English",
+        "km": "ភាសាខ្មែរ"
+    },
+    "role": {
+        "farmer": "Fish Farmer",
+        "restaurant": "Restaurant"
+    },
+    "login": {
+        "title": "Login",
+        "loginId": "Login ID",
+        "password": "Password",
+        "submit": "Login",
+        "noAccount": "Don't have an account?",
+        "register": "Register"
+    },
+    "register": {
+        "title": "Create Account",
+        "loginId": "Login ID (letters, numbers, underscore only)",
+        "loginIdHint": "e.g. sakana_farm (3–20 characters)",
+        "displayName": "Display Name",
+        "displayNameHint": "e.g. Hirena Catfish Farm",
+        "password": "Password (min. 6 characters)",
+        "role": "Select your role",
+        "roleFarmer": "Fish Farmer",
+        "roleRestaurant": "Restaurant",
+        "location": "Set Your Location",
+        "locationHint": "Place a pin on the map",
+        "locationSet": "Location set",
+        "lang": "Language",
+        "submit": "Create Account",
+        "hasAccount": "Already have an account?",
+        "login": "Login"
+    },
+    "error": {
+        "invalidLoginId": "Login ID must be 3–20 characters (letters, numbers, underscore only)",
+        "displayNameRequired": "Display name is required",
+        "passwordTooShort": "Password must be at least 6 characters",
+        "roleRequired": "Please select a role",
+        "locationRequired": "Please set your location on the map",
+        "loginIdTaken": "This login ID is already taken",
+        "fieldsRequired": "Please fill in all fields",
+        "userNotFound": "User not found",
+        "loginFailed": "Login failed. Please check your ID and password",
+        "registerFailed": "Registration failed. Please try again later"
+    },
+    "nav": {
+        "logout": "Logout"
+    }
+}
