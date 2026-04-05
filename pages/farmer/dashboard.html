@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .fish-card {
+            background: var(--color-surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .fish-card__img {
+            width: 72px;
+            height: 72px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            background: var(--color-bg);
+            flex-shrink: 0;
+        }
+
+        .fish-card__img-placeholder {
+            width: 72px;
+            height: 72px;
+            border-radius: var(--radius-sm);
+            background: var(--color-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        .fish-card__body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .fish-card__name {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .fish-card__meta {
+            font-size: 13px;
+            color: var(--color-text-sub);
+            margin-bottom: 6px;
+        }
+
+        .fish-card__price {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
+        .fish-card__badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+            margin-left: 6px;
+        }
+
+        .badge-active {
+            background: var(--color-primary-lt);
+            color: var(--color-primary);
+        }
+
+        .badge-inactive {
+            background: #f0f0f0;
+            color: #888;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            color: #fff;
+            font-size: 28px;
+            border: none;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, .2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .15s;
+            text-decoration: none;
+        }
+
+        .fab:hover {
+            background: var(--color-primary-dk);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-text-sub);
+        }
+
+        .empty-state__icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .empty-state__text {
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ローディング -->
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="page">
+
+        <!-- ヘッダー -->
+        <div class="page-header">
+            <div style="flex:1;">
+                <div style="font-size:13px; color:var(--color-text-sub);" id="user-greeting"></div>
+                <div class="page-header__title">🐟 FishLink</div>
+            </div>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">EN</option>
+                <option value="ja">JA</option>
+            </select>
+        </div>
+
+        <!-- 魚の投稿一覧 -->
+        <div id="fish-list"></div>
+
+    </div>
+
+    <!-- 新規投稿ボタン（FAB） -->
+    <a href="/pages/farmer/post.html" class="fab" title="新規投稿">＋</a>
+
+    <!-- 下部ナビ -->
+    <nav class="bottom-nav">
+        <a href="/pages/farmer/dashboard.html" class="bottom-nav__item active">
+            <span class="bottom-nav__icon">🐟</span>
+            <span>投稿一覧</span>
+        </a>
+        <a href="#" class="bottom-nav__item" id="logout-btn">
+            <span class="bottom-nav__icon">🚪</span>
+            <span>ログアウト</span>
+        </a>
+    </nav>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { watchAuthState, logout } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            collection, query, where, orderBy, getDocs
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+
+        // 未ログインならログイン画面へ
+        watchAuthState({ requireAuth: true });
+
+        // i18n 初期化
+        await initI18n();
+        initLangSelector();
+
+        // ログアウト
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logout();
+        });
+
+        // ── 自分の投稿一覧を取得 ────────────────────────────────────
+        async function loadMyFishListings() {
+            loading.classList.add('show');
+
+            try {
+                // ログイン済みユーザーのUID取得
+                const uid = window.currentUser?.uid;
+                if (!uid) return;
+
+                // 表示名を表示
+                const displayName = window.currentUserData?.displayName || '';
+                document.getElementById('user-greeting').textContent = displayName;
+
+                // Firestoreから自分の投稿を取得
+                const q = query(
+                    collection(db, 'fishListings'),
+                    where('farmerId', '==', uid),
+                    orderBy('createdAt', 'desc')
+                );
+                const snap = await getDocs(q);
+
+                const listEl = document.getElementById('fish-list');
+
+                if (snap.empty) {
+                    // 投稿がない場合
+                    listEl.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state__icon">🐟</div>
+              <div class="empty-state__text">まだ投稿がありません</div>
+              <a href="/pages/farmer/post.html" class="btn btn-primary" style="display:inline-block; width:auto; padding:12px 24px;">
+                最初の魚を投稿する
+              </a>
+            </div>
+          `;
+                    return;
+                }
+
+                // 投稿カードを生成
+                listEl.innerHTML = '';
+                snap.forEach((doc) => {
+                    const d = doc.data();
+                    const imgHtml = d.photoUrl
+                        ? `<img class="fish-card__img" src="${d.photoUrl}" alt="${d.fishType}">`
+                        : `<div class="fish-card__img-placeholder">🐟</div>`;
+
+                    const badgeHtml = d.isActive
+                        ? `<span class="fish-card__badge badge-active">販売中</span>`
+                        : `<span class="fish-card__badge badge-inactive">停止中</span>`;
+
+                    listEl.innerHTML += `
+            <div class="fish-card">
+              ${imgHtml}
+              <div class="fish-card__body">
+                <div class="fish-card__name">
+                  ${d.fishType} ${badgeHtml}
+                </div>
+                <div class="fish-card__meta">
+                  サイズ：${d.size} head/kg　在庫：${d.stock} kg
+                </div>
+                <div class="fish-card__price">
+                  ${Number(d.price).toLocaleString()} KHR/kg
+                </div>
+              </div>
+            </div>
+          `;
+                });
+
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        // onAuthStateChanged 後にデータ取得
+        // watchAuthState が currentUser をセットするまで少し待つ
+        setTimeout(loadMyFishListings, 800);
+    </script>
+
+</body>
+
+</html>
