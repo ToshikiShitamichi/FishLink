@@ -136,11 +136,8 @@
     <div class="page">
 
         <!-- ヘッダー -->
-        <div class="page-header">
-            <div style="flex:1;">
-                <div style="font-size:13px; color:var(--color-text-sub);" id="user-greeting"></div>
-                <div class="page-header__title">🐟 FishLink</div>
-            </div>
+        <div class="page-header" style="align-items:center;">
+            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; color:inherit; flex:1;">FishLink</a>
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option>
@@ -199,10 +196,6 @@
             try {
                 const uid = window.currentUser?.uid;
                 if (!uid) return;
-
-                // 表示名を表示
-                const displayName = window.currentUserData?.displayName || '';
-                document.getElementById('user-greeting').textContent = displayName;
 
                 // Firestoreから自分の投稿を取得
                 const q = query(

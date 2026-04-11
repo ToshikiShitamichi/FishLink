@@ -112,6 +112,23 @@
         "loginFailed": "ចូលបរាជ័យ។ សូមពិនិត្យ ID និងពាក្យសម្ងាត់",
         "registerFailed": "ចុះឈ្មោះបរាជ័យ។ សូមព្យាយាមម្តងទៀត"
     },
+    "restaurant": {
+        "title": "បញ្ជីត្រី",
+        "subtitle": "រកមើលកសិដ្ឋានត្រីនៅជិត",
+        "sort": "តម្រៀប",
+        "sortDistance": "នៅជិតបំផុត",
+        "sortPrice": "តម្លៃទាបបំផុត",
+        "sortNewest": "ថ្មីបំផុត",
+        "filter": "ត្រង",
+        "filterAll": "ទាំងអស់",
+        "stock": "ស្តុក {{kg}}kg",
+        "distance": "{{km}} km",
+        "place": "📍 {{place}}",
+        "count": "បង្ហាញត្រី {{count}} មុខ",
+        "tapHint": "ចុចកាតដើម្បីបញ្ជាទិញ",
+        "empty": "រកមិនឃើញត្រីសម្រាប់ការត្រងនេះ",
+        "priceWithFee": "(រួមថ្លៃសេវា)"
+    },
     "dashboard": {
         "listings": "បញ្ជីការបង្ហោះ",
         "newPost": "បង្ហោះថ្មី",

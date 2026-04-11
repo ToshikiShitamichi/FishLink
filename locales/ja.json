@@ -112,6 +112,23 @@
         "loginFailed": "ログインに失敗しました。IDまたはパスワードを確認してください",
         "registerFailed": "登録に失敗しました。しばらくしてから再試行してください"
     },
+    "restaurant": {
+        "title": "魚一覧",
+        "subtitle": "近くの養殖農家から選ぶ",
+        "sort": "並び替え",
+        "sortDistance": "距離が近い順",
+        "sortPrice": "価格が安い順",
+        "sortNewest": "新着順",
+        "filter": "絞り込み",
+        "filterAll": "すべて",
+        "stock": "在庫 {{kg}}kg",
+        "distance": "{{km}} km",
+        "place": "📍 {{place}}",
+        "count": "{{count}}件の魚を表示中",
+        "tapHint": "カードを選ぶと注文へ進む",
+        "empty": "条件に合う魚が見つかりません",
+        "priceWithFee": "（税サ込）"
+    },
     "dashboard": {
         "listings": "投稿一覧",
         "newPost": "新規投稿",

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .market-header {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+
+        .market-header__left {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .market-header__title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--color-text);
+        }
+
+        .market-header__sub {
+            font-size: 11px;
+            color: var(--color-text-sub);
+            margin-top: 2px;
+        }
+
+        .market-header__right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            padding-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .market-ctrl {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .market-ctrl__label {
+            color: var(--color-text-sub);
+        }
+
+        .market-ctrl select {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            background: var(--color-surface);
+            padding: 2px 4px;
+            cursor: pointer;
+        }
+
+        .fish-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .fish-grid-card {
+            border-radius: 16px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+            cursor: pointer;
+            transition: box-shadow .15s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .fish-grid-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+        }
+
+        .fish-grid-card__img {
+            position: relative;
+            height: 130px;
+            background: linear-gradient(135deg, #d6d3d1, #f5f5f4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fish-grid-card__img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .fish-grid-card__img-placeholder {
+            font-size: 40px;
+        }
+
+        .fish-grid-card__price {
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            background: rgba(0, 0, 0, .75);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .fish-grid-card__stock {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            background: rgba(255, 255, 255, .9);
+            color: #16a34a;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 20px;
+        }
+
+        .fish-grid-card__body {
+            padding: 10px 12px 12px;
+        }
+
+        .fish-grid-card__name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 2px;
+        }
+
+        .fish-grid-card__size {
+            font-size: 12px;
+            color: var(--color-text-sub);
+        }
+
+        .fish-grid-card__place {
+            font-size: 12px;
+            color: var(--color-text-sub);
+            margin-top: 4px;
+        }
+
+        .fish-grid-card__distance {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-top: 2px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-text-sub);
+        }
+
+        .empty-state__icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .empty-state__text {
+            font-size: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="page" style="padding-bottom: 120px; max-width:480px; margin:0 auto;">
+
+        <!-- ヘッダー -->
+        <div class="page-header" style="align-items:center;">
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; color:inherit; flex:1;">FishLink</a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">EN</option>
+                <option value="ja">JA</option>
+            </select>
+        </div>
+
+        <!-- 魚一覧ヘッダー -->
+        <div style="padding: 0 16px;">
+            <div class="market-header">
+                <div class="market-header__left">
+                    <div class="market-header__title" data-i18n="restaurant.title"></div>
+                    <div class="market-header__sub" data-i18n="restaurant.subtitle"></div>
+                </div>
+                <div class="market-header__right">
+                    <div class="market-ctrl">
+                        <span class="market-ctrl__label" data-i18n="restaurant.sort"></span>
+                        <select id="sort-select">
+                            <option value="distance" data-i18n="restaurant.sortDistance"></option>
+                            <option value="price" data-i18n="restaurant.sortPrice"></option>
+                            <option value="newest" data-i18n="restaurant.sortNewest"></option>
+                        </select>
+                    </div>
+                    <div class="market-ctrl">
+                        <span class="market-ctrl__label" data-i18n="restaurant.filter"></span>
+                        <select id="filter-select">
+                            <option value="" data-i18n="restaurant.filterAll"></option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 魚一覧グリッド -->
+            <div class="fish-grid" id="fish-grid"></div>
+        </div>
+
+    </div>
+
+    <!-- 下部ナビ -->
+    <nav class="bottom-nav" style="flex-direction:column; gap:0;">
+        <div id="market-footer" style="display:none; width:100%; padding:6px 16px; display:flex; justify-content:space-between; font-size:11px; color:var(--color-text-sub); border-bottom:1px solid var(--color-border);">
+            <span id="footer-count"></span>
+            <span data-i18n="restaurant.tapHint"></span>
+        </div>
+        <div style="display:flex; width:100%;">
+            <a href="/pages/restaurant/dashboard.html" class="bottom-nav__item active">
+                <span class="bottom-nav__icon">🐟</span>
+                <span data-i18n="restaurant.title"></span>
+            </a>
+            <a href="#" class="bottom-nav__item" id="logout-btn">
+                <span class="bottom-nav__icon">🚪</span>
+                <span data-i18n="nav.logout"></span>
+            </a>
+        </div>
+    </nav>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState, logout } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            collection, query, where, orderBy, getDocs, doc, getDoc
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        // ログアウト
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logout();
+        });
+
+        // 魚種フィルターの選択肢を生成（fish.* キーから）
+        function populateFilterOptions() {
+            const filterSelect = document.getElementById('filter-select');
+            const currentVal = filterSelect.value;
+            // 最初の「すべて」以外を削除
+            while (filterSelect.options.length > 1) filterSelect.remove(1);
+
+            const fishKeys = [
+                'striped_catfish', 'clarias_catfish', 'red_tilapia', 'nile_tilapia',
+                'silver_barb', 'common_carp_large', 'common_carp_small',
+                'featherback', 'climbing_perch', 'frog'
+            ];
+            fishKeys.forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = i18next.t(`fish.${key}`);
+                filterSelect.appendChild(opt);
+            });
+            filterSelect.value = currentVal;
+        }
+        populateFilterOptions();
+
+        // ソート・フィルター変更時
+        document.getElementById('sort-select').addEventListener('change', renderList);
+        document.getElementById('filter-select').addEventListener('change', renderList);
+
+        // ── 距離計算（Haversine） ──────────────────────────────────
+        function calcDistanceKm(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2
+                + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+                * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        // ── データ取得＆表示 ──────────────────────────────────────
+        let allItems = []; // キャッシュ
+
+        async function loadFishListings() {
+            loading.classList.add('show');
+
+            try {
+                const uid = window.currentUser?.uid;
+                if (!uid) return;
+
+                const myLoc = window.currentUserData?.location;
+
+                // 全アクティブ投稿を取得
+                const q = query(
+                    collection(db, 'fishListings'),
+                    where('isActive', '==', true)
+                );
+                const snap = await getDocs(q);
+
+                // 農家情報をまとめて取得（UID → location）
+                const farmerIds = [...new Set(snap.docs.map(d => d.data().farmerId))];
+                const farmerMap = {};
+                for (const fid of farmerIds) {
+                    const fSnap = await getDoc(doc(db, 'users', fid));
+                    if (fSnap.exists()) farmerMap[fid] = fSnap.data();
+                }
+
+                allItems = snap.docs.map(d => {
+                    const data = d.data();
+                    const farmer = farmerMap[data.farmerId] || {};
+                    const farmerLoc = farmer.location;
+                    let distanceKm = null;
+                    if (myLoc && farmerLoc) {
+                        distanceKm = calcDistanceKm(myLoc.lat, myLoc.lng, farmerLoc.lat, farmerLoc.lng);
+                    }
+                    return {
+                        id: d.id,
+                        ...data,
+                        farmerName: farmer.displayName || '',
+                        farmerProvince: farmer.province || '',
+                        distanceKm,
+                        displayPrice: Math.ceil(data.price * 1.05 / 100) * 100,
+                        createdAtMs: data.createdAt?.toMillis?.() || 0,
+                    };
+                });
+
+                renderList();
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        // ── 表示 ────────────────────────────────────────────────
+        function renderList() {
+            const sortVal = document.getElementById('sort-select').value;
+            const filterVal = document.getElementById('filter-select').value;
+
+            let items = [...allItems];
+
+            // フィルター
+            if (filterVal) {
+                items = items.filter(it => it.fishType === filterVal);
+            }
+
+            // ソート
+            if (sortVal === 'distance') {
+                items.sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
+            } else if (sortVal === 'price') {
+                items.sort((a, b) => a.displayPrice - b.displayPrice);
+            } else if (sortVal === 'newest') {
+                items.sort((a, b) => b.createdAtMs - a.createdAtMs);
+            }
+
+            const grid = document.getElementById('fish-grid');
+            const footer = document.getElementById('market-footer');
+
+            if (items.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column:1/-1;">
+                        <div class="empty-state__icon">🐟</div>
+                        <div class="empty-state__text">${i18next.t('restaurant.empty')}</div>
+                    </div>
+                `;
+                footer.style.display = 'none';
+                return;
+            }
+
+            grid.innerHTML = items.map(item => {
+                const fishName = i18next.exists(`fish.${item.fishType}`)
+                    ? i18next.t(`fish.${item.fishType}`)
+                    : item.fishType;
+
+                const distText = item.distanceKm !== null
+                    ? `${Math.round(item.distanceKm)} km`
+                    : '';
+
+                const imgHtml = item.photoUrl
+                    ? `<img src="${item.photoUrl}" alt="${fishName}">`
+                    : `<span class="fish-grid-card__img-placeholder">🐟</span>`;
+
+                return `
+                    <a class="fish-grid-card" href="#" data-id="${item.id}">
+                        <div class="fish-grid-card__img">
+                            ${imgHtml}
+                            <div class="fish-grid-card__price">
+                                ${item.displayPrice.toLocaleString()} KHR/kg
+                            </div>
+                            <div class="fish-grid-card__stock">
+                                ${i18next.t('restaurant.stock', { kg: item.stock })}
+                            </div>
+                        </div>
+                        <div class="fish-grid-card__body">
+                            <div class="fish-grid-card__name">${fishName}</div>
+                            <div class="fish-grid-card__size">（${item.size}）</div>
+                            ${item.farmerProvince ? `<div class="fish-grid-card__place">📍 ${item.farmerProvince}</div>` : ''}
+                            ${distText ? `<div class="fish-grid-card__distance">${distText}</div>` : ''}
+                        </div>
+                    </a>
+                `;
+            }).join('');
+
+            footer.style.display = 'flex';
+            document.getElementById('footer-count').textContent =
+                i18next.t('restaurant.count', { count: items.length });
+        }
+
+        // 言語変更時
+        onLanguageChange(() => {
+            populateFilterOptions();
+            renderList();
+        });
+
+        // データ読み込み（auth完了後）
+        setTimeout(loadFishListings, 800);
+    </script>
+
+</body>
+
+</html>

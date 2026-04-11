@@ -112,6 +112,23 @@
         "loginFailed": "Login failed. Please check your ID and password",
         "registerFailed": "Registration failed. Please try again later"
     },
+    "restaurant": {
+        "title": "Fish Market",
+        "subtitle": "Browse nearby fish farms",
+        "sort": "Sort",
+        "sortDistance": "Nearest",
+        "sortPrice": "Lowest price",
+        "sortNewest": "Newest",
+        "filter": "Filter",
+        "filterAll": "All",
+        "stock": "Stock {{kg}}kg",
+        "distance": "{{km}} km",
+        "place": "📍 {{place}}",
+        "count": "Showing {{count}} fish",
+        "tapHint": "Tap a card to order",
+        "empty": "No fish found for this filter",
+        "priceWithFee": "(incl. fee)"
+    },
     "dashboard": {
         "listings": "My Listings",
         "newPost": "New Listing",

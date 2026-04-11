@@ -61,7 +61,14 @@ function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRe
             window.currentUser = user;
             window.currentUserData = null;
             const snap = await getDoc(doc(db, 'users', user.uid));
-            if (snap.exists()) window.currentUserData = snap.data();
+            if (snap.exists()) {
+                window.currentUserData = snap.data();
+                // Firestoreの言語設定をlocalStorageに同期（初回ログイン時に反映）
+                const userLang = snap.data().lang;
+                if (userLang && !localStorage.getItem('fishlink_lang')) {
+                    localStorage.setItem('fishlink_lang', userLang);
+                }
+            }
         } else {
             if (requireAuth) window.location.href = '/index.html';
         }
@@ -117,12 +124,16 @@ async function login(loginId, password) {
 
     await signInWithEmailAndPassword(auth, toInternalEmail(id), password);
 
-    // ロール取得 → リダイレクト
+    // ロール取得 → 言語同期 → リダイレクト
     const user = auth.currentUser;
     const snap = await getDoc(doc(db, 'users', user.uid));
     if (!snap.exists()) throw new Error('error.userNotFound');
 
-    redirectByRole(snap.data().role);
+    const userData = snap.data();
+    if (userData.lang) {
+        localStorage.setItem('fishlink_lang', userData.lang);
+    }
+    redirectByRole(userData.role);
 }
 
 // ── ログアウト ────────────────────────────────────────────────
