@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .order-page {
+            max-width: 480px;
+            margin: 0 auto;
+            padding-bottom: 160px;
+        }
+
+        .order-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            font-size: 14px;
+            color: var(--color-text-sub);
+            position: sticky;
+            top: 0;
+            background: var(--color-bg);
+            z-index: 10;
+        }
+
+        .order-header__back {
+            text-decoration: none;
+            color: var(--color-text-sub);
+            font-size: 18px;
+        }
+
+        .order-header__title {
+            font-weight: 500;
+        }
+
+        /* 魚情報カード */
+        .fish-detail {
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            margin: 0 16px 16px;
+        }
+
+        .fish-detail__img {
+            height: 200px;
+            background: linear-gradient(135deg, #d6d3d1, #f5f5f4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fish-detail__img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .fish-detail__img-placeholder {
+            font-size: 64px;
+        }
+
+        .fish-detail__body {
+            padding: 16px;
+        }
+
+        .fish-detail__name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-text);
+        }
+
+        .fish-detail__price {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--color-text);
+            margin-top: 4px;
+        }
+
+        .fish-detail__farmer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--color-text-sub);
+            margin-top: 8px;
+        }
+
+        .fish-detail__location {
+            font-size: 14px;
+            color: var(--color-text-sub);
+            margin-top: 4px;
+        }
+
+        .fish-detail__comment-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--color-text-sub);
+            text-decoration: none;
+            background: var(--color-surface);
+        }
+
+        .fish-detail__badges {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge-delivery {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .badge-stock {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        .badge-stock-out {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        /* 注文セクション */
+        .order-section {
+            border-radius: 16px;
+            border: 1px solid var(--color-border);
+            padding: 16px;
+            margin: 0 16px 16px;
+        }
+
+        .order-section__title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 14px;
+        }
+
+        /* 数量コントロール */
+        .qty-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .qty-label {
+            font-size: 13px;
+            color: var(--color-text-sub);
+        }
+
+        .qty-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qty-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qty-display {
+            min-width: 56px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-radius: 12px;
+        }
+
+        /* 内臓処理ボタン */
+        .gut-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .gut-btn {
+            border-radius: 16px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text-sub);
+        }
+
+        .gut-btn.active {
+            border: 2px solid #16a34a;
+            background: #f0fdf4;
+            color: #166534;
+            font-weight: 600;
+        }
+
+        /* 納品日・時間帯 */
+        .date-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .date-box {
+            border-radius: 16px;
+            background: #f9fafb;
+            padding: 12px;
+            border: 1px solid var(--color-border);
+        }
+
+        .date-box__label {
+            font-size: 11px;
+            color: var(--color-text-sub);
+        }
+
+        .date-box select {
+            width: 100%;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+            border: none;
+            background: transparent;
+            margin-top: 4px;
+            cursor: pointer;
+        }
+
+        /* 料金内訳 */
+        .price-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            padding: 6px 0;
+        }
+
+        .price-line__label {
+            color: var(--color-text-sub);
+        }
+
+        .price-line__value {
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .price-line__value.discount {
+            color: #16a34a;
+        }
+
+        .price-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px dashed var(--color-border);
+            padding-top: 12px;
+            margin-top: 8px;
+        }
+
+        .price-total__label {
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .price-total__value {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        /* 固定フッター */
+        .order-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 480px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, .95);
+            border-top: 1px solid var(--color-border);
+            padding: 12px 16px 16px;
+            z-index: 10;
+        }
+
+        .order-footer__info {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .order-footer__amount-label {
+            font-size: 11px;
+            color: var(--color-text-sub);
+        }
+
+        .order-footer__amount {
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .order-footer__note {
+            font-size: 11px;
+            color: var(--color-text-sub);
+            text-align: right;
+            max-width: 160px;
+        }
+
+        .order-footer__btn {
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            background: #f43f5e;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 14px;
+            cursor: pointer;
+        }
+
+        .order-footer__btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="order-page">
+
+        <!-- ヘッダー -->
+        <div class="order-header">
+            <a href="/pages/restaurant/dashboard.html" class="order-header__back">←</a>
+            <span class="order-header__title" data-i18n="order.title"></span>
+            <span>&nbsp;</span>
+        </div>
+
+        <!-- 魚情報 -->
+        <div class="fish-detail" id="fish-detail"></div>
+
+        <!-- 注文内容 -->
+        <div class="order-section">
+            <div class="order-section__title" data-i18n="order.section"></div>
+
+            <!-- 数量 -->
+            <div class="qty-row">
+                <div>
+                    <div class="qty-label" data-i18n="order.quantity"></div>
+                    <div class="qty-value" id="qty-label">5 kg</div>
+                </div>
+                <div class="qty-controls">
+                    <button class="qty-btn" id="qty-minus">−</button>
+                    <div class="qty-display" id="qty-display">5</div>
+                    <button class="qty-btn" id="qty-plus">＋</button>
+                </div>
+            </div>
+
+            <!-- 内臓処理 -->
+            <div>
+                <div class="qty-label" style="margin-bottom:8px;" data-i18n="order.gutProcessing"></div>
+                <div class="gut-options">
+                    <button class="gut-btn active" id="gut-yes" data-i18n="order.gutYes"></button>
+                    <button class="gut-btn" id="gut-no"></button>
+                </div>
+            </div>
+
+            <!-- 納品日・時間帯 -->
+            <div class="date-grid">
+                <div class="date-box">
+                    <div class="date-box__label" data-i18n="order.deliveryDate"></div>
+                    <select id="delivery-date"></select>
+                </div>
+                <div class="date-box">
+                    <div class="date-box__label" data-i18n="order.deliveryTime"></div>
+                    <select id="delivery-time">
+                        <option value="7:00–8:00">7:00–8:00</option>
+                        <option value="8:00–9:00">8:00–9:00</option>
+                        <option value="9:00–10:00">9:00–10:00</option>
+                        <option value="10:00–11:00">10:00–11:00</option>
+                        <option value="11:00–12:00">11:00–12:00</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 料金内訳 -->
+        <div class="order-section" id="price-breakdown"></div>
+
+    </div>
+
+    <!-- 固定フッター -->
+    <div class="order-footer">
+        <div class="order-footer__info">
+            <div>
+                <div class="order-footer__amount-label" data-i18n="order.paymentAmount"></div>
+                <div class="order-footer__amount" id="footer-total">0 riel</div>
+            </div>
+            <div class="order-footer__note" data-i18n="order.autoCalcNote"></div>
+        </div>
+        <button class="order-footer__btn" id="submit-btn" data-i18n="order.submit"></button>
+    </div>
+
+    <!-- エラーメッセージ -->
+    <div class="error-msg" id="error-msg" style="position:fixed; top:60px; left:16px; right:16px; max-width:448px; margin:0 auto; z-index:20;"></div>
+
+    <script type="module">
+        import { initI18n } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            doc, getDoc, addDoc, collection, serverTimestamp
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        const errorMsg = document.getElementById('error-msg');
+
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+
+        // URLからlistingId取得
+        const params = new URLSearchParams(location.search);
+        const listingId = params.get('id');
+        if (!listingId) { location.href = '/pages/restaurant/dashboard.html'; }
+
+        // ── Haversine距離計算 ──
+        function calcDistanceKm(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2
+                + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+                * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        // ── 納品日の選択肢生成（明日から7日間） ──
+        function populateDeliveryDates() {
+            const sel = document.getElementById('delivery-date');
+            const today = new Date();
+            for (let i = 1; i <= 7; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() + i);
+                const label = `${d.getMonth() + 1}/${d.getDate()}`;
+                const opt = document.createElement('option');
+                opt.value = label;
+                opt.textContent = label;
+                sel.appendChild(opt);
+            }
+        }
+        populateDeliveryDates();
+
+        // ── データ取得 & 表示 ──
+        let listingData = null;
+        let farmerData = null;
+        let distanceKm = 0;
+        let quantity = 5;
+        let gutProcessing = true;
+        let campaignActive = true; // 一旦常にキャンペーン割引を表示（運営画面実装後にFirestoreから取得）
+
+        function waitForUserData(callback) {
+            if (window.currentUserData) { callback(); }
+            else { setTimeout(() => waitForUserData(callback), 300); }
+        }
+
+        waitForUserData(async () => {
+            loading.classList.add('show');
+            try {
+                // 魚データ取得
+                const listingSnap = await getDoc(doc(db, 'fishListings', listingId));
+                if (!listingSnap.exists()) { location.href = '/pages/restaurant/dashboard.html'; return; }
+                listingData = listingSnap.data();
+
+                // 農家データ取得
+                const farmerSnap = await getDoc(doc(db, 'users', listingData.farmerId));
+                farmerData = farmerSnap.exists() ? farmerSnap.data() : {};
+
+                // 距離計算
+                const myLoc = window.currentUserData?.location;
+                const farmerLoc = farmerData.location;
+                if (myLoc && farmerLoc) {
+                    distanceKm = calcDistanceKm(myLoc.lat, myLoc.lng, farmerLoc.lat, farmerLoc.lng);
+                }
+
+                // キャンペーン取得
+                try {
+                    const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
+                    if (campSnap.exists()) campaignActive = campSnap.data().active === true;
+                } catch (e) { /* settings未作成時は無視 */ }
+
+                // 最低注文量をデフォルトに
+                if (listingData.minOrder && listingData.minOrder > quantity) {
+                    quantity = listingData.minOrder;
+                }
+
+                renderFishDetail();
+                renderGutButtons();
+                updateQuantityDisplay();
+                recalculate();
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+            }
+        });
+
+        // ── 魚情報カード描画 ──
+        function renderFishDetail() {
+            const fishName = i18next.exists(`fish.${listingData.fishType}`)
+                ? i18next.t(`fish.${listingData.fishType}`)
+                : listingData.fishType;
+
+            const imgHtml = listingData.photoUrl
+                ? `<img src="${listingData.photoUrl}" alt="${fishName}">`
+                : `<span class="fish-detail__img-placeholder">🐟</span>`;
+
+            const dist = Math.round(distanceKm);
+            const rating = farmerData.avgRating || 0;
+            const reviewCount = farmerData.reviewCount || 0;
+            const province = farmerData.province || '';
+            const stock = listingData.stock || 0;
+            const size = listingData.size || '';
+
+            // 最短納品日時（明日 + 最初の時間帯）
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const deliveryDateLabel = `${tomorrow.getMonth() + 1}/${tomorrow.getDate()}`;
+            const earliestTime = '7:00–8:00';
+
+            // 在庫バッジ
+            const stockKey = stock > 0 ? 'order.stockAvailable' : 'order.stockUnavailable';
+            const stockClass = stock > 0 ? 'badge-stock' : 'badge-stock-out';
+
+            document.getElementById('fish-detail').innerHTML = `
+                <div class="fish-detail__img">${imgHtml}</div>
+                <div class="fish-detail__body">
+                    <div class="fish-detail__name">${fishName}（${size} head/kg）</div>
+                    <div class="fish-detail__price">${Number(listingData.price).toLocaleString()} KHR/kg</div>
+                    <div class="fish-detail__farmer">
+                        <a href="#" style="text-decoration:none; color:inherit;">👨‍🌾 ${farmerData.displayName || ''}</a>
+                        <span>⭐ ${rating.toFixed(1)}</span>
+                        <span style="color:var(--color-text-sub);">(${reviewCount}${i18next.t('order.reviews')})</span>
+                    </div>
+                    ${province ? `<div class="fish-detail__location">📍 ${province} · ${dist} km</div>` : ''}
+                    <a href="#" class="fish-detail__comment-btn">${i18next.t('order.comment')}</a>
+                    <div class="fish-detail__badges">
+                        <span class="badge-delivery">${i18next.t('order.deliveryBadge', { date: deliveryDateLabel, time: earliestTime })}</span>
+                        <span class="${stockClass}">${i18next.t(stockKey)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ── 内臓処理ボタン ──
+        function renderGutButtons() {
+            const gutPrice = listingData.gutPrice || 0;
+            document.getElementById('gut-no').textContent =
+                i18next.t('order.gutNo', { price: gutPrice.toLocaleString() });
+        }
+
+        document.getElementById('gut-yes').addEventListener('click', () => {
+            gutProcessing = true;
+            document.getElementById('gut-yes').classList.add('active');
+            document.getElementById('gut-no').classList.remove('active');
+            recalculate();
+        });
+
+        document.getElementById('gut-no').addEventListener('click', () => {
+            gutProcessing = false;
+            document.getElementById('gut-no').classList.add('active');
+            document.getElementById('gut-yes').classList.remove('active');
+            recalculate();
+        });
+
+        // ── 数量コントロール ──
+        function updateQuantityDisplay() {
+            document.getElementById('qty-display').textContent = quantity;
+            document.getElementById('qty-label').textContent = `${quantity} kg`;
+        }
+
+        document.getElementById('qty-minus').addEventListener('click', () => {
+            if (quantity > 1) { quantity--; updateQuantityDisplay(); recalculate(); }
+        });
+
+        document.getElementById('qty-plus').addEventListener('click', () => {
+            quantity++; updateQuantityDisplay(); recalculate();
+        });
+
+        // ── 料金計算 ──
+        function recalculate() {
+            if (!listingData) return;
+
+            const price = listingData.price;
+            const gutPrice = listingData.gutPrice || 0;
+            const deliveryRate = listingData.deliveryRate || 500;
+            const freeDelivDist = listingData.freeDeliveryDistance || 0;
+
+            // 魚代（内臓処理込み or なし）
+            const unitPrice = gutProcessing ? price + gutPrice : price;
+            const fishTotal = unitPrice * quantity;
+
+            // 送料
+            const chargeableDist = Math.max(0, distanceKm - freeDelivDist);
+            const deliveryFee = Math.round(deliveryRate * chargeableDist);
+
+            // サービス料（5%）
+            const serviceFee = Math.round(price * quantity * 0.05);
+
+            // キャンペーン割引
+            const campaignDiscount = campaignActive ? serviceFee : 0;
+
+            // 合計
+            const total = fishTotal + deliveryFee + serviceFee - campaignDiscount;
+
+            // 料金内訳描画
+            const fishLabel = gutProcessing
+                ? i18next.t('order.fishPrice')
+                : i18next.t('order.fishPriceNoGut');
+
+            let html = `
+                <div class="price-line">
+                    <span class="price-line__label">${fishLabel}</span>
+                    <span class="price-line__value">${fishTotal.toLocaleString()} riel</span>
+                </div>
+                <div class="price-line">
+                    <span class="price-line__label" data-i18n="order.deliveryFee">${i18next.t('order.deliveryFee')}</span>
+                    <span class="price-line__value">${deliveryFee.toLocaleString()} riel</span>
+                </div>
+                <div class="price-line">
+                    <span class="price-line__label" data-i18n="order.serviceFee">${i18next.t('order.serviceFee')}</span>
+                    <span class="price-line__value">${serviceFee.toLocaleString()} riel</span>
+                </div>
+            `;
+
+            if (campaignActive) {
+                html += `
+                    <div class="price-line">
+                        <span class="price-line__label">${i18next.t('order.campaignDiscount')}</span>
+                        <span class="price-line__value discount">-${campaignDiscount.toLocaleString()} riel</span>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="price-total">
+                    <span class="price-total__label">${i18next.t('order.total')}</span>
+                    <span class="price-total__value">${total.toLocaleString()} riel</span>
+                </div>
+            `;
+
+            document.getElementById('price-breakdown').innerHTML = html;
+            document.getElementById('footer-total').textContent = `${total.toLocaleString()} riel`;
+
+            // 注文データをwindowに保持
+            window._orderCalc = { fishTotal, deliveryFee, serviceFee, campaignDiscount, total };
+        }
+
+        // ── 注文確定 ──
+        document.getElementById('submit-btn').addEventListener('click', async () => {
+            errorMsg.classList.remove('show');
+
+            if (quantity <= 0) {
+                errorMsg.textContent = i18next.t('order.errorQuantity');
+                errorMsg.classList.add('show');
+                return;
+            }
+            if (listingData.minOrder && quantity < listingData.minOrder) {
+                errorMsg.textContent = i18next.t('order.errorMinOrder', { min: listingData.minOrder });
+                errorMsg.classList.add('show');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            loading.classList.add('show');
+
+            try {
+                const uid = window.currentUser?.uid;
+                if (!uid) throw new Error('Login required');
+
+                const calc = window._orderCalc;
+                const deliveryDate = document.getElementById('delivery-date').value;
+                const deliveryTime = document.getElementById('delivery-time').value;
+
+                await addDoc(collection(db, 'orders'), {
+                    restaurantId: uid,
+                    farmerId: listingData.farmerId,
+                    listingId,
+                    quantity,
+                    gutProcessing,
+                    deliveryDate,
+                    deliveryTime,
+                    fishPrice: calc.fishTotal,
+                    deliveryFee: calc.deliveryFee,
+                    serviceFee: calc.serviceFee,
+                    campaignDiscount: calc.campaignDiscount,
+                    totalAmount: calc.total,
+                    farmerReceiveAmount: calc.fishTotal + calc.deliveryFee - Math.round(listingData.price * quantity * 0.05),
+                    status: 'pending',
+                    declineReason: null,
+                    paymentStatus: 'pending',
+                    createdAt: serverTimestamp(),
+                });
+
+                // 注文完了 → ダッシュボードに戻る
+                location.href = '/pages/restaurant/dashboard.html';
+
+            } catch (err) {
+                console.error(err);
+                errorMsg.textContent = i18next.t('order.errorSubmit');
+                errorMsg.classList.add('show');
+            } finally {
+                submitBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+    </script>
+
+</body>
+
+</html>

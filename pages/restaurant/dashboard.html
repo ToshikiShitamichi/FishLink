@@ -405,7 +405,7 @@
                     : `<span class="fish-grid-card__img-placeholder">🐟</span>`;
 
                 return `
-                    <a class="fish-grid-card" href="#" data-id="${item.id}">
+                    <a class="fish-grid-card" href="/pages/restaurant/order.html?id=${item.id}">
                         <div class="fish-grid-card__img">
                             ${imgHtml}
                             <div class="fish-grid-card__price">
@@ -417,7 +417,7 @@
                         </div>
                         <div class="fish-grid-card__body">
                             <div class="fish-grid-card__name">${fishName}</div>
-                            <div class="fish-grid-card__size">（${item.size}）</div>
+                            <div class="fish-grid-card__size">（${item.size} head/kg）</div>
                             ${item.farmerProvince ? `<div class="fish-grid-card__place">📍 ${item.farmerProvince}</div>` : ''}
                             ${distText ? `<div class="fish-grid-card__distance">${distText}</div>` : ''}
                         </div>
