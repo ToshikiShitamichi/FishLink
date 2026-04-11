@@ -112,6 +112,16 @@
         "loginFailed": "Login failed. Please check your ID and password",
         "registerFailed": "Registration failed. Please try again later"
     },
+    "dashboard": {
+        "listings": "My Listings",
+        "newPost": "New Listing",
+        "empty": "No listings yet",
+        "emptyAction": "Post your first fish",
+        "active": "Active",
+        "inactive": "Inactive",
+        "size": "Size: ",
+        "stock": "Stock: "
+    },
     "nav": {
         "logout": "Logout"
     }

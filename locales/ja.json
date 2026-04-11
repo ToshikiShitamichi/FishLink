@@ -112,6 +112,16 @@
         "loginFailed": "ログインに失敗しました。IDまたはパスワードを確認してください",
         "registerFailed": "登録に失敗しました。しばらくしてから再試行してください"
     },
+    "dashboard": {
+        "listings": "投稿一覧",
+        "newPost": "新規投稿",
+        "empty": "まだ投稿がありません",
+        "emptyAction": "最初の魚を投稿する",
+        "active": "販売中",
+        "inactive": "停止中",
+        "size": "サイズ：",
+        "stock": "在庫："
+    },
     "nav": {
         "logout": "ログアウト"
     }

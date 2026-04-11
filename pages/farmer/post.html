@@ -614,10 +614,10 @@
             errorMsg.classList.remove('show');
 
             const fishTypeSelect = document.getElementById('fish-type').value;
+            // コードで保存（例: "clarias_catfish"）。「その他」の場合のみ手入力テキスト
             const fishType = fishTypeSelect === 'other'
                 ? document.getElementById('fish-type-other').value.trim()
-                : document.querySelector(`#fish-type option[value="${fishTypeSelect}"]`)
-                    ?.textContent?.split('/')[0]?.trim() || '';
+                : fishTypeSelect;
             const fishSize = document.getElementById('fish-size').value.trim();
             const fishStock = parseFloat(document.getElementById('fish-stock').value) || 0;
             const priceUnit = parseInt(document.getElementById('price-unit').value) || 0;

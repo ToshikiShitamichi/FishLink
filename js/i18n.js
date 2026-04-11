@@ -53,6 +53,13 @@ function applyTranslations() {
     });
 }
 
+// 言語変更時のコールバック（ページごとに登録可能）
+const langChangeCallbacks = [];
+
+function onLanguageChange(callback) {
+    langChangeCallbacks.push(callback);
+}
+
 // 言語切り替え（セレクター変更時に呼び出す）
 async function changeLanguage(lang) {
     if (!SUPPORTED_LANGS.includes(lang)) return;
@@ -66,6 +73,9 @@ async function changeLanguage(lang) {
     saveLang(lang);
     document.body.setAttribute('data-lang', lang);
     applyTranslations();
+
+    // ページ固有の再描画コールバックを実行
+    for (const cb of langChangeCallbacks) cb(lang);
 
     // ログイン済みならFirestoreにも保存
     if (auth.currentUser) {
@@ -81,4 +91,4 @@ function initLangSelector() {
     selector.addEventListener('change', (e) => changeLanguage(e.target.value));
 }
 
-export { initI18n, initLangSelector, saveLang, applyTranslations };
+export { initI18n, initLangSelector, saveLang, applyTranslations, onLanguageChange };

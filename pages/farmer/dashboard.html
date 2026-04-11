@@ -155,22 +155,22 @@
     </div>
 
     <!-- 新規投稿ボタン（FAB） -->
-    <a href="/pages/farmer/post.html" class="fab" title="新規投稿">＋</a>
+    <a href="/pages/farmer/post.html" class="fab">＋</a>
 
     <!-- 下部ナビ -->
     <nav class="bottom-nav">
         <a href="/pages/farmer/dashboard.html" class="bottom-nav__item active">
             <span class="bottom-nav__icon">🐟</span>
-            <span>投稿一覧</span>
+            <span data-i18n="dashboard.listings"></span>
         </a>
         <a href="#" class="bottom-nav__item" id="logout-btn">
             <span class="bottom-nav__icon">🚪</span>
-            <span>ログアウト</span>
+            <span data-i18n="nav.logout"></span>
         </a>
     </nav>
 
     <script type="module">
-        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState, logout } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import {
@@ -197,7 +197,6 @@
             loading.classList.add('show');
 
             try {
-                // ログイン済みユーザーのUID取得
                 const uid = window.currentUser?.uid;
                 if (!uid) return;
 
@@ -216,16 +215,15 @@
                 const listEl = document.getElementById('fish-list');
 
                 if (snap.empty) {
-                    // 投稿がない場合
                     listEl.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state__icon">🐟</div>
-              <div class="empty-state__text">まだ投稿がありません</div>
-              <a href="/pages/farmer/post.html" class="btn btn-primary" style="display:inline-block; width:auto; padding:12px 24px;">
-                最初の魚を投稿する
-              </a>
-            </div>
-          `;
+                        <div class="empty-state">
+                            <div class="empty-state__icon">🐟</div>
+                            <div class="empty-state__text">${i18next.t('dashboard.empty')}</div>
+                            <a href="/pages/farmer/post.html" class="btn btn-primary" style="display:inline-block; width:auto; padding:12px 24px;">
+                                ${i18next.t('dashboard.emptyAction')}
+                            </a>
+                        </div>
+                    `;
                     return;
                 }
 
@@ -233,30 +231,35 @@
                 listEl.innerHTML = '';
                 snap.forEach((doc) => {
                     const d = doc.data();
+                    // fishTypeがコード（例: clarias_catfish）ならi18n翻訳、そうでなければそのまま表示
+                    const fishName = i18next.exists(`fish.${d.fishType}`)
+                        ? i18next.t(`fish.${d.fishType}`)
+                        : d.fishType;
+
                     const imgHtml = d.photoUrl
-                        ? `<img class="fish-card__img" src="${d.photoUrl}" alt="${d.fishType}">`
+                        ? `<img class="fish-card__img" src="${d.photoUrl}" alt="${fishName}">`
                         : `<div class="fish-card__img-placeholder">🐟</div>`;
 
                     const badgeHtml = d.isActive
-                        ? `<span class="fish-card__badge badge-active">販売中</span>`
-                        : `<span class="fish-card__badge badge-inactive">停止中</span>`;
+                        ? `<span class="fish-card__badge badge-active">${i18next.t('dashboard.active')}</span>`
+                        : `<span class="fish-card__badge badge-inactive">${i18next.t('dashboard.inactive')}</span>`;
 
                     listEl.innerHTML += `
-            <div class="fish-card">
-              ${imgHtml}
-              <div class="fish-card__body">
-                <div class="fish-card__name">
-                  ${d.fishType} ${badgeHtml}
-                </div>
-                <div class="fish-card__meta">
-                  サイズ：${d.size} head/kg　在庫：${d.stock} kg
-                </div>
-                <div class="fish-card__price">
-                  ${Number(d.price).toLocaleString()} KHR/kg
-                </div>
-              </div>
-            </div>
-          `;
+                        <div class="fish-card">
+                            ${imgHtml}
+                            <div class="fish-card__body">
+                                <div class="fish-card__name">
+                                    ${fishName} ${badgeHtml}
+                                </div>
+                                <div class="fish-card__meta">
+                                    ${i18next.t('dashboard.size')}${d.size} head/kg　${i18next.t('dashboard.stock')}${d.stock} kg
+                                </div>
+                                <div class="fish-card__price">
+                                    ${Number(d.price).toLocaleString()} KHR/kg
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 });
 
             } catch (err) {
@@ -266,8 +269,10 @@
             }
         }
 
+        // 言語変更時に投稿一覧を再描画
+        onLanguageChange(() => loadMyFishListings());
+
         // onAuthStateChanged 後にデータ取得
-        // watchAuthState が currentUser をセットするまで少し待つ
         setTimeout(loadMyFishListings, 800);
     </script>
 
