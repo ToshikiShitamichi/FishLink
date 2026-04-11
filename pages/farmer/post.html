@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 14px;
+        }
+
+        .section-block {
+            margin-bottom: 20px;
+        }
+
+        .caa-card {
+            border-radius: 20px;
+            border: 2px solid #fdba74;
+            background: #fff8ef;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .caa-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .caa-header__title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-text);
+        }
+
+        .caa-header__badge {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .caa-region {
+            font-size: 16px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .caa-value {
+            font-size: 30px;
+            font-weight: 800;
+            color: #16a34a;
+            line-height: 1.2;
+            margin: 8px 0 4px;
+        }
+
+        .caa-size {
+            font-size: 16px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .caa-note {
+            font-size: 13px;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        .price-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .price-row label {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin: 0;
+        }
+
+        .price-input {
+            width: 120px;
+            padding: 10px 12px;
+            border: 1.5px solid var(--color-border);
+            border-radius: 12px;
+            font-size: 16px;
+            text-align: right;
+            font-family: inherit;
+            background: #f9fafb;
+        }
+
+        .price-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: #fff;
+        }
+
+        .price-unit {
+            font-size: 14px;
+            color: var(--color-text-sub);
+            white-space: nowrap;
+            min-width: 48px;
+        }
+
+        .price-result {
+            background: #fff4e3;
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+
+        .price-result__label {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .price-result__hint {
+            font-size: 12px;
+            color: #ea580c;
+            margin-top: 2px;
+        }
+
+        .price-result__value {
+            font-size: 38px;
+            font-weight: 800;
+            color: #ea580c;
+            line-height: 1;
+        }
+
+        .price-result__unit {
+            font-size: 16px;
+            font-weight: 700;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .photo-upload {
+            border: 2px dashed var(--color-border);
+            border-radius: 12px;
+            padding: 28px;
+            text-align: center;
+            cursor: pointer;
+            background: #f9fafb;
+            transition: border-color .15s;
+        }
+
+        .photo-upload:hover {
+            border-color: var(--color-primary);
+        }
+
+        .photo-upload__icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .photo-upload__text {
+            font-size: 14px;
+            color: var(--color-text-sub);
+        }
+
+        .photo-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .photo-preview img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .delivery-note {
+            font-size: 13px;
+            color: #16a34a;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .optional-tag {
+            font-size: 11px;
+            background: #f0f0f0;
+            color: #888;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 6px;
+            font-weight: 400;
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer>
+    </script>
+</head>
+
+<body>
+
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="page" style="padding-top:0; max-width:480px; margin:0 auto;">
+
+        <!-- ヘッダー -->
+        <div class="page-header"
+            style="padding:16px 16px 8px; position:sticky; top:0; background:var(--color-bg); z-index:10;">
+            <a href="/pages/farmer/dashboard.html" class="page-header__back">←</a>
+            <div class="page-header__title" data-i18n="post.title"></div>
+        </div>
+
+        <div style="padding:0 16px 100px;">
+
+            <!-- エラーメッセージ -->
+            <div class="error-msg" id="error-msg"></div>
+
+            <!-- 基本情報 -->
+            <div class="section-block">
+                <div class="section-title" data-i18n="post.sectionBasic"></div>
+
+                <div class="form-group">
+                    <label for="fish-type" data-i18n="post.fishType"></label>
+                    <select id="fish-type">
+                        <option value="" data-i18n="post.fishTypeSelect"></option>
+                        <option value="striped_catfish" data-i18n="fish.striped_catfish"></option>
+                        <option value="clarias_catfish" data-i18n="fish.clarias_catfish"></option>
+                        <option value="red_tilapia" data-i18n="fish.red_tilapia"></option>
+                        <option value="nile_tilapia" data-i18n="fish.nile_tilapia"></option>
+                        <option value="silver_barb" data-i18n="fish.silver_barb"></option>
+                        <option value="common_carp_large" data-i18n="fish.common_carp_large"></option>
+                        <option value="common_carp_small" data-i18n="fish.common_carp_small"></option>
+                        <option value="featherback" data-i18n="fish.featherback"></option>
+                        <option value="climbing_perch" data-i18n="fish.climbing_perch"></option>
+                        <option value="frog" data-i18n="fish.frog"></option>
+                        <option value="other" data-i18n="fish.other"></option>
+                    </select>
+                </div>
+
+                <!-- その他選択時の手入力 -->
+                <div class="form-group" id="fish-type-other-group" style="display:none;">
+                    <label for="fish-type-other" data-i18n="post.fishTypeOther"></label>
+                    <input type="text" id="fish-type-other" data-i18n="[placeholder]post.fishTypeOtherPlaceholder">
+                </div>
+
+                <div class="form-group">
+                    <label for="fish-size" data-i18n="post.fishSize"></label>
+                    <input type="text" id="fish-size" data-i18n="[placeholder]post.fishSizePlaceholder">
+                </div>
+
+                <div class="form-group">
+                    <label for="fish-stock" data-i18n="post.fishStock"></label>
+                    <input type="number" id="fish-stock" data-i18n="[placeholder]post.fishStockPlaceholder" min="0"
+                        style="width:100%; padding:12px 14px; border:1.5px solid var(--color-border); border-radius:12px; font-size:16px; font-family:inherit; background:var(--color-surface);">
+                </div>
+
+                <div class="form-group">
+                    <label data-i18n="post.photo"></label>
+                    <div class="photo-upload" id="photo-area" onclick="document.getElementById('photo-input').click()">
+                        <div class="photo-upload__icon">📷</div>
+                        <div class="photo-upload__text" data-i18n="post.photoTap"></div>
+                    </div>
+                    <input type="file" id="photo-input" accept="image/*" multiple style="display:none">
+                    <div class="photo-preview" id="photo-preview"></div>
+                </div>
+
+                <p style="font-size:13px; color:var(--color-text-sub); margin-top:8px;" data-i18n="post.locationNote">
+                </p>
+            </div>
+
+            <!-- CAA参考価格 -->
+            <div class="caa-card">
+                <div class="caa-header">
+                    <div class="caa-header__title" data-i18n="post.sectionCaaTitle"></div>
+                    <div class="caa-header__badge" data-i18n="post.caaLabel"></div>
+                </div>
+                <div class="caa-region" id="caa-region" data-i18n="post.caaDefault"></div>
+                <div class="caa-value" id="caa-value" style="display:none;"></div>
+                <div class="caa-size" id="caa-size" style="display:none;"></div>
+                <div class="caa-note" data-i18n="post.caaNote"></div>
+            </div>
+
+            <!-- 販売価格（目安から調整） -->
+            <div class="section-block">
+                <div class="section-title" data-i18n="post.sectionPrice"></div>
+
+                <div class="price-row">
+                    <label for="price-unit" data-i18n="post.priceUnit"></label>
+                    <input type="number" class="price-input" id="price-unit" placeholder="5,500" min="0"
+                        oninput="updateTotalPrice()">
+                    <span class="price-unit">KHR/kg</span>
+                </div>
+
+                <div class="price-row">
+                    <label for="gut-price" data-i18n="post.gutPrice"></label>
+                    <input type="number" class="price-input" id="gut-price" placeholder="500" min="0"
+                        oninput="updateTotalPrice()">
+                    <span class="price-unit">KHR/kg</span>
+                </div>
+
+                <div class="price-result">
+                    <div>
+                        <div class="price-result__label" data-i18n="post.priceResult"></div>
+                        <div class="price-result__hint" data-i18n="post.priceHint"></div>
+                    </div>
+                    <div style="display:flex; align-items:flex-end; gap:4px;">
+                        <div class="price-result__value" id="total-price">0</div>
+                        <div class="price-result__unit">KHR/kg</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 配送料（レストラン負担） -->
+            <div class="section-block">
+                <div class="section-title" data-i18n="post.sectionDelivery"></div>
+
+                <div class="price-row">
+                    <label for="delivery-rate" data-i18n="post.deliveryRate"></label>
+                    <input type="number" class="price-input" id="delivery-rate" value="500" min="0">
+                    <span class="price-unit">KHR/km</span>
+                </div>
+
+                <div class="price-row">
+                    <label for="free-delivery-distance" data-i18n="post.freeDeliveryDistance"></label>
+                    <input type="number" class="price-input" id="free-delivery-distance" placeholder="5" min="0">
+                    <span class="price-unit">km</span>
+                </div>
+
+                <p class="delivery-note" data-i18n="post.deliveryNote1"></p>
+                <p class="delivery-note" data-i18n="post.deliveryNote2"></p>
+            </div>
+
+            <!-- 取引条件（任意） -->
+            <div class="section-block">
+                <div class="section-title">
+                    <span data-i18n="post.sectionTerms"></span>
+                    <span class="optional-tag" data-i18n="post.optional"></span>
+                </div>
+
+                <div class="price-row">
+                    <label for="min-order" data-i18n="post.minOrder"></label>
+                    <input type="number" class="price-input" id="min-order" placeholder="5" min="0">
+                    <span class="price-unit">kg</span>
+                </div>
+
+                <div class="price-row">
+                    <label for="max-distance" data-i18n="post.maxDistance"></label>
+                    <input type="number" class="price-input" id="max-distance" placeholder="30" min="0">
+                    <span class="price-unit">km</span>
+                </div>
+            </div>
+
+        </div><!-- /padding -->
+    </div><!-- /page -->
+
+    <!-- 投稿するボタン（固定） -->
+    <div
+        style="position:fixed; bottom:0; left:0; right:0; max-width:480px; margin:0 auto; padding:12px 16px; background:var(--color-surface); border-top:1px solid var(--color-border);">
+        <button class="btn btn-primary" id="submit-btn"
+            style="font-size:18px; background:#f97316; border:none; border-radius:16px;"
+            data-i18n="post.submit">
+        </button>
+    </div>
+
+    <script type="module">
+        import { initI18n } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db, storage } from '/js/firebase-config.js';
+        import {
+            collection, addDoc, serverTimestamp, doc, getDoc
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import {
+            ref, uploadBytes, getDownloadURL
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+
+        const loading = document.getElementById('loading');
+        const errorMsg = document.getElementById('error-msg');
+
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+
+        // ── CAA参考価格データ（※仮データ・クライアント確認後に差し替え） ──
+        const CAA_DATA = {
+            striped_catfish: {
+                Kandal: { range: '5,000–5,500', size: '0.5–0.8kg' },
+                Takeo: { range: '5,000–5,500', size: '0.45–0.8kg' },
+                'Prey Veng': null,
+                'Kg. Cham': { range: '5,000–5,500', size: '0.45–0.8kg' },
+                'Kg. Thom': { range: '5,000–5,500', size: '0.5–0.8kg' },
+                Siemreap: { range: '5,000–5,500', size: '0.5–0.8kg' },
+                Battambang: { range: '5,000–5,500', size: '0.5–0.8kg' },
+                Pursat: { range: '5,000–5,500', size: '0.5–0.8kg' },
+                'Kg. Chhnang': null,
+                BMC: null,
+            },
+            clarias_catfish: {
+                Kandal: { range: '4,300–4,600', size: '0.17–0.25kg' },
+                Takeo: { range: '3,500–4,200', size: '0.17–0.25kg' },
+                'Prey Veng': null,
+                'Kg. Cham': { range: '4,200–4,300', size: '0.15–0.25g' },
+                'Kg. Thom': { range: '3,900–4,100', size: '0.17–0.2kg' },
+                Siemreap: { range: '3,800–4,000', size: '0.17–0.2kg' },
+                Battambang: { range: '4,000–4,200', size: '0.17–0.2kg' },
+                Pursat: { range: '4,000–4,300', size: '0.17–0.2kg' },
+                'Kg. Chhnang': null,
+                BMC: null,
+            },
+            red_tilapia: {
+                Kandal: { range: '6,500–7,000', size: '0.45–0.8kg' },
+                Takeo: { range: '6,000–6,500', size: '0.45–0.8kg' },
+                'Prey Veng': null,
+                'Kg. Cham': { range: '6,000–6,500', size: '0.45–0.8kg' },
+                'Kg. Thom': { range: '7,000–7,500', size: '0.5–0.8kg' },
+                Siemreap: { range: '7,500–8,000', size: '0.5–0.8kg' },
+                Battambang: { range: '7,500–8,500', size: '0.5–0.8kg' },
+                Pursat: { range: '8,000–8,500', size: '0.5–0.8kg' },
+                'Kg. Chhnang': null,
+                BMC: { range: '7,000–7,500', size: '0.45–0.8kg' },
+            },
+            nile_tilapia: {
+                Kandal: null, Takeo: null, 'Prey Veng': null,
+                'Kg. Cham': { range: '6,000–6,500', size: '0.45–0.8kg' },
+                'Kg. Thom': null, Siemreap: null,
+                Battambang: { range: '7,500–8,500', size: '0.5–0.8kg' },
+                Pursat: null, 'Kg. Chhnang': null, BMC: null,
+            },
+            silver_barb: {
+                Kandal: { range: '7,500–8,000', size: '0.2–0.3kg' },
+                Takeo: { range: '6,500–7,000', size: '0.2–0.3kg' },
+                'Prey Veng': null,
+                'Kg. Cham': { range: '8,000–8,500', size: '0.2–0.3kg' },
+                'Kg. Thom': null, Siemreap: null,
+                Battambang: { range: '6,000–6,500', size: '0.2–0.3kg' },
+                Pursat: { range: '8,000–8,500', size: '0.2–0.3kg' },
+                'Kg. Chhnang': null,
+                BMC: { range: '7,000–7,500', size: '0.2–0.3kg' },
+            },
+            common_carp_large: {
+                Kandal: { range: '6,000–6,400', size: '0.7–1kg' },
+                Takeo: { range: '5,500–6,600', size: '0.7–1kg' },
+                'Prey Veng': { range: '6,000–6,600', size: '0.7–1kg' },
+                'Kg. Cham': { range: '6,000–6,600', size: '0.7–1kg' },
+                'Kg. Thom': { range: '6,000–6,600', size: '0.5–1kg' },
+                Siemreap: { range: '5,600–6,000', size: '0.5–1kg' },
+                Battambang: { range: '5,500–6,000', size: '0.5–1kg' },
+                Pursat: { range: '5,500–6,000', size: '0.5–1kg' },
+                'Kg. Chhnang': { range: '6,000–6,600', size: '0.5–1kg' },
+                BMC: { range: '5,500–5,800', size: '0.5–1kg' },
+            },
+            common_carp_small: {
+                Kandal: { range: '4,400–4,600', size: '0.7–3kg' },
+                Takeo: { range: '4,300–4,600', size: '0.7–3kg' },
+                'Prey Veng': { range: '4,400–4,600', size: '0.7–3kg' },
+                'Kg. Cham': { range: '4,400–4,600', size: '0.7–3kg' },
+                'Kg. Thom': { range: '4,400–4,600', size: '0.7–3kg' },
+                Siemreap: { range: '4,400–4,800', size: '0.7–3kg' },
+                Battambang: { range: '4,500–4,800', size: '0.7–3kg' },
+                Pursat: { range: '4,300–4,600', size: '0.7–3kg' },
+                'Kg. Chhnang': { range: '4,300–4,600', size: '0.7–3kg' },
+                BMC: { range: '4,100–4,500', size: '0.7–3kg' },
+            },
+            featherback: {
+                Kandal: { range: '8,500–9,500', size: '1–3kg' },
+                Takeo: { range: '8,000–9,000', size: '1–3kg' },
+                'Prey Veng': { range: '8,500–9,500', size: '1–3kg' },
+                'Kg. Cham': { range: '8,500–9,500', size: '1–3kg' },
+                'Kg. Thom': { range: '8,500–9,500', size: '1–3kg' },
+                Siemreap: { range: '8,500–9,200', size: '1–3kg' },
+                Battambang: { range: '9,000–9,500', size: '1–3kg' },
+                Pursat: { range: '9,000–10,000', size: '1–3kg' },
+                'Kg. Chhnang': { range: '8,000–9,000', size: '1–3kg' },
+                BMC: null,
+            },
+            climbing_perch: {
+                Kandal: null, Takeo: null, 'Prey Veng': null, 'Kg. Cham': null,
+                'Kg. Thom': null, Siemreap: null, Battambang: null, Pursat: null,
+                'Kg. Chhnang': null, BMC: null,
+            },
+            frog: {
+                Kandal: { range: '7,000–7,500', size: '0.17–0.2kg' },
+                Takeo: null,
+                'Prey Veng': { range: '6,000–6,500', size: '0.17–0.2kg' },
+                'Kg. Cham': { range: '7,000–7,500', size: '0.17–0.2kg' },
+                'Kg. Thom': { range: '7,500–8,000', size: '0.17–0.2kg' },
+                Siemreap: { range: '8,000–8,500', size: '0.17–0.2kg' },
+                Battambang: { range: '7,500–8,000', size: '0.17–0.2kg' },
+                Pursat: null, 'Kg. Chhnang': null,
+                BMC: { range: '7,500–8,000', size: '0.17–0.2kg' },
+            },
+        };
+
+        // Google Maps の州名 → CAA_DATA のキーに変換
+        const PROVINCE_MAP = {
+            'Kandal': 'Kandal',
+            'Takeo': 'Takeo',
+            'Prey Veng': 'Prey Veng',
+            'Kampong Cham': 'Kg. Cham',
+            'Kampong Thom': 'Kg. Thom',
+            'Siem Reap': 'Siemreap',
+            'Battambang': 'Battambang',
+            'Pursat': 'Pursat',
+            'Kampong Chhnang': 'Kg. Chhnang',
+            'Banteay Meanchey': 'BMC',
+        };
+
+        // 農家の州名（登録時にFirestoreに保存済み）
+        let farmerProvince = null;
+
+        // CAA価格表示の更新
+        function updateCaaDisplay(fishTypeValue) {
+            const regionEl = document.getElementById('caa-region');
+            const valueEl = document.getElementById('caa-value');
+            const sizeEl = document.getElementById('caa-size');
+
+            if (!fishTypeValue || fishTypeValue === 'other') {
+                regionEl.textContent = i18next.t('post.caaNoData');
+                regionEl.style.color = '#888';
+                valueEl.style.display = 'none';
+                sizeEl.style.display = 'none';
+                return;
+            }
+
+            const provinceName = farmerProvince
+                ? (PROVINCE_MAP[farmerProvince] || null)
+                : null;
+
+            const fishData = CAA_DATA[fishTypeValue];
+            const priceData = provinceName && fishData
+                ? fishData[provinceName]
+                : null;
+
+            const fishLabel = document.querySelector(`#fish-type option[value="${fishTypeValue}"]`)
+                ?.textContent?.split('/')[0]?.trim() || fishTypeValue;
+
+            if (priceData) {
+                regionEl.textContent = `${provinceName}・${fishLabel}`;
+                regionEl.style.color = '#555';
+                valueEl.textContent = priceData.range + ' KHR/kg';
+                sizeEl.textContent = priceData.size;
+                valueEl.style.display = 'block';
+                sizeEl.style.display = 'block';
+            } else {
+                regionEl.textContent = provinceName
+                    ? `${provinceName}・${fishLabel} ${i18next.t('post.caaNotAvailable')}`
+                    : i18next.t('post.caaLoading');
+                regionEl.style.color = '#888';
+                valueEl.style.display = 'none';
+                sizeEl.style.display = 'none';
+            }
+        }
+
+        // 魚種プルダウン変更時
+        document.getElementById('fish-type').addEventListener('change', function () {
+            const val = this.value;
+            document.getElementById('fish-type-other-group').style.display =
+                val === 'other' ? 'block' : 'none';
+            updateCaaDisplay(val);
+        });
+
+        // currentUserData がセットされるまで待つ
+        function waitForUserData(callback) {
+            if (window.currentUserData) {
+                callback();
+            } else {
+                setTimeout(() => waitForUserData(callback), 300);
+            }
+        }
+
+        // currentUserData から province を読み取ってCAA表示を初期化
+        waitForUserData(() => {
+            farmerProvince = window.currentUserData.province || null;
+            const currentVal = document.getElementById('fish-type').value;
+            if (currentVal) updateCaaDisplay(currentVal);
+        });
+
+        // 販売価格の合計表示
+        window.updateTotalPrice = function () {
+            const unit = parseInt(document.getElementById('price-unit').value) || 0;
+            const gut = parseInt(document.getElementById('gut-price').value) || 0;
+            document.getElementById('total-price').textContent =
+                (unit + gut).toLocaleString();
+        };
+
+        // ── 写真プレビュー ──────────────────────────────────────────
+        let selectedFiles = [];
+
+        document.getElementById('photo-input').addEventListener('change', function () {
+            selectedFiles = Array.from(this.files);
+            const preview = document.getElementById('photo-preview');
+            preview.innerHTML = '';
+            selectedFiles.forEach(file => {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                preview.appendChild(img);
+            });
+        });
+
+        // ── 投稿処理 ────────────────────────────────────────────────
+        const submitBtn = document.getElementById('submit-btn');
+
+        submitBtn.addEventListener('click', async () => {
+            errorMsg.classList.remove('show');
+
+            const fishTypeSelect = document.getElementById('fish-type').value;
+            const fishType = fishTypeSelect === 'other'
+                ? document.getElementById('fish-type-other').value.trim()
+                : document.querySelector(`#fish-type option[value="${fishTypeSelect}"]`)
+                    ?.textContent?.split('/')[0]?.trim() || '';
+            const fishSize = document.getElementById('fish-size').value.trim();
+            const fishStock = parseFloat(document.getElementById('fish-stock').value) || 0;
+            const priceUnit = parseInt(document.getElementById('price-unit').value) || 0;
+            const gutPrice = parseInt(document.getElementById('gut-price').value) || 0;
+            const delivRate = parseInt(document.getElementById('delivery-rate').value) || 500;
+            const freeDelivDist = parseFloat(document.getElementById('free-delivery-distance').value) || 0;
+            const minOrder = parseFloat(document.getElementById('min-order').value) || 0;
+            const maxDistance = parseFloat(document.getElementById('max-distance').value) || 0;
+
+            // バリデーション
+            if (!fishType) {
+                errorMsg.textContent = i18next.t('post.errorFishType');
+                errorMsg.classList.add('show');
+                return;
+            }
+            if (!fishSize) {
+                errorMsg.textContent = i18next.t('post.errorFishSize');
+                errorMsg.classList.add('show');
+                return;
+            }
+            if (fishStock <= 0) {
+                errorMsg.textContent = i18next.t('post.errorFishStock');
+                errorMsg.classList.add('show');
+                return;
+            }
+            if (priceUnit <= 0) {
+                errorMsg.textContent = i18next.t('post.errorPrice');
+                errorMsg.classList.add('show');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            loading.classList.add('show');
+
+            try {
+                const uid = window.currentUser?.uid;
+                if (!uid) throw new Error(i18next.t('post.errorLogin'));
+
+                // 写真アップロード
+                const photoUrls = [];
+                for (const file of selectedFiles) {
+                    const storageRef = ref(storage, `fishListings/${uid}/${Date.now()}_${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    const url = await getDownloadURL(storageRef);
+                    photoUrls.push(url);
+                }
+
+                // Firestoreに保存
+                await addDoc(collection(db, 'fishListings'), {
+                    farmerId: uid,
+                    fishType,
+                    size: fishSize,
+                    stock: fishStock,
+                    price: priceUnit,
+                    gutPrice,
+                    deliveryRate: delivRate,
+                    freeDeliveryDistance: freeDelivDist || null,
+                    minOrder: minOrder || null,
+                    maxDistance: maxDistance || null,
+                    photos: photoUrls,
+                    photoUrl: photoUrls[0] || null,
+                    isActive: true,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                });
+
+                // 投稿成功 → ダッシュボードへ
+                window.location.href = '/pages/farmer/dashboard.html';
+
+            } catch (err) {
+                console.error(err);
+                errorMsg.textContent = i18next.t('post.errorSubmit');
+                errorMsg.classList.add('show');
+            } finally {
+                submitBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+
+</html>

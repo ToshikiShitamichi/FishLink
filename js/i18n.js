@@ -33,15 +33,22 @@ async function initI18n() {
 }
 
 // data-i18n 属性を持つ要素にテキストを適用
+// 記法: "key" → textContent, "[placeholder]key" → placeholder属性, "[html]key" → innerHTML
 function applyTranslations() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        const attr = el.getAttribute('data-i18n-attr'); // placeholder等の属性に適用する場合
-        const text = i18next.t(key);
-        if (attr) {
-            el.setAttribute(attr, text);
+        const raw = el.getAttribute('data-i18n');
+        const match = raw.match(/^\[(\w+)\](.+)$/);
+        if (match) {
+            const attr = match[1];
+            const key = match[2];
+            const text = i18next.t(key);
+            if (attr === 'html') {
+                el.innerHTML = text;
+            } else {
+                el.setAttribute(attr, text);
+            }
         } else {
-            el.textContent = text;
+            el.textContent = i18next.t(raw);
         }
     });
 }

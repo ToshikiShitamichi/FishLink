@@ -15,7 +15,10 @@
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
 
     <script>
+        let mapInitialized = false;
         function initMap() {
+            if (mapInitialized) return;
+            mapInitialized = true;
             const map = new google.maps.Map(document.getElementById('map'), {
                 center: { lat: 11.5564, lng: 104.9282 },
                 zoom: 7,
@@ -44,8 +47,22 @@
                     animation: google.maps.Animation.DROP,
                 });
 
-                // module側の変数に値を渡す
                 window.selectedLocation = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+                window.selectedProvince = null;
+
+                // 州名を逆ジオコーディングで取得（Promiseで管理し登録時にawaitできるようにする）
+                window.provincePromise = new Promise((resolve) => {
+                    const geocoder = new google.maps.Geocoder();
+                    geocoder.geocode({ location: window.selectedLocation, language: 'en' }, (results, status) => {
+                        if (status === 'OK' && results[0]) {
+                            const comp = results[0].address_components.find(c =>
+                                c.types.includes('administrative_area_level_1')
+                            );
+                            window.selectedProvince = comp?.long_name || null;
+                        }
+                        resolve(window.selectedProvince);
+                    });
+                });
 
                 const statusEl = document.getElementById('location-status');
                 statusEl.classList.add('set');
@@ -60,7 +77,7 @@
     </script>
 
     <!-- Google Maps API -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&callback=initMap"
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&callback=initMap&loading=async"
         async defer>
         </script>
 </head>
@@ -192,58 +209,13 @@
             navigator.serviceWorker.register('/sw.js').catch(console.error);
         }
 
-        // ログイン済みならダッシュボードへ
-        watchAuthState({ requireAuth: false, redirectIfLoggedIn: true });
+        // ログイン済みならダッシュボードへ（登録処理中はリダイレクトしない）
+        window.isRegistering = false;
+        watchAuthState({ requireAuth: false, redirectIfLoggedIn: true, skipRedirectIf: () => window.isRegistering });
 
         // i18n 初期化
         await initI18n();
         initLangSelector();
-
-        // ── Google Maps 初期化 ─────────────────────────────────────
-        window.initMap = function () {
-            const map = new google.maps.Map(document.getElementById('map'), {
-                center: CAMBODIA_CENTER,
-                zoom: 7,
-                mapTypeControl: false,
-                streetViewControl: false,
-                fullscreenControl: false,
-            });
-
-            // 現在地があれば中心に移動
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                        map.setZoom(13);
-                    },
-                    () => { }
-                );
-            }
-
-            let marker = null;
-
-            // 地図クリックでピンを置く
-            map.addListener('click', (e) => {
-                if (marker) marker.setMap(null);
-                marker = new google.maps.Marker({
-                    position: e.latLng,
-                    map,
-                    animation: google.maps.Animation.DROP,
-                });
-                selectedLocation = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-
-                // ステータス表示を更新
-                const statusEl = document.getElementById('location-status');
-                statusEl.classList.add('set');
-                document.getElementById('location-status-text').textContent = i18next.t('register.locationSet');
-            });
-        };
-
-        // Google Maps APIキーエラー時のフォールバック
-        window.gm_authFailure = function () {
-            document.getElementById('map').style.display = 'none';
-            document.getElementById('map-placeholder').style.display = 'flex';
-        };
 
         // ── 登録処理 ───────────────────────────────────────────────
         const registerBtn = document.getElementById('register-btn');
@@ -268,11 +240,22 @@
 
             registerBtn.disabled = true;
             loading.classList.add('show');
+            window.isRegistering = true;
 
             try {
-                await register({ loginId, displayName, password, role, location: window.selectedLocation, lang: langPref });
+                // 逆ジオコーディングの完了を待つ（最大3秒でタイムアウト）
+                if (window.provincePromise) {
+                    await Promise.race([
+                        window.provincePromise,
+                        new Promise(resolve => setTimeout(resolve, 3000))
+                    ]);
+                }
+
+                await register({ loginId, displayName, password, role, location: window.selectedLocation, province: window.selectedProvince, lang: langPref });
                 saveLang(langPref);
-                // 登録成功 → auth.js 内の redirectByRole でダッシュボードへ遷移
+                // 登録成功 → ダッシュボードへ遷移
+                const dest = role === 'farmer' ? '/pages/farmer/dashboard.html' : '/pages/restaurant/dashboard.html';
+                window.location.href = dest;
             } catch (err) {
                 showError(i18next.t(err.message) || i18next.t('error.registerFailed'));
                 registerBtn.disabled = false;

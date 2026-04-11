@@ -51,10 +51,10 @@ function redirectByRole(role) {
 // 各ページの先頭で呼び出す
 // requireAuth: true  → 未ログインならログイン画面へ
 // redirectIfLoggedIn: true → ログイン済みならダッシュボードへ（ログイン画面用）
-function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false } = {}) {
+function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRedirectIf = null } = {}) {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            if (redirectIfLoggedIn) {
+            if (redirectIfLoggedIn && !(skipRedirectIf && skipRedirectIf())) {
                 const snap = await getDoc(doc(db, 'users', user.uid));
                 if (snap.exists()) redirectByRole(snap.data().role);
             }
@@ -69,7 +69,7 @@ function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false } = {})
 }
 
 // ── 新規登録 ──────────────────────────────────────────────────
-async function register({ loginId, displayName, password, role, location, lang }) {
+async function register({ loginId, displayName, password, role, location, province, lang }) {
     const id = loginId.toLowerCase().trim();
 
     // バリデーション
@@ -99,6 +99,7 @@ async function register({ loginId, displayName, password, role, location, lang }
         displayName: displayName.trim(),
         role,
         location: { lat: location.lat, lng: location.lng },
+        province: province || null,
         lang: lang || 'km',
         fcmToken: null,
         avgRating: 0,
