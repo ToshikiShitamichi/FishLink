@@ -365,7 +365,12 @@
 
             // フィルター
             if (filterVal) {
-                items = items.filter(it => it.fishType === filterVal);
+                items = items.filter(it => {
+                    if (it.fishType === filterVal) return true;
+                    // 旧データ（日本語テキスト保存）との比較: fishTypeにコード名を含むか
+                    const label = i18next.t(`fish.${filterVal}`);
+                    return it.fishType === label || it.fishType.includes(label.split('/')[0]?.trim());
+                });
             }
 
             // ソート

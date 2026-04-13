@@ -749,7 +749,7 @@
                     createdAt: serverTimestamp(),
                 });
 
-                // 注文完了 → ダッシュボードに戻る
+                // 注文完了 → ダッシュボードに戻る（FCM通知はCloud Functionsが自動送信）
                 location.href = '/pages/restaurant/dashboard.html';
 
             } catch (err) {

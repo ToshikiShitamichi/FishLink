@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(gsutil --version)",
-      "Bash(gcloud --version)"
+      "Bash(gcloud --version)",
+      "Bash(npm --version)",
+      "Bash(npm install:*)"
     ]
   }
 }

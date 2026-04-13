@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .order-card {
+            border-radius: 16px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+        }
+
+        .order-card__img {
+            aspect-ratio: 4/3;
+            background: linear-gradient(135deg, #ded7ba, #f2ecd5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .order-card__img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .order-card__img-placeholder {
+            font-size: 64px;
+        }
+
+        .order-card__fish-label {
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text-sub);
+            padding: 10px 16px;
+        }
+
+        .order-card__section {
+            padding: 0 16px 14px;
+        }
+
+        .order-card__row {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text);
+            padding: 3px 0;
+        }
+
+        .order-card__divider {
+            border-top: 1px solid var(--color-border);
+            margin: 12px 0;
+        }
+
+        .order-card__link {
+            color: #0284c7;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        /* 料金行 */
+        .price-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 3px 0;
+        }
+
+        .price-line__note {
+            font-size: 12px;
+            color: var(--color-text-sub);
+            padding: 2px 0;
+        }
+
+        .receive-section {
+            border-top: 2px solid var(--color-text-sub);
+            padding-top: 12px;
+            margin-top: 8px;
+        }
+
+        .receive-label {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-text-sub);
+        }
+
+        .receive-amount {
+            font-size: 30px;
+            font-weight: 800;
+            color: #ea580c;
+            margin-top: 4px;
+        }
+
+        /* 承認/辞退 */
+        .response-section {
+            border-radius: 16px;
+            background: #f9fafb;
+            border: 1px solid var(--color-border);
+            padding: 16px;
+            margin: 0 16px 14px;
+        }
+
+        .response-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .radio-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--color-border);
+            flex-shrink: 0;
+        }
+
+        .radio-dot.active {
+            border-color: #f97316;
+            background: #fb923c;
+            box-shadow: 0 0 0 3px #fed7aa;
+        }
+
+        .submit-btn {
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            background: #f97316;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            padding: 14px;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+        }
+
+        /* 辞退理由 */
+        .decline-panel {
+            border-radius: 16px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            padding: 16px;
+            margin: 0 16px 14px;
+            display: none;
+        }
+
+        .decline-panel.show {
+            display: block;
+        }
+
+        .decline-reason {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            border-radius: 16px;
+            border: 1px solid var(--color-border);
+            background: #f9fafb;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .decline-reason.active {
+            border-color: #fdba74;
+            background: #fff7ed;
+            color: #9a3412;
+        }
+
+        .decline-detail {
+            border-radius: 16px;
+            border: 1px solid var(--color-border);
+            background: #f9fafb;
+            padding: 14px;
+            margin-top: 12px;
+        }
+
+        .decline-detail__label {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .decline-detail textarea {
+            width: 100%;
+            min-height: 80px;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .decline-detail__hint {
+            font-size: 12px;
+            color: var(--color-text-sub);
+            margin-top: 6px;
+        }
+
+        .decline-submit {
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            background: #1a1a1a;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            padding: 14px;
+            cursor: pointer;
+            margin-top: 14px;
+        }
+
+        .decline-submit:disabled {
+            opacity: 0.5;
+        }
+
+        /* 処理済みバッジ */
+        .status-badge {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+
+        .status-badge.approved {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .status-badge.declined {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-text-sub);
+        }
+
+        .empty-state__icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .empty-state__text {
+            font-size: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="page" style="padding-bottom:80px; max-width:480px; margin:0 auto;">
+
+        <!-- ヘッダー -->
+        <div class="page-header" style="align-items:center;">
+            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; color:inherit; flex:1;">FishLink</a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">EN</option>
+                <option value="ja">JA</option>
+            </select>
+        </div>
+
+        <div style="text-align:center; font-size:20px; font-weight:700; margin-bottom:16px;" data-i18n="orders.title">
+        </div>
+
+        <!-- 注文一覧 -->
+        <div id="orders-list"></div>
+
+    </div>
+
+    <!-- 下部ナビ -->
+    <nav class="bottom-nav">
+        <a href="/pages/farmer/dashboard.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon">🐟</span>
+            <span data-i18n="dashboard.listings"></span>
+        </a>
+        <a href="/pages/farmer/orders.html" class="bottom-nav__item active">
+            <span class="bottom-nav__icon">📩</span>
+            <span data-i18n="orders.navOrders"></span>
+        </a>
+        <a href="#" class="bottom-nav__item" id="logout-btn">
+            <span class="bottom-nav__icon">🚪</span>
+            <span data-i18n="nav.logout"></span>
+        </a>
+    </nav>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState, logout } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            collection, query, where, orderBy, getDocs, doc, getDoc, updateDoc
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logout();
+        });
+
+        // Haversine
+        function calcDistanceKm(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2
+                + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+                * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 300);
+        }
+
+        // ── データ取得 & 描画 ──
+        waitForUserData(async () => {
+            loading.classList.add('show');
+            try {
+                const uid = window.currentUser?.uid;
+                if (!uid) return;
+
+                const myLoc = window.currentUserData?.location;
+
+                // 自分宛ての注文を取得（pending を先に、それ以外も表示）
+                const q = query(
+                    collection(db, 'orders'),
+                    where('farmerId', '==', uid),
+                    orderBy('createdAt', 'desc')
+                );
+                const snap = await getDocs(q);
+
+                if (snap.empty) {
+                    document.getElementById('orders-list').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state__icon">📩</div>
+                            <div class="empty-state__text">${i18next.t('orders.empty')}</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // 注文データを整理（pendingを先頭に）
+                const orders = [];
+                for (const d of snap.docs) {
+                    const data = d.data();
+                    // listing情報
+                    let listingData = {};
+                    try {
+                        const lSnap = await getDoc(doc(db, 'fishListings', data.listingId));
+                        if (lSnap.exists()) listingData = lSnap.data();
+                    } catch (e) { }
+
+                    // レストラン情報
+                    let restData = {};
+                    try {
+                        const rSnap = await getDoc(doc(db, 'users', data.restaurantId));
+                        if (rSnap.exists()) restData = rSnap.data();
+                    } catch (e) { }
+
+                    let distKm = 0;
+                    if (myLoc && restData.location) {
+                        distKm = calcDistanceKm(myLoc.lat, myLoc.lng, restData.location.lat, restData.location.lng);
+                    }
+
+                    orders.push({ id: d.id, ...data, listingData, restData, distKm });
+                }
+
+                // pendingを先頭にソート
+                orders.sort((a, b) => {
+                    if (a.status === 'pending' && b.status !== 'pending') return -1;
+                    if (a.status !== 'pending' && b.status === 'pending') return 1;
+                    return 0;
+                });
+
+                renderOrders(orders);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+            }
+        });
+
+        function renderOrders(orders) {
+            const listEl = document.getElementById('orders-list');
+            listEl.innerHTML = '';
+
+            orders.forEach(order => {
+                const fishName = i18next.exists(`fish.${order.listingData.fishType}`)
+                    ? i18next.t(`fish.${order.listingData.fishType}`)
+                    : (order.listingData.fishType || '');
+                const size = order.listingData.size || '';
+                const price = order.listingData.price || 0;
+                const dist = Math.round(order.distKm);
+                const restName = order.restData.displayName || '';
+                const restRating = order.restData.avgRating || 0;
+                const restReviews = order.restData.reviewCount || 0;
+                const restProvince = order.restData.province || '';
+
+                const imgHtml = order.listingData.photoUrl
+                    ? `<img src="${order.listingData.photoUrl}" alt="${fishName}">`
+                    : `<span class="order-card__img-placeholder">🐟</span>`;
+
+                // 受取予定額計算
+                const fishTotal = order.fishPrice || (price * order.quantity);
+                const commission = Math.round(price * order.quantity * 0.05);
+                const deliveryFee = order.deliveryFee || 0;
+                const receiveAmount = fishTotal - commission + deliveryFee;
+
+                // ステータスバッジ
+                let statusBadge = '';
+                if (order.status === 'approved') {
+                    statusBadge = `<div class="status-badge approved">${i18next.t('orders.approved')}</div>`;
+                } else if (order.status === 'declined') {
+                    statusBadge = `<div class="status-badge declined">${i18next.t('orders.declined')}</div>`;
+                }
+
+                // Google Maps URL
+                const restLoc = order.restData.location;
+                const mapsUrl = restLoc ? `https://www.google.com/maps?q=${restLoc.lat},${restLoc.lng}` : '#';
+
+                const cardId = `order-${order.id}`;
+
+                let html = `
+                    <div class="order-card" id="${cardId}">
+                        <div class="order-card__img">${imgHtml}</div>
+                        <div class="order-card__fish-label">${fishName}（${size} head/kg）</div>
+
+                        <div class="order-card__section">
+                            ${statusBadge}
+                            <div class="order-card__row">${i18next.t('orders.unitPrice')} ${price.toLocaleString()} KHR/kg</div>
+                            <div class="order-card__row">${i18next.t('orders.quantity')} ${order.quantity} kg</div>
+                            <div class="order-card__row">${i18next.t('orders.gutProcessing')} ${order.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')}</div>
+                            <div class="order-card__row">${i18next.t('orders.deliveryDate')} ${order.deliveryDate}</div>
+                            <div class="order-card__row">${i18next.t('orders.deliveryTime')} ${order.deliveryTime}</div>
+
+                            <div class="order-card__divider"></div>
+
+                            <div class="order-card__row">${restName}　⭐ ${restRating.toFixed(1)}（${restReviews}）</div>
+                            <div class="order-card__row"><a class="order-card__link" href="#">${i18next.t('orders.viewReviews')}</a></div>
+                            <div class="order-card__row">📍 ${restProvince}　${dist} km</div>
+                            <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
+
+                            <div class="order-card__divider"></div>
+
+                            <div class="price-line"><span>${i18next.t('orders.fishTotal')}</span><span>${fishTotal.toLocaleString()} KHR</span></div>
+                            <div class="price-line"><span>${i18next.t('orders.commission')}</span><span>-${commission.toLocaleString()} KHR</span></div>
+                            <div class="price-line"><span>${i18next.t('orders.deliveryFee')}</span><span>+${deliveryFee.toLocaleString()} KHR</span></div>
+                            <div class="price-line__note">${i18next.t('orders.deliveryNote')}</div>
+
+                            <div class="receive-section">
+                                <div class="receive-label">${i18next.t('orders.receiveAmount')}</div>
+                                <div class="receive-amount">${receiveAmount.toLocaleString()} KHR</div>
+                            </div>
+                        </div>
+                `;
+
+                // pending の場合のみ承認/辞退UIを表示
+                if (order.status === 'pending') {
+                    html += `
+                        <div class="response-section" id="response-${order.id}">
+                            <div class="response-title">${i18next.t('orders.responseTitle')}</div>
+                            <div class="radio-option" data-action="approve" data-order="${order.id}">
+                                <div class="radio-dot active" id="dot-approve-${order.id}"></div>
+                                ${i18next.t('orders.approve')}
+                            </div>
+                            <div class="radio-option" data-action="decline" data-order="${order.id}">
+                                <div class="radio-dot" id="dot-decline-${order.id}"></div>
+                                ${i18next.t('orders.decline')}
+                            </div>
+                            <button class="submit-btn" data-order="${order.id}" data-restaurant="${order.restaurantId}">${i18next.t('orders.submit')}</button>
+                        </div>
+
+                        <div class="decline-panel" id="decline-panel-${order.id}">
+                            <div class="response-title">${i18next.t('orders.declineTitle')}</div>
+                            ${['declineReason1', 'declineReason2', 'declineReason3', 'declineReason4', 'declineReason5'].map((key, i) => `
+                                <div class="decline-reason" data-order="${order.id}" data-reason="${i18next.t('orders.' + key)}">
+                                    <div class="radio-dot"></div>
+                                    ${i18next.t('orders.' + key)}
+                                </div>
+                            `).join('')}
+                            <div class="decline-detail">
+                                <div class="decline-detail__label">${i18next.t('orders.declineDetail')}</div>
+                                <textarea id="decline-text-${order.id}" placeholder="${i18next.t('orders.declineDetailPlaceholder')}"></textarea>
+                                <div class="decline-detail__hint">${i18next.t('orders.declineDetailHint')}</div>
+                            </div>
+                            <button class="decline-submit" data-order="${order.id}" data-restaurant="${order.restaurantId}">${i18next.t('orders.submit')}</button>
+                        </div>
+                    `;
+                }
+
+                html += '</div>';
+                listEl.innerHTML += html;
+            });
+
+            // イベント登録
+            bindEvents(orders);
+        }
+
+        // ── イベント ──
+        const orderStates = {}; // { orderId: 'approve' | 'decline' }
+        const declineReasons = {}; // { orderId: 'reason text' }
+
+        function bindEvents(orders) {
+            // ラジオ切り替え
+            document.querySelectorAll('.radio-option').forEach(el => {
+                el.addEventListener('click', () => {
+                    const orderId = el.dataset.order;
+                    const action = el.dataset.action;
+                    orderStates[orderId] = action;
+
+                    document.getElementById(`dot-approve-${orderId}`).classList.toggle('active', action === 'approve');
+                    document.getElementById(`dot-decline-${orderId}`).classList.toggle('active', action === 'decline');
+                    document.getElementById(`decline-panel-${orderId}`).classList.toggle('show', action === 'decline');
+                });
+            });
+
+            // 辞退理由選択
+            document.querySelectorAll('.decline-reason').forEach(el => {
+                el.addEventListener('click', () => {
+                    const orderId = el.dataset.order;
+                    declineReasons[orderId] = el.dataset.reason;
+
+                    // 同じorder内の他のreasonをリセット
+                    document.querySelectorAll(`.decline-reason[data-order="${orderId}"]`).forEach(r => {
+                        r.classList.remove('active');
+                        r.querySelector('.radio-dot').classList.remove('active');
+                    });
+                    el.classList.add('active');
+                    el.querySelector('.radio-dot').classList.add('active');
+                });
+            });
+
+            // 承認ボタン
+            document.querySelectorAll('.submit-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const orderId = btn.dataset.order;
+                    const restaurantId = btn.dataset.restaurant;
+                    const action = orderStates[orderId] || 'approve';
+
+                    if (action === 'decline') return; // decline-panelのボタンで処理
+
+                    btn.disabled = true;
+                    loading.classList.add('show');
+
+                    try {
+                        await updateDoc(doc(db, 'orders', orderId), { status: 'approved' });
+                        // FCM通知はCloud Functionsが自動送信
+                        location.reload();
+                    } catch (err) {
+                        console.error(err);
+                    } finally {
+                        btn.disabled = false;
+                        loading.classList.remove('show');
+                    }
+                });
+            });
+
+            // 辞退送信ボタン
+            document.querySelectorAll('.decline-submit').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const orderId = btn.dataset.order;
+                    const restaurantId = btn.dataset.restaurant;
+                    const reason = declineReasons[orderId] || '';
+                    const detail = document.getElementById(`decline-text-${orderId}`)?.value?.trim() || '';
+                    const fullReason = detail ? `${reason}: ${detail}` : reason;
+
+                    btn.disabled = true;
+                    loading.classList.add('show');
+
+                    try {
+                        await updateDoc(doc(db, 'orders', orderId), {
+                            status: 'declined',
+                            declineReason: fullReason
+                        });
+                        // FCM通知はCloud Functionsが自動送信
+                        location.reload();
+                    } catch (err) {
+                        console.error(err);
+                    } finally {
+                        btn.disabled = false;
+                        loading.classList.remove('show');
+                    }
+                });
+            });
+        }
+
+        // 言語変更時
+        onLanguageChange(() => location.reload());
+    </script>
+
+</body>
+
+</html>

@@ -20,6 +20,10 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
 import { auth, db, toInternalEmail } from './firebase-config.js';
+import { getMessaging, getToken } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js';
+
+// FCM VAPIDキー（Firebaseコンソール → Cloud Messaging → ウェブプッシュ証明書）
+const VAPID_KEY = 'BHPaUqpvuOvpMUtxvVinoXFk0nZBiDMvPXlIBjeLqNesPPmBPt8sOGC2UZdSZLhTiv08ULuw4AMe-OXhIijp-k4'; // TODO: Firebaseコンソールから取得して設定
 
 // ── バリデーション ────────────────────────────────────────────
 // ログインIDは英数字とアンダースコアのみ・3〜20文字
@@ -68,6 +72,8 @@ function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRe
                 if (userLang && !localStorage.getItem('fishlink_lang')) {
                     localStorage.setItem('fishlink_lang', userLang);
                 }
+                // FCMトークン取得・保存（通知許可が得られた場合のみ）
+                requestFcmToken(user.uid);
             }
         } else {
             if (requireAuth) window.location.href = '/index.html';
@@ -142,11 +148,26 @@ async function logout() {
     window.location.href = '/index.html';
 }
 
-// ── FCMトークン更新 ──────────────────────────
-async function updateFcmToken(token) {
-    const user = auth.currentUser;
-    if (!user) return;
-    await updateDoc(doc(db, 'users', user.uid), { fcmToken: token });
+// ── FCMトークン取得・保存 ──────────────────────────
+async function requestFcmToken(uid) {
+    if (!VAPID_KEY) return; // VAPIDキー未設定時はスキップ
+    try {
+        // Service Worker が登録済みであることを確認
+        const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+        if (!registration) return;
+
+        const messaging = getMessaging();
+        const token = await getToken(messaging, {
+            vapidKey: VAPID_KEY,
+            serviceWorkerRegistration: registration
+        });
+        if (token) {
+            await updateDoc(doc(db, 'users', uid), { fcmToken: token });
+        }
+    } catch (err) {
+        // 通知権限が拒否された場合等
+        console.warn('FCM token request failed:', err.message);
+    }
 }
 
-export { watchAuthState, register, login, logout, updateFcmToken };
+export { watchAuthState, register, login, logout };
