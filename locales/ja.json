@@ -190,7 +190,11 @@
         "empty": "新しい注文はありません",
         "navOrders": "注文確認",
         "approved": "承認済み",
-        "declined": "辞退済み"
+        "declined": "辞退済み",
+        "approvedSectionClosed": "▶ 承認済み（{{count}}件）",
+        "approvedSectionOpen": "▼ 承認済み（{{count}}件）",
+        "declinedSectionClosed": "▶ 辞退済み（{{count}}件）",
+        "declinedSectionOpen": "▼ 辞退済み（{{count}}件）"
     },
     "fcm": {
         "newOrder": "新しい注文が届きました",

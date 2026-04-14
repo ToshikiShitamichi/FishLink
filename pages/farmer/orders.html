@@ -259,6 +259,33 @@
             color: #991b1b;
         }
 
+        .accordion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            margin: 16px 16px 0;
+            background: #f5f5f5;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-sub);
+            border: 1px solid var(--color-border);
+        }
+
+        .accordion-header:hover {
+            background: #eee;
+        }
+
+        .accordion-body {
+            display: none;
+        }
+
+        .accordion-body.open {
+            display: block;
+        }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -414,7 +441,8 @@
                     return 0;
                 });
 
-                renderOrders(orders);
+                allOrders = orders;
+                renderOrders();
             } catch (err) {
                 console.error(err);
             } finally {
@@ -422,120 +450,164 @@
             }
         });
 
-        function renderOrders(orders) {
+        let allOrders = [];
+
+        function renderOrderCard(order) {
+            const fishName = i18next.exists(`fish.${order.listingData.fishType}`)
+                ? i18next.t(`fish.${order.listingData.fishType}`)
+                : (order.listingData.fishType || '');
+            const size = order.listingData.size || '';
+            const price = order.listingData.price || 0;
+            const dist = Math.round(order.distKm);
+            const restName = order.restData.displayName || '';
+            const restRating = order.restData.avgRating || 0;
+            const restReviews = order.restData.reviewCount || 0;
+            const restProvince = order.restData.province || '';
+
+            const imgHtml = order.listingData.photoUrl
+                ? `<img src="${order.listingData.photoUrl}" alt="${fishName}">`
+                : `<span class="order-card__img-placeholder">🐟</span>`;
+
+            const fishTotal = order.fishPrice || (price * order.quantity);
+            const commission = Math.round(price * order.quantity * 0.05);
+            const deliveryFee = order.deliveryFee || 0;
+            const receiveAmount = fishTotal - commission + deliveryFee;
+
+            let statusBadge = '';
+            if (order.status === 'approved') {
+                statusBadge = `<div class="status-badge approved">${i18next.t('orders.approved')}</div>`;
+            } else if (order.status === 'declined') {
+                statusBadge = `<div class="status-badge declined">${i18next.t('orders.declined')}</div>`;
+            }
+
+            const restLoc = order.restData.location;
+            const mapsUrl = restLoc ? `https://www.google.com/maps?q=${restLoc.lat},${restLoc.lng}` : '#';
+
+            let html = `
+                <div class="order-card" id="order-${order.id}">
+                    <div class="order-card__img">${imgHtml}</div>
+                    <div class="order-card__fish-label">${fishName}（${size} head/kg）</div>
+                    <div class="order-card__section">
+                        ${statusBadge}
+                        <div class="order-card__row">${i18next.t('orders.unitPrice')} ${price.toLocaleString()} KHR/kg</div>
+                        <div class="order-card__row">${i18next.t('orders.quantity')} ${order.quantity} kg</div>
+                        <div class="order-card__row">${i18next.t('orders.gutProcessing')} ${order.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')}</div>
+                        <div class="order-card__row">${i18next.t('orders.deliveryDate')} ${order.deliveryDate}</div>
+                        <div class="order-card__row">${i18next.t('orders.deliveryTime')} ${order.deliveryTime}</div>
+                        <div class="order-card__divider"></div>
+                        <div class="order-card__row">${restName}　⭐ ${restRating.toFixed(1)}（${restReviews}）</div>
+                        <div class="order-card__row"><a class="order-card__link" href="#">${i18next.t('orders.viewReviews')}</a></div>
+                        <div class="order-card__row">📍 ${restProvince}　${dist} km</div>
+                        <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
+                        <div class="order-card__divider"></div>
+                        <div class="price-line"><span>${i18next.t('orders.fishTotal')}</span><span>${fishTotal.toLocaleString()} KHR</span></div>
+                        <div class="price-line"><span>${i18next.t('orders.commission')}</span><span>-${commission.toLocaleString()} KHR</span></div>
+                        <div class="price-line"><span>${i18next.t('orders.deliveryFee')}</span><span>+${deliveryFee.toLocaleString()} KHR</span></div>
+                        <div class="price-line__note">${i18next.t('orders.deliveryNote')}</div>
+                        <div class="receive-section">
+                            <div class="receive-label">${i18next.t('orders.receiveAmount')}</div>
+                            <div class="receive-amount">${receiveAmount.toLocaleString()} KHR</div>
+                        </div>
+                    </div>`;
+
+            if (order.status === 'pending') {
+                html += `
+                    <div class="response-section" id="response-${order.id}">
+                        <div class="response-title">${i18next.t('orders.responseTitle')}</div>
+                        <div class="radio-option" data-action="approve" data-order="${order.id}">
+                            <div class="radio-dot active" id="dot-approve-${order.id}"></div>
+                            ${i18next.t('orders.approve')}
+                        </div>
+                        <div class="radio-option" data-action="decline" data-order="${order.id}">
+                            <div class="radio-dot" id="dot-decline-${order.id}"></div>
+                            ${i18next.t('orders.decline')}
+                        </div>
+                        <button class="submit-btn" data-order="${order.id}" data-restaurant="${order.restaurantId}">${i18next.t('orders.submit')}</button>
+                    </div>
+                    <div class="decline-panel" id="decline-panel-${order.id}">
+                        <div class="response-title">${i18next.t('orders.declineTitle')}</div>
+                        ${['declineReason1', 'declineReason2', 'declineReason3', 'declineReason4', 'declineReason5'].map(key => `
+                            <div class="decline-reason" data-order="${order.id}" data-reason="${i18next.t('orders.' + key)}">
+                                <div class="radio-dot"></div>
+                                ${i18next.t('orders.' + key)}
+                            </div>
+                        `).join('')}
+                        <div class="decline-detail">
+                            <div class="decline-detail__label">${i18next.t('orders.declineDetail')}</div>
+                            <textarea id="decline-text-${order.id}" placeholder="${i18next.t('orders.declineDetailPlaceholder')}"></textarea>
+                            <div class="decline-detail__hint">${i18next.t('orders.declineDetailHint')}</div>
+                        </div>
+                        <button class="decline-submit" data-order="${order.id}" data-restaurant="${order.restaurantId}">${i18next.t('orders.submit')}</button>
+                    </div>`;
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function renderOrders() {
+            const pendingOrders = allOrders.filter(o => o.status === 'pending');
+            const approvedOrders = allOrders.filter(o => o.status === 'approved');
+            const declinedOrders = allOrders.filter(o => o.status === 'declined');
+
             const listEl = document.getElementById('orders-list');
             listEl.innerHTML = '';
 
-            orders.forEach(order => {
-                const fishName = i18next.exists(`fish.${order.listingData.fishType}`)
-                    ? i18next.t(`fish.${order.listingData.fishType}`)
-                    : (order.listingData.fishType || '');
-                const size = order.listingData.size || '';
-                const price = order.listingData.price || 0;
-                const dist = Math.round(order.distKm);
-                const restName = order.restData.displayName || '';
-                const restRating = order.restData.avgRating || 0;
-                const restReviews = order.restData.reviewCount || 0;
-                const restProvince = order.restData.province || '';
-
-                const imgHtml = order.listingData.photoUrl
-                    ? `<img src="${order.listingData.photoUrl}" alt="${fishName}">`
-                    : `<span class="order-card__img-placeholder">🐟</span>`;
-
-                // 受取予定額計算
-                const fishTotal = order.fishPrice || (price * order.quantity);
-                const commission = Math.round(price * order.quantity * 0.05);
-                const deliveryFee = order.deliveryFee || 0;
-                const receiveAmount = fishTotal - commission + deliveryFee;
-
-                // ステータスバッジ
-                let statusBadge = '';
-                if (order.status === 'approved') {
-                    statusBadge = `<div class="status-badge approved">${i18next.t('orders.approved')}</div>`;
-                } else if (order.status === 'declined') {
-                    statusBadge = `<div class="status-badge declined">${i18next.t('orders.declined')}</div>`;
-                }
-
-                // Google Maps URL
-                const restLoc = order.restData.location;
-                const mapsUrl = restLoc ? `https://www.google.com/maps?q=${restLoc.lat},${restLoc.lng}` : '#';
-
-                const cardId = `order-${order.id}`;
-
-                let html = `
-                    <div class="order-card" id="${cardId}">
-                        <div class="order-card__img">${imgHtml}</div>
-                        <div class="order-card__fish-label">${fishName}（${size} head/kg）</div>
-
-                        <div class="order-card__section">
-                            ${statusBadge}
-                            <div class="order-card__row">${i18next.t('orders.unitPrice')} ${price.toLocaleString()} KHR/kg</div>
-                            <div class="order-card__row">${i18next.t('orders.quantity')} ${order.quantity} kg</div>
-                            <div class="order-card__row">${i18next.t('orders.gutProcessing')} ${order.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')}</div>
-                            <div class="order-card__row">${i18next.t('orders.deliveryDate')} ${order.deliveryDate}</div>
-                            <div class="order-card__row">${i18next.t('orders.deliveryTime')} ${order.deliveryTime}</div>
-
-                            <div class="order-card__divider"></div>
-
-                            <div class="order-card__row">${restName}　⭐ ${restRating.toFixed(1)}（${restReviews}）</div>
-                            <div class="order-card__row"><a class="order-card__link" href="#">${i18next.t('orders.viewReviews')}</a></div>
-                            <div class="order-card__row">📍 ${restProvince}　${dist} km</div>
-                            <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
-
-                            <div class="order-card__divider"></div>
-
-                            <div class="price-line"><span>${i18next.t('orders.fishTotal')}</span><span>${fishTotal.toLocaleString()} KHR</span></div>
-                            <div class="price-line"><span>${i18next.t('orders.commission')}</span><span>-${commission.toLocaleString()} KHR</span></div>
-                            <div class="price-line"><span>${i18next.t('orders.deliveryFee')}</span><span>+${deliveryFee.toLocaleString()} KHR</span></div>
-                            <div class="price-line__note">${i18next.t('orders.deliveryNote')}</div>
-
-                            <div class="receive-section">
-                                <div class="receive-label">${i18next.t('orders.receiveAmount')}</div>
-                                <div class="receive-amount">${receiveAmount.toLocaleString()} KHR</div>
-                            </div>
-                        </div>
+            if (pendingOrders.length === 0 && approvedOrders.length === 0 && declinedOrders.length === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state__icon">📩</div>
+                        <div class="empty-state__text">${i18next.t('orders.empty')}</div>
+                    </div>
                 `;
+                return;
+            }
 
-                // pending の場合のみ承認/辞退UIを表示
-                if (order.status === 'pending') {
-                    html += `
-                        <div class="response-section" id="response-${order.id}">
-                            <div class="response-title">${i18next.t('orders.responseTitle')}</div>
-                            <div class="radio-option" data-action="approve" data-order="${order.id}">
-                                <div class="radio-dot active" id="dot-approve-${order.id}"></div>
-                                ${i18next.t('orders.approve')}
-                            </div>
-                            <div class="radio-option" data-action="decline" data-order="${order.id}">
-                                <div class="radio-dot" id="dot-decline-${order.id}"></div>
-                                ${i18next.t('orders.decline')}
-                            </div>
-                            <button class="submit-btn" data-order="${order.id}" data-restaurant="${order.restaurantId}">${i18next.t('orders.submit')}</button>
-                        </div>
-
-                        <div class="decline-panel" id="decline-panel-${order.id}">
-                            <div class="response-title">${i18next.t('orders.declineTitle')}</div>
-                            ${['declineReason1', 'declineReason2', 'declineReason3', 'declineReason4', 'declineReason5'].map((key, i) => `
-                                <div class="decline-reason" data-order="${order.id}" data-reason="${i18next.t('orders.' + key)}">
-                                    <div class="radio-dot"></div>
-                                    ${i18next.t('orders.' + key)}
-                                </div>
-                            `).join('')}
-                            <div class="decline-detail">
-                                <div class="decline-detail__label">${i18next.t('orders.declineDetail')}</div>
-                                <textarea id="decline-text-${order.id}" placeholder="${i18next.t('orders.declineDetailPlaceholder')}"></textarea>
-                                <div class="decline-detail__hint">${i18next.t('orders.declineDetailHint')}</div>
-                            </div>
-                            <button class="decline-submit" data-order="${order.id}" data-restaurant="${order.restaurantId}">${i18next.t('orders.submit')}</button>
-                        </div>
-                    `;
-                }
-
-                html += '</div>';
-                listEl.innerHTML += html;
+            // pending注文を描画
+            pendingOrders.forEach(order => {
+                listEl.innerHTML += renderOrderCard(order);
             });
 
-            // イベント登録
-            bindEvents(orders);
+            // 承認済みアコーディオン
+            if (approvedOrders.length > 0) {
+                let approvedHtml = approvedOrders.map(o => renderOrderCard(o)).join('');
+                listEl.innerHTML += `
+                    <div class="accordion-header" id="acc-approved">
+                        ${i18next.t('orders.approvedSectionClosed', { count: approvedOrders.length })}
+                    </div>
+                    <div class="accordion-body" id="acc-approved-body">${approvedHtml}</div>
+                `;
+            }
+
+            // 辞退済みアコーディオン
+            if (declinedOrders.length > 0) {
+                let declinedHtml = declinedOrders.map(o => renderOrderCard(o)).join('');
+                listEl.innerHTML += `
+                    <div class="accordion-header" id="acc-declined">
+                        ${i18next.t('orders.declinedSectionClosed', { count: declinedOrders.length })}
+                    </div>
+                    <div class="accordion-body" id="acc-declined-body">${declinedHtml}</div>
+                `;
+            }
+
+            // 全HTML追加後にイベント登録
+            bindEvents(pendingOrders);
+
+            // アコーディオンクリックイベント（▶/▼切替）
+            document.getElementById('acc-approved')?.addEventListener('click', function () {
+                const body = document.getElementById('acc-approved-body');
+                body.classList.toggle('open');
+                this.textContent = body.classList.contains('open')
+                    ? i18next.t('orders.approvedSectionOpen', { count: approvedOrders.length })
+                    : i18next.t('orders.approvedSectionClosed', { count: approvedOrders.length });
+            });
+            document.getElementById('acc-declined')?.addEventListener('click', function () {
+                const body = document.getElementById('acc-declined-body');
+                body.classList.toggle('open');
+                this.textContent = body.classList.contains('open')
+                    ? i18next.t('orders.declinedSectionOpen', { count: declinedOrders.length })
+                    : i18next.t('orders.declinedSectionClosed', { count: declinedOrders.length });
+            });
         }
 
         // ── イベント ──

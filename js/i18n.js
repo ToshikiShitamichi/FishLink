@@ -77,10 +77,8 @@ async function changeLanguage(lang) {
     // ページ固有の再描画コールバックを実行
     for (const cb of langChangeCallbacks) cb(lang);
 
-    // ログイン済みならFirestoreにも保存
-    if (auth.currentUser) {
-        await updateDoc(doc(db, 'users', auth.currentUser.uid), { lang });
-    }
+    // ※ Firestoreの lang は更新しない（画面上部パネルは一時切り替え）
+    // 次回ログイン時にFirestoreの初期登録言語に戻る
 }
 
 // 言語セレクターの初期値セットとイベント登録

@@ -67,11 +67,9 @@ function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRe
             const snap = await getDoc(doc(db, 'users', user.uid));
             if (snap.exists()) {
                 window.currentUserData = snap.data();
-                // Firestoreの言語設定をlocalStorageに同期（初回ログイン時に反映）
-                const userLang = snap.data().lang;
-                if (userLang && !localStorage.getItem('fishlink_lang')) {
-                    localStorage.setItem('fishlink_lang', userLang);
-                }
+                // Firestoreの言語設定をlocalStorageに同期
+                // ※画面上部パネルで切り替えた場合はlocalStorageが優先されるが、
+                //   次回ログイン時にFirestoreの値で再上書きされる
                 // FCMトークン取得・保存（通知許可が得られた場合のみ）
                 requestFcmToken(user.uid);
             }
@@ -150,11 +148,10 @@ async function logout() {
 
 // ── FCMトークン取得・保存 ──────────────────────────
 async function requestFcmToken(uid) {
-    if (!VAPID_KEY) return; // VAPIDキー未設定時はスキップ
+    if (!VAPID_KEY) return;
     try {
-        // Service Worker が登録済みであることを確認
-        const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
-        if (!registration) return;
+        // sw.js にFCM機能を統合済み
+        const registration = await navigator.serviceWorker.ready;
 
         const messaging = getMessaging();
         const token = await getToken(messaging, {
@@ -163,9 +160,9 @@ async function requestFcmToken(uid) {
         });
         if (token) {
             await updateDoc(doc(db, 'users', uid), { fcmToken: token });
+            console.log('FCM token saved');
         }
     } catch (err) {
-        // 通知権限が拒否された場合等
         console.warn('FCM token request failed:', err.message);
     }
 }

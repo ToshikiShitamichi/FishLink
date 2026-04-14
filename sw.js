@@ -1,6 +1,43 @@
-const CACHE_NAME = 'fishlink-v1';
+// ── FCM（Firebase Cloud Messaging）──────────────────────────
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
 
-// インストール時にキャッシュするファイル一覧
+const firebaseConfig = {
+    apiKey: "AIzaSyCVFFieinYqc3pqbigeQuhJ8KdVs6as9DU",
+    authDomain: "fishlink-t-shitamichi.firebaseapp.com",
+    projectId: "fishlink-t-shitamichi",
+    storageBucket: "fishlink-t-shitamichi.firebasestorage.app",
+    messagingSenderId: "54443009365",
+    appId: "1:54443009365:web:a531106e41c4397ace7bdc"
+};
+
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+// FCMが notification フィールド付きメッセージを受信すると
+// ブラウザが自動で通知を表示するため、onBackgroundMessage での
+// 手動 showNotification は不要（二重表示防止）
+messaging.onBackgroundMessage((payload) => {
+    console.log('FCM background message received:', payload);
+});
+
+// ── 通知タップ時 ────────────────────────────────────────────
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const url = event.notification.data?.url || '/';
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+            for (const client of windowClients) {
+                if (client.url === url && 'focus' in client) return client.focus();
+            }
+            if (clients.openWindow) return clients.openWindow(url);
+        })
+    );
+});
+
+// ── PWAキャッシュ ────────────────────────────────────────────
+const CACHE_NAME = 'fishlink-v2';
+
 const PRECACHE_URLS = [
     '/',
     '/index.html',
@@ -17,7 +54,6 @@ const PRECACHE_URLS = [
     '/icons/icon-512.png',
 ];
 
-// インストール：キャッシュに追加
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
@@ -25,7 +61,6 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-// アクティベート：古いキャッシュを削除
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keys) =>
@@ -39,11 +74,9 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// フェッチ：キャッシュファースト戦略
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Firebase・Google Maps はネットワーク優先（キャッシュしない）
     if (
         url.hostname.includes('firebase') ||
         url.hostname.includes('googleapis') ||
@@ -53,7 +86,6 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // それ以外はキャッシュファースト
     event.respondWith(
         caches.match(event.request).then((cached) => {
             if (cached) return cached;

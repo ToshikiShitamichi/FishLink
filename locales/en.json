@@ -190,7 +190,11 @@
         "empty": "No new orders",
         "navOrders": "Orders",
         "approved": "Approved",
-        "declined": "Declined"
+        "declined": "Declined",
+        "approvedSectionClosed": "▶ Approved ({{count}})",
+        "approvedSectionOpen": "▼ Approved ({{count}})",
+        "declinedSectionClosed": "▶ Declined ({{count}})",
+        "declinedSectionOpen": "▼ Declined ({{count}})"
     },
     "fcm": {
         "newOrder": "New order received",

@@ -190,7 +190,11 @@
         "empty": "មិនមានការបញ្ជាទិញថ្មី",
         "navOrders": "ការបញ្ជាទិញ",
         "approved": "បានយល់ព្រម",
-        "declined": "បានបដិសេធ"
+        "declined": "បានបដិសេធ",
+        "approvedSectionClosed": "▶ បានយល់ព្រម ({{count}})",
+        "approvedSectionOpen": "▼ បានយល់ព្រម ({{count}})",
+        "declinedSectionClosed": "▶ បានបដិសេធ ({{count}})",
+        "declinedSectionOpen": "▼ បានបដិសេធ ({{count}})"
     },
     "fcm": {
         "newOrder": "មានការបញ្ជាទិញថ្មី",
