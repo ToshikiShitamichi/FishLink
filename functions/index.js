@@ -9,19 +9,19 @@ const db = getFirestore();
 // ── 多言語メッセージ ──────────────────────────────────────────
 const MESSAGES = {
   newOrder: {
-    ja: { title: "新しい注文が届きました", body: "{{restaurant}}から{{qty}}kgの注文" },
-    en: { title: "New order received", body: "{{restaurant}} ordered {{qty}}kg" },
-    km: { title: "មានការបញ្ជាទិញថ្មី", body: "{{restaurant}} បានបញ្ជាទិញ {{qty}}kg" },
+    ja: { title: "新しい注文が届きました", body: "{{fish}} {{qty}}kg\n納品：{{date}} {{time}}\n注文を確認してください" },
+    en: { title: "New order received", body: "{{fish}} {{qty}}kg\nDelivery: {{date}} {{time}}\nPlease confirm the order" },
+    km: { title: "មានការបញ្ជាទិញថ្មី", body: "{{fish}} {{qty}}kg\nដឹកជញ្ជូន: {{date}} {{time}}\nសូមបញ្ជាក់ការបញ្ជាទិញ" },
   },
   approved: {
-    ja: { title: "注文が承認されました", body: "{{farmer}}が注文を承認しました" },
-    en: { title: "Order approved", body: "{{farmer}} approved your order" },
-    km: { title: "ការបញ្ជាទិញត្រូវបានយល់ព្រម", body: "{{farmer}} បានយល់ព្រមការបញ្ជាទិញ" },
+    ja: { title: "注文が承認されました", body: "{{fish}} {{qty}}kg\n納品：{{date}} {{time}}\n{{farmer}}" },
+    en: { title: "Order approved", body: "{{fish}} {{qty}}kg\nDelivery: {{date}} {{time}}\n{{farmer}}" },
+    km: { title: "ការបញ្ជាទិញត្រូវបានយល់ព្រម", body: "{{fish}} {{qty}}kg\nដឹកជញ្ជូន: {{date}} {{time}}\n{{farmer}}" },
   },
   declined: {
-    ja: { title: "注文が辞退されました", body: "{{farmer}}が注文を辞退しました" },
-    en: { title: "Order declined", body: "{{farmer}} declined your order" },
-    km: { title: "ការបញ្ជាទិញត្រូវបានបដិសេធ", body: "{{farmer}} បានបដិសេធការបញ្ជាទិញ" },
+    ja: { title: "注文が辞退されました", body: "{{fish}} {{qty}}kg\n{{farmer}}" },
+    en: { title: "Order declined", body: "{{fish}} {{qty}}kg\n{{farmer}}" },
+    km: { title: "ការបញ្ជាទិញត្រូវបានបដិសេធ", body: "{{fish}} {{qty}}kg\n{{farmer}}" },
   },
   statusUpdate: {
     ja: { title: "注文ステータスが更新されました", body: "ステータス: {{status}}" },
@@ -74,9 +74,19 @@ exports.onOrderCreated = onDocumentCreated(
     const restName = restSnap.data()?.displayName || "Restaurant";
     const lang = farmerData?.lang || "en";
 
+    // 魚種名を取得
+    let fishName = "";
+    if (order.listingId) {
+      const listingSnap = await db.doc(`fishListings/${order.listingId}`).get();
+      fishName = listingSnap.data()?.fishType || "";
+    }
+
     const { title, body } = getMessage("newOrder", lang, {
       restaurant: restName,
+      fish: fishName,
       qty: String(order.quantity),
+      date: order.deliveryDate || "",
+      time: order.deliveryTime || "",
     });
 
     await getMessaging().send({
@@ -128,8 +138,22 @@ exports.onOrderUpdated = onDocumentUpdated(
     const farmerName = farmerSnap.data()?.displayName || "Farmer";
     const lang = restData?.lang || "en";
 
+    // 魚種名を取得
+    let fishName = "";
+    if (after.listingId) {
+      const listingSnap = await db.doc(`fishListings/${after.listingId}`).get();
+      fishName = listingSnap.data()?.fishType || "";
+    }
+
     let type;
-    const vars = { farmer: farmerName, status: after.status };
+    const vars = {
+      farmer: farmerName,
+      fish: fishName,
+      qty: String(after.quantity || ""),
+      date: after.deliveryDate || "",
+      time: after.deliveryTime || "",
+      status: after.status,
+    };
 
     if (after.status === "approved") {
       type = "approved";
