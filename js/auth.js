@@ -80,7 +80,7 @@ function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRe
 }
 
 // ── 新規登録 ──────────────────────────────────────────────────
-async function register({ loginId, displayName, password, role, location, province, lang }) {
+async function register({ loginId, displayName, password, role, location, province, district, lang }) {
     const id = loginId.toLowerCase().trim();
 
     // バリデーション
@@ -111,6 +111,7 @@ async function register({ loginId, displayName, password, role, location, provin
         role,
         location: { lat: location.lat, lng: location.lng },
         province: province || null,
+        district: district || null,
         lang: lang || 'km',
         fcmToken: null,
         avgRating: 0,

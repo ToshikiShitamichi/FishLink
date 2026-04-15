@@ -67,7 +67,7 @@
         "caaLoading": "CAA参考価格を取得中... （位置情報を確認しています）",
         "sectionPrice": "販売価格（目安から調整）",
         "priceUnit": "魚単価",
-        "gutPrice": "内臓処理",
+        "gutPrice": "＋内臓処理",
         "optional": "任意",
         "priceResult": "販売価格",
         "priceHint": "※ 目安から調整可能",
@@ -88,16 +88,16 @@
         "errorSubmit": "投稿に失敗しました。もう一度お試しください。"
     },
     "fish": {
-        "striped_catfish": "ヒレナマズ（縞）/ Striped Catfish",
-        "clarias_catfish": "ヒレナマズ（クラリアス）/ Clarias Catfish",
-        "red_tilapia": "ティラピア（赤）/ Red Tilapia",
-        "nile_tilapia": "ティラピア（黒）/ Nile Tilapia",
-        "silver_barb": "シルバーバーブ / Silver Barb",
-        "common_carp_large": "コイ（大）/ Common Carp (Large)",
-        "common_carp_small": "コイ（小）/ Common Carp (Small)",
-        "featherback": "ナイフフィッシュ / Featherback",
-        "climbing_perch": "キノボリウオ / Climbing Perch",
-        "frog": "カエル / Frog",
+        "striped_catfish": "ヒレナマズ（縞）",
+        "clarias_catfish": "ヒレナマズ（クラリアス）",
+        "red_tilapia": "ティラピア（赤）",
+        "nile_tilapia": "ティラピア（黒）",
+        "silver_barb": "シルバーバーブ",
+        "common_carp_large": "コイ（大）",
+        "common_carp_small": "コイ（小）",
+        "featherback": "ナイフフィッシュ",
+        "climbing_perch": "キノボリウオ",
+        "frog": "カエル",
         "other": "その他（CAA参考価格なし）"
     },
     "error": {
@@ -212,7 +212,10 @@
         "active": "販売中",
         "inactive": "停止中",
         "size": "サイズ：",
-        "stock": "在庫："
+        "stock": "在庫：",
+        "pause": "出品停止",
+        "resume": "再開",
+        "outOfStock": "在庫切れ"
     },
     "nav": {
         "logout": "ログアウト"

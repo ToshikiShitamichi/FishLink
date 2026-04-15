@@ -67,7 +67,7 @@
         "caaLoading": "Loading CAA reference price... (checking location)",
         "sectionPrice": "Selling Price (adjust from guideline)",
         "priceUnit": "Unit Price",
-        "gutPrice": "Gutting Fee",
+        "gutPrice": "＋Gutting Fee",
         "optional": "Optional",
         "priceResult": "Selling Price",
         "priceHint": "※ Adjustable from guideline",
@@ -212,7 +212,10 @@
         "active": "Active",
         "inactive": "Inactive",
         "size": "Size: ",
-        "stock": "Stock: "
+        "stock": "Stock: ",
+        "pause": "Pause",
+        "resume": "Resume",
+        "outOfStock": "Out of Stock"
     },
     "nav": {
         "logout": "Logout"

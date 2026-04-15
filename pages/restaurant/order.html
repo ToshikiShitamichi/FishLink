@@ -421,11 +421,18 @@
                 <div class="date-box">
                     <div class="date-box__label" data-i18n="order.deliveryTime"></div>
                     <select id="delivery-time">
+                        <option value="6:00–7:00">6:00–7:00</option>
                         <option value="7:00–8:00">7:00–8:00</option>
                         <option value="8:00–9:00">8:00–9:00</option>
                         <option value="9:00–10:00">9:00–10:00</option>
                         <option value="10:00–11:00">10:00–11:00</option>
                         <option value="11:00–12:00">11:00–12:00</option>
+                        <option value="12:00–13:00">12:00–13:00</option>
+                        <option value="13:00–14:00">13:00–14:00</option>
+                        <option value="14:00–15:00">14:00–15:00</option>
+                        <option value="15:00–16:00">15:00–16:00</option>
+                        <option value="16:00–17:00">16:00–17:00</option>
+                        <option value="17:00–18:00">17:00–18:00</option>
                     </select>
                 </div>
             </div>
@@ -481,11 +488,11 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
-        // ── 納品日の選択肢生成（明日から7日間） ──
+        // ── 納品日の選択肢生成（当日から7日間） ──
         function populateDeliveryDates() {
             const sel = document.getElementById('delivery-date');
             const today = new Date();
-            for (let i = 1; i <= 7; i++) {
+            for (let i = 0; i <= 7; i++) {
                 const d = new Date(today);
                 d.setDate(d.getDate() + i);
                 const label = `${d.getMonth() + 1}/${d.getDate()}`;
@@ -503,7 +510,8 @@
         let distanceKm = 0;
         let quantity = 5;
         let gutProcessing = true;
-        let campaignActive = true; // 一旦常にキャンペーン割引を表示（運営画面実装後にFirestoreから取得）
+        let campaignActive = false;
+        let serviceRate = 0.05; // デフォルト5%、settings/campaignから取得
 
         function waitForUserData(callback) {
             if (window.currentUserData) { callback(); }
@@ -532,7 +540,11 @@
                 // キャンペーン取得
                 try {
                     const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
-                    if (campSnap.exists()) campaignActive = campSnap.data().active === true;
+                    if (campSnap.exists()) {
+                        const campData = campSnap.data();
+                        serviceRate = campData.serviceRate ?? 0.05;
+                        campaignActive = campData.campaignActive === true;
+                    }
                 } catch (e) { /* settings未作成時は無視 */ }
 
                 // 最低注文量をデフォルトに
@@ -561,38 +573,38 @@
                 ? `<img src="${listingData.photoUrl}" alt="${fishName}">`
                 : `<span class="fish-detail__img-placeholder">🐟</span>`;
 
-            const dist = Math.round(distanceKm);
+            const dist = Math.floor(distanceKm * 10) / 10;
             const rating = farmerData.avgRating || 0;
             const reviewCount = farmerData.reviewCount || 0;
             const province = farmerData.province || '';
+            const district = farmerData.district || '';
+            const placeText = province + (district ? ', ' + district : '');
             const stock = listingData.stock || 0;
             const size = listingData.size || '';
 
-            // 最短納品日時（明日 + 最初の時間帯）
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const deliveryDateLabel = `${tomorrow.getMonth() + 1}/${tomorrow.getDate()}`;
-            const earliestTime = '7:00–8:00';
-
-            // 在庫バッジ
-            const stockKey = stock > 0 ? 'order.stockAvailable' : 'order.stockUnavailable';
+            // 在庫表示
+            const stockText = stock > 0
+                ? i18next.t('restaurant.stock', { kg: stock })
+                : i18next.t('order.stockUnavailable');
             const stockClass = stock > 0 ? 'badge-stock' : 'badge-stock-out';
 
             document.getElementById('fish-detail').innerHTML = `
                 <div class="fish-detail__img">${imgHtml}</div>
                 <div class="fish-detail__body">
                     <div class="fish-detail__name">${fishName}（${size} head/kg）</div>
-                    <div class="fish-detail__price">${Number(listingData.price).toLocaleString()} KHR/kg</div>
+                    <div class="fish-detail__price">
+                        ${Number(listingData.price).toLocaleString()} KHR/kg
+                        ${listingData.gutPrice ? `<span style="font-size:13px; font-weight:500; color:var(--color-text-sub);">（${i18next.t('order.gutProcessing')} ${i18next.t('order.gutYes')} +${Number(listingData.gutPrice).toLocaleString()}）</span>` : ''}
+                    </div>
                     <div class="fish-detail__farmer">
                         <a href="#" style="text-decoration:none; color:inherit;">👨‍🌾 ${farmerData.displayName || ''}</a>
                         <span>⭐ ${rating.toFixed(1)}</span>
                         <span style="color:var(--color-text-sub);">(${reviewCount}${i18next.t('order.reviews')})</span>
                     </div>
-                    ${province ? `<div class="fish-detail__location">📍 ${province} · ${dist} km</div>` : ''}
+                    ${placeText ? `<div class="fish-detail__location">📍 ${placeText} · ${dist} km</div>` : ''}
                     <a href="#" class="fish-detail__comment-btn">${i18next.t('order.comment')}</a>
                     <div class="fish-detail__badges">
-                        <span class="badge-delivery">${i18next.t('order.deliveryBadge', { date: deliveryDateLabel, time: earliestTime })}</span>
-                        <span class="${stockClass}">${i18next.t(stockKey)}</span>
+                        <span class="${stockClass}">${stockText}</span>
                     </div>
                 </div>
             `;
@@ -646,14 +658,18 @@
             const unitPrice = gutProcessing ? price + gutPrice : price;
             const fishTotal = unitPrice * quantity;
 
-            // 送料
-            const chargeableDist = Math.max(0, distanceKm - freeDelivDist);
-            const deliveryFee = Math.round(deliveryRate * chargeableDist);
+            // 送料（距離は小数第一位切り捨て）
+            // freeDeliveryDistance以内は0、超過時は全距離分課金
+            const roundedDist = Math.floor(distanceKm * 10) / 10;
+            const deliveryFee = (freeDelivDist > 0 && roundedDist <= freeDelivDist)
+                ? 0
+                : Math.round(deliveryRate * roundedDist);
 
             // サービス料（5%）
-            const serviceFee = Math.round(price * quantity * 0.05);
+            // サービス料（settings/campaignのserviceRateを使用）
+            const serviceFee = Math.round(price * quantity * serviceRate);
 
-            // キャンペーン割引
+            // キャンペーン割引（campaignActive時はサービス料全額割引）
             const campaignDiscount = campaignActive ? serviceFee : 0;
 
             // 合計
@@ -717,6 +733,15 @@
                 return;
             }
 
+            // 在庫チェック（最新データを再取得）
+            const freshSnap = await getDoc(doc(db, 'fishListings', listingId));
+            const freshStock = freshSnap.data()?.stock || 0;
+            if (freshStock < quantity) {
+                errorMsg.textContent = i18next.t('order.errorStock', { stock: freshStock }) || `Stock insufficient (${freshStock}kg available)`;
+                errorMsg.classList.add('show');
+                return;
+            }
+
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
             loading.classList.add('show');
@@ -749,7 +774,8 @@
                     createdAt: serverTimestamp(),
                 });
 
-                // 注文完了 → ダッシュボードに戻る（FCM通知はCloud Functionsが自動送信）
+                // 注文完了 → ダッシュボードに戻る
+                // ※ 在庫減算・FCM通知はCloud Functionsが自動処理
                 location.href = '/pages/restaurant/dashboard.html';
 
             } catch (err) {

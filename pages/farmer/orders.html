@@ -458,11 +458,13 @@
                 : (order.listingData.fishType || '');
             const size = order.listingData.size || '';
             const price = order.listingData.price || 0;
-            const dist = Math.round(order.distKm);
+            const dist = Math.floor(order.distKm * 10) / 10;
             const restName = order.restData.displayName || '';
             const restRating = order.restData.avgRating || 0;
             const restReviews = order.restData.reviewCount || 0;
             const restProvince = order.restData.province || '';
+            const restDistrict = order.restData.district || '';
+            const restPlace = restProvince + (restDistrict ? ', ' + restDistrict : '');
 
             const imgHtml = order.listingData.photoUrl
                 ? `<img src="${order.listingData.photoUrl}" alt="${fishName}">`
@@ -497,7 +499,7 @@
                         <div class="order-card__divider"></div>
                         <div class="order-card__row">${restName}　⭐ ${restRating.toFixed(1)}（${restReviews}）</div>
                         <div class="order-card__row"><a class="order-card__link" href="#">${i18next.t('orders.viewReviews')}</a></div>
-                        <div class="order-card__row">📍 ${restProvince}　${dist} km</div>
+                        <div class="order-card__row">📍 ${restPlace}　${dist} km</div>
                         <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
                         <div class="order-card__divider"></div>
                         <div class="price-line"><span>${i18next.t('orders.fishTotal')}</span><span>${fishTotal.toLocaleString()} KHR</span></div>
@@ -537,7 +539,7 @@
                             <textarea id="decline-text-${order.id}" placeholder="${i18next.t('orders.declineDetailPlaceholder')}"></textarea>
                             <div class="decline-detail__hint">${i18next.t('orders.declineDetailHint')}</div>
                         </div>
-                        <button class="decline-submit" data-order="${order.id}" data-restaurant="${order.restaurantId}">${i18next.t('orders.submit')}</button>
+                        <button class="decline-submit" data-order="${order.id}" data-restaurant="${order.restaurantId}" data-listing="${order.listingId}" data-qty="${order.quantity}">${i18next.t('orders.submit')}</button>
                     </div>`;
             }
 
@@ -686,7 +688,8 @@
                             status: 'declined',
                             declineReason: fullReason
                         });
-                        // FCM通知はCloud Functionsが自動送信
+
+                        // 在庫復元・FCM通知はCloud Functionsが自動処理
                         location.reload();
                     } catch (err) {
                         console.error(err);

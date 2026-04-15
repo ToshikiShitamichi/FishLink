@@ -30,7 +30,7 @@
         .market-header__sub {
             font-size: 11px;
             color: var(--color-text-sub);
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
         .market-header__right {
@@ -303,7 +303,8 @@
         }
 
         // ── データ取得＆表示 ──────────────────────────────────────
-        let allItems = []; // キャッシュ
+        let allItems = [];
+        let serviceRate = 0.05;
 
         async function loadFishListings() {
             loading.classList.add('show');
@@ -313,6 +314,12 @@
                 if (!uid) return;
 
                 const myLoc = window.currentUserData?.location;
+
+                // サービス料率を取得
+                try {
+                    const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
+                    if (campSnap.exists()) serviceRate = campSnap.data().serviceRate ?? 0.05;
+                } catch (e) { }
 
                 // 全アクティブ投稿を取得
                 const q = query(
@@ -342,8 +349,9 @@
                         ...data,
                         farmerName: farmer.displayName || '',
                         farmerProvince: farmer.province || '',
+                        farmerDistrict: farmer.district || '',
                         distanceKm,
-                        displayPrice: Math.ceil(data.price * 1.05 / 100) * 100,
+                        displayPrice: Math.ceil(data.price * (1 + serviceRate) / 100) * 100,
                         createdAtMs: data.createdAt?.toMillis?.() || 0,
                     };
                 });
@@ -401,8 +409,8 @@
                     ? i18next.t(`fish.${item.fishType}`)
                     : item.fishType;
 
-                const distText = item.distanceKm !== null
-                    ? `${Math.round(item.distanceKm)} km`
+                const distText = (item.distanceKm !== null && item.distanceKm !== undefined)
+                    ? `${(Math.floor(item.distanceKm * 10) / 10)} km`
                     : '';
 
                 const imgHtml = item.photoUrl
@@ -417,13 +425,13 @@
                                 ${item.displayPrice.toLocaleString()} KHR/kg
                             </div>
                             <div class="fish-grid-card__stock">
-                                ${i18next.t('restaurant.stock', { kg: item.stock })}
+                                ${item.stock > 0 ? i18next.t('restaurant.stock', { kg: item.stock }) : i18next.t('dashboard.outOfStock')}
                             </div>
                         </div>
                         <div class="fish-grid-card__body">
                             <div class="fish-grid-card__name">${fishName}</div>
                             <div class="fish-grid-card__size">（${item.size} head/kg）</div>
-                            ${item.farmerProvince ? `<div class="fish-grid-card__place">📍 ${item.farmerProvince}</div>` : ''}
+                            ${item.farmerProvince ? `<div class="fish-grid-card__place">📍 ${item.farmerProvince}${item.farmerDistrict ? ', ' + item.farmerDistrict : ''}</div>` : ''}
                             ${distText ? `<div class="fish-grid-card__distance">${distText}</div>` : ''}
                         </div>
                     </a>

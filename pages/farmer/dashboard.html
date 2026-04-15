@@ -123,6 +123,25 @@
             font-size: 15px;
             margin-bottom: 20px;
         }
+
+        .toggle-btn {
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .toggle-pause {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .toggle-resume {
+            background: #f0fdf4;
+            color: #166534;
+        }
     </style>
 </head>
 
@@ -175,7 +194,7 @@
         import { watchAuthState, logout } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import {
-            collection, query, where, orderBy, getDocs
+            collection, query, where, orderBy, getDocs, doc, updateDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
         const loading = document.getElementById('loading');
@@ -241,6 +260,14 @@
                         ? `<span class="fish-card__badge badge-active">${i18next.t('dashboard.active')}</span>`
                         : `<span class="fish-card__badge badge-inactive">${i18next.t('dashboard.inactive')}</span>`;
 
+                    const stockText = d.stock <= 0
+                        ? i18next.t('dashboard.outOfStock')
+                        : `${i18next.t('dashboard.stock')}${d.stock} kg`;
+
+                    const toggleBtn = d.isActive
+                        ? `<button class="toggle-btn toggle-pause" data-id="${doc.id}">${i18next.t('dashboard.pause')}</button>`
+                        : `<button class="toggle-btn toggle-resume" data-id="${doc.id}">${i18next.t('dashboard.resume')}</button>`;
+
                     listEl.innerHTML += `
                         <div class="fish-card">
                             ${imgHtml}
@@ -249,14 +276,29 @@
                                     ${fishName} ${badgeHtml}
                                 </div>
                                 <div class="fish-card__meta">
-                                    ${i18next.t('dashboard.size')}${d.size} head/kg　${i18next.t('dashboard.stock')}${d.stock} kg
+                                    ${i18next.t('dashboard.size')}${d.size} head/kg　${stockText}
                                 </div>
                                 <div class="fish-card__price">
                                     ${Number(d.price).toLocaleString()} KHR/kg
+                                    ${d.gutPrice ? `<span style="font-size:12px; font-weight:500; color:var(--color-text-sub);"> + ${i18next.t('post.gutPrice')} ${Number(d.gutPrice).toLocaleString()} KHR/kg</span>` : ''}
                                 </div>
+                                <div style="margin-top:8px;">${toggleBtn}</div>
                             </div>
                         </div>
                     `;
+                });
+
+                // 停止/再開ボタンのイベント登録
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const listingId = btn.dataset.id;
+                        const isPause = btn.classList.contains('toggle-pause');
+                        btn.disabled = true;
+                        await updateDoc(doc(db, 'fishListings', listingId), {
+                            isActive: !isPause
+                        });
+                        loadMyFishListings();
+                    });
                 });
 
             } catch (err) {

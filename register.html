@@ -27,38 +27,32 @@
                 fullscreenControl: false,
             });
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                        map.setZoom(13);
-                    },
-                    () => { }
-                );
-            }
-
             let marker = null;
 
-            map.addListener('click', (e) => {
+            // ピン設置＋ジオコーディング（共通処理）
+            function placePin(latLng) {
                 if (marker) marker.setMap(null);
                 marker = new google.maps.Marker({
-                    position: e.latLng,
+                    position: latLng,
                     map,
                     animation: google.maps.Animation.DROP,
                 });
 
-                window.selectedLocation = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+                window.selectedLocation = { lat: latLng.lat(), lng: latLng.lng() };
                 window.selectedProvince = null;
 
-                // 州名を逆ジオコーディングで取得（Promiseで管理し登録時にawaitできるようにする）
                 window.provincePromise = new Promise((resolve) => {
                     const geocoder = new google.maps.Geocoder();
                     geocoder.geocode({ location: window.selectedLocation, language: 'en' }, (results, status) => {
                         if (status === 'OK' && results[0]) {
-                            const comp = results[0].address_components.find(c =>
+                            const prov = results[0].address_components.find(c =>
                                 c.types.includes('administrative_area_level_1')
                             );
-                            window.selectedProvince = comp?.long_name || null;
+                            window.selectedProvince = prov?.long_name || null;
+                            const dist = results[0].address_components.find(c =>
+                                c.types.includes('administrative_area_level_2')
+                            );
+                            window.selectedDistrict = dist?.long_name || null;
                         }
                         resolve(window.selectedProvince);
                     });
@@ -67,7 +61,23 @@
                 const statusEl = document.getElementById('location-status');
                 statusEl.classList.add('set');
                 document.getElementById('location-status-text').textContent = '位置情報を設定済み';
-            });
+            }
+
+            // 地図クリックでピン設置
+            map.addListener('click', (e) => placePin(e.latLng));
+
+            // 現在地を取得して自動ピン設置
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const latLng = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+                        map.setCenter(latLng);
+                        map.setZoom(13);
+                        placePin(latLng);
+                    },
+                    () => { }
+                );
+            }
         }
 
         window.gm_authFailure = function () {
@@ -251,7 +261,7 @@
                     ]);
                 }
 
-                await register({ loginId, displayName, password, role, location: window.selectedLocation, province: window.selectedProvince, lang: langPref });
+                await register({ loginId, displayName, password, role, location: window.selectedLocation, province: window.selectedProvince, district: window.selectedDistrict, lang: langPref });
                 saveLang(langPref);
                 // 登録成功 → ダッシュボードへ遷移
                 const dest = role === 'farmer' ? '/pages/farmer/dashboard.html' : '/pages/restaurant/dashboard.html';

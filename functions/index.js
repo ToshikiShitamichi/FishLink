@@ -51,6 +51,16 @@ exports.onOrderCreated = onDocumentCreated(
   },
   async (event) => {
     const order = event.data.data();
+    const admin = require("firebase-admin/firestore");
+
+    // 在庫減算（注文数量分）
+    if (order.listingId && order.quantity > 0) {
+      const listingRef = db.doc(`fishListings/${order.listingId}`);
+      await listingRef.update({
+        stock: admin.FieldValue.increment(-order.quantity),
+      });
+      console.log("Stock decremented:", order.listingId, "-", order.quantity);
+    }
 
     const farmerSnap = await db.doc(`users/${order.farmerId}`).get();
     const farmerData = farmerSnap.data();
@@ -94,6 +104,17 @@ exports.onOrderUpdated = onDocumentUpdated(
     const after = event.data.after.data();
 
     if (before.status === after.status) return;
+
+    const admin = require("firebase-admin/firestore");
+
+    // 辞退時：在庫復元
+    if (after.status === "declined" && after.listingId && after.quantity > 0) {
+      const listingRef = db.doc(`fishListings/${after.listingId}`);
+      await listingRef.update({
+        stock: admin.FieldValue.increment(after.quantity),
+      });
+      console.log("Stock restored:", after.listingId, "+", after.quantity);
+    }
 
     const restSnap = await db.doc(`users/${after.restaurantId}`).get();
     const restData = restSnap.data();
