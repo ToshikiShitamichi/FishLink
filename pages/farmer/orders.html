@@ -490,6 +490,19 @@
                 ? `<img src="${order.listingData.photoUrl}" alt="${fishName}">`
                 : `<span class="order-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">set_meal</span></span>`;
 
+            // 承認期限（注文時刻 + 1時間）
+            let deadlineHtml = '';
+            if (order.status === 'pending' && order.createdAt) {
+                const createdMs = order.createdAt.toMillis ? order.createdAt.toMillis() : 0;
+                const deadlineMs = createdMs + 60 * 60 * 1000;
+                const deadlineDate = new Date(deadlineMs);
+                const timeStr = `${deadlineDate.getHours()}:${String(deadlineDate.getMinutes()).padStart(2, '0')}`;
+                const isExpired = Date.now() > deadlineMs;
+                deadlineHtml = isExpired
+                    ? `<div style="color:#ef4444; font-weight:700; font-size:14px; margin-bottom:8px;">${i18next.t('orders.expired')}</div>`
+                    : `<div style="color:#ea580c; font-weight:600; font-size:13px; margin-bottom:8px;">${i18next.t('orders.deadline', { time: timeStr })}</div>`;
+            }
+
             const fishTotal = order.fishPrice || (price * order.quantity);
             const commission = Math.round(price * order.quantity * 0.05);
             const deliveryFee = order.deliveryFee || 0;
@@ -511,6 +524,7 @@
                     <div class="order-card__fish-label">${fishName}（${size} head/kg）</div>
                     <div class="order-card__section">
                         ${statusBadge}
+                        ${deadlineHtml}
                         <div class="order-card__row">${i18next.t('orders.unitPrice')} ${price.toLocaleString()} KHR/kg</div>
                         <div class="order-card__row">${i18next.t('orders.quantity')} ${order.quantity} kg</div>
                         <div class="order-card__row">${i18next.t('orders.gutProcessing')} ${order.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')}</div>
@@ -541,14 +555,14 @@
                     <div class="response-section" id="response-${order.id}">
                         <div class="response-title">${i18next.t('orders.responseTitle')}</div>
                         <div class="radio-option" data-action="approve" data-order="${order.id}">
-                            <div class="radio-dot active" id="dot-approve-${order.id}"></div>
+                            <div class="radio-dot" id="dot-approve-${order.id}"></div>
                             ${i18next.t('orders.approve')}
                         </div>
                         <div class="radio-option" data-action="decline" data-order="${order.id}">
                             <div class="radio-dot" id="dot-decline-${order.id}"></div>
                             ${i18next.t('orders.decline')}
                         </div>
-                        <button class="submit-btn" data-order="${order.id}" data-restaurant="${order.restaurantId}">${i18next.t('orders.submit')}</button>
+                        <button class="submit-btn" data-order="${order.id}" data-restaurant="${order.restaurantId}" style="display:none;">${i18next.t('orders.submit')}</button>
                     </div>
                     <div class="decline-panel" id="decline-panel-${order.id}">
                         <div class="response-title">${i18next.t('orders.declineTitle')}</div>
@@ -664,6 +678,10 @@
                     document.getElementById(`dot-approve-${orderId}`).classList.toggle('active', action === 'approve');
                     document.getElementById(`dot-decline-${orderId}`).classList.toggle('active', action === 'decline');
                     document.getElementById(`decline-panel-${orderId}`).classList.toggle('show', action === 'decline');
+
+                    // 承認選択時のみ送信ボタン表示、辞退時は非表示（辞退パネル内にボタンあり）
+                    const submitBtn = document.querySelector(`.submit-btn[data-order="${orderId}"]`);
+                    if (submitBtn) submitBtn.style.display = action === 'approve' ? 'block' : 'none';
                 });
             });
 

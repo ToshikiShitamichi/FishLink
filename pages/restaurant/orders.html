@@ -36,6 +36,20 @@
         .order-item__meta { font-size: 13px; color: var(--color-text-sub); line-height: 1.6; }
         .empty-state { text-align: center; padding: 60px 20px; color: var(--color-text-sub); }
         .empty-state__icon { font-size: 48px; margin-bottom: 12px; }
+        .section-label {
+            padding: 10px 16px; font-size: 14px; font-weight: 700; color: var(--color-text);
+            background: #f0fdf4; border-left: 4px solid #16a34a;
+            margin: 12px 0 8px; border-radius: 0 8px 8px 0;
+        }
+        .section-label.pending-label { background: #fef3c7; border-left-color: #f59e0b; }
+        .section-label.delivered-label { background: #ede9fe; border-left-color: #8b5cf6; }
+        .accordion-header {
+            padding: 12px 16px; margin: 12px 0 0; background: #f5f5f5; border-radius: 12px;
+            cursor: pointer; font-size: 14px; font-weight: 600; color: var(--color-text-sub);
+            border: 1px solid var(--color-border);
+        }
+        .accordion-body { display: none; }
+        .accordion-body.open { display: block; }
     </style>
 </head>
 
@@ -93,6 +107,27 @@
             else setTimeout(() => waitForUserData(cb), 300);
         }
 
+        function renderOrderItem(d, order, fishName) {
+            const statusKey = `delivery.${order.status}`;
+            const statusText = i18next.exists(statusKey) ? i18next.t(statusKey) : order.status;
+            const stClass = `st-${order.status}`;
+            const canTrack = ['approved', 'preparing', 'delivering', 'delivered'].includes(order.status);
+            const href = canTrack ? `/pages/restaurant/delivery.html?id=${d.id}` : '#';
+
+            return `
+                <a class="order-item" href="${href}">
+                    <div class="order-item__top">
+                        <div class="order-item__fish">${fishName}</div>
+                        <div class="order-item__status ${stClass}">${statusText}</div>
+                    </div>
+                    <div class="order-item__meta">
+                        ${order.quantity}kg · ${order.deliveryDate || ''} ${order.deliveryTime || ''}
+                        ${canTrack ? `<br>${i18next.t('delivery.goTracking')}` : ''}
+                    </div>
+                </a>
+            `;
+        }
+
         async function loadOrders() {
             loading.classList.add('show');
             try {
@@ -112,38 +147,80 @@
                     return;
                 }
 
-                listEl.innerHTML = '';
+                // 注文データ取得
+                const allOrders = [];
                 for (const d of snap.docs) {
                     const order = d.data();
-
                     let fishName = '';
                     if (order.listingId) {
                         const lSnap = await getDoc(doc(db, 'fishListings', order.listingId));
                         const lt = lSnap.data();
                         fishName = i18next.exists(`fish.${lt?.fishType}`) ? i18next.t(`fish.${lt.fishType}`) : (lt?.fishType || '');
                     }
-
-                    const statusKey = `delivery.${order.status}`;
-                    const statusText = i18next.exists(statusKey) ? i18next.t(statusKey) : order.status;
-                    const stClass = `st-${order.status}`;
-
-                    // 配送確認に遷移できるステータス
-                    const canTrack = ['approved', 'preparing', 'delivering', 'delivered'].includes(order.status);
-                    const href = canTrack ? `/pages/restaurant/delivery.html?id=${d.id}` : '#';
-
-                    listEl.innerHTML += `
-                        <a class="order-item" href="${href}">
-                            <div class="order-item__top">
-                                <div class="order-item__fish">${fishName}</div>
-                                <div class="order-item__status ${stClass}">${statusText}</div>
-                            </div>
-                            <div class="order-item__meta">
-                                ${order.quantity}kg · ${order.deliveryDate || ''} ${order.deliveryTime || ''}
-                                ${canTrack ? `<br>${i18next.t('delivery.goTracking')}` : ''}
-                            </div>
-                        </a>
-                    `;
+                    allOrders.push({ d, order, fishName });
                 }
+
+                // グループ分け
+                const delivered = allOrders.filter(o => o.order.status === 'delivered');
+                const active = allOrders.filter(o => ['approved', 'preparing', 'delivering'].includes(o.order.status));
+                const pending = allOrders.filter(o => o.order.status === 'pending');
+                const completed = allOrders.filter(o => o.order.status === 'completed');
+                const declined = allOrders.filter(o => o.order.status === 'declined');
+
+                listEl.innerHTML = '';
+
+                // ① 配送完了（受取待ち）
+                if (delivered.length > 0) {
+                    listEl.innerHTML += `<div class="section-label delivered-label">${i18next.t('delivery.delivered')}（${delivered.length}）</div>`;
+                    delivered.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName); });
+                }
+
+                // ② 対応中（準備中・配送中）
+                if (active.length > 0) {
+                    listEl.innerHTML += `<div class="section-label">${i18next.t('orders.activeSection', { count: active.length })}</div>`;
+                    active.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName); });
+                }
+
+                // ③ 承認待ち
+                if (pending.length > 0) {
+                    listEl.innerHTML += `<div class="section-label pending-label">${i18next.t('orders.pendingSection', { count: pending.length })}</div>`;
+                    pending.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName); });
+                }
+
+                // ④ 完了済み（トグル）
+                if (completed.length > 0) {
+                    listEl.innerHTML += `
+                        <div class="accordion-header" id="acc-completed">${i18next.t('orders.approvedSectionClosed', { count: completed.length })}</div>
+                        <div class="accordion-body" id="acc-completed-body">
+                            ${completed.map(o => renderOrderItem(o.d, o.order, o.fishName)).join('')}
+                        </div>`;
+                }
+
+                // ⑤ 辞退済み（トグル）
+                if (declined.length > 0) {
+                    listEl.innerHTML += `
+                        <div class="accordion-header" id="acc-declined">${i18next.t('orders.declinedSectionClosed', { count: declined.length })}</div>
+                        <div class="accordion-body" id="acc-declined-body">
+                            ${declined.map(o => renderOrderItem(o.d, o.order, o.fishName)).join('')}
+                        </div>`;
+                }
+
+                // アコーディオンイベント
+                document.getElementById('acc-completed')?.addEventListener('click', function() {
+                    const body = document.getElementById('acc-completed-body');
+                    body.classList.toggle('open');
+                    this.textContent = body.classList.contains('open')
+                        ? i18next.t('orders.approvedSectionOpen', { count: completed.length })
+                        : i18next.t('orders.approvedSectionClosed', { count: completed.length });
+                });
+                document.getElementById('acc-declined')?.addEventListener('click', function() {
+                    const body = document.getElementById('acc-declined-body');
+                    body.classList.toggle('open');
+                    this.textContent = body.classList.contains('open')
+                        ? i18next.t('orders.declinedSectionOpen', { count: declined.length })
+                        : i18next.t('orders.declinedSectionClosed', { count: declined.length });
+                });
+
             } catch (err) {
                 console.error(err);
             } finally {

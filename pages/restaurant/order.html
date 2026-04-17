@@ -49,18 +49,53 @@
             margin: 0 16px 16px;
         }
 
-        .fish-detail__img {
-            height: 200px;
+        .fish-detail__carousel {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fish-detail__slides {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .fish-detail__slides::-webkit-scrollbar { display: none; }
+
+        .fish-detail__slide {
+            flex: 0 0 100%;
+            scroll-snap-align: start;
+            height: 250px;
             background: linear-gradient(135deg, #d6d3d1, #f5f5f4);
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .fish-detail__img img {
+        .fish-detail__slide img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .fish-detail__dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 0;
+        }
+
+        .fish-detail__dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #d1d5db;
+        }
+
+        .fish-detail__dot.active {
+            background: #1a1a1a;
         }
 
         .fish-detail__img-placeholder {
@@ -367,6 +402,7 @@
             cursor: not-allowed;
         }
     </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer></script>
 </head>
 
 <body>
@@ -396,6 +432,7 @@
                 <div>
                     <div class="qty-label" data-i18n="order.quantity"></div>
                     <div class="qty-value" id="qty-label">5 kg</div>
+                    <div class="qty-label" id="min-order-hint" style="color:#ea580c; margin-top:2px; display:none;"></div>
                 </div>
                 <div class="qty-controls">
                     <button class="qty-btn" id="qty-minus">−</button>
@@ -449,7 +486,7 @@
         <div class="order-footer__info">
             <div>
                 <div class="order-footer__amount-label" data-i18n="order.paymentAmount"></div>
-                <div class="order-footer__amount" id="footer-total">0 riel</div>
+                <div class="order-footer__amount" id="footer-total">0 KHR</div>
             </div>
             <div class="order-footer__note" data-i18n="order.autoCalcNote"></div>
         </div>
@@ -478,8 +515,29 @@
         const listingId = params.get('id');
         if (!listingId) { location.href = '/pages/restaurant/dashboard.html'; }
 
-        // ── Haversine距離計算 ──
-        function calcDistanceKm(lat1, lng1, lat2, lng2) {
+        // ── 道路距離計算（Google Maps Distance Matrix） ──
+        async function calcRoadDistance(lat1, lng1, lat2, lng2) {
+            return new Promise((resolve) => {
+                if (typeof google === 'undefined' || !google.maps) {
+                    resolve(haversine(lat1, lng1, lat2, lng2));
+                    return;
+                }
+                const service = new google.maps.DistanceMatrixService();
+                service.getDistanceMatrix({
+                    origins: [new google.maps.LatLng(lat1, lng1)],
+                    destinations: [new google.maps.LatLng(lat2, lng2)],
+                    travelMode: google.maps.TravelMode.DRIVING,
+                }, (response, status) => {
+                    if (status === 'OK' && response.rows[0]?.elements[0]?.status === 'OK') {
+                        resolve(response.rows[0].elements[0].distance.value / 1000);
+                    } else {
+                        resolve(haversine(lat1, lng1, lat2, lng2));
+                    }
+                });
+            });
+        }
+
+        function haversine(lat1, lng1, lat2, lng2) {
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLng = (lng2 - lng1) * Math.PI / 180;
@@ -535,7 +593,7 @@
                 const myLoc = window.currentUserData?.location;
                 const farmerLoc = farmerData.location;
                 if (myLoc && farmerLoc) {
-                    distanceKm = calcDistanceKm(myLoc.lat, myLoc.lng, farmerLoc.lat, farmerLoc.lng);
+                    distanceKm = await calcRoadDistance(myLoc.lat, myLoc.lng, farmerLoc.lat, farmerLoc.lng);
                 }
 
                 // キャンペーン取得
@@ -551,6 +609,13 @@
                 // 最低注文量をデフォルトに
                 if (listingData.minOrder && listingData.minOrder > quantity) {
                     quantity = listingData.minOrder;
+                }
+
+                // 最低注文量ヒント表示
+                if (listingData.minOrder && listingData.minOrder > 0) {
+                    const hint = document.getElementById('min-order-hint');
+                    hint.textContent = i18next.t('order.minOrderHint', { min: listingData.minOrder });
+                    hint.style.display = 'block';
                 }
 
                 renderFishDetail();
@@ -570,9 +635,10 @@
                 ? i18next.t(`fish.${listingData.fishType}`)
                 : listingData.fishType;
 
-            const imgHtml = listingData.photoUrl
-                ? `<img src="${listingData.photoUrl}" alt="${fishName}">`
-                : `<span class="fish-detail__img-placeholder"><span class="material-symbols-outlined" style="font-size:64px;">set_meal</span></span>`;
+            // 写真カルーセル（photos配列 or photoUrl単体）
+            const photos = listingData.photos?.length > 0
+                ? listingData.photos
+                : (listingData.photoUrl ? [listingData.photoUrl] : []);
 
             const dist = Math.floor(distanceKm * 10) / 10;
             const rating = farmerData.avgRating || 0;
@@ -589,13 +655,27 @@
                 : i18next.t('order.stockUnavailable');
             const stockClass = stock > 0 ? 'badge-stock' : 'badge-stock-out';
 
+            let carouselHtml;
+            if (photos.length === 0) {
+                carouselHtml = `<div class="fish-detail__slide"><span class="fish-detail__img-placeholder"><span class="material-symbols-outlined" style="font-size:64px;">set_meal</span></span></div>`;
+            } else if (photos.length === 1) {
+                carouselHtml = `<div class="fish-detail__slide"><img src="${photos[0]}" alt="${fishName}"></div>`;
+            } else {
+                const slides = photos.map(url => `<div class="fish-detail__slide"><img src="${url}" alt="${fishName}"></div>`).join('');
+                const dots = photos.map((_, i) => `<div class="fish-detail__dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`).join('');
+                carouselHtml = `
+                    <div class="fish-detail__slides" id="photo-slides">${slides}</div>
+                    <div class="fish-detail__dots" id="photo-dots">${dots}</div>
+                `;
+            }
+
             document.getElementById('fish-detail').innerHTML = `
-                <div class="fish-detail__img">${imgHtml}</div>
+                <div class="fish-detail__carousel">${carouselHtml}</div>
                 <div class="fish-detail__body">
                     <div class="fish-detail__name">${fishName}（${size} head/kg）</div>
                     <div class="fish-detail__price">
-                        ${Number(listingData.price).toLocaleString()} KHR/kg
-                        ${listingData.gutPrice ? `<span style="font-size:13px; font-weight:500; color:var(--color-text-sub);">（${i18next.t('order.gutProcessing')} ${i18next.t('order.gutYes')} +${Number(listingData.gutPrice).toLocaleString()}）</span>` : ''}
+                        ${Number((listingData.price || 0) + (listingData.gutPrice || 0)).toLocaleString()} KHR/kg
+                        ${listingData.gutPrice ? `<span style="font-size:13px; font-weight:500; color:var(--color-text-sub);">（${i18next.t('order.priceGutIncluded')}）</span>` : ''}
                     </div>
                     <div class="fish-detail__farmer">
                         <a href="#" style="text-decoration:none; color:inherit;"><span class="material-symbols-outlined" style="font-size:16px;">person</span> ${farmerData.displayName || ''}</a>
@@ -609,6 +689,27 @@
                     </div>
                 </div>
             `;
+
+            // カルーセルドット連動
+            const slidesEl = document.getElementById('photo-slides');
+            const dotsEl = document.getElementById('photo-dots');
+            if (slidesEl && dotsEl) {
+                slidesEl.addEventListener('scroll', () => {
+                    const scrollLeft = slidesEl.scrollLeft;
+                    const slideWidth = slidesEl.offsetWidth;
+                    const activeIndex = Math.round(scrollLeft / slideWidth);
+                    dotsEl.querySelectorAll('.fish-detail__dot').forEach((dot, i) => {
+                        dot.classList.toggle('active', i === activeIndex);
+                    });
+                });
+                // ドットタップでスライド
+                dotsEl.querySelectorAll('.fish-detail__dot').forEach(dot => {
+                    dot.addEventListener('click', () => {
+                        const index = parseInt(dot.dataset.index);
+                        slidesEl.scrollTo({ left: index * slidesEl.offsetWidth, behavior: 'smooth' });
+                    });
+                });
+            }
         }
 
         // ── 内臓処理ボタン ──
@@ -639,7 +740,8 @@
         }
 
         document.getElementById('qty-minus').addEventListener('click', () => {
-            if (quantity > 1) { quantity--; updateQuantityDisplay(); recalculate(); }
+            const minQty = listingData?.minOrder || 1;
+            if (quantity > minQty) { quantity--; updateQuantityDisplay(); recalculate(); }
         });
 
         document.getElementById('qty-plus').addEventListener('click', () => {
@@ -667,8 +769,8 @@
                 : Math.round(deliveryRate * roundedDist);
 
             // サービス料（5%）
-            // サービス料（settings/campaignのserviceRateを使用）
-            const serviceFee = Math.round(price * quantity * serviceRate);
+            // サービス料（内臓処理込みの魚代ベース）
+            const serviceFee = Math.round(fishTotal * serviceRate);
 
             // キャンペーン割引（campaignActive時はサービス料全額割引）
             const campaignDiscount = campaignActive ? serviceFee : 0;
@@ -684,15 +786,15 @@
             let html = `
                 <div class="price-line">
                     <span class="price-line__label">${fishLabel}</span>
-                    <span class="price-line__value">${fishTotal.toLocaleString()} riel</span>
+                    <span class="price-line__value">${fishTotal.toLocaleString()} KHR</span>
                 </div>
                 <div class="price-line">
                     <span class="price-line__label" data-i18n="order.deliveryFee">${i18next.t('order.deliveryFee')}</span>
-                    <span class="price-line__value">${deliveryFee.toLocaleString()} riel</span>
+                    <span class="price-line__value">${deliveryFee.toLocaleString()} KHR</span>
                 </div>
                 <div class="price-line">
                     <span class="price-line__label" data-i18n="order.serviceFee">${i18next.t('order.serviceFee')}</span>
-                    <span class="price-line__value">${serviceFee.toLocaleString()} riel</span>
+                    <span class="price-line__value">${serviceFee.toLocaleString()} KHR</span>
                 </div>
             `;
 
@@ -700,7 +802,7 @@
                 html += `
                     <div class="price-line">
                         <span class="price-line__label">${i18next.t('order.campaignDiscount')}</span>
-                        <span class="price-line__value discount">-${campaignDiscount.toLocaleString()} riel</span>
+                        <span class="price-line__value discount">-${campaignDiscount.toLocaleString()} KHR</span>
                     </div>
                 `;
             }
@@ -708,12 +810,12 @@
             html += `
                 <div class="price-total">
                     <span class="price-total__label">${i18next.t('order.total')}</span>
-                    <span class="price-total__value">${total.toLocaleString()} riel</span>
+                    <span class="price-total__value">${total.toLocaleString()} KHR</span>
                 </div>
             `;
 
             document.getElementById('price-breakdown').innerHTML = html;
-            document.getElementById('footer-total').textContent = `${total.toLocaleString()} riel`;
+            document.getElementById('footer-total').textContent = `${total.toLocaleString()} KHR`;
 
             // 注文データをwindowに保持
             window._orderCalc = { fishTotal, deliveryFee, serviceFee, campaignDiscount, total };
@@ -768,7 +870,7 @@
                     serviceFee: calc.serviceFee,
                     campaignDiscount: calc.campaignDiscount,
                     totalAmount: calc.total,
-                    farmerReceiveAmount: calc.fishTotal + calc.deliveryFee - Math.round(listingData.price * quantity * 0.05),
+                    farmerReceiveAmount: calc.fishTotal + calc.deliveryFee - Math.round(calc.fishTotal * 0.05),
                     status: 'pending',
                     declineReason: null,
                     paymentStatus: 'pending',

@@ -187,6 +187,7 @@
             font-size: 15px;
         }
     </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer></script>
 </head>
 
 <body>
@@ -308,8 +309,40 @@
         document.getElementById('sort-select').addEventListener('change', renderList);
         document.getElementById('filter-select').addEventListener('change', renderList);
 
-        // ── 距離計算（Haversine） ──────────────────────────────────
-        function calcDistanceKm(lat1, lng1, lat2, lng2) {
+        // ── 距離計算（Google Maps Distance Matrix） ──────────────
+        // 起点1つ、終点を複数渡して道路距離（km）を取得
+        async function calcRoadDistances(originLat, originLng, destinations) {
+            return new Promise((resolve) => {
+                if (typeof google === 'undefined' || !google.maps) {
+                    resolve(destinations.map(d => haversine(originLat, originLng, d.lat, d.lng)));
+                    return;
+                }
+                const service = new google.maps.DistanceMatrixService();
+                const origin = new google.maps.LatLng(originLat, originLng);
+                const dests = destinations.map(d => new google.maps.LatLng(d.lat, d.lng));
+
+                service.getDistanceMatrix({
+                    origins: [origin],
+                    destinations: dests,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                    unitSystem: google.maps.UnitSystem.METRIC,
+                }, (response, status) => {
+                    if (status !== 'OK' || !response.rows[0]) {
+                        resolve(destinations.map(d => haversine(originLat, originLng, d.lat, d.lng)));
+                        return;
+                    }
+                    const results = response.rows[0].elements.map((el, idx) => {
+                        if (el.status === 'OK') return el.distance.value / 1000;
+                        // 道路距離不可の場合は直線距離にフォールバック
+                        const dest = destinations[idx];
+                        return haversine(originLat, originLng, dest.lat, dest.lng);
+                    });
+                    resolve(results);
+                });
+            });
+        }
+
+        function haversine(lat1, lng1, lat2, lng2) {
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLng = (lng2 - lng1) * Math.PI / 180;
@@ -353,22 +386,46 @@
                     if (fSnap.exists()) farmerMap[fid] = fSnap.data();
                 }
 
-                allItems = snap.docs.map(d => {
+                // 道路距離を一括計算
+                const itemsRaw = snap.docs.map(d => {
                     const data = d.data();
                     const farmer = farmerMap[data.farmerId] || {};
-                    const farmerLoc = farmer.location;
-                    let distanceKm = null;
-                    if (myLoc && farmerLoc) {
-                        distanceKm = calcDistanceKm(myLoc.lat, myLoc.lng, farmerLoc.lat, farmerLoc.lng);
+                    return { id: d.id, data, farmer };
+                });
+
+                // 位置ありのアイテムだけ距離計算
+                const locsWithIndex = [];
+                itemsRaw.forEach((it, i) => {
+                    if (it.farmer.location) locsWithIndex.push({ index: i, loc: it.farmer.location });
+                });
+
+                const distanceMap = {}; // index → km
+                if (myLoc && locsWithIndex.length > 0) {
+                    try {
+                        const locs = locsWithIndex.map(l => l.loc);
+                        const results = await calcRoadDistances(myLoc.lat, myLoc.lng, locs);
+                        locsWithIndex.forEach((l, j) => { distanceMap[l.index] = results[j]; });
+                    } catch (e) {
+                        console.warn('Distance Matrix failed, using haversine:', e);
+                        locsWithIndex.forEach(l => {
+                            distanceMap[l.index] = haversine(myLoc.lat, myLoc.lng, l.loc.lat, l.loc.lng);
+                        });
                     }
+                }
+
+                allItems = itemsRaw.map((it, i) => {
+                    const data = it.data;
+                    const farmer = it.farmer;
+                    const distanceKm = distanceMap[i] ?? null;
                     return {
-                        id: d.id,
+                        id: it.id,
                         ...data,
                         farmerName: farmer.displayName || '',
                         farmerProvince: farmer.province || '',
                         farmerDistrict: farmer.district || '',
                         distanceKm,
-                        displayPrice: Math.ceil(data.price * (1 + serviceRate) / 100) * 100,
+                        maxDistance: data.maxDistance || null,
+                        displayPrice: (data.price || 0) + (data.gutPrice || 0),
                         createdAtMs: data.createdAt?.toMillis?.() || 0,
                     };
                 });
@@ -388,7 +445,14 @@
 
             let items = [...allItems];
 
-            // フィルター
+            // 配送可能距離超過を非表示（距離不明はフォールバックで表示）
+            items = items.filter(it => {
+                if (it.distanceKm === null) return true; // 距離計算できない場合は一旦表示
+                if (it.maxDistance && it.distanceKm > it.maxDistance) return false;
+                return true;
+            });
+
+            // 魚種フィルター
             if (filterVal) {
                 items = items.filter(it => {
                     if (it.fishType === filterVal) return true;
@@ -488,7 +552,21 @@
             });
         }
 
-        setTimeout(() => { loadFishListings(); watchOrderBadge(); }, 800);
+        // Google Maps API & currentUserData の両方を待ってから実行
+        function waitForGoogleMaps(cb) {
+            if (typeof google !== 'undefined' && google.maps) { cb(); }
+            else { setTimeout(() => waitForGoogleMaps(cb), 200); }
+        }
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) { cb(); }
+            else { setTimeout(() => waitForUserData(cb), 200); }
+        }
+
+        waitForUserData(() => {
+            watchOrderBadge();
+            waitForGoogleMaps(() => loadFishListings());
+        });
     </script>
 
 </body>

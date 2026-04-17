@@ -1,4 +1,5 @@
 const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { initializeApp } = require("firebase-admin/app");
 const { getMessaging } = require("firebase-admin/messaging");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -9,9 +10,9 @@ const db = getFirestore();
 // ── 多言語メッセージ ──────────────────────────────────────────
 const MESSAGES = {
   newOrder: {
-    ja: { title: "新しい注文が届きました", body: "{{fish}} {{qty}}kg\n納品：{{date}} {{time}}\n注文を確認してください" },
-    en: { title: "New order received", body: "{{fish}} {{qty}}kg\nDelivery: {{date}} {{time}}\nPlease confirm the order" },
-    km: { title: "មានការបញ្ជាទិញថ្មី", body: "{{fish}} {{qty}}kg\nដឹកជញ្ជូន: {{date}} {{time}}\nសូមបញ្ជាក់ការបញ្ជាទិញ" },
+    ja: { title: "新しい注文が届きました", body: "{{fish}} {{qty}}kg\n納品：{{date}} {{time}}\n1時間以内に承認してください\n承認期限：{{deadline}}" },
+    en: { title: "New order received", body: "{{fish}} {{qty}}kg\nDelivery: {{date}} {{time}}\nPlease approve within 1 hour\nDeadline: {{deadline}}" },
+    km: { title: "មានការបញ្ជាទិញថ្មី", body: "{{fish}} {{qty}}kg\nដឹកជញ្ជូន: {{date}} {{time}}\nសូមយល់ព្រមក្នុង 1 ម៉ោង\nកំណត់ពេល: {{deadline}}" },
   },
   approved: {
     ja: { title: "注文が承認されました", body: "{{fish}} {{qty}}kg\n納品：{{date}} {{time}}\n{{farmer}}" },
@@ -81,12 +82,19 @@ exports.onOrderCreated = onDocumentCreated(
       fishName = listingSnap.data()?.fishType || "";
     }
 
+    // 承認期限（注文時刻 + 1時間、カンボジア時間UTC+7で表示）
+    const createdAt = order.createdAt?.toDate?.() || new Date();
+    const deadlineDate = new Date(createdAt.getTime() + 60 * 60 * 1000);
+    const khmDeadline = new Date(deadlineDate.getTime() + 7 * 60 * 60 * 1000);
+    const deadline = `${khmDeadline.getUTCHours()}:${String(khmDeadline.getUTCMinutes()).padStart(2, '0')}`;
+
     const { title, body } = getMessage("newOrder", lang, {
       restaurant: restName,
       fish: fishName,
       qty: String(order.quantity),
       date: order.deliveryDate || "",
       time: order.deliveryTime || "",
+      deadline,
     });
 
     await getMessaging().send({
@@ -242,5 +250,44 @@ exports.onMessageCreated = onDocumentCreated(
     });
 
     console.log("Chat notification sent to:", toUid);
+  }
+);
+
+// ── 期限切れ注文の自動辞退（5分ごとにチェック） ──────────────
+exports.autoDeclineExpiredOrders = onSchedule(
+  { schedule: "every 5 minutes", region: "asia-southeast1" },
+  async () => {
+    const admin = require("firebase-admin/firestore");
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    const snap = await db.collection("orders")
+      .where("status", "==", "pending")
+      .where("createdAt", "<", oneHourAgo)
+      .get();
+
+    if (snap.empty) {
+      console.log("No expired orders");
+      return;
+    }
+
+    for (const doc of snap.docs) {
+      const order = doc.data();
+
+      // ステータスを declined に変更
+      await doc.ref.update({
+        status: "declined",
+        declineReason: "承認期限切れによる自動辞退",
+      });
+
+      // 在庫復元
+      if (order.listingId && order.quantity > 0) {
+        await db.doc(`fishListings/${order.listingId}`).update({
+          stock: admin.FieldValue.increment(order.quantity),
+        });
+      }
+
+      console.log("Auto-declined expired order:", doc.id);
+    }
+    // ※ status変更によりonOrderUpdatedがトリガーされ、レストランに通知が自動送信される
   }
 );
