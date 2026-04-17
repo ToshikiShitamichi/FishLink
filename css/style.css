@@ -1,5 +1,25 @@
 /* Google Fonts: Noto Sans Khmer（クメール語）*/
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;700&family=Noto+Sans:wght@400;500;700&display=swap');
+/* Material Symbols は各HTMLの <head> で <link> タグで読み込む */
+
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    vertical-align: middle;
+    width: 24px;
+    height: 24px;
+    overflow: hidden;
+}
 
 /* ── リセット & ベース ─────────────────────────────────────── */
 *,
@@ -103,6 +123,27 @@ body[data-lang="km"] {
 /* ── フォームパーツ ──────────────────────────────────────────── */
 .form-group {
     margin-bottom: 16px;
+}
+
+.password-wrap {
+    position: relative;
+}
+
+.password-wrap input {
+    padding-right: 44px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-sub);
+    padding: 4px;
+    line-height: 1;
 }
 
 label {

@@ -9,6 +9,7 @@
 
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
 
     <!-- i18next -->
@@ -113,7 +114,7 @@
 
             <!-- ロゴ（小） -->
             <div style="text-align:center; margin-bottom:24px;">
-                <div style="font-size:32px;">🐟</div>
+                <div><span class="material-symbols-outlined" style="font-size:40px; color:var(--color-primary);">set_meal</span></div>
                 <div style="font-size:22px; font-weight:700; color:var(--color-primary);">FishLink</div>
             </div>
 
@@ -141,7 +142,10 @@
                 <!-- ③ パスワード -->
                 <div class="form-group">
                     <label for="password" data-i18n="register.password"></label>
-                    <input type="password" id="password" autocomplete="new-password">
+                    <div class="password-wrap">
+                        <input type="password" id="password" autocomplete="new-password">
+                        <button type="button" class="password-toggle" id="pw-toggle"><span class="material-symbols-outlined">visibility</span></button>
+                    </div>
                 </div>
 
                 <div class="divider"></div>
@@ -153,14 +157,14 @@
                         <div class="role-option">
                             <input type="radio" name="role" id="role-farmer" value="farmer">
                             <label class="role-option__label" for="role-farmer">
-                                <span class="role-option__icon">🎣</span>
+                                <span class="role-option__icon"><span class="material-symbols-outlined">agriculture</span></span>
                                 <span class="role-option__text" data-i18n="register.roleFarmer"></span>
                             </label>
                         </div>
                         <div class="role-option">
                             <input type="radio" name="role" id="role-restaurant" value="restaurant">
                             <label class="role-option__label" for="role-restaurant">
-                                <span class="role-option__icon">🍽️</span>
+                                <span class="role-option__icon"><span class="material-symbols-outlined">restaurant</span></span>
                                 <span class="role-option__text" data-i18n="register.roleRestaurant"></span>
                             </label>
                         </div>
@@ -176,7 +180,7 @@
                     <div class="map-container">
                         <div id="map"></div>
                         <div class="map-placeholder" id="map-placeholder" style="display:none;">
-                            <span style="font-size:28px;">🗺️</span>
+                            <span class="material-symbols-outlined" style="font-size:28px;">map</span>
                             <span>Google Maps API key required</span>
                         </div>
                     </div>
@@ -237,6 +241,16 @@
             errorMsg.classList.add('show');
             errorMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
+
+        // パスワード表示/非表示
+        document.getElementById('pw-toggle').addEventListener('click', () => {
+            const pw = document.getElementById('password');
+            const isHidden = pw.type === 'password';
+            pw.type = isHidden ? 'text' : 'password';
+            document.getElementById('pw-toggle').innerHTML = isHidden
+                ? '<span class="material-symbols-outlined">visibility_off</span>'
+                : '<span class="material-symbols-outlined">visibility</span>';
+        });
 
         registerBtn.addEventListener('click', async () => {
             errorMsg.classList.remove('show');

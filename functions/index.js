@@ -95,6 +95,7 @@ exports.onOrderCreated = onDocumentCreated(
         title, body,
         type: "new_order",
         orderId: event.params.orderId,
+        url: "/pages/farmer/orders.html",
       },
     });
 
@@ -165,12 +166,18 @@ exports.onOrderUpdated = onDocumentUpdated(
 
     const { title, body } = getMessage(type, lang, vars);
 
+    // 配送系ステータスならチャット画面へ、それ以外は注文一覧へ
+    const url = ["preparing", "delivering", "delivered"].includes(after.status)
+      ? `/pages/restaurant/delivery.html?id=${event.params.orderId}`
+      : "/pages/restaurant/orders.html";
+
     await getMessaging().send({
       token,
       data: {
         title, body,
         type: `order_${after.status}`,
         orderId: event.params.orderId,
+        url,
       },
     });
 
@@ -218,12 +225,19 @@ exports.onMessageCreated = onDocumentCreated(
     const title = tmpl.title;
     const body = tmpl.body.replace("{{sender}}", senderName).replace("{{text}}", truncText);
 
+    // 送信先のロールに応じてチャット画面URLを決定
+    const isFarmer = toUid === order.farmerId;
+    const chatUrl = isFarmer
+      ? `/pages/farmer/delivery.html?id=${orderId}`
+      : `/pages/restaurant/delivery.html?id=${orderId}`;
+
     await getMessaging().send({
       token,
       data: {
         title, body,
         type: "chat_message",
         orderId,
+        url: chatUrl,
       },
     });
 

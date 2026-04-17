@@ -19,32 +19,38 @@ messaging.onBackgroundMessage((payload) => {
     const title = payload.data?.title || 'FishLink';
     const body = payload.data?.body || '';
     const orderId = payload.data?.orderId || '';
+    const url = payload.data?.url || '/';
     self.registration.showNotification(title, {
         body,
         icon: '/icons/icon-192.png',
         badge: '/icons/icon-192.png',
         tag: `fishlink-${orderId}`,
-        data: { url: orderId ? `/pages/farmer/orders.html` : '/' },
+        data: { url },
     });
 });
 
 // ── 通知タップ時 ────────────────────────────────────────────
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const url = event.notification.data?.url || '/';
+    const targetUrl = event.notification.data?.url || '/';
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+            // 既存タブがあればそこにナビゲート
             for (const client of windowClients) {
-                if (client.url === url && 'focus' in client) return client.focus();
+                if ('navigate' in client) {
+                    client.navigate(targetUrl);
+                    return client.focus();
+                }
             }
-            if (clients.openWindow) return clients.openWindow(url);
+            // なければ新しいウィンドウを開く
+            if (clients.openWindow) return clients.openWindow(targetUrl);
         })
     );
 });
 
 // ── PWAキャッシュ ────────────────────────────────────────────
 // デプロイごとにバージョンを上げる → 旧キャッシュが自動削除される
-const CACHE_NAME = 'fishlink-v3';
+const CACHE_NAME = 'fishlink-v4';
 
 const PRECACHE_URLS = [
     '/',

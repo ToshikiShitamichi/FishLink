@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#0d6e4c">
     <title>FishLink</title>
     <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
     <style>
@@ -187,16 +188,16 @@
     <!-- 下部ナビ -->
     <nav class="bottom-nav">
         <a href="/pages/farmer/dashboard.html" class="bottom-nav__item active">
-            <span class="bottom-nav__icon">🐟</span>
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">set_meal</span></span>
             <span data-i18n="dashboard.listings"></span>
         </a>
         <a href="/pages/farmer/orders.html" class="bottom-nav__item" style="position:relative;">
-            <span class="bottom-nav__icon">📩</span>
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">inbox</span></span>
             <span class="nav-badge" id="order-badge" style="display:none;"></span>
             <span data-i18n="orders.navOrders"></span>
         </a>
         <a href="#" class="bottom-nav__item" id="logout-btn">
-            <span class="bottom-nav__icon">🚪</span>
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">logout</span></span>
             <span data-i18n="nav.logout"></span>
         </a>
     </nav>
@@ -245,7 +246,7 @@
                 if (snap.empty) {
                     listEl.innerHTML = `
                         <div class="empty-state">
-                            <div class="empty-state__icon">🐟</div>
+                            <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">set_meal</span></div>
                             <div class="empty-state__text">${i18next.t('dashboard.empty')}</div>
                             <a href="/pages/farmer/post.html" class="btn btn-primary" style="display:inline-block; width:auto; padding:12px 24px;">
                                 ${i18next.t('dashboard.emptyAction')}
@@ -266,7 +267,7 @@
 
                     const imgHtml = d.photoUrl
                         ? `<img class="fish-card__img" src="${d.photoUrl}" alt="${fishName}">`
-                        : `<div class="fish-card__img-placeholder">🐟</div>`;
+                        : `<div class="fish-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:28px;">set_meal</span></div>`;
 
                     const badgeHtml = d.isActive
                         ? `<span class="fish-card__badge badge-active">${i18next.t('dashboard.active')}</span>`

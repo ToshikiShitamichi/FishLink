@@ -12,6 +12,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
     <!-- スタイル -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
 
     <!-- i18next（CDN） -->
@@ -39,7 +40,7 @@
 
             <!-- ロゴ -->
             <div class="logo">
-                <div class="logo__icon">🐟</div>
+                <div class="logo__icon"><span class="material-symbols-outlined" style="font-size:48px; color:var(--color-primary);">set_meal</span></div>
                 <div class="logo__name">FishLink</div>
                 <div class="logo__tagline" data-i18n="app.tagline"></div>
             </div>
@@ -60,7 +61,10 @@
                 <!-- パスワード -->
                 <div class="form-group">
                     <label for="password" data-i18n="login.password"></label>
-                    <input type="password" id="password" autocomplete="current-password">
+                    <div class="password-wrap">
+                        <input type="password" id="password" autocomplete="current-password">
+                        <button type="button" class="password-toggle" id="pw-toggle"><span class="material-symbols-outlined">visibility</span></button>
+                    </div>
                 </div>
 
                 <!-- ログインボタン -->
@@ -123,6 +127,16 @@
         // Enterキーでログイン
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') loginBtn.click();
+        });
+
+        // パスワード表示/非表示
+        document.getElementById('pw-toggle').addEventListener('click', () => {
+            const pw = document.getElementById('password');
+            const isHidden = pw.type === 'password';
+            pw.type = isHidden ? 'text' : 'password';
+            document.getElementById('pw-toggle').innerHTML = isHidden
+                ? '<span class="material-symbols-outlined">visibility_off</span>'
+                : '<span class="material-symbols-outlined">visibility</span>';
         });
     </script>
 

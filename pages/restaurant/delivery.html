@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#0d6e4c">
     <title>FishLink</title>
     <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
     <style>
@@ -107,7 +108,7 @@
 
     <div class="delivery-page">
         <div class="page-header" style="align-items:center; padding:16px;">
-            <a href="/pages/restaurant/dashboard.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); font-size:18px;">←</a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub);"><span class="material-symbols-outlined">arrow_back</span></a>
             <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; color:inherit; flex:1;">FishLink</a>
             <select id="lang-selector" style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option><option value="en">EN</option><option value="ja">JA</option>
@@ -122,7 +123,7 @@
 
         <!-- チャット入力 -->
         <div class="chat-input">
-            <button id="photo-btn" style="border:none; background:none; font-size:20px; cursor:pointer; padding:4px 8px;">📷</button>
+            <button id="photo-btn" style="border:none; background:var(--color-surface); cursor:pointer; padding:6px 8px; border-radius:50%; color:var(--color-text-sub);"><span class="material-symbols-outlined">photo_camera</span></button>
             <input type="file" id="photo-input" accept="image/*" multiple style="display:none;">
             <input type="text" id="chat-text" data-i18n="[placeholder]delivery.chatPlaceholder">
             <button id="chat-send" data-i18n="delivery.send"></button>

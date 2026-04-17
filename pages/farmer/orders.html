@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#0d6e4c">
     <title>FishLink</title>
     <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
     <style>
@@ -349,15 +350,15 @@
     <!-- 下部ナビ -->
     <nav class="bottom-nav">
         <a href="/pages/farmer/dashboard.html" class="bottom-nav__item">
-            <span class="bottom-nav__icon">🐟</span>
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">set_meal</span></span>
             <span data-i18n="dashboard.listings"></span>
         </a>
         <a href="/pages/farmer/orders.html" class="bottom-nav__item active">
-            <span class="bottom-nav__icon">📩</span>
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">inbox</span></span>
             <span data-i18n="orders.navOrders"></span>
         </a>
         <a href="#" class="bottom-nav__item" id="logout-btn">
-            <span class="bottom-nav__icon">🚪</span>
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">logout</span></span>
             <span data-i18n="nav.logout"></span>
         </a>
     </nav>
@@ -420,7 +421,7 @@
                 if (snap.empty) {
                     document.getElementById('orders-list').innerHTML = `
                         <div class="empty-state">
-                            <div class="empty-state__icon">📩</div>
+                            <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">inbox</span></div>
                             <div class="empty-state__text">${i18next.t('orders.empty')}</div>
                         </div>
                     `;
@@ -487,7 +488,7 @@
 
             const imgHtml = order.listingData.photoUrl
                 ? `<img src="${order.listingData.photoUrl}" alt="${fishName}">`
-                : `<span class="order-card__img-placeholder">🐟</span>`;
+                : `<span class="order-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">set_meal</span></span>`;
 
             const fishTotal = order.fishPrice || (price * order.quantity);
             const commission = Math.round(price * order.quantity * 0.05);
@@ -516,9 +517,9 @@
                         <div class="order-card__row">${i18next.t('orders.deliveryDate')} ${order.deliveryDate}</div>
                         <div class="order-card__row">${i18next.t('orders.deliveryTime')} ${order.deliveryTime}</div>
                         <div class="order-card__divider"></div>
-                        <div class="order-card__row">${restName}　⭐ ${restRating.toFixed(1)}（${restReviews}）</div>
+                        <div class="order-card__row">${restName}　<span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span> ${restRating.toFixed(1)}（${restReviews}）</div>
                         <div class="order-card__row"><a class="order-card__link" href="#">${i18next.t('orders.viewReviews')}</a></div>
-                        <div class="order-card__row">📍 ${restPlace}　${dist} km</div>
+                        <div class="order-card__row"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span> ${restPlace}　${dist} km</div>
                         <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
                         <div class="order-card__divider"></div>
                         <div class="price-line"><span>${i18next.t('orders.fishTotal')}</span><span>${fishTotal.toLocaleString()} KHR</span></div>
@@ -583,7 +584,7 @@
             if (allOrders.length === 0) {
                 listEl.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state__icon">📩</div>
+                        <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">inbox</span></div>
                         <div class="empty-state__text">${i18next.t('orders.empty')}</div>
                     </div>
                 `;
