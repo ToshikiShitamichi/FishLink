@@ -14,11 +14,18 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// FCMが notification フィールド付きメッセージを受信すると
-// ブラウザが自動で通知を表示するため、onBackgroundMessage での
-// 手動 showNotification は不要（二重表示防止）
+// data-only ペイロードを受信して自前で通知表示（iOS PWA安定化のため）
 messaging.onBackgroundMessage((payload) => {
-    console.log('FCM background message received:', payload);
+    const title = payload.data?.title || 'FishLink';
+    const body = payload.data?.body || '';
+    const orderId = payload.data?.orderId || '';
+    self.registration.showNotification(title, {
+        body,
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: `fishlink-${orderId}`,
+        data: { url: orderId ? `/pages/farmer/orders.html` : '/' },
+    });
 });
 
 // ── 通知タップ時 ────────────────────────────────────────────
@@ -36,7 +43,8 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ── PWAキャッシュ ────────────────────────────────────────────
-const CACHE_NAME = 'fishlink-v2';
+// デプロイごとにバージョンを上げる → 旧キャッシュが自動削除される
+const CACHE_NAME = 'fishlink-v3';
 
 const PRECACHE_URLS = [
     '/',

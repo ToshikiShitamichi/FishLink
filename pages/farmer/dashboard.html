@@ -124,6 +124,17 @@
             margin-bottom: 20px;
         }
 
+        .nav-badge {
+            position: absolute;
+            top: 6px;
+            right: 50%;
+            transform: translateX(18px);
+            background: #ef4444;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
         .toggle-btn {
             font-size: 12px;
             padding: 6px 14px;
@@ -179,8 +190,9 @@
             <span class="bottom-nav__icon">🐟</span>
             <span data-i18n="dashboard.listings"></span>
         </a>
-        <a href="/pages/farmer/orders.html" class="bottom-nav__item">
+        <a href="/pages/farmer/orders.html" class="bottom-nav__item" style="position:relative;">
             <span class="bottom-nav__icon">📩</span>
+            <span class="nav-badge" id="order-badge" style="display:none;"></span>
             <span data-i18n="orders.navOrders"></span>
         </a>
         <a href="#" class="bottom-nav__item" id="logout-btn">
@@ -194,7 +206,7 @@
         import { watchAuthState, logout } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import {
-            collection, query, where, orderBy, getDocs, doc, updateDoc
+            collection, query, where, orderBy, getDocs, doc, updateDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
         const loading = document.getElementById('loading');
@@ -308,11 +320,33 @@
             }
         }
 
+        // 注文バッジ（リアルタイム監視）
+        function watchOrderBadge() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+
+            const lastSeen = parseInt(localStorage.getItem('fishlink_orders_seen') || '0');
+
+            const q = query(
+                collection(db, 'orders'),
+                where('farmerId', '==', uid)
+            );
+            onSnapshot(q, (snap) => {
+                const hasNew = snap.docs.some(d => {
+                    const t = d.data().createdAt?.toMillis?.() || 0;
+                    const s = d.data().status;
+                    return t > lastSeen || (s === 'pending' && t > lastSeen - 60000);
+                });
+                const badge = document.getElementById('order-badge');
+                badge.style.display = hasNew ? 'block' : 'none';
+            });
+        }
+
         // 言語変更時に投稿一覧を再描画
         onLanguageChange(() => loadMyFishListings());
 
         // onAuthStateChanged 後にデータ取得
-        setTimeout(loadMyFishListings, 800);
+        setTimeout(() => { loadMyFishListings(); watchOrderBadge(); }, 800);
     </script>
 
 </body>

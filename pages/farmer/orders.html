@@ -259,6 +259,22 @@
             color: #991b1b;
         }
 
+        .section-label {
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--color-text);
+            background: #f0fdf4;
+            border-left: 4px solid #16a34a;
+            margin: 16px 16px 8px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .section-label.pending-label {
+            background: #fef3c7;
+            border-left-color: #f59e0b;
+        }
+
         .accordion-header {
             display: flex;
             align-items: center;
@@ -383,6 +399,9 @@
 
         // ── データ取得 & 描画 ──
         waitForUserData(async () => {
+            // 確認時刻を記録（バッジ消去用）
+            localStorage.setItem('fishlink_orders_seen', String(Date.now()));
+
             loading.classList.add('show');
             try {
                 const uid = window.currentUser?.uid;
@@ -510,6 +529,10 @@
                             <div class="receive-label">${i18next.t('orders.receiveAmount')}</div>
                             <div class="receive-amount">${receiveAmount.toLocaleString()} KHR</div>
                         </div>
+                        ${(['approved', 'preparing', 'delivering'].includes(order.status))
+                            ? `<a href="/pages/farmer/delivery.html?id=${order.id}" style="display:block; margin-top:12px; text-align:center; padding:10px; background:#f97316; color:#fff; border-radius:12px; font-weight:600; text-decoration:none;">${i18next.t('delivery.goDelivery')}</a>`
+                            : ''
+                        }
                     </div>`;
 
             if (order.status === 'pending') {
@@ -548,14 +571,16 @@
         }
 
         function renderOrders() {
+            // 3グループに分類
+            const activeOrders = allOrders.filter(o => ['approved', 'preparing', 'delivering'].includes(o.status));
             const pendingOrders = allOrders.filter(o => o.status === 'pending');
-            const approvedOrders = allOrders.filter(o => o.status === 'approved');
+            const completedOrders = allOrders.filter(o => ['delivered', 'completed'].includes(o.status));
             const declinedOrders = allOrders.filter(o => o.status === 'declined');
 
             const listEl = document.getElementById('orders-list');
             listEl.innerHTML = '';
 
-            if (pendingOrders.length === 0 && approvedOrders.length === 0 && declinedOrders.length === 0) {
+            if (allOrders.length === 0) {
                 listEl.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state__icon">📩</div>
@@ -565,43 +590,54 @@
                 return;
             }
 
-            // pending注文を描画
-            pendingOrders.forEach(order => {
-                listEl.innerHTML += renderOrderCard(order);
-            });
+            // ① 対応中（上部に強調表示）
+            if (activeOrders.length > 0) {
+                listEl.innerHTML += `<div class="section-label">${i18next.t('orders.activeSection', { count: activeOrders.length })}</div>`;
+                activeOrders.forEach(order => {
+                    listEl.innerHTML += renderOrderCard(order);
+                });
+            }
 
-            // 承認済みアコーディオン
-            if (approvedOrders.length > 0) {
-                let approvedHtml = approvedOrders.map(o => renderOrderCard(o)).join('');
+            // ② 新規注文（pending）
+            if (pendingOrders.length > 0) {
+                listEl.innerHTML += `<div class="section-label pending-label">${i18next.t('orders.pendingSection', { count: pendingOrders.length })}</div>`;
+                pendingOrders.forEach(order => {
+                    listEl.innerHTML += renderOrderCard(order);
+                });
+            }
+
+            // ③ 完了済みアコーディオン
+            if (completedOrders.length > 0) {
+                let html = completedOrders.map(o => renderOrderCard(o)).join('');
                 listEl.innerHTML += `
-                    <div class="accordion-header" id="acc-approved">
-                        ${i18next.t('orders.approvedSectionClosed', { count: approvedOrders.length })}
+                    <div class="accordion-header" id="acc-completed">
+                        ${i18next.t('orders.approvedSectionClosed', { count: completedOrders.length })}
                     </div>
-                    <div class="accordion-body" id="acc-approved-body">${approvedHtml}</div>
+                    <div class="accordion-body" id="acc-completed-body">${html}</div>
                 `;
             }
 
-            // 辞退済みアコーディオン
+            // ④ 辞退済みアコーディオン
             if (declinedOrders.length > 0) {
-                let declinedHtml = declinedOrders.map(o => renderOrderCard(o)).join('');
+                let html = declinedOrders.map(o => renderOrderCard(o)).join('');
                 listEl.innerHTML += `
                     <div class="accordion-header" id="acc-declined">
                         ${i18next.t('orders.declinedSectionClosed', { count: declinedOrders.length })}
                     </div>
-                    <div class="accordion-body" id="acc-declined-body">${declinedHtml}</div>
+                    <div class="accordion-body" id="acc-declined-body">${html}</div>
                 `;
             }
 
             // 全HTML追加後にイベント登録
             bindEvents(pendingOrders);
 
-            // アコーディオンクリックイベント（▶/▼切替）
-            document.getElementById('acc-approved')?.addEventListener('click', function () {
-                const body = document.getElementById('acc-approved-body');
+            // アコーディオンクリックイベント
+            document.getElementById('acc-completed')?.addEventListener('click', function () {
+                const body = document.getElementById('acc-completed-body');
                 body.classList.toggle('open');
                 this.textContent = body.classList.contains('open')
-                    ? i18next.t('orders.approvedSectionOpen', { count: approvedOrders.length })
-                    : i18next.t('orders.approvedSectionClosed', { count: approvedOrders.length });
+                    ? i18next.t('orders.approvedSectionOpen', { count: completedOrders.length })
+                    : i18next.t('orders.approvedSectionClosed', { count: completedOrders.length });
             });
             document.getElementById('acc-declined')?.addEventListener('click', function () {
                 const body = document.getElementById('acc-declined-body');

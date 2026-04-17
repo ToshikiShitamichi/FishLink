@@ -20,7 +20,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
 import { auth, db, toInternalEmail } from './firebase-config.js';
-import { getMessaging, getToken } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js';
+import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js';
 
 // FCM VAPIDキー（Firebaseコンソール → Cloud Messaging → ウェブプッシュ証明書）
 const VAPID_KEY = 'BHPaUqpvuOvpMUtxvVinoXFk0nZBiDMvPXlIBjeLqNesPPmBPt8sOGC2UZdSZLhTiv08ULuw4AMe-OXhIijp-k4'; // TODO: Firebaseコンソールから取得して設定
@@ -151,8 +151,19 @@ async function logout() {
 async function requestFcmToken(uid) {
     if (!VAPID_KEY) return;
     try {
-        // sw.js にFCM機能を統合済み
+        // sw.js にFCM機能を統合済み — 更新があれば自動反映
         const registration = await navigator.serviceWorker.ready;
+        registration.update();
+        registration.addEventListener('updatefound', () => {
+            const newSW = registration.installing;
+            if (newSW) {
+                newSW.addEventListener('statechange', () => {
+                    if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                        window.location.reload();
+                    }
+                });
+            }
+        });
 
         const messaging = getMessaging();
         const token = await getToken(messaging, {
@@ -163,6 +174,19 @@ async function requestFcmToken(uid) {
             await updateDoc(doc(db, 'users', uid), { fcmToken: token });
             console.log('FCM token saved');
         }
+
+        // フォアグラウンド通知（data-onlyペイロード対応）
+        onMessage(messaging, (payload) => {
+            const title = payload.data?.title || 'FishLink';
+            const body = payload.data?.body || '';
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(title, {
+                    body,
+                    icon: '/icons/icon-192.png',
+                    tag: 'fishlink-foreground',
+                });
+            });
+        });
     } catch (err) {
         console.warn('FCM token request failed:', err.message);
     }

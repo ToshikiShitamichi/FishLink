@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .delivery-page { max-width: 480px; margin: 0 auto; padding-bottom: 100px; }
+
+        .order-summary {
+            padding: 12px 16px;
+            font-size: 14px;
+            color: var(--color-text-sub);
+            line-height: 1.6;
+        }
+
+        .timeline { padding: 0 16px; }
+
+        .tl-status {
+            border-radius: 16px;
+            background: #bef264;
+            padding: 14px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .tl-status__time { font-size: 13px; color: #555; }
+        .tl-status__text { font-size: 18px; font-weight: 700; margin-top: 4px; }
+
+        .tl-chat {
+            max-width: 85%;
+            border-radius: 16px;
+            background: #e5e5e5;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+        }
+        .tl-chat.self { margin-left: auto; background: #dbeafe; }
+        .tl-chat__img { max-width: 100%; border-radius: 8px; margin-top: 6px; }
+        .tl-chat__delete {
+            font-size: 11px; color: #ef4444; cursor: pointer; margin-top: 4px;
+            display: none; text-align: right;
+        }
+        .tl-chat.self .tl-chat__delete { display: block; }
+        .photo-preview-area {
+            display: none; padding: 8px 16px; gap: 8px; flex-wrap: wrap; align-items: center;
+        }
+        .photo-preview-area.show { display: flex; }
+        .photo-preview-area img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+        .photo-preview-area .remove-all { font-size: 11px; color: #ef4444; cursor: pointer; margin-left: auto; }
+        .tl-chat__time { font-size: 12px; color: #888; }
+        .tl-chat__text { font-size: 15px; margin-top: 2px; line-height: 1.4; }
+
+        .chat-input {
+            display: flex;
+            gap: 8px;
+            padding: 0 16px;
+            margin-top: 12px;
+        }
+        .chat-input input {
+            flex: 1;
+            border: 1px solid var(--color-border);
+            border-radius: 20px;
+            padding: 10px 16px;
+            font-size: 14px;
+        }
+        .chat-input button {
+            border: none;
+            background: var(--color-primary);
+            color: #fff;
+            border-radius: 20px;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .delivery-footer {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 12px 16px;
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
+        }
+        .delivery-footer button {
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            background: #6366f1;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            padding: 14px;
+            cursor: pointer;
+        }
+        .delivery-footer button:disabled { opacity: 0.4; cursor: not-allowed; }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="delivery-page">
+        <div class="page-header" style="align-items:center; padding:16px;">
+            <a href="/pages/restaurant/dashboard.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); font-size:18px;">←</a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; color:inherit; flex:1;">FishLink</a>
+            <select id="lang-selector" style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option><option value="en">EN</option><option value="ja">JA</option>
+            </select>
+        </div>
+
+        <div class="order-summary" id="order-summary"></div>
+        <div class="timeline" id="timeline"></div>
+
+        <!-- 写真プレビュー -->
+        <div class="photo-preview-area" id="photo-preview"></div>
+
+        <!-- チャット入力 -->
+        <div class="chat-input">
+            <button id="photo-btn" style="border:none; background:none; font-size:20px; cursor:pointer; padding:4px 8px;">📷</button>
+            <input type="file" id="photo-input" accept="image/*" multiple style="display:none;">
+            <input type="text" id="chat-text" data-i18n="[placeholder]delivery.chatPlaceholder">
+            <button id="chat-send" data-i18n="delivery.send"></button>
+        </div>
+    </div>
+
+    <!-- 受取確認ボタン -->
+    <div class="delivery-footer">
+        <button id="receive-btn" disabled data-i18n="delivery.receiveConfirm"></button>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db, storage } from '/js/firebase-config.js';
+        import {
+            doc, getDoc, updateDoc, addDoc, deleteDoc, collection, query, orderBy, onSnapshot, serverTimestamp
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import {
+            ref, uploadBytes, getDownloadURL
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        const params = new URLSearchParams(location.search);
+        const orderId = params.get('id');
+        if (!orderId) location.href = '/pages/restaurant/dashboard.html';
+
+        let orderData = null;
+        let myUid = null;
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 300);
+        }
+
+        waitForUserData(async () => {
+            loading.classList.add('show');
+            myUid = window.currentUser.uid;
+
+            const orderSnap = await getDoc(doc(db, 'orders', orderId));
+            if (!orderSnap.exists()) { location.href = '/pages/restaurant/dashboard.html'; return; }
+            orderData = orderSnap.data();
+
+            // listing情報
+            let fishName = '';
+            if (orderData.listingId) {
+                const lSnap = await getDoc(doc(db, 'fishListings', orderData.listingId));
+                const lt = lSnap.data();
+                fishName = i18next.exists(`fish.${lt?.fishType}`) ? i18next.t(`fish.${lt.fishType}`) : (lt?.fishType || '');
+            }
+
+            // 農家情報
+            const farmerSnap = await getDoc(doc(db, 'users', orderData.farmerId));
+            const farmerName = farmerSnap.data()?.displayName || '';
+
+            const statusKey = `delivery.${orderData.status}`;
+            const statusText = i18next.exists(statusKey) ? i18next.t(statusKey) : orderData.status;
+
+            document.getElementById('order-summary').innerHTML = `
+                <div>${i18next.t('delivery.statusNow', { status: statusText })}</div>
+                <div>${i18next.t('delivery.scheduledTime', { time: orderData.deliveryTime || '' })}</div>
+                <div style="margin-top:4px; font-weight:600; color:var(--color-text);">
+                    ${fishName} ${orderData.quantity}kg · ${farmerName}
+                </div>
+                <div style="font-size:13px;">${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''}</div>
+            `;
+
+            // 受取確認ボタン（delivered時のみ有効）
+            updateReceiveBtn(orderData.status);
+
+            // タイムライン購読
+            const msgQuery = query(
+                collection(db, 'orders', orderId, 'messages'),
+                orderBy('createdAt', 'asc')
+            );
+            onSnapshot(msgQuery, (snap) => {
+                const timeline = document.getElementById('timeline');
+                timeline.innerHTML = '';
+                snap.forEach(d => {
+                    const msg = d.data();
+                    const msgId = d.id;
+                    const time = msg.createdAt?.toDate();
+                    const timeStr = time ? `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}` : '';
+                    const isSelf = msg.senderId === myUid;
+                    const imgs = msg.imageUrls || (msg.imageUrl ? [msg.imageUrl] : []);
+                    const imgHtml = imgs.map(url => `<img class="tl-chat__img" src="${url}">`).join('');
+                    const deleteHtml = isSelf ? `<div class="tl-chat__delete" data-msg-id="${msgId}">✕ 取り消し</div>` : '';
+
+                    timeline.innerHTML += `
+                        <div class="tl-chat ${isSelf ? 'self' : ''}">
+                            <div class="tl-chat__time">${timeStr}</div>
+                            ${msg.text ? `<div class="tl-chat__text">${msg.text}</div>` : ''}
+                            ${imgHtml}
+                            ${deleteHtml}
+                        </div>`;
+                });
+                timeline.scrollTop = timeline.scrollHeight;
+
+                document.querySelectorAll('.tl-chat__delete').forEach(el => {
+                    el.addEventListener('click', async () => {
+                        if (!confirm('取り消しますか？')) return;
+                        await deleteDoc(doc(db, 'orders', orderId, 'messages', el.dataset.msgId));
+                    });
+                });
+            });
+
+            // orderのステータス変更をリアルタイム監視（delivered時にボタン有効化）
+            onSnapshot(doc(db, 'orders', orderId), (snap) => {
+                if (snap.exists()) {
+                    updateReceiveBtn(snap.data().status);
+                }
+            });
+
+            loading.classList.remove('show');
+        });
+
+        function updateReceiveBtn(status) {
+            const btn = document.getElementById('receive-btn');
+            btn.disabled = status !== 'delivered';
+        }
+
+        // ── 写真プレビュー管理 ──
+        let pendingFiles = [];
+
+        function updatePhotoPreview() {
+            const preview = document.getElementById('photo-preview');
+            if (pendingFiles.length === 0) {
+                preview.classList.remove('show');
+                preview.innerHTML = '';
+                return;
+            }
+            preview.classList.add('show');
+            preview.innerHTML = pendingFiles.map(f =>
+                `<img src="${URL.createObjectURL(f)}">`
+            ).join('') + `<span class="remove-all" id="clear-photos">✕</span>`;
+            document.getElementById('clear-photos').addEventListener('click', () => {
+                pendingFiles = [];
+                updatePhotoPreview();
+            });
+        }
+
+        document.getElementById('photo-btn').addEventListener('click', () => {
+            document.getElementById('photo-input').click();
+        });
+
+        document.getElementById('photo-input').addEventListener('change', (e) => {
+            pendingFiles = [...pendingFiles, ...Array.from(e.target.files)];
+            e.target.value = '';
+            updatePhotoPreview();
+        });
+
+        // ── チャット送信（テキスト＋写真まとめて） ──
+        document.getElementById('chat-send').addEventListener('click', async () => {
+            const input = document.getElementById('chat-text');
+            const text = input.value.trim();
+            if (!text && pendingFiles.length === 0) return;
+
+            const sendBtn = document.getElementById('chat-send');
+            sendBtn.disabled = true;
+
+            const imageUrls = [];
+            for (const file of pendingFiles) {
+                const storageRef = ref(storage, `chat/${orderId}/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                imageUrls.push(await getDownloadURL(storageRef));
+            }
+
+            const msgText = text || (imageUrls.length > 0 ? i18next.t('delivery.imageSent') : '');
+
+            await addDoc(collection(db, 'orders', orderId, 'messages'), {
+                senderId: myUid,
+                text: msgText,
+                imageUrls: imageUrls.length > 0 ? imageUrls : null,
+                type: 'chat',
+                isRead: false,
+                createdAt: serverTimestamp(),
+            });
+
+            input.value = '';
+            pendingFiles = [];
+            updatePhotoPreview();
+            sendBtn.disabled = false;
+        });
+
+        document.getElementById('chat-text').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('chat-send').click();
+        });
+
+        // 受取確認
+        document.getElementById('receive-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('receive-btn');
+            btn.disabled = true;
+
+            await updateDoc(doc(db, 'orders', orderId), { status: 'completed' });
+            await addDoc(collection(db, 'orders', orderId, 'messages'), {
+                senderId: myUid,
+                text: i18next.t('delivery.statusCompletedMsg'),
+                type: 'chat',
+                isRead: false,
+                createdAt: serverTimestamp(),
+            });
+
+            // TODO: payment.html へ遷移（決済画面実装後）
+            location.href = '/pages/restaurant/dashboard.html';
+        });
+    </script>
+</body>
+</html>

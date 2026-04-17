@@ -91,8 +91,8 @@ exports.onOrderCreated = onDocumentCreated(
 
     await getMessaging().send({
       token,
-      notification: { title, body },
       data: {
+        title, body,
         type: "new_order",
         orderId: event.params.orderId,
       },
@@ -167,13 +167,66 @@ exports.onOrderUpdated = onDocumentUpdated(
 
     await getMessaging().send({
       token,
-      notification: { title, body },
       data: {
+        title, body,
         type: `order_${after.status}`,
         orderId: event.params.orderId,
       },
     });
 
     console.log("Notification sent to restaurant:", after.restaurantId, "status:", after.status, "lang:", lang);
+  }
+);
+
+// ── チャットメッセージ送信時 → 相手に通知 ──────────────────────
+const CHAT_MESSAGES = {
+  ja: { title: "新しいメッセージ", body: "{{sender}}: {{text}}" },
+  en: { title: "New message", body: "{{sender}}: {{text}}" },
+  km: { title: "សារថ្មី", body: "{{sender}}: {{text}}" },
+};
+
+exports.onMessageCreated = onDocumentCreated(
+  {
+    document: "orders/{orderId}/messages/{messageId}",
+    region: "asia-southeast1",
+    database: "(default)",
+  },
+  async (event) => {
+    const msg = event.data.data();
+    const orderId = event.params.orderId;
+    const orderSnap = await db.doc(`orders/${orderId}`).get();
+    if (!orderSnap.exists) return;
+    const order = orderSnap.data();
+
+    // 送信先を特定（送信者の相手）
+    const toUid = msg.senderId === order.farmerId ? order.restaurantId : order.farmerId;
+
+    const toSnap = await db.doc(`users/${toUid}`).get();
+    const toData = toSnap.data();
+    const token = toData?.fcmToken;
+    if (!token) {
+      console.log("No fcmToken for chat recipient:", toUid);
+      return;
+    }
+
+    const senderSnap = await db.doc(`users/${msg.senderId}`).get();
+    const senderName = senderSnap.data()?.displayName || "";
+    const lang = toData?.lang || "en";
+
+    const tmpl = CHAT_MESSAGES[lang] || CHAT_MESSAGES.en;
+    const truncText = (msg.text || "").substring(0, 50);
+    const title = tmpl.title;
+    const body = tmpl.body.replace("{{sender}}", senderName).replace("{{text}}", truncText);
+
+    await getMessaging().send({
+      token,
+      data: {
+        title, body,
+        type: "chat_message",
+        orderId,
+      },
+    });
+
+    console.log("Chat notification sent to:", toUid);
   }
 );
