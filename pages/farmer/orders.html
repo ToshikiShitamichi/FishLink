@@ -398,6 +398,13 @@
             else setTimeout(() => waitForUserData(cb), 300);
         }
 
+        // 承認期限（注文時刻 + 1時間）を超過しているか
+        function isOrderExpired(order) {
+            if (!order.createdAt) return false;
+            const createdMs = order.createdAt.toMillis ? order.createdAt.toMillis() : 0;
+            return Date.now() > createdMs + 60 * 60 * 1000;
+        }
+
         // ── データ取得 & 描画 ──
         waitForUserData(async () => {
             // 確認時刻を記録（バッジ消去用）
@@ -492,15 +499,15 @@
 
             // 承認期限（注文時刻 + 1時間）
             let deadlineHtml = '';
-            if (order.status === 'pending' && order.createdAt) {
+            const isExpiredPending = order.status === 'pending' && isOrderExpired(order);
+            if (order.status === 'pending' && order.createdAt && !isExpiredPending) {
                 const createdMs = order.createdAt.toMillis ? order.createdAt.toMillis() : 0;
                 const deadlineMs = createdMs + 60 * 60 * 1000;
                 const deadlineDate = new Date(deadlineMs);
                 const timeStr = `${deadlineDate.getHours()}:${String(deadlineDate.getMinutes()).padStart(2, '0')}`;
-                const isExpired = Date.now() > deadlineMs;
-                deadlineHtml = isExpired
-                    ? `<div style="color:#ef4444; font-weight:700; font-size:14px; margin-bottom:8px;">${i18next.t('orders.expired')}</div>`
-                    : `<div style="color:#ea580c; font-weight:600; font-size:13px; margin-bottom:8px;">${i18next.t('orders.deadline', { time: timeStr })}</div>`;
+                deadlineHtml = `<div style="color:#ea580c; font-weight:600; font-size:13px; margin-bottom:8px;">${i18next.t('orders.deadline', { time: timeStr })}</div>`;
+            } else if (isExpiredPending) {
+                deadlineHtml = `<div style="color:#ef4444; font-weight:700; font-size:14px; margin-bottom:8px;">${i18next.t('orders.expired')}</div>`;
             }
 
             const fishTotal = order.fishPrice || (price * order.quantity);
@@ -511,7 +518,7 @@
             let statusBadge = '';
             if (order.status === 'approved') {
                 statusBadge = `<div class="status-badge approved">${i18next.t('orders.approved')}</div>`;
-            } else if (order.status === 'declined') {
+            } else if (order.status === 'declined' || isExpiredPending) {
                 statusBadge = `<div class="status-badge declined">${i18next.t('orders.declined')}</div>`;
             }
 
@@ -548,9 +555,13 @@
                             ? `<a href="/pages/farmer/delivery.html?id=${order.id}" style="display:block; margin-top:12px; text-align:center; padding:10px; background:#f97316; color:#fff; border-radius:12px; font-weight:600; text-decoration:none;">${i18next.t('delivery.goDelivery')}</a>`
                             : ''
                         }
+                        ${(['delivered', 'completed'].includes(order.status))
+                            ? `<a href="/pages/farmer/payment.html?id=${order.id}" style="display:block; margin-top:12px; text-align:center; padding:10px; background:#0ea5e9; color:#fff; border-radius:12px; font-weight:600; text-decoration:none;">${i18next.t('payment.goToRemittance')}</a>`
+                            : ''
+                        }
                     </div>`;
 
-            if (order.status === 'pending') {
+            if (order.status === 'pending' && !isExpiredPending) {
                 html += `
                     <div class="response-section" id="response-${order.id}">
                         <div class="response-title">${i18next.t('orders.responseTitle')}</div>
@@ -586,11 +597,12 @@
         }
 
         function renderOrders() {
-            // 3グループに分類
+            // 期限切れpendingは辞退扱いに振り分け
             const activeOrders = allOrders.filter(o => ['approved', 'preparing', 'delivering'].includes(o.status));
-            const pendingOrders = allOrders.filter(o => o.status === 'pending');
+            const pendingOrders = allOrders.filter(o => o.status === 'pending' && !isOrderExpired(o));
+            const expiredOrders = allOrders.filter(o => o.status === 'pending' && isOrderExpired(o));
             const completedOrders = allOrders.filter(o => ['delivered', 'completed'].includes(o.status));
-            const declinedOrders = allOrders.filter(o => o.status === 'declined');
+            const declinedOrders = [...allOrders.filter(o => o.status === 'declined'), ...expiredOrders];
 
             const listEl = document.getElementById('orders-list');
             listEl.innerHTML = '';

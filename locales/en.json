@@ -36,7 +36,13 @@
         "lang": "Language",
         "submit": "Create Account",
         "hasAccount": "Already have an account?",
-        "login": "Login"
+        "login": "Login",
+        "setupGuide": {
+            "title": "Please set these up before using the app",
+            "item1": "Allow notifications (otherwise order / delivery alerts won't reach you)",
+            "item2": "Turn your device's sound on (so you can hear the notification)",
+            "item3": "Add this web app to your home screen (so you don't have to open the URL each time)"
+        }
     },
     "post": {
         "title": "Post Fish Listing",
@@ -246,6 +252,40 @@
         "orderApprovedBody": "{{farmer}} approved your order",
         "orderDeclined": "Order declined",
         "orderDeclinedBody": "{{farmer}} declined your order"
+    },
+    "payment": {
+        "title": "Payment",
+        "farmerTitle": "Remittance Status",
+        "total": "Total",
+        "subtotal": "Subtotal (fish)",
+        "discountApplied": "(discount applied)",
+        "qrTitle": "Pay by QR Code (KHQR)",
+        "qrHint": "※ If you can't scan on this phone, tap \"Open Link\" to pay, or save the QR image",
+        "openLink": "Open Link",
+        "saveQr": "Save QR",
+        "confirmPaid": "Confirm Payment Sent",
+        "confirmDialog": "Have you completed the payment?",
+        "alreadyPaid": "Payment Confirmed",
+        "paidBanner": "Payment confirmed.",
+        "paidMessage": "Restaurant has completed payment",
+        "errorSubmit": "Something went wrong. Please try again.",
+        "goToPayment": "Go to Payment",
+        "viewPayment": "View Payment Status",
+        "goToRemittance": "View Remittance Status",
+        "currentStatus": "Current Status",
+        "receiveAmount": "Expected Payout",
+        "aboutRemittance": "About Remittance",
+        "remittanceDesc": "The restaurant does not pay the farmer directly. Once payment is confirmed, FishLink transfers the amount to the farmer.",
+        "statusWaitingPayment": "Waiting for Payment",
+        "statusWaitingPaymentDesc": "Once the restaurant's payment is confirmed, FishLink will transfer the funds.",
+        "statusPaidByRestaurant": "Restaurant Paid",
+        "statusPaidByRestaurantDesc": "FishLink will process the remittance after verifying the payment.",
+        "statusConfirmed": "Payment Verified",
+        "statusConfirmedDesc": "FishLink is preparing to transfer the funds.",
+        "statusRemitted": "Remitted",
+        "statusRemittedDesc": "Funds have been transferred to your account.",
+        "statusDone": "Transaction Complete",
+        "statusDoneDesc": "Thank you for your service."
     },
     "dashboard": {
         "listings": "My Listings",

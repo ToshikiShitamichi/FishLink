@@ -330,8 +330,7 @@
                 createdAt: serverTimestamp(),
             });
 
-            // TODO: payment.html へ遷移（決済画面実装後）
-            location.href = '/pages/restaurant/dashboard.html';
+            location.href = `/pages/restaurant/payment.html?id=${orderId}`;
         });
     </script>
 </body>

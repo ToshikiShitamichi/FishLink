@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .payment-page { max-width: 480px; margin: 0 auto; padding-bottom: 100px; }
+
+        .pay-head {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            margin: 4px 0 12px;
+        }
+
+        .pay-card {
+            border-radius: 20px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            padding: 16px;
+            margin: 0 16px 14px;
+        }
+
+        .pay-total-label {
+            font-size: 13px;
+            color: var(--color-text-sub);
+            margin-bottom: 4px;
+        }
+
+        .pay-total {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--color-text);
+            line-height: 1.1;
+        }
+
+        .pay-total-note {
+            font-size: 12px;
+            color: #16a34a;
+            margin-top: 4px;
+        }
+
+        .pay-breakdown {
+            border-top: 1px solid var(--color-border);
+            margin-top: 14px;
+            padding-top: 12px;
+        }
+
+        .pay-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            padding: 4px 0;
+            color: var(--color-text);
+        }
+
+        .pay-line__label { color: var(--color-text-sub); }
+        .pay-line__value.discount { color: #16a34a; }
+
+        .qr-section {
+            text-align: center;
+            padding: 18px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            margin: 0 16px 14px;
+        }
+
+        .qr-section__title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 10px;
+        }
+
+        .qr-wrap {
+            display: inline-block;
+            padding: 10px;
+            border-radius: 16px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+        }
+
+        .qr-wrap img {
+            width: 240px;
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .qr-hint {
+            font-size: 12px;
+            color: var(--color-text-sub);
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+
+        .qr-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .qr-action-btn {
+            flex: 1;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            border-radius: 14px;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text);
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .qr-action-btn .material-symbols-outlined { font-size: 18px; }
+        .qr-action-btn:hover { background: #f5f5f5; }
+
+        .pay-link {
+            display: block;
+            word-break: break-all;
+            font-size: 12px;
+            color: #0284c7;
+            text-decoration: none;
+            margin-top: 8px;
+        }
+
+        .payment-footer {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 12px 16px;
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
+        }
+
+        .payment-footer button {
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            background: #6366f1;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 700;
+            padding: 14px;
+            cursor: pointer;
+        }
+
+        .payment-footer button.paid {
+            background: #16a34a;
+        }
+
+        .payment-footer button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .paid-banner {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            border-radius: 14px;
+            padding: 10px 12px;
+            margin: 0 16px 14px;
+            font-size: 13px;
+            text-align: center;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="payment-page">
+        <div class="page-header" style="align-items:center; padding:16px;">
+            <a href="/pages/restaurant/orders.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub);"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/restaurant/orders.html" class="page-header__title" style="text-decoration:none; color:inherit; flex:1;" data-i18n="payment.title"></a>
+            <select id="lang-selector" style="width:auto; flex:0 0 auto; font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option><option value="en">EN</option><option value="ja">JA</option>
+            </select>
+        </div>
+
+        <div id="paid-banner" class="paid-banner" style="display:none;" data-i18n="payment.paidBanner"></div>
+
+        <!-- 注文概要 -->
+        <div class="pay-card" id="order-info"></div>
+
+        <!-- 金額内訳 -->
+        <div class="pay-card">
+            <div class="pay-total-label" data-i18n="payment.total"></div>
+            <div class="pay-total" id="total-amount">0 KHR</div>
+            <div class="pay-total-note" id="discount-note" style="display:none;" data-i18n="payment.discountApplied"></div>
+            <div class="pay-breakdown" id="breakdown"></div>
+        </div>
+
+        <!-- QRコード -->
+        <div class="qr-section">
+            <div class="qr-section__title" data-i18n="payment.qrTitle"></div>
+            <a id="qr-link" href="https://link.payway.com.kh/ABAPAYsh433547o" target="_blank" rel="noopener" class="qr-wrap">
+                <img id="qr-img" src="/images/fishlink-qr.png" alt="FishLink QR">
+            </a>
+            <div class="qr-hint" data-i18n="payment.qrHint"></div>
+            <div class="qr-actions">
+                <a class="qr-action-btn" href="https://link.payway.com.kh/ABAPAYsh433547o" target="_blank" rel="noopener">
+                    <span class="material-symbols-outlined">open_in_new</span>
+                    <span data-i18n="payment.openLink"></span>
+                </a>
+                <a class="qr-action-btn" id="download-btn" href="/images/fishlink-qr.png" download="fishlink-qr.png">
+                    <span class="material-symbols-outlined">download</span>
+                    <span data-i18n="payment.saveQr"></span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="payment-footer">
+        <button id="paid-btn" data-i18n="payment.confirmPaid"></button>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            doc, getDoc, updateDoc
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        const params = new URLSearchParams(location.search);
+        const orderId = params.get('id');
+        if (!orderId) location.href = '/pages/restaurant/orders.html';
+
+        let orderData = null;
+        let myUid = null;
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 300);
+        }
+
+        waitForUserData(async () => {
+            loading.classList.add('show');
+            myUid = window.currentUser.uid;
+
+            const orderSnap = await getDoc(doc(db, 'orders', orderId));
+            if (!orderSnap.exists()) { location.href = '/pages/restaurant/orders.html'; return; }
+            orderData = orderSnap.data();
+
+            // 注文者でない場合は戻す
+            if (orderData.restaurantId !== myUid) { location.href = '/pages/restaurant/orders.html'; return; }
+
+            // listing情報
+            let fishName = '', size = '';
+            if (orderData.listingId) {
+                const lSnap = await getDoc(doc(db, 'fishListings', orderData.listingId));
+                const lt = lSnap.data() || {};
+                fishName = i18next.exists(`fish.${lt.fishType}`) ? i18next.t(`fish.${lt.fishType}`) : (lt.fishType || '');
+                size = lt.size || '';
+            }
+
+            // 農家情報
+            const farmerSnap = await getDoc(doc(db, 'users', orderData.farmerId));
+            const farmer = farmerSnap.data() || {};
+            const farmerName = farmer.displayName || '';
+            const place = (farmer.province || '') + (farmer.district ? ', ' + farmer.district : '');
+
+            document.getElementById('order-info').innerHTML = `
+                <div style="font-size:14px; color:var(--color-text-sub); margin-bottom:4px;">${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}</div>
+                <div style="font-size:16px; font-weight:700; color:var(--color-text);">${fishName}${size ? `（${size} head/kg）` : ''}</div>
+                <div style="font-size:14px; color:var(--color-text); margin-top:4px;">${i18next.t('orders.quantity')} ${orderData.quantity} kg</div>
+                <div style="font-size:13px; color:var(--color-text-sub); margin-top:6px;">
+                    <span class="material-symbols-outlined" style="font-size:14px; vertical-align:-2px;">storefront</span>
+                    ${farmerName}${place ? ` · ${place}` : ''}
+                </div>
+            `;
+
+            // 金額内訳
+            const fishTotal = orderData.fishPrice || 0;
+            const deliveryFee = orderData.deliveryFee || 0;
+            const serviceFee = orderData.serviceFee || 0;
+            const campaignDiscount = orderData.campaignDiscount || 0;
+            const total = orderData.totalAmount || (fishTotal + deliveryFee + serviceFee - campaignDiscount);
+
+            document.getElementById('total-amount').textContent = `${total.toLocaleString()} KHR`;
+
+            let html = `
+                <div class="pay-line"><span class="pay-line__label">${i18next.t('payment.subtotal')}</span><span class="pay-line__value">${fishTotal.toLocaleString()} KHR</span></div>
+                <div class="pay-line"><span class="pay-line__label">${i18next.t('order.deliveryFee')}</span><span class="pay-line__value">${deliveryFee.toLocaleString()} KHR</span></div>
+                <div class="pay-line"><span class="pay-line__label">${i18next.t('order.serviceFee')}</span><span class="pay-line__value">${serviceFee.toLocaleString()} KHR</span></div>
+            `;
+            if (campaignDiscount > 0) {
+                html += `<div class="pay-line"><span class="pay-line__label">${i18next.t('order.campaignDiscount')}</span><span class="pay-line__value discount">-${campaignDiscount.toLocaleString()} KHR</span></div>`;
+                document.getElementById('discount-note').style.display = 'block';
+            }
+            document.getElementById('breakdown').innerHTML = html;
+
+            // 支払い済みの場合
+            updatePaidState(orderData.paymentStatus);
+
+            loading.classList.remove('show');
+        });
+
+        function updatePaidState(paymentStatus) {
+            const btn = document.getElementById('paid-btn');
+            const banner = document.getElementById('paid-banner');
+            if (paymentStatus === 'paid') {
+                banner.style.display = 'block';
+                btn.classList.add('paid');
+                btn.textContent = i18next.t('payment.alreadyPaid');
+                btn.disabled = true;
+            }
+        }
+
+        // 支払い完了ボタン
+        document.getElementById('paid-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('paid-btn');
+            if (btn.disabled) return;
+            if (!confirm(i18next.t('payment.confirmDialog'))) return;
+
+            btn.disabled = true;
+            loading.classList.add('show');
+            try {
+                await updateDoc(doc(db, 'orders', orderId), { paymentStatus: 'paid' });
+                updatePaidState('paid');
+            } catch (err) {
+                console.error(err);
+                alert(i18next.t('payment.errorSubmit'));
+                btn.disabled = false;
+            } finally {
+                loading.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -11,6 +11,34 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .setup-guide {
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            color: #7c2d12;
+        }
+        .setup-guide__title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #9a3412;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .setup-guide__list {
+            margin: 0;
+            padding-left: 22px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #7c2d12;
+        }
+        .setup-guide__list li {
+            margin-bottom: 2px;
+        }
+    </style>
 
     <!-- i18next -->
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
@@ -116,6 +144,19 @@
             <div style="text-align:center; margin-bottom:24px;">
                 <div><span class="material-symbols-outlined" style="font-size:40px; color:var(--color-primary);">set_meal</span></div>
                 <div style="font-size:22px; font-weight:700; color:var(--color-primary);">FishLink</div>
+            </div>
+
+            <!-- 初回セットアップ案内 -->
+            <div class="setup-guide">
+                <div class="setup-guide__title">
+                    <span class="material-symbols-outlined" style="font-size:20px; vertical-align:-4px; margin-right:4px;">info</span>
+                    <span data-i18n="register.setupGuide.title"></span>
+                </div>
+                <ol class="setup-guide__list">
+                    <li data-i18n="register.setupGuide.item1"></li>
+                    <li data-i18n="register.setupGuide.item2"></li>
+                    <li data-i18n="register.setupGuide.item3"></li>
+                </ol>
             </div>
 
             <div class="card">

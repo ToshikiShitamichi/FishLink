@@ -36,7 +36,13 @@
         "lang": "言語",
         "submit": "登録する",
         "hasAccount": "すでにアカウントをお持ちの方",
-        "login": "ログイン"
+        "login": "ログイン",
+        "setupGuide": {
+            "title": "ご利用前に必ず設定してください",
+            "item1": "通知を「許可」すること（注文・配送のお知らせが届きません）",
+            "item2": "端末の音をオンにすること（通知音で気づけるように）",
+            "item3": "ホーム画面にWebアプリを追加すること（毎回URLを開く手間を省けます）"
+        }
     },
     "post": {
         "title": "魚を投稿する",
@@ -246,6 +252,40 @@
         "orderApprovedBody": "{{farmer}}が注文を承認しました",
         "orderDeclined": "注文が辞退されました",
         "orderDeclinedBody": "{{farmer}}が注文を辞退しました"
+    },
+    "payment": {
+        "title": "お支払い",
+        "farmerTitle": "送金状況",
+        "total": "合計",
+        "subtotal": "小計（魚代）",
+        "discountApplied": "（割引適用済み）",
+        "qrTitle": "QRコードでお支払い（KHQR）",
+        "qrHint": "※ スマホでスキャンできない場合は「リンクを開く」から支払い、またはQR画像を保存してください",
+        "openLink": "リンクを開く",
+        "saveQr": "QRを保存",
+        "confirmPaid": "支払い完了を確認する",
+        "confirmDialog": "支払いを完了しましたか？",
+        "alreadyPaid": "支払い確認済み",
+        "paidBanner": "お支払いを確認しました。",
+        "paidMessage": "レストランが支払いを完了しました",
+        "errorSubmit": "処理に失敗しました。もう一度お試しください。",
+        "goToPayment": "お支払いへ進む",
+        "viewPayment": "支払い状況を見る",
+        "goToRemittance": "送金状況を見る",
+        "currentStatus": "現在の状態",
+        "receiveAmount": "受取予定額",
+        "aboutRemittance": "送金について",
+        "remittanceDesc": "レストランがその場で農家に直接支払うわけではありません。支払い確認後、FishLinkから農家へ送金されます。",
+        "statusWaitingPayment": "支払い確認待ち",
+        "statusWaitingPaymentDesc": "レストランの支払い確認後、FishLinkから送金されます。",
+        "statusPaidByRestaurant": "レストランが支払い完了",
+        "statusPaidByRestaurantDesc": "FishLinkで入金確認後、送金処理を行います。",
+        "statusConfirmed": "入金確認済み",
+        "statusConfirmedDesc": "FishLinkからの送金準備中です。",
+        "statusRemitted": "送金済み",
+        "statusRemittedDesc": "あなたの口座への送金が完了しました。",
+        "statusDone": "取引完了",
+        "statusDoneDesc": "ご対応ありがとうございました。"
     },
     "dashboard": {
         "listings": "投稿一覧",

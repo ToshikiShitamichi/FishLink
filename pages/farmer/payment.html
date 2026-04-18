@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .payment-page { max-width: 480px; margin: 0 auto; padding-bottom: 100px; }
+
+        .pay-head {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            margin: 4px 0 14px;
+        }
+
+        .status-card {
+            border-radius: 20px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            padding: 16px;
+            margin: 0 16px 14px;
+        }
+
+        .status-card__label {
+            font-size: 13px;
+            color: var(--color-text-sub);
+            margin-bottom: 6px;
+        }
+
+        .status-box {
+            border-radius: 14px;
+            padding: 12px 14px;
+        }
+
+        .status-box.pending {
+            background: #eef7ff;
+            border: 1px solid #bae6fd;
+            color: #0369a1;
+        }
+
+        .status-box.confirmed {
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            color: #9a3412;
+        }
+
+        .status-box.remitted {
+            background: #ecfdf5;
+            border: 1px solid #86efac;
+            color: #166534;
+        }
+
+        .status-box.done {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            color: #374151;
+        }
+
+        .status-box__title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .status-box__desc {
+            font-size: 13px;
+            color: var(--color-text-sub);
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        .amount-card {
+            border-radius: 20px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            padding: 16px;
+            margin: 0 16px 14px;
+        }
+
+        .amount-label {
+            font-size: 13px;
+            color: var(--color-text-sub);
+            margin-bottom: 4px;
+        }
+
+        .amount-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: #ea580c;
+            line-height: 1.1;
+        }
+
+        .amount-breakdown {
+            border-top: 1px solid var(--color-border);
+            margin-top: 14px;
+            padding-top: 12px;
+        }
+
+        .amount-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            padding: 4px 0;
+            color: var(--color-text);
+        }
+
+        .amount-line__label { color: var(--color-text-sub); }
+        .amount-line__value.minus { color: #ef4444; }
+        .amount-line__value.plus { color: #16a34a; }
+
+        .info-box {
+            background: #ecfdf5;
+            border: 1px solid #86efac;
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin: 0 16px 14px;
+            font-size: 13px;
+            color: #166534;
+            line-height: 1.6;
+        }
+
+        .info-box__title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #166534;
+            margin-bottom: 4px;
+        }
+
+        .order-meta {
+            border-radius: 20px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            padding: 16px;
+            margin: 0 16px 14px;
+        }
+
+        .order-meta__row {
+            font-size: 14px;
+            color: var(--color-text);
+            padding: 3px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="payment-page">
+        <div class="page-header" style="align-items:center; padding:16px;">
+            <a href="/pages/farmer/orders.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub);"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/farmer/orders.html" class="page-header__title" style="text-decoration:none; color:inherit; flex:1;" data-i18n="payment.farmerTitle"></a>
+            <select id="lang-selector" style="width:auto; flex:0 0 auto; font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option><option value="en">EN</option><option value="ja">JA</option>
+            </select>
+        </div>
+
+        <!-- 注文概要 -->
+        <div class="order-meta" id="order-info"></div>
+
+        <!-- 送金状況 -->
+        <div class="status-card">
+            <div class="status-card__label" data-i18n="payment.currentStatus"></div>
+            <div id="status-box"></div>
+        </div>
+
+        <!-- 受取予定額 -->
+        <div class="amount-card">
+            <div class="amount-label" data-i18n="payment.receiveAmount"></div>
+            <div class="amount-value" id="receive-amount">0 KHR</div>
+            <div class="amount-breakdown" id="breakdown"></div>
+        </div>
+
+        <!-- 送金についての説明 -->
+        <div class="info-box">
+            <div class="info-box__title" data-i18n="payment.aboutRemittance"></div>
+            <div data-i18n="payment.remittanceDesc"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            doc, getDoc, onSnapshot
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        const params = new URLSearchParams(location.search);
+        const orderId = params.get('id');
+        if (!orderId) location.href = '/pages/farmer/orders.html';
+
+        let myUid = null;
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 300);
+        }
+
+        waitForUserData(async () => {
+            loading.classList.add('show');
+            myUid = window.currentUser.uid;
+
+            const orderSnap = await getDoc(doc(db, 'orders', orderId));
+            if (!orderSnap.exists()) { location.href = '/pages/farmer/orders.html'; return; }
+            const orderData = orderSnap.data();
+
+            if (orderData.farmerId !== myUid) { location.href = '/pages/farmer/orders.html'; return; }
+
+            // listing情報
+            let fishName = '', size = '';
+            if (orderData.listingId) {
+                const lSnap = await getDoc(doc(db, 'fishListings', orderData.listingId));
+                const lt = lSnap.data() || {};
+                fishName = i18next.exists(`fish.${lt.fishType}`) ? i18next.t(`fish.${lt.fishType}`) : (lt.fishType || '');
+                size = lt.size || '';
+            }
+
+            // レストラン情報
+            const restSnap = await getDoc(doc(db, 'users', orderData.restaurantId));
+            const rest = restSnap.data() || {};
+            const restName = rest.displayName || '';
+            const place = (rest.province || '') + (rest.district ? ', ' + rest.district : '');
+
+            document.getElementById('order-info').innerHTML = `
+                <div style="font-size:13px; color:var(--color-text-sub); margin-bottom:4px;">${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}</div>
+                <div style="font-size:16px; font-weight:700;">${fishName}${size ? `（${size} head/kg）` : ''}</div>
+                <div style="font-size:14px; margin-top:4px;">${i18next.t('orders.quantity')} ${orderData.quantity} kg</div>
+                <div style="font-size:13px; color:var(--color-text-sub); margin-top:6px;">
+                    <span class="material-symbols-outlined" style="font-size:14px; vertical-align:-2px;">restaurant</span>
+                    ${restName}${place ? ` · ${place}` : ''}
+                </div>
+            `;
+
+            // 金額内訳
+            const fishTotal = orderData.fishPrice || 0;
+            const deliveryFee = orderData.deliveryFee || 0;
+            const commission = Math.round(fishTotal * 0.05);
+            const receiveAmount = orderData.farmerReceiveAmount || (fishTotal - commission + deliveryFee);
+
+            document.getElementById('receive-amount').textContent = `${receiveAmount.toLocaleString()} KHR`;
+            document.getElementById('breakdown').innerHTML = `
+                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.fishTotal')}</span><span class="amount-line__value">${fishTotal.toLocaleString()} KHR</span></div>
+                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.commission')}</span><span class="amount-line__value minus">-${commission.toLocaleString()} KHR</span></div>
+                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.deliveryFee')}</span><span class="amount-line__value plus">+${deliveryFee.toLocaleString()} KHR</span></div>
+            `;
+
+            // ステータスをリアルタイム購読
+            onSnapshot(doc(db, 'orders', orderId), (snap) => {
+                if (!snap.exists()) return;
+                const d = snap.data();
+                renderStatus(d.adminStatus ?? null, d.paymentStatus || 'pending');
+            });
+
+            loading.classList.remove('show');
+        });
+
+        function renderStatus(adminStatus, paymentStatus) {
+            const box = document.getElementById('status-box');
+            let cls = 'pending', titleKey = 'payment.statusWaitingPayment', descKey = 'payment.statusWaitingPaymentDesc';
+
+            if (adminStatus === 'done') {
+                cls = 'done'; titleKey = 'payment.statusDone'; descKey = 'payment.statusDoneDesc';
+            } else if (adminStatus === 'remitted') {
+                cls = 'remitted'; titleKey = 'payment.statusRemitted'; descKey = 'payment.statusRemittedDesc';
+            } else if (adminStatus === 'payment_confirmed') {
+                cls = 'confirmed'; titleKey = 'payment.statusConfirmed'; descKey = 'payment.statusConfirmedDesc';
+            } else if (paymentStatus === 'paid') {
+                cls = 'confirmed'; titleKey = 'payment.statusPaidByRestaurant'; descKey = 'payment.statusPaidByRestaurantDesc';
+            }
+
+            box.innerHTML = `
+                <div class="status-box ${cls}">
+                    <div class="status-box__title">${i18next.t(titleKey)}</div>
+                    <div class="status-box__desc">${i18next.t(descKey)}</div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

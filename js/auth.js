@@ -48,6 +48,8 @@ function redirectByRole(role) {
         window.location.href = '/pages/farmer/dashboard.html';
     } else if (role === 'restaurant') {
         window.location.href = '/pages/restaurant/dashboard.html';
+    } else if (role === 'admin') {
+        window.location.href = '/pages/admin/index.html';
     }
 }
 

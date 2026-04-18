@@ -112,7 +112,18 @@
             const statusText = i18next.exists(statusKey) ? i18next.t(statusKey) : order.status;
             const stClass = `st-${order.status}`;
             const canTrack = ['approved', 'preparing', 'delivering', 'delivered'].includes(order.status);
-            const href = canTrack ? `/pages/restaurant/delivery.html?id=${d.id}` : '#';
+            const isCompleted = order.status === 'completed';
+            let href = '#';
+            let actionLabel = '';
+            if (canTrack) {
+                href = `/pages/restaurant/delivery.html?id=${d.id}`;
+                actionLabel = i18next.t('delivery.goTracking');
+            } else if (isCompleted) {
+                href = `/pages/restaurant/payment.html?id=${d.id}`;
+                actionLabel = order.paymentStatus === 'paid'
+                    ? i18next.t('payment.viewPayment')
+                    : i18next.t('payment.goToPayment');
+            }
 
             return `
                 <a class="order-item" href="${href}">
@@ -122,7 +133,7 @@
                     </div>
                     <div class="order-item__meta">
                         ${order.quantity}kg · ${order.deliveryDate || ''} ${order.deliveryTime || ''}
-                        ${canTrack ? `<br>${i18next.t('delivery.goTracking')}` : ''}
+                        ${actionLabel ? `<br>${actionLabel}` : ''}
                     </div>
                 </a>
             `;
