@@ -7,6 +7,9 @@
     <meta name="theme-color" content="#0d6e4c">
     <title>FishLink</title>
     <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
@@ -392,115 +395,28 @@
         watchAuthState({ requireAuth: true });
         await initI18n();
 
-        // ── CAA参考価格データ（※仮データ・クライアント確認後に差し替え） ──
-        const CAA_DATA = {
-            striped_snakehead: {
-                Kandal: { range: '5,000–5,500', size: '0.5–0.8kg' },
-                Takeo: { range: '5,000–5,500', size: '0.45–0.8kg' },
-                'Prey Veng': null,
-                'Kg. Cham': { range: '5,000–5,500', size: '0.45–0.8kg' },
-                'Kg. Thom': { range: '5,000–5,500', size: '0.5–0.8kg' },
-                Siemreap: { range: '5,000–5,500', size: '0.5–0.8kg' },
-                Battambang: { range: '5,000–5,500', size: '0.5–0.8kg' },
-                Pursat: { range: '5,000–5,500', size: '0.5–0.8kg' },
-                'Kg. Chhnang': null,
-                BMC: null,
-            },
-            walking_catfish: {
-                Kandal: { range: '4,300–4,600', size: '0.17–0.25kg' },
-                Takeo: { range: '3,500–4,200', size: '0.17–0.25kg' },
-                'Prey Veng': null,
-                'Kg. Cham': { range: '4,200–4,300', size: '0.15–0.25g' },
-                'Kg. Thom': { range: '3,900–4,100', size: '0.17–0.2kg' },
-                Siemreap: { range: '3,800–4,000', size: '0.17–0.2kg' },
-                Battambang: { range: '4,000–4,200', size: '0.17–0.2kg' },
-                Pursat: { range: '4,000–4,300', size: '0.17–0.2kg' },
-                'Kg. Chhnang': null,
-                BMC: null,
-            },
-            red_tilapia: {
-                Kandal: { range: '6,500–7,000', size: '0.45–0.8kg' },
-                Takeo: { range: '6,000–6,500', size: '0.45–0.8kg' },
-                'Prey Veng': null,
-                'Kg. Cham': { range: '6,000–6,500', size: '0.45–0.8kg' },
-                'Kg. Thom': { range: '7,000–7,500', size: '0.5–0.8kg' },
-                Siemreap: { range: '7,500–8,000', size: '0.5–0.8kg' },
-                Battambang: { range: '7,500–8,500', size: '0.5–0.8kg' },
-                Pursat: { range: '8,000–8,500', size: '0.5–0.8kg' },
-                'Kg. Chhnang': null,
-                BMC: { range: '7,000–7,500', size: '0.45–0.8kg' },
-            },
-            nile_tilapia: {
-                Kandal: null, Takeo: null, 'Prey Veng': null,
-                'Kg. Cham': { range: '6,000–6,500', size: '0.45–0.8kg' },
-                'Kg. Thom': null, Siemreap: null,
-                Battambang: { range: '7,500–8,500', size: '0.5–0.8kg' },
-                Pursat: null, 'Kg. Chhnang': null, BMC: null,
-            },
-            silver_barb: {
-                Kandal: { range: '7,500–8,000', size: '0.2–0.3kg' },
-                Takeo: { range: '6,500–7,000', size: '0.2–0.3kg' },
-                'Prey Veng': null,
-                'Kg. Cham': { range: '8,000–8,500', size: '0.2–0.3kg' },
-                'Kg. Thom': null, Siemreap: null,
-                Battambang: { range: '6,000–6,500', size: '0.2–0.3kg' },
-                Pursat: { range: '8,000–8,500', size: '0.2–0.3kg' },
-                'Kg. Chhnang': null,
-                BMC: { range: '7,000–7,500', size: '0.2–0.3kg' },
-            },
-            common_carp_large: {
-                Kandal: { range: '6,000–6,400', size: '0.7–1kg' },
-                Takeo: { range: '5,500–6,600', size: '0.7–1kg' },
-                'Prey Veng': { range: '6,000–6,600', size: '0.7–1kg' },
-                'Kg. Cham': { range: '6,000–6,600', size: '0.7–1kg' },
-                'Kg. Thom': { range: '6,000–6,600', size: '0.5–1kg' },
-                Siemreap: { range: '5,600–6,000', size: '0.5–1kg' },
-                Battambang: { range: '5,500–6,000', size: '0.5–1kg' },
-                Pursat: { range: '5,500–6,000', size: '0.5–1kg' },
-                'Kg. Chhnang': { range: '6,000–6,600', size: '0.5–1kg' },
-                BMC: { range: '5,500–5,800', size: '0.5–1kg' },
-            },
-            common_carp_small: {
-                Kandal: { range: '4,400–4,600', size: '0.7–3kg' },
-                Takeo: { range: '4,300–4,600', size: '0.7–3kg' },
-                'Prey Veng': { range: '4,400–4,600', size: '0.7–3kg' },
-                'Kg. Cham': { range: '4,400–4,600', size: '0.7–3kg' },
-                'Kg. Thom': { range: '4,400–4,600', size: '0.7–3kg' },
-                Siemreap: { range: '4,400–4,800', size: '0.7–3kg' },
-                Battambang: { range: '4,500–4,800', size: '0.7–3kg' },
-                Pursat: { range: '4,300–4,600', size: '0.7–3kg' },
-                'Kg. Chhnang': { range: '4,300–4,600', size: '0.7–3kg' },
-                BMC: { range: '4,100–4,500', size: '0.7–3kg' },
-            },
-            featherback: {
-                Kandal: { range: '8,500–9,500', size: '1–3kg' },
-                Takeo: { range: '8,000–9,000', size: '1–3kg' },
-                'Prey Veng': { range: '8,500–9,500', size: '1–3kg' },
-                'Kg. Cham': { range: '8,500–9,500', size: '1–3kg' },
-                'Kg. Thom': { range: '8,500–9,500', size: '1–3kg' },
-                Siemreap: { range: '8,500–9,200', size: '1–3kg' },
-                Battambang: { range: '9,000–9,500', size: '1–3kg' },
-                Pursat: { range: '9,000–10,000', size: '1–3kg' },
-                'Kg. Chhnang': { range: '8,000–9,000', size: '1–3kg' },
-                BMC: null,
-            },
-            climbing_perch: {
-                Kandal: null, Takeo: null, 'Prey Veng': null, 'Kg. Cham': null,
-                'Kg. Thom': null, Siemreap: null, Battambang: null, Pursat: null,
-                'Kg. Chhnang': null, BMC: null,
-            },
-            frog: {
-                Kandal: { range: '7,000–7,500', size: '0.17–0.2kg' },
-                Takeo: null,
-                'Prey Veng': { range: '6,000–6,500', size: '0.17–0.2kg' },
-                'Kg. Cham': { range: '7,000–7,500', size: '0.17–0.2kg' },
-                'Kg. Thom': { range: '7,500–8,000', size: '0.17–0.2kg' },
-                Siemreap: { range: '8,000–8,500', size: '0.17–0.2kg' },
-                Battambang: { range: '7,500–8,000', size: '0.17–0.2kg' },
-                Pursat: null, 'Kg. Chhnang': null,
-                BMC: { range: '7,500–8,000', size: '0.17–0.2kg' },
-            },
-        };
+        // ── CAA参考価格データ（管理者ページ pages/admin/caa.html で設定した値を Firestore から読み込む） ──
+        // 対応10魚種（CLAUDE.mdのFISH_TYPES準拠、"other" は CAA参考価格なし扱い）
+        const CAA_FISH_TYPES = [
+            'striped_snakehead', 'walking_catfish', 'red_tilapia', 'nile_tilapia',
+            'silver_barb', 'spot_pangasius', 'pangasius', 'giant_snakehead',
+            'climbing_perch', 'frog'
+        ];
+        let CAA_DATA = {};      // { fishType: { province: {range, size} | null } }
+        let caaDataLoaded = false;
+
+        async function loadCaaData() {
+            await Promise.all(CAA_FISH_TYPES.map(async (ft) => {
+                try {
+                    const snap = await getDoc(doc(db, 'caaPrice', ft));
+                    CAA_DATA[ft] = snap.exists() ? snap.data() : {};
+                } catch (e) {
+                    console.warn('CAA load failed for', ft, e);
+                    CAA_DATA[ft] = {};
+                }
+            }));
+            caaDataLoaded = true;
+        }
 
         // Google Maps の州名 → CAA_DATA のキーに変換
         const PROVINCE_MAP = {
@@ -534,6 +450,15 @@
                 return;
             }
 
+            // Firestoreから読み込み中の場合
+            if (!caaDataLoaded) {
+                regionEl.textContent = i18next.t('post.caaLoading');
+                regionEl.style.color = '#888';
+                valueEl.style.display = 'none';
+                sizeEl.style.display = 'none';
+                return;
+            }
+
             const provinceName = farmerProvince
                 ? (PROVINCE_MAP[farmerProvince] || null)
                 : null;
@@ -549,10 +474,28 @@
             if (priceData) {
                 regionEl.textContent = `${provinceName}・${fishLabel}`;
                 regionEl.style.color = '#555';
-                valueEl.textContent = priceData.range + ' KHR/kg';
-                sizeEl.textContent = priceData.size;
-                valueEl.style.display = 'block';
-                sizeEl.style.display = 'block';
+                // 新形式（rangeMin/Max, sizeMin/Max）優先、旧形式（range/size 文字列）フォールバック
+                let rangeText = '';
+                let sizeText = '';
+                if ('rangeMin' in priceData || 'rangeMax' in priceData) {
+                    const rMin = priceData.rangeMin;
+                    const rMax = priceData.rangeMax;
+                    if (rMin != null && rMax != null) rangeText = `${rMin.toLocaleString()}–${rMax.toLocaleString()} KHR/kg`;
+                    else if (rMin != null) rangeText = `${rMin.toLocaleString()} KHR/kg`;
+                    else if (rMax != null) rangeText = `${rMax.toLocaleString()} KHR/kg`;
+                    const sMin = priceData.sizeMin;
+                    const sMax = priceData.sizeMax;
+                    if (sMin != null && sMax != null) sizeText = `${sMin}–${sMax}kg`;
+                    else if (sMin != null) sizeText = `${sMin}kg`;
+                    else if (sMax != null) sizeText = `${sMax}kg`;
+                } else {
+                    rangeText = (priceData.range || '') + ' KHR/kg';
+                    sizeText = priceData.size || '';
+                }
+                valueEl.textContent = rangeText;
+                sizeEl.textContent = sizeText;
+                valueEl.style.display = rangeText ? 'block' : 'none';
+                sizeEl.style.display = sizeText ? 'block' : 'none';
             } else {
                 regionEl.textContent = provinceName
                     ? `${provinceName}・${fishLabel} ${i18next.t('post.caaNotAvailable')}`
@@ -583,6 +526,12 @@
         // currentUserData から province を読み取ってCAA表示を初期化
         waitForUserData(() => {
             farmerProvince = window.currentUserData.province || null;
+            const currentVal = document.getElementById('fish-type').value;
+            if (currentVal) updateCaaDisplay(currentVal);
+        });
+
+        // CAA参考価格データを Firestore から非同期ロード（完了後に再描画）
+        loadCaaData().then(() => {
             const currentVal = document.getElementById('fish-type').value;
             if (currentVal) updateCaaDisplay(currentVal);
         });

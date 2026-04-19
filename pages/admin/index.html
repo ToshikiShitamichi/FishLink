@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink Admin</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        body { background: #f8fafc; }
+
+        .admin-shell { max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+        .admin-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .admin-header__right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .admin-brand {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 2px;
+        }
+
+        .admin-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #0f172a;
+        }
+
+        .admin-subtitle {
+            font-size: 13px;
+            color: #475569;
+            margin-top: 4px;
+        }
+
+        .admin-nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .admin-nav a {
+            text-decoration: none;
+            color: #475569;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .admin-nav a.active {
+            background: #0f172a;
+            color: #fff;
+            border-color: #0f172a;
+        }
+
+        .admin-nav a:hover:not(.active) {
+            background: #f1f5f9;
+        }
+
+        .period-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .period-btn {
+            border: none;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .period-btn.active {
+            background: #0f172a;
+            color: #fff;
+        }
+
+        .custom-range {
+            display: none;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            background: #fff;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .custom-range.show { display: flex; }
+
+        .custom-range label { font-size: 12px; color: #64748b; }
+
+        .custom-range input[type="date"] {
+            width: auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
+        .custom-range button {
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: none;
+            background: #0f172a;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            padding: 14px 16px;
+        }
+
+        .summary-card__label {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .summary-card__value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: 4px;
+        }
+
+        .tab-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 10px 12px;
+        }
+
+        .tab-btn {
+            padding: 7px 14px;
+            border-radius: 999px;
+            border: none;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: #0f172a;
+            color: #fff;
+        }
+
+        .table-card {
+            background: #fff;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        table.tx-table {
+            width: 100%;
+            min-width: 950px;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .tx-table thead {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .tx-table th,
+        .tx-table td {
+            text-align: left;
+            padding: 12px 14px;
+            white-space: nowrap;
+        }
+
+        .tx-table tbody tr {
+            border-top: 1px solid #e2e8f0;
+            transition: background .1s;
+        }
+
+        .tx-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-pending { background: #fef3c7; color: #854d0e; }
+        .badge-approved { background: #dbeafe; color: #1e40af; }
+        .badge-preparing { background: #e2e8f0; color: #334155; }
+        .badge-delivering { background: #dbeafe; color: #1d4ed8; }
+        .badge-delivered { background: #ede9fe; color: #6d28d9; }
+        .badge-completed { background: #fef3c7; color: #854d0e; }
+        .badge-payment_confirmed { background: #d1fae5; color: #065f46; }
+        .badge-remitted { background: #ccfbf1; color: #0f766e; }
+        .badge-done { background: #0f172a; color: #fff; }
+        .badge-declined { background: #fee2e2; color: #991b1b; }
+
+        .btn-detail {
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-detail:hover { background: #f1f5f9; }
+
+        .empty-cell {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+            padding: 40px 16px !important;
+        }
+
+        #lang-selector {
+            width: auto;
+            font-size: 13px;
+            padding: 6px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: #fff;
+            color: #475569;
+        }
+
+        /* ── モバイル用カードリスト（tableの代替表示） ── */
+        .tx-cards { display: none; padding: 8px; }
+        .tx-card {
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+            padding: 14px; margin-bottom: 10px;
+        }
+        .tx-card__row {
+            display: flex; justify-content: space-between; gap: 12px;
+            font-size: 13px; padding: 3px 0;
+        }
+        .tx-card__k { color: #64748b; flex-shrink: 0; }
+        .tx-card__v { color: #0f172a; font-weight: 500; text-align: right; word-break: break-word; }
+        .tx-card__v.bold { font-weight: 700; }
+
+        /* ── タブレット ── */
+        @media (max-width: 1024px) {
+            .admin-shell { padding: 20px; }
+            .admin-title { font-size: 24px; }
+        }
+
+        /* ── モバイル ── */
+        @media (max-width: 720px) {
+            .admin-shell { padding: 14px; }
+            .admin-header { flex-direction: column; align-items: stretch; gap: 12px; }
+            .admin-header__right { justify-content: flex-start; }
+            .admin-title { font-size: 20px; }
+            .admin-subtitle { font-size: 12px; }
+
+            .admin-nav { order: 1; }
+            .admin-nav a { padding: 7px 12px; font-size: 12px; }
+
+            .period-row { gap: 6px; }
+            .period-btn { padding: 6px 12px; font-size: 12px; }
+
+            .summary-grid { grid-template-columns: 1fr; gap: 10px; }
+            .summary-card { padding: 12px 14px; }
+            .summary-card__value { font-size: 18px; }
+
+            .tab-row { padding: 8px; gap: 6px; overflow-x: auto; flex-wrap: nowrap; }
+            .tab-btn { padding: 6px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+
+            /* テーブルを隠してカード表示に */
+            .table-scroll { display: none; }
+            .tx-cards { display: block; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="admin-shell">
+        <div class="admin-header">
+            <div>
+                <div class="admin-brand" data-i18n="admin.brand"></div>
+                <div class="admin-title" data-i18n="admin.tx.title"></div>
+                <div class="admin-subtitle" data-i18n="admin.tx.subtitle"></div>
+            </div>
+            <div class="admin-header__right">
+                <nav class="admin-nav">
+                    <a href="/pages/admin/index.html" class="active" data-i18n="admin.navTransactions"></a>
+                    <a href="/pages/admin/settings.html" data-i18n="admin.navSettings"></a>
+                    <a href="/pages/admin/caa.html" data-i18n="admin.navCaa"></a>
+                    <a href="#" id="logout-btn" data-i18n="admin.navLogout"></a>
+                </nav>
+                <select id="lang-selector">
+                    <option value="km">ខ្មែរ</option>
+                    <option value="en">EN</option>
+                    <option value="ja">JA</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 期間切替 -->
+        <div class="period-row">
+            <button class="period-btn active" data-period="today" data-i18n="admin.tx.periodToday"></button>
+            <button class="period-btn" data-period="custom" data-i18n="admin.tx.periodCustom"></button>
+            <button class="period-btn" data-period="all" data-i18n="admin.tx.periodAll"></button>
+        </div>
+
+        <div class="custom-range" id="custom-range">
+            <label><span data-i18n="admin.tx.fromLabel"></span>:</label>
+            <input type="date" id="date-from">
+            <label><span data-i18n="admin.tx.toLabel"></span>:</label>
+            <input type="date" id="date-to">
+            <button id="apply-range" data-i18n="admin.tx.apply"></button>
+        </div>
+
+        <!-- サマリー -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-card__label" data-i18n="admin.tx.summaryCount"></div>
+                <div class="summary-card__value" id="sum-count">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card__label" data-i18n="admin.tx.summaryVolume"></div>
+                <div class="summary-card__value" id="sum-volume">0 KHR</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card__label" data-i18n="admin.tx.summaryFee"></div>
+                <div class="summary-card__value" id="sum-fee">0 KHR</div>
+            </div>
+        </div>
+
+        <!-- ステータスタブ -->
+        <div class="tab-row" id="tab-row"></div>
+
+        <!-- 取引一覧テーブル -->
+        <div class="table-card">
+            <div class="table-scroll">
+                <table class="tx-table">
+                    <thead>
+                        <tr>
+                            <th data-i18n="admin.tx.colStatus"></th>
+                            <th data-i18n="admin.tx.colDate"></th>
+                            <th data-i18n="admin.tx.colRestaurant"></th>
+                            <th data-i18n="admin.tx.colFarmer"></th>
+                            <th data-i18n="admin.tx.colPay"></th>
+                            <th data-i18n="admin.tx.colAction"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tx-body">
+                        <tr><td colspan="6" class="empty-cell" data-i18n="admin.tx.empty"></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- モバイル用カード表示 -->
+            <div class="tx-cards" id="tx-cards"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState, logout } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            collection, query, orderBy, getDocs, doc, getDoc
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logout();
+        });
+
+        // admin権限チェック
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        // ── ステータス判定 ─────────────────────────────
+        // UIタブのキー → matcher
+        // 取引一覧では status（配送ステータス）と adminStatus（管理ステータス）を組み合わせる
+        const TAB_KEYS = [
+            'all', 'preparing', 'delivering', 'delivered',
+            'completed', 'payment_confirmed', 'remitted', 'done'
+        ];
+
+        function matchTab(order, tab) {
+            if (tab === 'all') return true;
+            // admin 用の表示ステータス
+            if (order.adminStatus === 'done') return tab === 'done';
+            if (order.adminStatus === 'remitted') return tab === 'remitted';
+            if (order.adminStatus === 'payment_confirmed') return tab === 'payment_confirmed';
+            // 配送ステータス
+            if (order.status === 'completed') return tab === 'completed';
+            if (order.status === 'delivered') return tab === 'delivered';
+            if (order.status === 'delivering') return tab === 'delivering';
+            if (order.status === 'preparing') return tab === 'preparing';
+            return false;
+        }
+
+        function adminDisplayStatus(order) {
+            if (order.adminStatus === 'done') return 'done';
+            if (order.adminStatus === 'remitted') return 'remitted';
+            if (order.adminStatus === 'payment_confirmed') return 'payment_confirmed';
+            if (order.status === 'declined') return 'declined';
+            return order.status || 'pending';
+        }
+
+        function statusLabel(key) {
+            return i18next.t(`admin.tx.status${capitalize(key)}`) || key;
+        }
+
+        function capitalize(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1).replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+        }
+
+        // ── 期間フィルタ ─────────────────────────────
+        let periodMode = 'today';
+        let dateFrom = null;
+        let dateTo = null;
+
+        function matchPeriod(order) {
+            const ms = order.createdAt?.toMillis?.() || 0;
+            if (periodMode === 'all') return true;
+            const d = new Date(ms);
+            if (periodMode === 'today') {
+                const today = new Date();
+                return d.getFullYear() === today.getFullYear()
+                    && d.getMonth() === today.getMonth()
+                    && d.getDate() === today.getDate();
+            }
+            if (periodMode === 'custom') {
+                if (dateFrom && ms < dateFrom) return false;
+                if (dateTo && ms > dateTo) return false;
+                return true;
+            }
+            return true;
+        }
+
+        // ── データ取得 ─────────────────────────────
+        let allOrders = [];
+        let allFishListings = {}; // id → data
+        let allUsers = {};        // uid → data
+        let currentTab = 'all';
+
+        waitForUserData(async () => {
+            if (window.currentUserData?.role !== 'admin') {
+                alert('Admin access required');
+                location.href = '/index.html';
+                return;
+            }
+            loading.classList.add('show');
+            try {
+                // 全注文取得（本番ではページング推奨）
+                const snap = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
+                allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                // 関連 users / listings をキャッシュ取得
+                const userIds = new Set();
+                const listingIds = new Set();
+                allOrders.forEach(o => {
+                    if (o.restaurantId) userIds.add(o.restaurantId);
+                    if (o.farmerId) userIds.add(o.farmerId);
+                    if (o.listingId) listingIds.add(o.listingId);
+                });
+                await Promise.all([...userIds].map(async uid => {
+                    const uSnap = await getDoc(doc(db, 'users', uid));
+                    if (uSnap.exists()) allUsers[uid] = uSnap.data();
+                }));
+                await Promise.all([...listingIds].map(async lid => {
+                    const lSnap = await getDoc(doc(db, 'fishListings', lid));
+                    if (lSnap.exists()) allFishListings[lid] = lSnap.data();
+                }));
+
+                buildTabs();
+                render();
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+            }
+        });
+
+        function buildTabs() {
+            const row = document.getElementById('tab-row');
+            row.innerHTML = '';
+            TAB_KEYS.forEach(key => {
+                const btn = document.createElement('button');
+                btn.className = 'tab-btn' + (key === currentTab ? ' active' : '');
+                btn.textContent = i18next.t(`admin.tx.tab${capitalize(key)}`);
+                btn.addEventListener('click', () => {
+                    currentTab = key;
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    render();
+                });
+                row.appendChild(btn);
+            });
+        }
+
+        // 期間ボタン
+        document.querySelectorAll('.period-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                periodMode = btn.dataset.period;
+                document.getElementById('custom-range').classList.toggle('show', periodMode === 'custom');
+                render();
+            });
+        });
+
+        document.getElementById('apply-range').addEventListener('click', () => {
+            const f = document.getElementById('date-from').value;
+            const t = document.getElementById('date-to').value;
+            dateFrom = f ? new Date(f + 'T00:00:00').getTime() : null;
+            dateTo = t ? new Date(t + 'T23:59:59').getTime() : null;
+            render();
+        });
+
+        function render() {
+            const filtered = allOrders
+                .filter(matchPeriod)
+                .filter(o => matchTab(o, currentTab));
+
+            // サマリー計算（期間フィルタ後、タブ無視）
+            const periodFiltered = allOrders.filter(matchPeriod);
+            const count = periodFiltered.length;
+            const volume = periodFiltered.reduce((s, o) => s + (o.totalAmount || 0), 0);
+            // 手数料 = FishLink収益 = 魚代 × 10%（= 手数料5% + サービス料5%）
+            // 正確には fishPrice × 5% + serviceFee で算出
+            const fee = periodFiltered.reduce((s, o) => {
+                const commission = Math.round((o.fishPrice || 0) * 0.05);
+                const service = (o.serviceFee || 0) - (o.campaignDiscount || 0);
+                return s + commission + service;
+            }, 0);
+
+            document.getElementById('sum-count').textContent = i18next.t('admin.tx.countUnit', { count });
+            document.getElementById('sum-volume').textContent = `${volume.toLocaleString()} KHR`;
+            document.getElementById('sum-fee').textContent = `${fee.toLocaleString()} KHR`;
+
+            // テーブル描画（PC/タブレット）＋ カード描画（モバイル）
+            const tbody = document.getElementById('tx-body');
+            const cards = document.getElementById('tx-cards');
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">${i18next.t('admin.tx.empty')}</td></tr>`;
+                cards.innerHTML = `<div class="empty-cell">${i18next.t('admin.tx.empty')}</div>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(o => {
+                const status = adminDisplayStatus(o);
+                const restName = allUsers[o.restaurantId]?.displayName || '-';
+                const farmerName = allUsers[o.farmerId]?.displayName || '-';
+                const date = o.createdAt?.toDate ? formatDate(o.createdAt.toDate()) : '';
+                return `
+                    <tr>
+                        <td><span class="badge badge-${status}">${statusLabel(status)}</span></td>
+                        <td>${date}</td>
+                        <td>${restName}</td>
+                        <td>${farmerName}</td>
+                        <td style="font-weight:600;">${(o.totalAmount || 0).toLocaleString()} KHR</td>
+                        <td><a class="btn-detail" href="/pages/admin/order.html?id=${o.id}">${i18next.t('admin.tx.viewDetail')}</a></td>
+                    </tr>
+                `;
+            }).join('');
+
+            cards.innerHTML = filtered.map(o => {
+                const status = adminDisplayStatus(o);
+                const restName = allUsers[o.restaurantId]?.displayName || '-';
+                const farmerName = allUsers[o.farmerId]?.displayName || '-';
+                const date = o.createdAt?.toDate ? formatDate(o.createdAt.toDate()) : '';
+                return `
+                    <a class="tx-card" href="/pages/admin/order.html?id=${o.id}" style="text-decoration:none; color:inherit; display:block;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                            <span class="badge badge-${status}">${statusLabel(status)}</span>
+                            <span style="font-size:12px; color:#64748b;">${date}</span>
+                        </div>
+                        <div class="tx-card__row"><span class="tx-card__k">${i18next.t('admin.tx.colRestaurant')}</span><span class="tx-card__v">${restName}</span></div>
+                        <div class="tx-card__row"><span class="tx-card__k">${i18next.t('admin.tx.colFarmer')}</span><span class="tx-card__v">${farmerName}</span></div>
+                        <div class="tx-card__row"><span class="tx-card__k">${i18next.t('admin.tx.colPay')}</span><span class="tx-card__v bold">${(o.totalAmount || 0).toLocaleString()} KHR</span></div>
+                    </a>
+                `;
+            }).join('');
+        }
+
+        function formatDate(d) {
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        onLanguageChange(() => {
+            buildTabs();
+            render();
+        });
+    </script>
+</body>
+</html>

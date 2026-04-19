@@ -72,8 +72,10 @@ function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRe
                 // Firestoreの言語設定をlocalStorageに同期
                 // ※画面上部パネルで切り替えた場合はlocalStorageが優先されるが、
                 //   次回ログイン時にFirestoreの値で再上書きされる
-                // FCMトークン取得・保存（通知許可が得られた場合のみ）
-                requestFcmToken(user.uid);
+                // FCMトークン取得・保存（管理者は通知不要のためスキップ）
+                if (window.currentUserData.role !== 'admin') {
+                    requestFcmToken(user.uid);
+                }
             }
         } else {
             if (requireAuth) window.location.href = '/index.html';

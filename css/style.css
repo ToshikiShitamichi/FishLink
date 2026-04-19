@@ -103,6 +103,14 @@ body[data-lang="km"] {
     margin-bottom: 28px;
 }
 
+.logo__img {
+    display: block;
+    width: 80%;
+    max-width: 280px;
+    height: auto;
+    margin: 0 auto 6px;
+}
+
 .logo__icon {
     font-size: 48px;
     line-height: 1;
@@ -118,6 +126,13 @@ body[data-lang="km"] {
     font-size: 13px;
     color: var(--color-text-sub);
     margin-top: 4px;
+}
+
+/* ヘッダー内で使うブランドロゴ（小） */
+.brand-logo {
+    height: 28px;
+    width: auto;
+    display: block;
 }
 
 /* ── フォームパーツ ──────────────────────────────────────────── */

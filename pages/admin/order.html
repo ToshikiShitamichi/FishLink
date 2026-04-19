@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink Admin</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        body { background: #f8fafc; }
+
+        .admin-shell { max-width: 1280px; margin: 0 auto; padding: 24px; padding-bottom: 120px; }
+
+        /* 詳細セクション群は最大1100pxに抑えて読みやすく */
+        .order-content { max-width: 1100px; margin: 0 auto; }
+
+        .admin-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
+        }
+        .admin-brand { font-size: 13px; color: #64748b; }
+        .admin-title { font-size: 26px; font-weight: 700; color: #0f172a; margin-top: 2px; }
+        .admin-subtitle { font-size: 13px; color: #475569; margin-top: 4px; }
+
+        .admin-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+        .admin-nav a {
+            text-decoration: none; color: #475569; padding: 8px 14px;
+            border-radius: 999px; background: #fff; border: 1px solid #e2e8f0;
+            font-size: 13px; font-weight: 600;
+        }
+        .admin-nav a.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+        .admin-nav a:hover:not(.active) { background: #f1f5f9; }
+
+        #lang-selector {
+            width: auto; font-size: 13px; padding: 6px 10px;
+            border: 1px solid #e2e8f0; border-radius: 20px; background: #fff; color: #475569;
+        }
+
+        .status-chip {
+            display: inline-block; padding: 4px 12px; border-radius: 999px;
+            font-size: 13px; font-weight: 600;
+        }
+        .chip-amber { background: #fef3c7; color: #854d0e; }
+        .chip-emerald { background: #d1fae5; color: #065f46; }
+        .chip-teal { background: #ccfbf1; color: #0f766e; }
+        .chip-slate { background: #0f172a; color: #fff; }
+        .chip-violet { background: #ede9fe; color: #6d28d9; }
+        .chip-blue { background: #dbeafe; color: #1e40af; }
+
+        .pill {
+            display: inline-block; padding: 4px 12px; border-radius: 999px;
+            font-size: 12px; background: #fff; border: 1px solid #e2e8f0; color: #475569;
+        }
+
+        .summary-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px; margin-bottom: 20px;
+        }
+        .summary-card {
+            background: #fff; border-radius: 16px; border: 1px solid #e2e8f0;
+            padding: 16px 18px;
+        }
+        .summary-card__label { font-size: 12px; color: #64748b; }
+        .summary-card__value { font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 4px; }
+        .summary-card__desc { font-size: 12px; color: #64748b; margin-top: 6px; }
+
+        .section {
+            background: #fff; border-radius: 20px; border: 1px solid #e2e8f0;
+            padding: 20px; margin-bottom: 16px;
+        }
+        .section__head {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 14px; gap: 12px;
+        }
+        .section__title { font-size: 17px; font-weight: 700; color: #0f172a; }
+
+        .section-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .sub-card {
+            background: #f8fafc; border-radius: 14px; padding: 14px 16px;
+        }
+        .sub-card__label { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+
+        .kv-row {
+            display: flex; justify-content: space-between; gap: 12px;
+            padding: 5px 0; font-size: 13px;
+        }
+        .kv-row__k { color: #64748b; }
+        .kv-row__v { color: #0f172a; font-weight: 500; }
+        .kv-row__v.bold { font-weight: 700; }
+        .kv-row__v.minus { color: #ef4444; }
+
+        .divider-dashed {
+            border-top: 1px dashed #cbd5e1; margin: 8px 0;
+        }
+
+        .primary-btn {
+            width: 100%; border: none; border-radius: 14px;
+            background: #0f172a; color: #fff; font-weight: 600;
+            font-size: 14px; padding: 12px; cursor: pointer; margin-top: 14px;
+        }
+        .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .secondary-btn {
+            width: 100%; border: 1px solid #cbd5e1; border-radius: 14px;
+            background: #fff; color: #334155; font-weight: 600;
+            font-size: 14px; padding: 12px; cursor: pointer; margin-top: 14px;
+        }
+        .secondary-btn:hover { background: #f1f5f9; }
+        .secondary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .qr-preview {
+            display: flex; align-items: center; justify-content: center;
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+            padding: 12px; margin-top: 8px;
+            min-height: 140px;
+        }
+        .qr-preview img { max-width: 180px; width: 100%; height: auto; }
+        .qr-preview__empty { color: #94a3b8; font-size: 12px; }
+
+        textarea.memo-area {
+            width: 100%; border: 1px solid #cbd5e1; border-radius: 14px;
+            padding: 12px 14px; font-family: inherit; font-size: 13px;
+            resize: vertical; min-height: 120px;
+            background: #f8fafc;
+        }
+
+        .memo-save-row {
+            display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;
+            align-items: center;
+        }
+        .memo-save-row__note { font-size: 12px; color: #16a34a; opacity: 0; transition: opacity .3s; }
+        .memo-save-row__note.show { opacity: 1; }
+
+        .finalize-bar {
+            position: fixed; bottom: 16px; left: 16px; right: 16px;
+            max-width: 1024px; margin: 0 auto;
+            background: rgba(255,255,255,.95); backdrop-filter: blur(8px);
+            border: 1px solid #e2e8f0; border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(15,23,42,.08);
+            padding: 14px 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 16px; flex-wrap: wrap;
+        }
+        .finalize-bar__text__title { font-weight: 700; color: #0f172a; }
+        .finalize-bar__text__desc { font-size: 12px; color: #475569; margin-top: 2px; }
+        .finalize-bar__btn {
+            border: none; border-radius: 14px;
+            background: #059669; color: #fff; font-weight: 700;
+            font-size: 15px; padding: 12px 22px; cursor: pointer;
+        }
+        .finalize-bar__btn:disabled { opacity: 0.45; cursor: not-allowed; background: #94a3b8; }
+
+        .external-link {
+            word-break: break-all; font-size: 12px; color: #0284c7;
+            text-decoration: none; display: block; margin-top: 8px;
+        }
+
+        .admin-header__right {
+            display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .admin-nav a { white-space: nowrap; }
+
+        /* ── タブレット ── */
+        @media (max-width: 1024px) {
+            .admin-shell { padding: 20px; padding-bottom: 140px; }
+            .admin-title { font-size: 24px; }
+            .section-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── モバイル ── */
+        @media (max-width: 720px) {
+            .admin-shell { padding: 14px; padding-bottom: 160px; }
+            .admin-header { flex-direction: column; align-items: stretch; gap: 12px; }
+            .admin-header__right { justify-content: flex-start; }
+            .admin-title { font-size: 20px; }
+            .admin-subtitle { font-size: 12px; }
+            .admin-nav a { padding: 7px 12px; font-size: 12px; }
+
+            .summary-grid { grid-template-columns: 1fr; gap: 10px; }
+            .summary-card__value { font-size: 18px; }
+
+            .section { padding: 16px; }
+            .section__title { font-size: 15px; }
+
+            .sub-card { padding: 12px 14px; }
+
+            .finalize-bar {
+                left: 10px; right: 10px; bottom: 10px; padding: 12px 14px;
+                flex-direction: column; align-items: stretch; gap: 8px;
+            }
+            .finalize-bar__btn { width: 100%; padding: 12px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="admin-shell">
+        <div class="admin-header">
+            <div>
+                <div class="admin-brand" data-i18n="admin.brand"></div>
+                <div class="admin-title" data-i18n="admin.order.title"></div>
+                <div class="admin-subtitle" data-i18n="admin.order.subtitle"></div>
+            </div>
+            <div class="admin-header__right">
+                <nav class="admin-nav">
+                    <a href="/pages/admin/index.html" class="active" data-i18n="admin.navTransactions"></a>
+                    <a href="/pages/admin/settings.html" data-i18n="admin.navSettings"></a>
+                    <a href="/pages/admin/caa.html" data-i18n="admin.navCaa"></a>
+                    <a href="#" id="logout-btn" data-i18n="admin.navLogout"></a>
+                </nav>
+                <select id="lang-selector">
+                    <option value="km">ខ្មែរ</option><option value="en">EN</option><option value="ja">JA</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="order-content">
+        <!-- 上部ステータス -->
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+            <span id="top-status-chip" class="status-chip chip-amber"></span>
+            <span id="top-date-pill" class="pill"></span>
+        </div>
+
+        <!-- サマリー3カード -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-card__label" data-i18n="admin.order.currentStatus"></div>
+                <div class="summary-card__value" id="summary-status"></div>
+                <div class="summary-card__desc" id="summary-next-step"></div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card__label" data-i18n="admin.order.restaurantPay"></div>
+                <div class="summary-card__value" id="summary-pay">0 KHR</div>
+                <div class="summary-card__desc" data-i18n="admin.order.includesNote"></div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-card__label" data-i18n="admin.order.farmerRemit"></div>
+                <div class="summary-card__value" id="summary-remit">0 KHR</div>
+                <div class="summary-card__desc" data-i18n="admin.order.afterFeeNote"></div>
+            </div>
+        </div>
+
+        <!-- 注文情報 -->
+        <section class="section">
+            <div class="section__head">
+                <div class="section__title" data-i18n="admin.order.orderInfoTitle"></div>
+                <span class="pill" data-i18n="admin.order.orderInfoBadge"></span>
+            </div>
+            <div class="section-grid">
+                <div class="sub-card">
+                    <div class="sub-card__label" data-i18n="admin.order.basicInfo"></div>
+                    <div id="basic-info"></div>
+                </div>
+                <div class="sub-card">
+                    <div class="sub-card__label" data-i18n="admin.order.deliveryCondition"></div>
+                    <div id="delivery-info"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- レストラン入金確認 -->
+        <section class="section">
+            <div class="section__head">
+                <div class="section__title" data-i18n="admin.order.paymentCheckTitle"></div>
+                <span class="pill" style="background:#fef3c7; color:#854d0e; border-color:#fde68a;" data-i18n="admin.order.paymentCheckBadge"></span>
+            </div>
+            <div class="section-grid">
+                <div class="sub-card">
+                    <div class="sub-card__label" data-i18n="admin.order.payPreview"></div>
+                    <div id="pay-breakdown"></div>
+                </div>
+                <div class="sub-card">
+                    <div class="sub-card__label" data-i18n="admin.order.paymentInfo"></div>
+                    <div id="payment-info"></div>
+                    <button class="primary-btn" id="confirm-payment-btn" data-i18n="admin.order.markPaymentConfirmed"></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 農家送金 -->
+        <section class="section">
+            <div class="section__head">
+                <div class="section__title" data-i18n="admin.order.remittanceTitle"></div>
+                <span class="pill" style="background:#d1fae5; color:#065f46; border-color:#a7f3d0;" data-i18n="admin.order.remittanceBadge"></span>
+            </div>
+            <div class="section-grid">
+                <div class="sub-card">
+                    <div class="sub-card__label" data-i18n="admin.order.remitPreview"></div>
+                    <div id="remit-breakdown"></div>
+                </div>
+                <div class="sub-card">
+                    <div class="sub-card__label" data-i18n="admin.order.remitTarget"></div>
+                    <div id="remit-target"></div>
+                    <button class="secondary-btn" id="mark-remit-btn" data-i18n="admin.order.markRemitted"></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 内部メモ -->
+        <section class="section">
+            <div class="section__head">
+                <div class="section__title" data-i18n="admin.order.memoTitle"></div>
+                <span class="pill" data-i18n="admin.order.memoBadge"></span>
+            </div>
+            <textarea class="memo-area" id="admin-memo" data-i18n="[placeholder]admin.order.memoPlaceholder"></textarea>
+            <div class="memo-save-row">
+                <span class="memo-save-row__note" id="memo-saved" data-i18n="admin.order.memoSaved"></span>
+                <button style="border:1px solid #cbd5e1; background:#fff; color:#334155; font-weight:600; font-size:13px; padding:8px 16px; border-radius:10px; cursor:pointer;" id="save-memo-btn" data-i18n="admin.order.saveMemo"></button>
+            </div>
+        </section>
+        </div>
+    </div>
+
+    <!-- 固定フッター -->
+    <div class="finalize-bar">
+        <div class="finalize-bar__text">
+            <div class="finalize-bar__text__title" data-i18n="admin.order.finalTitle"></div>
+            <div class="finalize-bar__text__desc" data-i18n="admin.order.finalDesc"></div>
+        </div>
+        <button class="finalize-bar__btn" id="done-btn" data-i18n="admin.order.markDone"></button>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState, logout } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            doc, getDoc, updateDoc, onSnapshot
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logout();
+        });
+
+        const params = new URLSearchParams(location.search);
+        const orderId = params.get('id');
+        if (!orderId) location.href = '/pages/admin/index.html';
+
+        let orderData = null;
+        let farmerData = null;
+        let restData = null;
+        let listingData = null;
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        waitForUserData(async () => {
+            if (window.currentUserData?.role !== 'admin') {
+                alert('Admin access required');
+                location.href = '/index.html';
+                return;
+            }
+            loading.classList.add('show');
+            try {
+                // リアルタイム購読
+                onSnapshot(doc(db, 'orders', orderId), async (snap) => {
+                    if (!snap.exists()) { location.href = '/pages/admin/index.html'; return; }
+                    orderData = snap.data();
+
+                    // 初回のみ関連データ取得
+                    if (!farmerData && orderData.farmerId) {
+                        const f = await getDoc(doc(db, 'users', orderData.farmerId));
+                        farmerData = f.data() || {};
+                    }
+                    if (!restData && orderData.restaurantId) {
+                        const r = await getDoc(doc(db, 'users', orderData.restaurantId));
+                        restData = r.data() || {};
+                    }
+                    if (!listingData && orderData.listingId) {
+                        const l = await getDoc(doc(db, 'fishListings', orderData.listingId));
+                        listingData = l.data() || {};
+                    }
+
+                    render();
+                    loading.classList.remove('show');
+                });
+            } catch (err) {
+                console.error(err);
+                loading.classList.remove('show');
+            }
+        });
+
+        function adminDisplayKey() {
+            if (orderData.adminStatus === 'done') return 'done';
+            if (orderData.adminStatus === 'remitted') return 'remitted';
+            if (orderData.adminStatus === 'payment_confirmed') return 'paymentConfirmed';
+            if (orderData.status === 'completed') return 'completed';
+            if (orderData.status === 'delivered') return 'delivered';
+            if (orderData.status === 'delivering') return 'delivering';
+            if (orderData.status === 'preparing') return 'preparing';
+            if (orderData.status === 'approved') return 'approved';
+            if (orderData.status === 'declined') return 'declined';
+            return 'pending';
+        }
+
+        function chipClass(key) {
+            const map = {
+                done: 'chip-slate',
+                remitted: 'chip-teal',
+                paymentConfirmed: 'chip-emerald',
+                completed: 'chip-amber',
+                delivered: 'chip-violet',
+                delivering: 'chip-blue',
+                preparing: 'chip-blue',
+                approved: 'chip-blue',
+                pending: 'chip-amber',
+                declined: 'chip-amber',
+            };
+            return map[key] || 'chip-amber';
+        }
+
+        function render() {
+            const key = adminDisplayKey();
+            const label = i18next.t(`admin.tx.status${cap(key)}`) || key;
+            const chip = document.getElementById('top-status-chip');
+            chip.className = `status-chip ${chipClass(key)}`;
+            chip.textContent = label;
+
+            // 注文日時
+            const created = orderData.createdAt?.toDate ? orderData.createdAt.toDate() : null;
+            document.getElementById('top-date-pill').textContent = created ? formatDate(created) : '';
+
+            document.getElementById('summary-status').textContent = label;
+
+            // 次の操作
+            let nextStepKey = 'stepAllDone';
+            if (orderData.status !== 'completed') {
+                nextStepKey = ''; // 受取完了前は「操作なし」
+            } else if (!orderData.adminStatus) {
+                nextStepKey = 'stepNoPayment';
+            } else if (orderData.adminStatus === 'payment_confirmed') {
+                nextStepKey = 'stepNoRemit';
+            } else if (orderData.adminStatus === 'remitted') {
+                nextStepKey = 'stepNoDone';
+            } else {
+                nextStepKey = 'stepAllDone';
+            }
+            document.getElementById('summary-next-step').textContent = nextStepKey ? `${i18next.t('admin.order.nextStep')}: ${i18next.t(`admin.order.${nextStepKey}`)}` : '';
+
+            // 金額
+            const total = orderData.totalAmount || 0;
+            document.getElementById('summary-pay').textContent = `${total.toLocaleString()} KHR`;
+
+            const fishPrice = orderData.fishPrice || 0;
+            const deliveryFee = orderData.deliveryFee || 0;
+            const commission = Math.round(fishPrice * 0.05);
+            const remitAmount = orderData.farmerReceiveAmount || (fishPrice - commission + deliveryFee);
+            document.getElementById('summary-remit').textContent = `${remitAmount.toLocaleString()} KHR`;
+
+            // 注文情報
+            const fishName = listingData?.fishType
+                ? (i18next.exists(`fish.${listingData.fishType}`) ? i18next.t(`fish.${listingData.fishType}`) : listingData.fishType)
+                : '-';
+
+            document.getElementById('basic-info').innerHTML = `
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.restaurantName')}</span><span class="kv-row__v">${restData?.displayName || '-'}</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.farmerName')}</span><span class="kv-row__v">${farmerData?.displayName || '-'}</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishType')}</span><span class="kv-row__v">${fishName}</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishSize')}</span><span class="kv-row__v">${listingData?.size || '-'} head/kg</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.qty')}</span><span class="kv-row__v">${orderData.quantity || 0} kg</span></div>
+            `;
+
+            document.getElementById('delivery-info').innerHTML = `
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.deliveryDate')}</span><span class="kv-row__v">${orderData.deliveryDate || '-'}</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.deliveryTime')}</span><span class="kv-row__v">${orderData.deliveryTime || '-'}</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.gutProcessing')}</span><span class="kv-row__v">${orderData.gutProcessing ? i18next.t('admin.order.gutYes') : i18next.t('admin.order.gutNo')}</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.status')}</span><span class="kv-row__v">${label}</span></div>
+            `;
+
+            // 支払内訳
+            const campaign = orderData.campaignDiscount || 0;
+            const serviceFee = orderData.serviceFee || 0;
+            let payHtml = `
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishPrice')}</span><span class="kv-row__v">${fishPrice.toLocaleString()} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.deliveryFee')}</span><span class="kv-row__v">${deliveryFee.toLocaleString()} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.serviceFee')}</span><span class="kv-row__v">${serviceFee.toLocaleString()} KHR</span></div>
+            `;
+            if (campaign > 0) {
+                payHtml += `<div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.campaignDiscount')}</span><span class="kv-row__v minus">-${campaign.toLocaleString()} KHR</span></div>`;
+            }
+            payHtml += `
+                <div class="divider-dashed"></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.total')}</span><span class="kv-row__v bold">${total.toLocaleString()} KHR</span></div>
+            `;
+            document.getElementById('pay-breakdown').innerHTML = payHtml;
+
+            // 入金情報（PoCでは未取得、手動確認のためN/A表示）
+            // 将来的にPayway APIと連携するなら自動取得可能
+            document.getElementById('payment-info').innerHTML = `
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fromName')}</span><span class="kv-row__v">${restData?.accountName || '-'}</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fromAccount')}</span><span class="kv-row__v">-</span></div>
+            `;
+
+            // 送金内訳
+            document.getElementById('remit-breakdown').innerHTML = `
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishPrice')}</span><span class="kv-row__v">${fishPrice.toLocaleString()} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.deliveryFee')}</span><span class="kv-row__v">${deliveryFee.toLocaleString()} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.commissionDeduct')}</span><span class="kv-row__v minus">-${commission.toLocaleString()} KHR</span></div>
+                <div class="divider-dashed"></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.total')}</span><span class="kv-row__v bold">${remitAmount.toLocaleString()} KHR</span></div>
+            `;
+
+            // 送金先情報
+            const qrImage = farmerData?.qrImageUrl
+                ? `<img src="${farmerData.qrImageUrl}" alt="QR">`
+                : `<span class="qr-preview__empty">${i18next.t('admin.order.noQr')}</span>`;
+            const qrLink = farmerData?.qrLink
+                ? `<a href="${farmerData.qrLink}" target="_blank" rel="noopener" class="external-link">${farmerData.qrLink}</a>`
+                : `<div style="font-size:12px; color:#94a3b8; margin-top:8px;">${i18next.t('admin.order.noQrLink')}</div>`;
+
+            document.getElementById('remit-target').innerHTML = `
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.remitTargetName')}</span><span class="kv-row__v">${farmerData?.accountName || farmerData?.displayName || '-'}</span></div>
+                <div style="margin-top:8px; font-size:12px; color:#64748b;">${i18next.t('admin.order.remitQrImage')}</div>
+                <div class="qr-preview">${qrImage}</div>
+                <div style="margin-top:12px; font-size:12px; color:#64748b;">${i18next.t('admin.order.remitQrLink')}</div>
+                ${qrLink}
+            `;
+
+            // ボタン有効/無効（フロー順序）
+            const confirmBtn = document.getElementById('confirm-payment-btn');
+            const remitBtn = document.getElementById('mark-remit-btn');
+            const doneBtn = document.getElementById('done-btn');
+
+            // 受取完了後（status===completed）のみ adminフロー開始
+            const canStartAdmin = orderData.status === 'completed';
+            const isPaymentConfirmed = ['payment_confirmed', 'remitted', 'done'].includes(orderData.adminStatus);
+            const isRemitted = ['remitted', 'done'].includes(orderData.adminStatus);
+            const isDone = orderData.adminStatus === 'done';
+
+            confirmBtn.disabled = !canStartAdmin || isPaymentConfirmed;
+            remitBtn.disabled = !isPaymentConfirmed || isRemitted;
+            doneBtn.disabled = !isRemitted || isDone;
+
+            if (isPaymentConfirmed) confirmBtn.style.background = '#94a3b8';
+            else confirmBtn.style.background = '#0f172a';
+
+            // 内部メモ
+            document.getElementById('admin-memo').value = orderData.adminMemo || '';
+        }
+
+        function cap(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        function formatDate(d) {
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        // ── アクション ─────────────────────────────
+        document.getElementById('confirm-payment-btn').addEventListener('click', async () => {
+            if (!confirm(i18next.t('admin.order.confirmPaymentConfirmed'))) return;
+            await updateDoc(doc(db, 'orders', orderId), { adminStatus: 'payment_confirmed' });
+        });
+
+        document.getElementById('mark-remit-btn').addEventListener('click', async () => {
+            if (!confirm(i18next.t('admin.order.confirmRemitted'))) return;
+            await updateDoc(doc(db, 'orders', orderId), { adminStatus: 'remitted' });
+        });
+
+        document.getElementById('done-btn').addEventListener('click', async () => {
+            if (!confirm(i18next.t('admin.order.confirmDone'))) return;
+            await updateDoc(doc(db, 'orders', orderId), { adminStatus: 'done' });
+        });
+
+        document.getElementById('save-memo-btn').addEventListener('click', async () => {
+            const memo = document.getElementById('admin-memo').value;
+            await updateDoc(doc(db, 'orders', orderId), { adminMemo: memo });
+            const note = document.getElementById('memo-saved');
+            note.classList.add('show');
+            setTimeout(() => note.classList.remove('show'), 1500);
+        });
+
+        onLanguageChange(() => orderData && render());
+    </script>
+</body>
+</html>

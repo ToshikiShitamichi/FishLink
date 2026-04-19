@@ -7,6 +7,9 @@
     <meta name="theme-color" content="#0d6e4c">
     <title>FishLink</title>
     <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
@@ -276,6 +279,11 @@
             border-left-color: #f59e0b;
         }
 
+        .section-label.waiting-label {
+            background: #eff6ff;
+            border-left-color: #0ea5e9;
+        }
+
         .accordion-header {
             display: flex;
             align-items: center;
@@ -330,7 +338,7 @@
 
         <!-- ヘッダー -->
         <div class="page-header" style="align-items:center;">
-            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; color:inherit; flex:1;">FishLink</a>
+            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option>
@@ -598,10 +606,20 @@
 
         function renderOrders() {
             // 期限切れpendingは辞退扱いに振り分け
+            // adminStatus が remitted/done になるまで（運営からの送金完了まで）は上部に残す
+            const isRemitted = (o) => ['remitted', 'done'].includes(o.adminStatus);
+
             const activeOrders = allOrders.filter(o => ['approved', 'preparing', 'delivering'].includes(o.status));
             const pendingOrders = allOrders.filter(o => o.status === 'pending' && !isOrderExpired(o));
             const expiredOrders = allOrders.filter(o => o.status === 'pending' && isOrderExpired(o));
-            const completedOrders = allOrders.filter(o => ['delivered', 'completed'].includes(o.status));
+            // 受取完了したが運営からの送金がまだ
+            const waitingRemittanceOrders = allOrders.filter(o =>
+                ['delivered', 'completed'].includes(o.status) && !isRemitted(o)
+            );
+            // 運営からの送金が完了済み
+            const completedOrders = allOrders.filter(o =>
+                ['delivered', 'completed'].includes(o.status) && isRemitted(o)
+            );
             const declinedOrders = [...allOrders.filter(o => o.status === 'declined'), ...expiredOrders];
 
             const listEl = document.getElementById('orders-list');
@@ -625,7 +643,15 @@
                 });
             }
 
-            // ② 新規注文（pending）
+            // ② 送金待ち（受取完了 / 運営からの送金が未了）
+            if (waitingRemittanceOrders.length > 0) {
+                listEl.innerHTML += `<div class="section-label waiting-label">${i18next.t('orders.waitingRemittanceSection', { count: waitingRemittanceOrders.length })}</div>`;
+                waitingRemittanceOrders.forEach(order => {
+                    listEl.innerHTML += renderOrderCard(order);
+                });
+            }
+
+            // ③ 新規注文（pending）
             if (pendingOrders.length > 0) {
                 listEl.innerHTML += `<div class="section-label pending-label">${i18next.t('orders.pendingSection', { count: pendingOrders.length })}</div>`;
                 pendingOrders.forEach(order => {

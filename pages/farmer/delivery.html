@@ -7,6 +7,9 @@
     <meta name="theme-color" content="#0d6e4c">
     <title>FishLink</title>
     <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
@@ -142,7 +145,7 @@
     <div class="delivery-page">
         <div class="page-header" style="align-items:center; padding:16px;">
             <a href="/pages/farmer/orders.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub);"><span class="material-symbols-outlined">arrow_back</span></a>
-            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; color:inherit; flex:1;">FishLink</a>
+            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector" style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option><option value="en">EN</option><option value="ja">JA</option>
             </select>
@@ -398,7 +401,8 @@
                 createdAt: serverTimestamp(),
             });
 
-            location.href = '/pages/farmer/orders.html';
+            // 配達完了後はそのまま送金状況画面へ（評価導線の起点）
+            location.href = `/pages/farmer/payment.html?id=${orderId}`;
         });
     </script>
 </body>
