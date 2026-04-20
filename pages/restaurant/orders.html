@@ -126,6 +126,9 @@
                     : i18next.t('payment.goToPayment');
             }
 
+            // 支払済みの完了注文にレビューリンクを追加
+            const showReviewLink = isCompleted && order.paymentStatus === 'paid';
+
             return `
                 <a class="order-item" href="${href}">
                     <div class="order-item__top">
@@ -136,6 +139,18 @@
                         ${order.quantity}kg · ${order.deliveryDate || ''} ${order.deliveryTime || ''}
                         ${actionLabel ? `<br>${actionLabel}` : ''}
                     </div>
+                    ${showReviewLink ? `
+                        <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+                            <a href="/pages/restaurant/review.html?id=${d.id}" onclick="event.stopPropagation();" style="flex:1; text-align:center; background:#f97316; color:#fff; border-radius:10px; padding:8px; font-size:12px; font-weight:700; text-decoration:none;">
+                                <span class="material-symbols-outlined" style="font-size:14px; vertical-align:-3px;">star</span>
+                                ${i18next.t('review.submit')}
+                            </a>
+                            <a href="/pages/restaurant/report.html?id=${d.id}" onclick="event.stopPropagation();" style="flex:1; text-align:center; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:10px; padding:8px; font-size:12px; font-weight:700; text-decoration:none;">
+                                <span class="material-symbols-outlined" style="font-size:14px; vertical-align:-3px;">flag</span>
+                                ${i18next.t('review.reportIssue')}
+                            </a>
+                        </div>
+                    ` : ''}
                 </a>
             `;
         }

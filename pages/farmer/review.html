@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .review-page { max-width: 480px; margin: 0 auto; padding: 16px 16px 120px; }
+        .review-head { text-align: center; margin-bottom: 14px; }
+        .review-head__title { font-size: 22px; font-weight: 700; color: var(--color-text); }
+        .review-head__sub { font-size: 13px; color: var(--color-text-sub); margin-top: 4px; }
+
+        .target-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; }
+        .target-card__label { font-size: 12px; color: var(--color-text-sub); }
+        .target-card__name { font-size: 18px; font-weight: 700; color: var(--color-text); margin-top: 4px; }
+        .target-card__fish { font-size: 13px; color: var(--color-text-sub); margin-top: 2px; }
+        .target-card__date { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
+
+        .rating-section { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
+        .rating-section__label { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--color-text); }
+        .stars { display: flex; gap: 6px; }
+        .star-btn { border: none; background: transparent; cursor: pointer; padding: 4px; font-family: inherit; }
+        .star-btn .material-symbols-outlined {
+            font-size: 38px; color: #d1d5db;
+            font-variation-settings: 'FILL' 0, 'wght' 500, 'opsz' 48;
+            transition: color .1s;
+        }
+        .star-btn.filled .material-symbols-outlined {
+            color: #f97316;
+            font-variation-settings: 'FILL' 1, 'wght' 500, 'opsz' 48;
+        }
+
+        .comment-section textarea {
+            width: 100%; min-height: 90px; border: 1px solid var(--color-border); border-radius: 12px;
+            padding: 10px 12px; font-size: 14px; font-family: inherit; background: #f9fafb; resize: vertical;
+        }
+        .comment-section textarea:focus { outline: none; border-color: var(--color-primary); background: #fff; }
+
+        .footer-actions {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            max-width: 480px; margin: 0 auto;
+            background: var(--color-surface); border-top: 1px solid var(--color-border);
+            padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .btn-submit-review { background: #f97316; color: #fff; border: none; border-radius: 14px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .btn-report {
+            background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;
+            border-radius: 14px; padding: 10px; font-size: 13px; font-weight: 700;
+            cursor: pointer; font-family: inherit;
+            display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
+        }
+        .btn-report .material-symbols-outlined { font-size: 18px; }
+
+        .error-msg { font-size: 13px; color: #b91c1c; padding: 6px 12px; }
+
+        .submitted-state { text-align: center; padding: 40px 20px; }
+        .submitted-state__icon { font-size: 60px; color: #16a34a; }
+        .submitted-state__text { font-size: 16px; font-weight: 700; margin-top: 8px; }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="page-header" style="align-items:center; padding:12px 16px;">
+        <a href="/pages/farmer/orders.html" class="page-header__back"><span class="material-symbols-outlined">arrow_back</span></a>
+        <div class="page-header__title" style="flex:1; text-align:center; font-size:16px;" data-i18n="review.title"></div>
+        <div style="width:32px;"></div>
+    </div>
+
+    <div class="review-page">
+
+        <div id="main-view">
+            <div class="review-head">
+                <div class="review-head__title" data-i18n="review.title"></div>
+                <div class="review-head__sub" data-i18n="review.subtitle"></div>
+            </div>
+
+            <div class="target-card">
+                <div class="target-card__label" data-i18n="review.target"></div>
+                <div class="target-card__name" id="target-name">-</div>
+                <div class="target-card__fish" id="target-fish">-</div>
+                <div class="target-card__date" id="target-date"></div>
+            </div>
+
+            <div class="rating-section">
+                <div class="rating-section__label" data-i18n="review.farmerSide_overall"></div>
+                <div class="stars" data-group="overall"></div>
+            </div>
+
+            <div class="rating-section">
+                <div class="rating-section__label" data-i18n="review.farmerSide_communication"></div>
+                <div class="stars" data-group="communication"></div>
+            </div>
+
+            <div class="rating-section">
+                <div class="rating-section__label" data-i18n="review.farmerSide_reception"></div>
+                <div class="stars" data-group="reception"></div>
+            </div>
+
+            <div class="rating-section comment-section">
+                <div class="rating-section__label" data-i18n="review.comment"></div>
+                <textarea id="comment-input" data-i18n="[placeholder]review.commentPlaceholderFarmer"></textarea>
+            </div>
+
+            <div class="error-msg" id="error-msg" style="display:none;"></div>
+        </div>
+
+        <div id="submitted-view" style="display:none;">
+            <div class="submitted-state">
+                <span class="material-symbols-outlined submitted-state__icon">check_circle</span>
+                <div class="submitted-state__text" data-i18n="review.thanks"></div>
+                <a href="/pages/farmer/orders.html" style="display:inline-block; margin-top:18px; background:#0f172a; color:#fff; padding:10px 20px; border-radius:12px; text-decoration:none; font-weight:700; font-size:14px;" data-i18n="review.backToOrders"></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-actions" id="footer-actions">
+        <button class="btn-submit-review" id="submit-btn" data-i18n="review.submit"></button>
+        <a class="btn-report" id="report-link" href="#">
+            <span class="material-symbols-outlined">flag</span>
+            <span data-i18n="review.reportIssue"></span>
+        </a>
+    </div>
+
+    <script type="module">
+        import { initI18n } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            doc, getDoc, setDoc, serverTimestamp
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        const errorMsg = document.getElementById('error-msg');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+
+        const orderId = new URLSearchParams(location.search).get('id');
+        if (!orderId) { location.href = '/pages/farmer/orders.html'; }
+
+        document.getElementById('report-link').href = `/pages/farmer/report.html?id=${orderId}`;
+
+        function initStars(group) {
+            const row = document.querySelector(`.stars[data-group="${group}"]`);
+            row.innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'star-btn';
+                btn.dataset.value = i;
+                btn.innerHTML = `<span class="material-symbols-outlined">star</span>`;
+                btn.addEventListener('click', () => {
+                    row.querySelectorAll('.star-btn').forEach(b => {
+                        b.classList.toggle('filled', Number(b.dataset.value) <= i);
+                    });
+                    row.dataset.value = i;
+                });
+                row.appendChild(btn);
+            }
+        }
+        ['overall', 'communication', 'reception'].forEach(initStars);
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        let orderData = null;
+
+        waitForUserData(async () => {
+            loading.classList.add('show');
+            try {
+                const orderSnap = await getDoc(doc(db, 'orders', orderId));
+                if (!orderSnap.exists()) { location.href = '/pages/farmer/orders.html'; return; }
+                orderData = orderSnap.data();
+
+                if (orderData.farmerId !== window.currentUser.uid) {
+                    alert('Not allowed');
+                    location.href = '/pages/farmer/orders.html';
+                    return;
+                }
+
+                const existSnap = await getDoc(doc(db, 'orders', orderId, 'reviews', 'farmer'));
+                if (existSnap.exists()) {
+                    document.getElementById('main-view').style.display = 'none';
+                    document.getElementById('footer-actions').style.display = 'none';
+                    document.getElementById('submitted-view').style.display = 'block';
+                    document.querySelector('.submitted-state__text').textContent = i18next.t('review.alreadySubmitted');
+                    return;
+                }
+
+                const restSnap = await getDoc(doc(db, 'users', orderData.restaurantId));
+                const rest = restSnap.data() || {};
+                document.getElementById('target-name').textContent = rest.displayName || '-';
+                const fishTypeKey = orderData.snapFishType || '';
+                const fishName = i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey;
+                const shortName = fishName ? fishName.split('/')[0].trim() : '';
+                document.getElementById('target-fish').textContent = `${shortName} ${orderData.quantity || 0}kg`;
+                document.getElementById('target-date').textContent = i18next.t('review.orderOn', { date: orderData.deliveryDate || '' });
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+            }
+        });
+
+        document.getElementById('submit-btn').addEventListener('click', async () => {
+            errorMsg.style.display = 'none';
+            const overall = Number(document.querySelector('.stars[data-group="overall"]').dataset.value || 0);
+            const communication = Number(document.querySelector('.stars[data-group="communication"]').dataset.value || 0);
+            const reception = Number(document.querySelector('.stars[data-group="reception"]').dataset.value || 0);
+
+            if (!overall || !communication || !reception) {
+                errorMsg.textContent = i18next.t('review.errorRating');
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const comment = document.getElementById('comment-input').value.trim();
+            const avg = (overall + communication + reception) / 3;
+
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            loading.classList.add('show');
+            try {
+                await setDoc(doc(db, 'orders', orderId, 'reviews', 'farmer'), {
+                    fromUid: window.currentUser.uid,
+                    fromRole: 'farmer',
+                    toUid: orderData.restaurantId,
+                    orderId,
+                    overall,
+                    communication,
+                    reception,
+                    avgRating: avg,
+                    comment: comment || null,
+                    createdAt: serverTimestamp(),
+                });
+                document.getElementById('main-view').style.display = 'none';
+                document.getElementById('footer-actions').style.display = 'none';
+                document.getElementById('submitted-view').style.display = 'block';
+            } catch (err) {
+                console.error(err);
+                errorMsg.textContent = i18next.t('review.errorSubmit');
+                errorMsg.style.display = 'block';
+                btn.disabled = false;
+            } finally {
+                loading.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+
+</html>

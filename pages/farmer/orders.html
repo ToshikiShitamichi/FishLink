@@ -588,6 +588,19 @@
                             ? `<a href="/pages/farmer/payment.html?id=${order.id}" style="display:block; margin-top:12px; text-align:center; padding:10px; background:#0ea5e9; color:#fff; border-radius:12px; font-weight:600; text-decoration:none;">${i18next.t('payment.goToRemittance')}</a>`
                             : ''
                         }
+                        ${(order.status === 'completed' && ['remitted', 'done'].includes(order.adminStatus))
+                            ? `<div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+                                <a href="/pages/farmer/review.html?id=${order.id}" style="flex:1; text-align:center; padding:10px; background:#f97316; color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:13px;">
+                                    <span class="material-symbols-outlined" style="font-size:16px; vertical-align:-3px;">star</span>
+                                    ${i18next.t('review.submit')}
+                                </a>
+                                <a href="/pages/farmer/report.html?id=${order.id}" style="flex:1; text-align:center; padding:10px; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:12px; font-weight:700; text-decoration:none; font-size:13px;">
+                                    <span class="material-symbols-outlined" style="font-size:16px; vertical-align:-3px;">flag</span>
+                                    ${i18next.t('review.reportIssue')}
+                                </a>
+                            </div>`
+                            : ''
+                        }
                     </div>`;
 
             if (order.status === 'pending' && !isExpiredPending) {

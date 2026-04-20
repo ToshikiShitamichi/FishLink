@@ -376,6 +376,39 @@ exports.autoDeclineExpiredOrders = onSchedule(
   }
 );
 
+// ── レビュー作成時：対象ユーザーの avgRating / reviewCount を更新 ──
+exports.onReviewCreated = onDocumentCreated(
+  {
+    document: "orders/{orderId}/reviews/{reviewId}",
+    region: "asia-southeast1",
+    database: "(default)",
+  },
+  async (event) => {
+    const review = event.data.data();
+    const toUid = review.toUid;
+    const newRating = Number(review.avgRating || 0);
+    if (!toUid || !newRating) return;
+
+    const userRef = db.doc(`users/${toUid}`);
+    const admin = require("firebase-admin/firestore");
+
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(userRef);
+      const prev = snap.data() || {};
+      const prevCount = Number(prev.reviewCount || 0);
+      const prevAvg = Number(prev.avgRating || 0);
+      const newCount = prevCount + 1;
+      const newAvg = (prevAvg * prevCount + newRating) / newCount;
+      tx.update(userRef, {
+        reviewCount: newCount,
+        avgRating: newAvg,
+      });
+    });
+
+    console.log("Review aggregated for user:", toUid, "avg:", newRating);
+  }
+);
+
 // ── 納品前日リマインド（毎日18:00 カンボジア時間 = 11:00 UTC） ──
 exports.remindUpcomingDeliveries = onSchedule(
   {
