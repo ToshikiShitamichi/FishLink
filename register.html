@@ -40,6 +40,59 @@
         .setup-guide__list li {
             margin-bottom: 2px;
         }
+        .howto-details {
+            margin-top: 10px;
+            border-top: 1px dashed #fdba74;
+            padding-top: 10px;
+        }
+        .howto-details > summary {
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+            color: #9a3412;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .howto-details > summary::-webkit-details-marker { display: none; }
+        .howto-details > summary .chevron {
+            transition: transform .2s;
+            font-size: 18px;
+        }
+        .howto-details[open] > summary .chevron { transform: rotate(90deg); }
+        .howto-block { margin-top: 10px; }
+        .howto-block__title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #7c2d12;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+        .howto-steps {
+            margin: 0;
+            padding-left: 22px;
+            font-size: 12.5px;
+            line-height: 1.6;
+            color: #7c2d12;
+        }
+        .howto-steps li {
+            margin-bottom: 6px;
+        }
+        .howto-steps li > div {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .howto-steps .material-symbols-outlined {
+            font-size: 18px;
+            line-height: 1;
+            color: #9a3412;
+            flex-shrink: 0;
+        }
     </style>
 
     <!-- i18next -->
@@ -158,6 +211,59 @@
                     <li data-i18n="register.setupGuide.item2"></li>
                     <li data-i18n="register.setupGuide.item3"></li>
                 </ol>
+
+                <details class="howto-details">
+                    <summary>
+                        <span class="material-symbols-outlined chevron">chevron_right</span>
+                        <span data-i18n="register.setupGuide.howToTitle"></span>
+                    </summary>
+
+                    <div class="howto-block">
+                        <div class="howto-block__title">
+                            <span class="material-symbols-outlined" style="font-size:18px;">phone_iphone</span>
+                            <span data-i18n="register.setupGuide.howToIos"></span>
+                        </div>
+                        <ol class="howto-steps">
+                            <li><div><span data-i18n="register.setupGuide.howToIosStep1"></span></div></li>
+                            <li>
+                                <div>
+                                    <span data-i18n="register.setupGuide.howToIosStep2"></span>
+                                    <span class="material-symbols-outlined">ios_share</span>
+                                </div>
+                            </li>
+                            <li>
+                                <div>
+                                    <span class="material-symbols-outlined">add_box</span>
+                                    <span data-i18n="register.setupGuide.howToIosStep3"></span>
+                                </div>
+                            </li>
+                            <li><div><span data-i18n="register.setupGuide.howToIosStep4"></span></div></li>
+                        </ol>
+                    </div>
+
+                    <div class="howto-block">
+                        <div class="howto-block__title">
+                            <span class="material-symbols-outlined" style="font-size:18px;">smartphone</span>
+                            <span data-i18n="register.setupGuide.howToAndroid"></span>
+                        </div>
+                        <ol class="howto-steps">
+                            <li><div><span data-i18n="register.setupGuide.howToAndroidStep1"></span></div></li>
+                            <li>
+                                <div>
+                                    <span data-i18n="register.setupGuide.howToAndroidStep2"></span>
+                                    <span class="material-symbols-outlined">more_vert</span>
+                                </div>
+                            </li>
+                            <li>
+                                <div>
+                                    <span class="material-symbols-outlined">add_to_home_screen</span>
+                                    <span data-i18n="register.setupGuide.howToAndroidStep3"></span>
+                                </div>
+                            </li>
+                            <li><div><span data-i18n="register.setupGuide.howToAndroidStep4"></span></div></li>
+                        </ol>
+                    </div>
+                </details>
             </div>
 
             <div class="card">

@@ -298,7 +298,8 @@
             color: var(--color-text-sub);
         }
 
-        .date-box select {
+        .date-box select,
+        .date-box input[type="date"] {
             width: 100%;
             font-size: 14px;
             font-weight: 600;
@@ -307,6 +308,11 @@
             background: transparent;
             margin-top: 4px;
             cursor: pointer;
+            font-family: inherit;
+            padding: 0;
+        }
+        .date-box input[type="date"]:focus {
+            outline: none;
         }
 
         /* 料金内訳 */
@@ -457,7 +463,7 @@
             <div class="date-grid">
                 <div class="date-box">
                     <div class="date-box__label" data-i18n="order.deliveryDate"></div>
-                    <select id="delivery-date"></select>
+                    <input type="date" id="delivery-date">
                 </div>
                 <div class="date-box">
                     <div class="date-box__label" data-i18n="order.deliveryTime"></div>
@@ -550,21 +556,15 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
-        // ── 納品日の選択肢生成（当日から7日間） ──
-        function populateDeliveryDates() {
-            const sel = document.getElementById('delivery-date');
+        // ── 納品日（当日以降を自由選択） ──
+        function initDeliveryDate() {
+            const input = document.getElementById('delivery-date');
             const today = new Date();
-            for (let i = 0; i <= 7; i++) {
-                const d = new Date(today);
-                d.setDate(d.getDate() + i);
-                const label = `${d.getMonth() + 1}/${d.getDate()}`;
-                const opt = document.createElement('option');
-                opt.value = label;
-                opt.textContent = label;
-                sel.appendChild(opt);
-            }
+            const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            input.min = iso(today);
+            input.value = iso(today);
         }
-        populateDeliveryDates();
+        initDeliveryDate();
 
         // ── データ取得 & 表示 ──
         let listingData = null;
@@ -880,8 +880,11 @@
                 if (!uid) throw new Error('Login required');
 
                 const calc = window._orderCalc;
-                const deliveryDate = document.getElementById('delivery-date').value;
+                const deliveryDateIso = document.getElementById('delivery-date').value; // YYYY-MM-DD
                 const deliveryTime = document.getElementById('delivery-time').value;
+                // 既存表示互換：M/D 形式も保存
+                const [y, m, d] = deliveryDateIso.split('-').map(Number);
+                const deliveryDate = `${m}/${d}`;
 
                 await addDoc(collection(db, 'orders'), {
                     restaurantId: uid,
@@ -890,6 +893,7 @@
                     quantity,
                     gutProcessing,
                     deliveryDate,
+                    deliveryDateIso,
                     deliveryTime,
                     fishPrice: calc.fishTotal,
                     deliveryFee: calc.deliveryFee,

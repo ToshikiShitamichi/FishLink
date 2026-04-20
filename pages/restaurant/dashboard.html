@@ -26,14 +26,7 @@
         }
 
         .market-header {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 14px;
-        }
-
-        .market-header__left {
-            flex: 1;
-            min-width: 0;
+            margin-bottom: 10px;
         }
 
         .market-header__title {
@@ -43,41 +36,60 @@
         }
 
         .market-header__sub {
+            font-size: 12px;
+            color: var(--color-text-sub);
+            margin-top: 2px;
+        }
+
+        .chip-section {
+            margin-bottom: 10px;
+        }
+
+        .chip-label {
             font-size: 11px;
             color: var(--color-text-sub);
-            margin-top: 1px;
-        }
-
-        .market-header__right {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 4px;
-            padding-top: 4px;
-            flex-shrink: 0;
-        }
-
-        .market-ctrl {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 11px;
-            white-space: nowrap;
-        }
-
-        .market-ctrl__label {
-            color: var(--color-text-sub);
-        }
-
-        .market-ctrl select {
-            font-size: 11px;
             font-weight: 600;
-            color: var(--color-text);
+            margin-bottom: 6px;
+        }
+
+        .chip-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .chip-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chip {
+            flex-shrink: 0;
             border: 1px solid var(--color-border);
-            border-radius: 4px;
             background: var(--color-surface);
-            padding: 2px 4px;
+            color: var(--color-text);
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
+            white-space: nowrap;
+            font-family: inherit;
+            transition: background .12s, color .12s, border-color .12s;
+        }
+
+        .chip--sort.active {
+            background: #0f172a;
+            color: #fff;
+            border-color: #0f172a;
+        }
+
+        .chip--filter.active {
+            background: #ecfdf5;
+            color: #047857;
+            border-color: #a7f3d0;
         }
 
         .fish-grid {
@@ -215,26 +227,24 @@
         <!-- 魚一覧ヘッダー -->
         <div style="padding: 0 16px;">
             <div class="market-header">
-                <div class="market-header__left">
-                    <div class="market-header__title" data-i18n="restaurant.title"></div>
-                    <div class="market-header__sub" data-i18n="restaurant.subtitle"></div>
+                <div class="market-header__title" data-i18n="restaurant.title"></div>
+                <div class="market-header__sub" data-i18n="restaurant.subtitle"></div>
+            </div>
+
+            <!-- 並び替えチップ -->
+            <div class="chip-section">
+                <div class="chip-label" data-i18n="restaurant.sort"></div>
+                <div class="chip-row" id="sort-chips">
+                    <button type="button" class="chip chip--sort active" data-value="distance" data-i18n="restaurant.sortDistance"></button>
+                    <button type="button" class="chip chip--sort" data-value="price" data-i18n="restaurant.sortPrice"></button>
+                    <button type="button" class="chip chip--sort" data-value="newest" data-i18n="restaurant.sortNewest"></button>
                 </div>
-                <div class="market-header__right">
-                    <div class="market-ctrl">
-                        <span class="market-ctrl__label" data-i18n="restaurant.sort"></span>
-                        <select id="sort-select">
-                            <option value="distance" data-i18n="restaurant.sortDistance"></option>
-                            <option value="price" data-i18n="restaurant.sortPrice"></option>
-                            <option value="newest" data-i18n="restaurant.sortNewest"></option>
-                        </select>
-                    </div>
-                    <div class="market-ctrl">
-                        <span class="market-ctrl__label" data-i18n="restaurant.filter"></span>
-                        <select id="filter-select">
-                            <option value="" data-i18n="restaurant.filterAll"></option>
-                        </select>
-                    </div>
-                </div>
+            </div>
+
+            <!-- 魚種フィルタチップ -->
+            <div class="chip-section">
+                <div class="chip-label" data-i18n="restaurant.filter"></div>
+                <div class="chip-row" id="filter-chips"></div>
             </div>
 
             <!-- 魚一覧グリッド -->
@@ -286,31 +296,62 @@
             await logout();
         });
 
-        // 魚種フィルターの選択肢を生成（fish.* キーから）
-        function populateFilterOptions() {
-            const filterSelect = document.getElementById('filter-select');
-            const currentVal = filterSelect.value;
-            // 最初の「すべて」以外を削除
-            while (filterSelect.options.length > 1) filterSelect.remove(1);
+        // 並び替え・絞り込みの現在値
+        let currentSort = 'distance';
+        let currentFilter = '';
 
-            const fishKeys = [
-                'striped_catfish', 'clarias_catfish', 'red_tilapia', 'nile_tilapia',
-                'silver_barb', 'common_carp_large', 'common_carp_small',
-                'featherback', 'climbing_perch', 'frog'
-            ];
-            fishKeys.forEach(key => {
-                const opt = document.createElement('option');
-                opt.value = key;
-                opt.textContent = i18next.t(`fish.${key}`);
-                filterSelect.appendChild(opt);
+        const FISH_FILTER_KEYS = [
+            'striped_snakehead', 'walking_catfish', 'red_tilapia', 'nile_tilapia',
+            'silver_barb', 'spot_pangasius', 'pangasius', 'giant_snakehead',
+            'climbing_perch', 'frog'
+        ];
+
+        // 魚種チップを生成
+        function populateFilterChips() {
+            const row = document.getElementById('filter-chips');
+            row.innerHTML = '';
+
+            const allBtn = document.createElement('button');
+            allBtn.type = 'button';
+            allBtn.className = 'chip chip--filter' + (currentFilter === '' ? ' active' : '');
+            allBtn.dataset.value = '';
+            allBtn.textContent = i18next.t('restaurant.filterAll');
+            row.appendChild(allBtn);
+
+            FISH_FILTER_KEYS.forEach(key => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'chip chip--filter' + (currentFilter === key ? ' active' : '');
+                btn.dataset.value = key;
+                // "ライギョ / Striped snakehead / ត្រីរ៉ស់" のうち現在言語部分のみ抽出
+                const label = i18next.t(`fish.${key}`);
+                const lang = i18next.language;
+                const parts = label.split('/').map(s => s.trim());
+                btn.textContent = (lang === 'en' && parts[1]) ? parts[1]
+                    : (lang === 'km' && parts[2]) ? parts[2]
+                    : parts[0];
+                row.appendChild(btn);
             });
-            filterSelect.value = currentVal;
         }
-        populateFilterOptions();
+        populateFilterChips();
 
-        // ソート・フィルター変更時
-        document.getElementById('sort-select').addEventListener('change', renderList);
-        document.getElementById('filter-select').addEventListener('change', renderList);
+        // チップクリック：並び替え
+        document.getElementById('sort-chips').addEventListener('click', (e) => {
+            const btn = e.target.closest('button.chip');
+            if (!btn) return;
+            currentSort = btn.dataset.value;
+            document.querySelectorAll('#sort-chips .chip').forEach(c => c.classList.toggle('active', c === btn));
+            renderList();
+        });
+
+        // チップクリック：魚種フィルタ
+        document.getElementById('filter-chips').addEventListener('click', (e) => {
+            const btn = e.target.closest('button.chip');
+            if (!btn) return;
+            currentFilter = btn.dataset.value;
+            document.querySelectorAll('#filter-chips .chip').forEach(c => c.classList.toggle('active', c === btn));
+            renderList();
+        });
 
         // ── 距離計算（Google Maps Distance Matrix） ──────────────
         // 起点1つ、終点を複数渡して道路距離（km）を取得
@@ -443,8 +484,8 @@
 
         // ── 表示 ────────────────────────────────────────────────
         function renderList() {
-            const sortVal = document.getElementById('sort-select').value;
-            const filterVal = document.getElementById('filter-select').value;
+            const sortVal = currentSort;
+            const filterVal = currentFilter;
 
             let items = [...allItems];
 
@@ -529,7 +570,7 @@
 
         // 言語変更時
         onLanguageChange(() => {
-            populateFilterOptions();
+            populateFilterChips();
             renderList();
         });
 
