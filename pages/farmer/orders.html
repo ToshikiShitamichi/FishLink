@@ -361,19 +361,23 @@
             <span class="bottom-nav__icon"><span class="material-symbols-outlined">set_meal</span></span>
             <span data-i18n="dashboard.listings"></span>
         </a>
+        <a href="/pages/farmer/post.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">add_circle</span></span>
+            <span data-i18n="dashboard.newPost"></span>
+        </a>
         <a href="/pages/farmer/orders.html" class="bottom-nav__item active">
             <span class="bottom-nav__icon"><span class="material-symbols-outlined">inbox</span></span>
             <span data-i18n="orders.navOrders"></span>
         </a>
-        <a href="#" class="bottom-nav__item" id="logout-btn">
-            <span class="bottom-nav__icon"><span class="material-symbols-outlined">logout</span></span>
-            <span data-i18n="nav.logout"></span>
+        <a href="/pages/farmer/account.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">person</span></span>
+            <span data-i18n="nav.account"></span>
         </a>
     </nav>
 
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
-        import { watchAuthState, logout } from '/js/auth.js';
+        import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import {
             collection, query, where, orderBy, getDocs, doc, getDoc, updateDoc
@@ -385,10 +389,7 @@
         await initI18n();
         initLangSelector();
 
-        document.getElementById('logout-btn').addEventListener('click', async (e) => {
-            e.preventDefault();
-            await logout();
-        });
+        // ログアウトはアカウントページ内に移動
 
         // Haversine
         function calcDistanceKm(lat1, lng1, lat2, lng2) {
