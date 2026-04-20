@@ -166,10 +166,14 @@
                 for (const d of snap.docs) {
                     const order = d.data();
                     let fishName = '';
-                    if (order.listingId) {
+                    // スナップショット優先（編集後も注文表示は不変）
+                    let fishTypeKey = order.snapFishType;
+                    if (!fishTypeKey && order.listingId) {
                         const lSnap = await getDoc(doc(db, 'fishListings', order.listingId));
-                        const lt = lSnap.data();
-                        fishName = i18next.exists(`fish.${lt?.fishType}`) ? i18next.t(`fish.${lt.fishType}`) : (lt?.fishType || '');
+                        fishTypeKey = lSnap.data()?.fishType;
+                    }
+                    if (fishTypeKey) {
+                        fishName = i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey;
                     }
                     allOrders.push({ d, order, fishName });
                 }

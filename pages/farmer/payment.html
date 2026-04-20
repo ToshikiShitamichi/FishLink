@@ -220,13 +220,18 @@
 
             if (orderData.farmerId !== myUid) { location.href = '/pages/farmer/orders.html'; return; }
 
-            // listing情報
+            // listing情報（注文時点のスナップショット優先）
             let fishName = '', size = '';
-            if (orderData.listingId) {
+            let fishTypeKey = orderData.snapFishType;
+            size = orderData.snapSize || '';
+            if ((!fishTypeKey || !size) && orderData.listingId) {
                 const lSnap = await getDoc(doc(db, 'fishListings', orderData.listingId));
                 const lt = lSnap.data() || {};
-                fishName = i18next.exists(`fish.${lt.fishType}`) ? i18next.t(`fish.${lt.fishType}`) : (lt.fishType || '');
-                size = lt.size || '';
+                if (!fishTypeKey) fishTypeKey = lt.fishType;
+                if (!size) size = lt.size || '';
+            }
+            if (fishTypeKey) {
+                fishName = i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey;
             }
 
             // レストラン情報
@@ -248,13 +253,21 @@
             // 金額内訳
             const fishTotal = orderData.fishPrice || 0;
             const deliveryFee = orderData.deliveryFee || 0;
-            const commission = Math.round(fishTotal * 0.05);
-            const receiveAmount = orderData.farmerReceiveAmount || (fishTotal - commission + deliveryFee);
+            // 注文時点の手数料を優先（旧注文は5%でフォールバック）
+            const commission = (orderData.farmerCommission != null)
+                ? orderData.farmerCommission
+                : Math.round(fishTotal * 0.05);
+            const commissionRate = (orderData.farmerRateUsed != null)
+                ? (orderData.farmerRateUsed * 100)
+                : 5;
+            const receiveAmount = (orderData.farmerReceiveAmount != null)
+                ? orderData.farmerReceiveAmount
+                : (fishTotal - commission + deliveryFee);
 
             document.getElementById('receive-amount').textContent = `${receiveAmount.toLocaleString()} KHR`;
             document.getElementById('breakdown').innerHTML = `
                 <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.fishTotal')}</span><span class="amount-line__value">${fishTotal.toLocaleString()} KHR</span></div>
-                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.commission')}</span><span class="amount-line__value minus">-${commission.toLocaleString()} KHR</span></div>
+                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.commission', { rate: commissionRate })}</span><span class="amount-line__value minus">-${commission.toLocaleString()} KHR</span></div>
                 <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.deliveryFee')}</span><span class="amount-line__value plus">+${deliveryFee.toLocaleString()} KHR</span></div>
             `;
 

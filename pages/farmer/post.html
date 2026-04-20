@@ -32,6 +32,17 @@
             padding: 16px;
             margin-bottom: 20px;
         }
+        /* 販売価格セクション内に表示する場合のバリアント */
+        .caa-card--inline {
+            border-width: 1px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+        }
+        .caa-card--inline .caa-header__title { font-size: 15px; }
+        .caa-card--inline .caa-value { font-size: 22px; margin: 6px 0 2px; }
+        .caa-card--inline .caa-region { font-size: 13px; }
+        .caa-card--inline .caa-size { font-size: 13px; }
+        .caa-card--inline .caa-note { font-size: 12px; margin-top: 6px; }
 
         .caa-header {
             display: flex;
@@ -223,10 +234,13 @@
         <div class="page-header"
             style="padding:16px 16px 8px; position:sticky; top:0; background:var(--color-bg); z-index:10;">
             <a href="/pages/farmer/dashboard.html" class="page-header__back"><span class="material-symbols-outlined">arrow_back</span></a>
-            <div class="page-header__title" data-i18n="post.title"></div>
+            <div class="page-header__title" id="page-title" data-i18n="post.title"></div>
         </div>
 
         <div style="padding:0 16px 100px;">
+
+            <!-- 編集モード時のみ表示する案内 -->
+            <div id="edit-notice" style="display:none; background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; border-radius:14px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.6;" data-i18n="post.editNotice"></div>
 
             <!-- エラーメッセージ -->
             <div class="error-msg" id="error-msg"></div>
@@ -284,18 +298,6 @@
                 </p>
             </div>
 
-            <!-- CAA参考価格 -->
-            <div class="caa-card">
-                <div class="caa-header">
-                    <div class="caa-header__title" data-i18n="post.sectionCaaTitle"></div>
-                    <div class="caa-header__badge" data-i18n="post.caaLabel"></div>
-                </div>
-                <div class="caa-region" id="caa-region" data-i18n="post.caaDefault"></div>
-                <div class="caa-value" id="caa-value" style="display:none;"></div>
-                <div class="caa-size" id="caa-size" style="display:none;"></div>
-                <div class="caa-note" data-i18n="post.caaNote"></div>
-            </div>
-
             <!-- 販売価格（目安から調整） -->
             <div class="section-block">
                 <div class="section-title" data-i18n="post.sectionPrice"></div>
@@ -323,6 +325,18 @@
                         <div class="price-result__value" id="total-price">0</div>
                         <div class="price-result__unit">KHR/kg</div>
                     </div>
+                </div>
+
+                <!-- CAA参考価格（販売価格の下に表示・参考用） -->
+                <div class="caa-card caa-card--inline" style="margin-top:14px;">
+                    <div class="caa-header">
+                        <div class="caa-header__title" data-i18n="post.sectionCaaTitle"></div>
+                        <div class="caa-header__badge" data-i18n="post.caaLabel"></div>
+                    </div>
+                    <div class="caa-region" id="caa-region" data-i18n="post.caaDefault"></div>
+                    <div class="caa-value" id="caa-value" style="display:none;"></div>
+                    <div class="caa-size" id="caa-size" style="display:none;"></div>
+                    <div class="caa-note" data-i18n="post.caaNote"></div>
                 </div>
             </div>
 
@@ -383,7 +397,8 @@
         import { watchAuthState } from '/js/auth.js';
         import { db, storage } from '/js/firebase-config.js';
         import {
-            collection, addDoc, serverTimestamp, doc, getDoc
+            collection, addDoc, serverTimestamp, doc, getDoc, updateDoc,
+            query, where, getDocs, writeBatch
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import {
             ref, uploadBytes, getDownloadURL
@@ -394,6 +409,59 @@
 
         watchAuthState({ requireAuth: true });
         await initI18n();
+
+        // ── 編集モード判定（?id=...） ──
+        const editId = new URLSearchParams(location.search).get('id');
+        const isEditMode = !!editId;
+        let originalListing = null;  // 編集時：編集前の値（既存注文へのスナップショット用に保持）
+
+        if (isEditMode) {
+            document.getElementById('page-title').textContent = i18next.t('post.editTitle');
+            document.getElementById('submit-btn').textContent = i18next.t('post.editSubmit');
+            document.getElementById('edit-notice').style.display = 'block';
+            // 編集モードでは写真変更は不可（既存写真のまま）
+            const photoArea = document.getElementById('photo-area');
+            const photoLabel = photoArea?.parentElement;
+            if (photoLabel) photoLabel.style.display = 'none';
+        }
+
+        async function loadExistingForEdit() {
+            const snap = await getDoc(doc(db, 'fishListings', editId));
+            if (!snap.exists()) {
+                alert(i18next.t('post.errorSubmit'));
+                location.href = '/pages/farmer/dashboard.html';
+                return;
+            }
+            const d = snap.data();
+            // 自分の出品でなければ拒否
+            if (d.farmerId !== window.currentUser?.uid) {
+                alert('Not allowed');
+                location.href = '/pages/farmer/dashboard.html';
+                return;
+            }
+            originalListing = d;
+
+            // フォームに値を流し込み
+            const fishTypeSel = document.getElementById('fish-type');
+            const knownTypes = Array.from(fishTypeSel.options).map(o => o.value);
+            if (knownTypes.includes(d.fishType)) {
+                fishTypeSel.value = d.fishType;
+            } else {
+                fishTypeSel.value = 'other';
+                document.getElementById('fish-type-other-group').style.display = 'block';
+                document.getElementById('fish-type-other').value = d.fishType || '';
+            }
+            document.getElementById('fish-size').value = d.size || '';
+            document.getElementById('fish-stock').value = d.stock ?? '';
+            document.getElementById('price-unit').value = d.price ?? '';
+            document.getElementById('gut-price').value = d.gutPrice ?? '';
+            document.getElementById('delivery-rate').value = d.deliveryRate ?? '';
+            document.getElementById('free-delivery-distance').value = d.freeDeliveryDistance ?? '';
+            document.getElementById('min-order').value = d.minOrder ?? '';
+            document.getElementById('max-distance').value = d.maxDistance ?? '';
+            window.updateTotalPrice();
+            updateCaaDisplay(fishTypeSel.value);
+        }
 
         // ── CAA参考価格データ（管理者ページ pages/admin/caa.html で設定した値を Firestore から読み込む） ──
         // 対応10魚種（CLAUDE.mdのFISH_TYPES準拠、"other" は CAA参考価格なし扱い）
@@ -524,8 +592,12 @@
         }
 
         // currentUserData から province を読み取ってCAA表示を初期化
-        waitForUserData(() => {
+        waitForUserData(async () => {
             farmerProvince = window.currentUserData.province || null;
+
+            // 編集モードの場合は既存データをロード
+            if (isEditMode) await loadExistingForEdit();
+
             const currentVal = document.getElementById('fish-type').value;
             if (currentVal) updateCaaDisplay(currentVal);
         });
@@ -557,6 +629,40 @@
                 preview.appendChild(img);
             });
         });
+
+        // ── 編集前の値を既存注文にスナップショット保存 ──
+        // すでにスナップショットがある注文はスキップ（=既存値を保護）
+        // ※ Firestoreルール（farmerId == auth.uid で許可）を満たすため farmerId も条件に追加
+        async function snapshotOrdersForListing(listingId, originalData) {
+            if (!originalData) return;
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            const q = query(
+                collection(db, 'orders'),
+                where('farmerId', '==', uid),
+                where('listingId', '==', listingId)
+            );
+            const snap = await getDocs(q);
+            if (snap.empty) return;
+
+            const batch = writeBatch(db);
+            let updates = 0;
+            snap.forEach(d => {
+                const o = d.data();
+                // 既にスナップショット済みはスキップ（編集前の値を保護）
+                const hasSnap = o.snapFishType || o.snapPrice != null;
+                if (hasSnap) return;
+                batch.update(d.ref, {
+                    snapFishType: originalData.fishType || null,
+                    snapSize: originalData.size || null,
+                    snapPhotoUrl: originalData.photoUrl || null,
+                    snapPrice: originalData.price ?? null,
+                    snapGutPrice: originalData.gutPrice ?? null,
+                });
+                updates++;
+            });
+            if (updates > 0) await batch.commit();
+        }
 
         // ── 投稿処理 ────────────────────────────────────────────────
         const submitBtn = document.getElementById('submit-btn');
@@ -609,33 +715,53 @@
 
                 // 写真アップロード
                 const photoUrls = [];
-                for (const file of selectedFiles) {
-                    const storageRef = ref(storage, `fishListings/${uid}/${Date.now()}_${file.name}`);
-                    await uploadBytes(storageRef, file);
-                    const url = await getDownloadURL(storageRef);
-                    photoUrls.push(url);
+                if (isEditMode) {
+                    // ── 編集モード：既存の出品を更新 ──
+                    // 写真は変更しない（編集モードでは photo セクション非表示）
+                    // 既存の進行中・完了済みの注文に対しては編集前の値をスナップショット保存
+                    await snapshotOrdersForListing(editId, originalListing);
+
+                    await updateDoc(doc(db, 'fishListings', editId), {
+                        fishType,
+                        size: fishSize,
+                        stock: fishStock,
+                        price: priceUnit,
+                        gutPrice,
+                        deliveryRate: delivRate,
+                        freeDeliveryDistance: freeDelivDist || null,
+                        minOrder: minOrder || null,
+                        maxDistance: maxDistance || null,
+                        updatedAt: serverTimestamp(),
+                    });
+                } else {
+                    // ── 新規モード：写真アップロード＋addDoc ──
+                    for (const file of selectedFiles) {
+                        const storageRef = ref(storage, `fishListings/${uid}/${Date.now()}_${file.name}`);
+                        await uploadBytes(storageRef, file);
+                        const url = await getDownloadURL(storageRef);
+                        photoUrls.push(url);
+                    }
+
+                    await addDoc(collection(db, 'fishListings'), {
+                        farmerId: uid,
+                        fishType,
+                        size: fishSize,
+                        stock: fishStock,
+                        price: priceUnit,
+                        gutPrice,
+                        deliveryRate: delivRate,
+                        freeDeliveryDistance: freeDelivDist || null,
+                        minOrder: minOrder || null,
+                        maxDistance: maxDistance || null,
+                        photos: photoUrls,
+                        photoUrl: photoUrls[0] || null,
+                        isActive: true,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                    });
                 }
 
-                // Firestoreに保存
-                await addDoc(collection(db, 'fishListings'), {
-                    farmerId: uid,
-                    fishType,
-                    size: fishSize,
-                    stock: fishStock,
-                    price: priceUnit,
-                    gutPrice,
-                    deliveryRate: delivRate,
-                    freeDeliveryDistance: freeDelivDist || null,
-                    minOrder: minOrder || null,
-                    maxDistance: maxDistance || null,
-                    photos: photoUrls,
-                    photoUrl: photoUrls[0] || null,
-                    isActive: true,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                });
-
-                // 投稿成功 → ダッシュボードへ
+                // 成功 → ダッシュボードへ
                 window.location.href = '/pages/farmer/dashboard.html';
 
             } catch (err) {

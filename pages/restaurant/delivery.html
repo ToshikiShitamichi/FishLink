@@ -58,6 +58,23 @@
         .tl-chat__time { font-size: 12px; color: #888; }
         .tl-chat__text { font-size: 15px; margin-top: 2px; line-height: 1.4; }
 
+        /* 取り消し済みメッセージ */
+        .tl-chat.deleted { opacity: 0.6; }
+        .tl-chat.deleted .tl-chat__text {
+            text-decoration: line-through;
+            color: #888;
+        }
+        .tl-chat.deleted .tl-chat__img {
+            opacity: 0.4;
+            filter: grayscale(0.6);
+        }
+        .tl-chat__deleted-label {
+            font-size: 11px;
+            color: #ef4444;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
         .chat-input {
             display: flex;
             gap: 8px;
@@ -174,12 +191,15 @@
             if (!orderSnap.exists()) { location.href = '/pages/restaurant/dashboard.html'; return; }
             orderData = orderSnap.data();
 
-            // listing情報
+            // listing情報（注文時点のスナップショット優先）
             let fishName = '';
-            if (orderData.listingId) {
+            let fishTypeKey = orderData.snapFishType;
+            if (!fishTypeKey && orderData.listingId) {
                 const lSnap = await getDoc(doc(db, 'fishListings', orderData.listingId));
-                const lt = lSnap.data();
-                fishName = i18next.exists(`fish.${lt?.fishType}`) ? i18next.t(`fish.${lt.fishType}`) : (lt?.fishType || '');
+                fishTypeKey = lSnap.data()?.fishType;
+            }
+            if (fishTypeKey) {
+                fishName = i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey;
             }
 
             // 農家情報
@@ -215,24 +235,32 @@
                     const time = msg.createdAt?.toDate();
                     const timeStr = time ? `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}` : '';
                     const isSelf = msg.senderId === myUid;
+                    const isDeleted = msg.isDeleted === true;
                     const imgs = msg.imageUrls || (msg.imageUrl ? [msg.imageUrl] : []);
                     const imgHtml = imgs.map(url => `<img class="tl-chat__img" src="${url}">`).join('');
-                    const deleteHtml = isSelf ? `<div class="tl-chat__delete" data-msg-id="${msgId}">✕ 取り消し</div>` : '';
+                    const deleteHtml = (isSelf && !isDeleted)
+                        ? `<div class="tl-chat__delete" data-msg-id="${msgId}">✕ 取り消し</div>`
+                        : '';
+                    const deletedLabel = isDeleted ? `<div class="tl-chat__deleted-label">${i18next.t('delivery.deletedLabel')}</div>` : '';
 
                     timeline.innerHTML += `
-                        <div class="tl-chat ${isSelf ? 'self' : ''}">
+                        <div class="tl-chat ${isSelf ? 'self' : ''} ${isDeleted ? 'deleted' : ''}">
                             <div class="tl-chat__time">${timeStr}</div>
                             ${msg.text ? `<div class="tl-chat__text">${msg.text}</div>` : ''}
                             ${imgHtml}
+                            ${deletedLabel}
                             ${deleteHtml}
                         </div>`;
                 });
                 timeline.scrollTop = timeline.scrollHeight;
 
+                // 取り消しボタン：完全削除→isDeleted=true でマークし取り消し線表示
                 document.querySelectorAll('.tl-chat__delete').forEach(el => {
                     el.addEventListener('click', async () => {
-                        if (!confirm('取り消しますか？')) return;
-                        await deleteDoc(doc(db, 'orders', orderId, 'messages', el.dataset.msgId));
+                        if (!confirm(i18next.t('delivery.confirmDelete'))) return;
+                        await updateDoc(doc(db, 'orders', orderId, 'messages', el.dataset.msgId), {
+                            isDeleted: true
+                        });
                     });
                 });
             });

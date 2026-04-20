@@ -488,11 +488,23 @@
         let allOrders = [];
 
         function renderOrderCard(order) {
-            const fishName = i18next.exists(`fish.${order.listingData.fishType}`)
-                ? i18next.t(`fish.${order.listingData.fishType}`)
-                : (order.listingData.fishType || '');
-            const size = order.listingData.size || '';
-            const price = order.listingData.price || 0;
+            // 注文時点のスナップショット優先（編集後も注文表示は不変）
+            const fishTypeKey = order.snapFishType || order.listingData.fishType;
+            const fishName = i18next.exists(`fish.${fishTypeKey}`)
+                ? i18next.t(`fish.${fishTypeKey}`)
+                : (fishTypeKey || '');
+            const size = order.snapSize || order.listingData.size || '';
+            const photoUrl = order.snapPhotoUrl || order.listingData.photoUrl;
+            // 単価表示：注文時点の fishPrice / quantity から逆算（内臓処理込みの実効単価）
+            // 旧注文で fishPrice が無い場合は snap → 現listing の順でフォールバック
+            let price = 0;
+            if (order.fishPrice && order.quantity) {
+                price = Math.round(order.fishPrice / order.quantity);
+            } else {
+                const basePrice = (order.snapPrice != null) ? order.snapPrice : (order.listingData.price || 0);
+                const gutPrice = (order.snapGutPrice != null) ? order.snapGutPrice : (order.listingData.gutPrice || 0);
+                price = order.gutProcessing ? basePrice + gutPrice : basePrice;
+            }
             const dist = Math.floor(order.distKm * 10) / 10;
             const restName = order.restData.displayName || '';
             const restRating = order.restData.avgRating || 0;
@@ -501,8 +513,8 @@
             const restDistrict = order.restData.district || '';
             const restPlace = restProvince + (restDistrict ? ', ' + restDistrict : '');
 
-            const imgHtml = order.listingData.photoUrl
-                ? `<img src="${order.listingData.photoUrl}" alt="${fishName}">`
+            const imgHtml = photoUrl
+                ? `<img src="${photoUrl}" alt="${fishName}">`
                 : `<span class="order-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">set_meal</span></span>`;
 
             // 承認期限（注文時刻 + 1時間）
@@ -519,9 +531,17 @@
             }
 
             const fishTotal = order.fishPrice || (price * order.quantity);
-            const commission = Math.round(price * order.quantity * 0.05);
             const deliveryFee = order.deliveryFee || 0;
-            const receiveAmount = fishTotal - commission + deliveryFee;
+            // 注文時点の手数料・割引を優先（旧注文は5%でフォールバック）
+            const commission = (order.farmerCommission != null)
+                ? order.farmerCommission
+                : Math.round(fishTotal * 0.05);
+            const commissionRate = (order.farmerRateUsed != null)
+                ? (order.farmerRateUsed * 100)
+                : 5;
+            const receiveAmount = (order.farmerReceiveAmount != null)
+                ? order.farmerReceiveAmount
+                : (fishTotal - commission + deliveryFee);
 
             let statusBadge = '';
             if (order.status === 'approved') {
@@ -552,7 +572,7 @@
                         <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
                         <div class="order-card__divider"></div>
                         <div class="price-line"><span>${i18next.t('orders.fishTotal')}</span><span>${fishTotal.toLocaleString()} KHR</span></div>
-                        <div class="price-line"><span>${i18next.t('orders.commission')}</span><span>-${commission.toLocaleString()} KHR</span></div>
+                        <div class="price-line"><span>${i18next.t('orders.commission', { rate: commissionRate })}</span><span>-${commission.toLocaleString()} KHR</span></div>
                         <div class="price-line"><span>${i18next.t('orders.deliveryFee')}</span><span>+${deliveryFee.toLocaleString()} KHR</span></div>
                         <div class="price-line__note">${i18next.t('orders.deliveryNote')}</div>
                         <div class="receive-section">

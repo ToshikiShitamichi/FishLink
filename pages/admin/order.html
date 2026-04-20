@@ -465,20 +465,30 @@
 
             const fishPrice = orderData.fishPrice || 0;
             const deliveryFee = orderData.deliveryFee || 0;
-            const commission = Math.round(fishPrice * 0.05);
-            const remitAmount = orderData.farmerReceiveAmount || (fishPrice - commission + deliveryFee);
+            // 注文時点の手数料を優先（旧注文は5%でフォールバック）
+            const commission = (orderData.farmerCommission != null)
+                ? orderData.farmerCommission
+                : Math.round(fishPrice * 0.05);
+            const commissionRate = (orderData.farmerRateUsed != null)
+                ? (orderData.farmerRateUsed * 100)
+                : 5;
+            const remitAmount = (orderData.farmerReceiveAmount != null)
+                ? orderData.farmerReceiveAmount
+                : (fishPrice - commission + deliveryFee);
             document.getElementById('summary-remit').textContent = `${remitAmount.toLocaleString()} KHR`;
 
-            // 注文情報
-            const fishName = listingData?.fishType
-                ? (i18next.exists(`fish.${listingData.fishType}`) ? i18next.t(`fish.${listingData.fishType}`) : listingData.fishType)
+            // 注文情報（スナップショット優先）
+            const fishTypeKey = orderData.snapFishType || listingData?.fishType;
+            const fishName = fishTypeKey
+                ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey)
                 : '-';
+            const fishSize = orderData.snapSize || listingData?.size || '-';
 
             document.getElementById('basic-info').innerHTML = `
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.restaurantName')}</span><span class="kv-row__v">${restData?.displayName || '-'}</span></div>
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.farmerName')}</span><span class="kv-row__v">${farmerData?.displayName || '-'}</span></div>
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishType')}</span><span class="kv-row__v">${fishName}</span></div>
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishSize')}</span><span class="kv-row__v">${listingData?.size || '-'} head/kg</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishSize')}</span><span class="kv-row__v">${fishSize} head/kg</span></div>
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.qty')}</span><span class="kv-row__v">${orderData.quantity || 0} kg</span></div>
             `;
 
@@ -517,7 +527,7 @@
             document.getElementById('remit-breakdown').innerHTML = `
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishPrice')}</span><span class="kv-row__v">${fishPrice.toLocaleString()} KHR</span></div>
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.deliveryFee')}</span><span class="kv-row__v">${deliveryFee.toLocaleString()} KHR</span></div>
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.commissionDeduct')}</span><span class="kv-row__v minus">-${commission.toLocaleString()} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.commissionDeduct', { rate: commissionRate })}</span><span class="kv-row__v minus">-${commission.toLocaleString()} KHR</span></div>
                 <div class="divider-dashed"></div>
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.total')}</span><span class="kv-row__v bold">${remitAmount.toLocaleString()} KHR</span></div>
             `;

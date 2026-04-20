@@ -48,6 +48,12 @@
             padding: 24px; margin-bottom: 16px;
         }
 
+        .section-heading {
+            font-size: 16px; font-weight: 700; color: #0f172a;
+            padding-bottom: 12px; margin-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
         .form-row {
             padding: 14px 0;
             border-bottom: 1px solid #f1f5f9;
@@ -160,50 +166,95 @@
             </div>
         </div>
 
-        <div class="card settings-content">
-            <!-- サービス料率 -->
-            <div class="form-row">
-                <div class="form-row__header">
-                    <div>
-                        <div class="form-row__label" data-i18n="admin.settings.serviceRateLabel"></div>
-                        <div class="form-row__hint" data-i18n="admin.settings.serviceRateHint"></div>
+        <div class="settings-content">
+            <!-- レストラン側 -->
+            <div class="card">
+                <div class="section-heading" data-i18n="admin.settings.restaurantSection"></div>
+
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.settings.serviceRateLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.settings.serviceRateHint"></div>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <input type="number" id="service-rate" class="num-input" step="0.1" min="0" max="100">
+                            <span class="num-unit">%</span>
+                        </div>
                     </div>
-                    <div style="display:flex; align-items:center;">
-                        <input type="number" id="service-rate" class="num-input" step="0.1" min="0" max="100">
-                        <span class="num-unit">%</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.settings.campaignActiveLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.settings.campaignActiveHint"></div>
+                        </div>
+                        <div class="toggle" id="campaign-toggle"><div class="toggle__knob"></div></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.settings.campaignDiscountLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.settings.campaignDiscountHint"></div>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <input type="number" id="campaign-discount" class="num-input" step="0.1" min="0" max="100">
+                            <span class="num-unit">%</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- キャンペーン有効化 -->
-            <div class="form-row">
-                <div class="form-row__header">
-                    <div>
-                        <div class="form-row__label" data-i18n="admin.settings.campaignActiveLabel"></div>
-                        <div class="form-row__hint" data-i18n="admin.settings.campaignActiveHint"></div>
+            <!-- 農家側 -->
+            <div class="card">
+                <div class="section-heading" data-i18n="admin.settings.farmerSection"></div>
+
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.settings.farmerRateLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.settings.farmerRateHint"></div>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <input type="number" id="farmer-rate" class="num-input" step="0.1" min="0" max="100">
+                            <span class="num-unit">%</span>
+                        </div>
                     </div>
-                    <div class="toggle" id="campaign-toggle"><div class="toggle__knob"></div></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.settings.farmerCampaignActiveLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.settings.farmerCampaignActiveHint"></div>
+                        </div>
+                        <div class="toggle" id="farmer-campaign-toggle"><div class="toggle__knob"></div></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.settings.farmerCampaignDiscountLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.settings.farmerCampaignDiscountHint"></div>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <input type="number" id="farmer-campaign-discount" class="num-input" step="0.1" min="0" max="100">
+                            <span class="num-unit">%</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- キャンペーン割引率 -->
-            <div class="form-row">
-                <div class="form-row__header">
-                    <div>
-                        <div class="form-row__label" data-i18n="admin.settings.campaignDiscountLabel"></div>
-                        <div class="form-row__hint" data-i18n="admin.settings.campaignDiscountHint"></div>
-                    </div>
-                    <div style="display:flex; align-items:center;">
-                        <input type="number" id="campaign-discount" class="num-input" step="0.1" min="0" max="100">
-                        <span class="num-unit">%</span>
-                    </div>
+            <div class="card">
+                <div class="save-row" style="margin-top:0;">
+                    <span class="save-note" id="save-note" data-i18n="admin.settings.saved"></span>
+                    <span class="save-error" id="save-error" data-i18n="admin.settings.errorSave"></span>
+                    <button class="save-btn" id="save-btn" data-i18n="admin.settings.save"></button>
                 </div>
-            </div>
-
-            <div class="save-row">
-                <span class="save-note" id="save-note" data-i18n="admin.settings.saved"></span>
-                <span class="save-error" id="save-error" data-i18n="admin.settings.errorSave"></span>
-                <button class="save-btn" id="save-btn" data-i18n="admin.settings.save"></button>
             </div>
         </div>
     </div>
@@ -233,6 +284,8 @@
 
         const toggle = document.getElementById('campaign-toggle');
         toggle.addEventListener('click', () => toggle.classList.toggle('on'));
+        const farmerToggle = document.getElementById('farmer-campaign-toggle');
+        farmerToggle.addEventListener('click', () => farmerToggle.classList.toggle('on'));
 
         waitForUserData(async () => {
             if (window.currentUserData?.role !== 'admin') {
@@ -244,13 +297,22 @@
             try {
                 const snap = await getDoc(doc(db, 'settings', 'campaign'));
                 const data = snap.exists() ? snap.data() : {};
+                // レストラン側
                 const serviceRate = data.serviceRate ?? 0.05;
                 const campaignDiscount = data.campaignDiscount ?? 0;
                 const campaignActive = data.campaignActive === true;
+                // 農家側（未設定時は 5% / 0% / OFF をデフォルト）
+                const farmerRate = data.farmerRate ?? 0.05;
+                const farmerCampaignDiscount = data.farmerCampaignDiscount ?? 0;
+                const farmerCampaignActive = data.farmerCampaignActive === true;
 
                 document.getElementById('service-rate').value = (serviceRate * 100).toFixed(1);
                 document.getElementById('campaign-discount').value = (campaignDiscount * 100).toFixed(1);
                 toggle.classList.toggle('on', campaignActive);
+
+                document.getElementById('farmer-rate').value = (farmerRate * 100).toFixed(1);
+                document.getElementById('farmer-campaign-discount').value = (farmerCampaignDiscount * 100).toFixed(1);
+                farmerToggle.classList.toggle('on', farmerCampaignActive);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -270,9 +332,14 @@
             const campaignDiscount = parseFloat(document.getElementById('campaign-discount').value) / 100 || 0;
             const campaignActive = toggle.classList.contains('on');
 
+            const farmerRate = parseFloat(document.getElementById('farmer-rate').value) / 100 || 0;
+            const farmerCampaignDiscount = parseFloat(document.getElementById('farmer-campaign-discount').value) / 100 || 0;
+            const farmerCampaignActive = farmerToggle.classList.contains('on');
+
             try {
                 await setDoc(doc(db, 'settings', 'campaign'), {
-                    serviceRate, campaignDiscount, campaignActive
+                    serviceRate, campaignDiscount, campaignActive,
+                    farmerRate, farmerCampaignDiscount, farmerCampaignActive
                 }, { merge: true });
                 note.classList.add('show');
                 setTimeout(() => note.classList.remove('show'), 1800);

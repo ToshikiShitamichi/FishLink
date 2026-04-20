@@ -269,13 +269,18 @@
             // 注文者でない場合は戻す
             if (orderData.restaurantId !== myUid) { location.href = '/pages/restaurant/orders.html'; return; }
 
-            // listing情報
+            // listing情報（注文時点のスナップショット優先）
             let fishName = '', size = '';
-            if (orderData.listingId) {
+            let fishTypeKey = orderData.snapFishType;
+            size = orderData.snapSize || '';
+            if ((!fishTypeKey || !size) && orderData.listingId) {
                 const lSnap = await getDoc(doc(db, 'fishListings', orderData.listingId));
                 const lt = lSnap.data() || {};
-                fishName = i18next.exists(`fish.${lt.fishType}`) ? i18next.t(`fish.${lt.fishType}`) : (lt.fishType || '');
-                size = lt.size || '';
+                if (!fishTypeKey) fishTypeKey = lt.fishType;
+                if (!size) size = lt.size || '';
+            }
+            if (fishTypeKey) {
+                fishName = i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey;
             }
 
             // 農家情報

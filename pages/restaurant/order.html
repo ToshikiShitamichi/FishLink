@@ -572,8 +572,14 @@
         let distanceKm = 0;
         let quantity = 5;
         let gutProcessing = true;
+        // レストラン側
         let campaignActive = false;
-        let serviceRate = 0.05; // デフォルト5%、settings/campaignから取得
+        let serviceRate = 0.05;          // デフォルト5%、settings/campaignから取得
+        let campaignDiscountRate = 0;    // キャンペーン割引率（0〜1）
+        // 農家側
+        let farmerRate = 0.05;           // 農家手数料率
+        let farmerCampaignActive = false;
+        let farmerCampaignDiscountRate = 0;
 
         function waitForUserData(callback) {
             if (window.currentUserData) { callback(); }
@@ -599,13 +605,17 @@
                     distanceKm = await calcRoadDistance(myLoc.lat, myLoc.lng, farmerLoc.lat, farmerLoc.lng);
                 }
 
-                // キャンペーン取得
+                // キャンペーン・料率取得（レストラン側 + 農家側）
                 try {
                     const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
                     if (campSnap.exists()) {
                         const campData = campSnap.data();
                         serviceRate = campData.serviceRate ?? 0.05;
                         campaignActive = campData.campaignActive === true;
+                        campaignDiscountRate = campData.campaignDiscount ?? 0;
+                        farmerRate = campData.farmerRate ?? 0.05;
+                        farmerCampaignActive = campData.farmerCampaignActive === true;
+                        farmerCampaignDiscountRate = campData.farmerCampaignDiscount ?? 0;
                     }
                 } catch (e) { /* settings未作成時は無視 */ }
 
@@ -771,15 +781,22 @@
                 ? 0
                 : Math.round(deliveryRate * roundedDist);
 
-            // サービス料（5%）
             // サービス料（内臓処理込みの魚代ベース）
             const serviceFee = Math.round(fishTotal * serviceRate);
 
-            // キャンペーン割引（campaignActive時はサービス料全額割引）
-            const campaignDiscount = campaignActive ? serviceFee : 0;
+            // キャンペーン割引（campaignActive時、サービス料 × 割引率）
+            const campaignDiscount = campaignActive ? Math.round(serviceFee * campaignDiscountRate) : 0;
 
-            // 合計
+            // 合計（レストラン支払額）
             const total = fishTotal + deliveryFee + serviceFee - campaignDiscount;
+
+            // 農家手数料（魚代ベース）+ 農家側キャンペーン割引
+            const farmerCommission = Math.round(fishTotal * farmerRate);
+            const farmerCampaignDiscount = farmerCampaignActive
+                ? Math.round(farmerCommission * farmerCampaignDiscountRate) : 0;
+            const farmerCommissionNet = farmerCommission - farmerCampaignDiscount;
+            // 農家受取額 = 魚代 - 農家手数料(割引後) + 配送料
+            const farmerReceiveAmount = fishTotal - farmerCommissionNet + deliveryFee;
 
             // 料金内訳描画
             const fishLabel = gutProcessing
@@ -821,7 +838,13 @@
             document.getElementById('footer-total').textContent = `${total.toLocaleString()} KHR`;
 
             // 注文データをwindowに保持
-            window._orderCalc = { fishTotal, deliveryFee, serviceFee, campaignDiscount, total };
+            window._orderCalc = {
+                fishTotal, deliveryFee, serviceFee, campaignDiscount, total,
+                farmerCommission, farmerCampaignDiscount, farmerCommissionNet,
+                farmerReceiveAmount,
+                serviceRateUsed: serviceRate,
+                farmerRateUsed: farmerRate,
+            };
         }
 
         // ── 注文確定 ──
@@ -870,10 +893,23 @@
                     deliveryTime,
                     fishPrice: calc.fishTotal,
                     deliveryFee: calc.deliveryFee,
+                    // レストラン側
                     serviceFee: calc.serviceFee,
                     campaignDiscount: calc.campaignDiscount,
                     totalAmount: calc.total,
-                    farmerReceiveAmount: calc.fishTotal + calc.deliveryFee - Math.round(calc.fishTotal * 0.05),
+                    serviceRateUsed: calc.serviceRateUsed,
+                    // 農家側
+                    farmerCommission: calc.farmerCommissionNet,        // 割引後の最終手数料
+                    farmerCommissionGross: calc.farmerCommission,       // 割引前
+                    farmerCampaignDiscount: calc.farmerCampaignDiscount,
+                    farmerRateUsed: calc.farmerRateUsed,
+                    farmerReceiveAmount: calc.farmerReceiveAmount,
+                    // 注文時点の listing スナップショット（編集後も注文表示は変わらない）
+                    snapFishType: listingData.fishType || null,
+                    snapSize: listingData.size || null,
+                    snapPhotoUrl: listingData.photoUrl || null,
+                    snapPrice: listingData.price ?? null,
+                    snapGutPrice: listingData.gutPrice ?? null,
                     status: 'pending',
                     declineReason: null,
                     paymentStatus: 'pending',

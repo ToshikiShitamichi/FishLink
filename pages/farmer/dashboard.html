@@ -88,28 +88,14 @@
             color: #888;
         }
 
-        .fab {
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: var(--color-primary);
-            color: #fff;
-            font-size: 28px;
-            border: none;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, .2);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background .15s;
-            text-decoration: none;
+        /* ボトムナビの「出品する」項目を強調表示 */
+        .bottom-nav .nav-post .material-symbols-outlined {
+            color: var(--color-primary);
+            font-size: 32px;
         }
-
-        .fab:hover {
-            background: var(--color-primary-dk);
+        .bottom-nav .nav-post {
+            font-weight: 700;
+            color: var(--color-primary);
         }
 
         .empty-state {
@@ -146,6 +132,10 @@
             border: none;
             cursor: pointer;
             font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .toggle-pause {
@@ -156,6 +146,20 @@
         .toggle-resume {
             background: #f0fdf4;
             color: #166534;
+        }
+
+        .edit-btn {
+            background: #eef2ff;
+            color: #3730a3;
+        }
+        .edit-btn:hover { background: #e0e7ff; }
+        .edit-btn .material-symbols-outlined { font-size: 14px; }
+
+        .card-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
         }
     </style>
 </head>
@@ -185,14 +189,15 @@
 
     </div>
 
-    <!-- 新規投稿ボタン（FAB） -->
-    <a href="/pages/farmer/post.html" class="fab">＋</a>
-
     <!-- 下部ナビ -->
     <nav class="bottom-nav">
         <a href="/pages/farmer/dashboard.html" class="bottom-nav__item active">
             <span class="bottom-nav__icon"><span class="material-symbols-outlined">set_meal</span></span>
             <span data-i18n="dashboard.listings"></span>
+        </a>
+        <a href="/pages/farmer/post.html" class="bottom-nav__item nav-post">
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">add_circle</span></span>
+            <span data-i18n="dashboard.newPost"></span>
         </a>
         <a href="/pages/farmer/orders.html" class="bottom-nav__item" style="position:relative;">
             <span class="bottom-nav__icon"><span class="material-symbols-outlined">inbox</span></span>
@@ -252,7 +257,8 @@
                             <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">set_meal</span></div>
                             <div class="empty-state__text">${i18next.t('dashboard.empty')}</div>
                             <a href="/pages/farmer/post.html" class="btn btn-primary" style="display:inline-block; width:auto; padding:12px 24px;">
-                                ${i18next.t('dashboard.emptyAction')}
+                                <span class="material-symbols-outlined" style="font-size:18px; vertical-align:-3px; margin-right:4px;">add_circle</span>
+                                ${i18next.t('dashboard.newPost')}
                             </a>
                         </div>
                     `;
@@ -298,7 +304,13 @@
                                     ${Number(d.price).toLocaleString()} KHR/kg
                                     ${d.gutPrice ? `<span style="font-size:12px; font-weight:500; color:var(--color-text-sub);"> + ${i18next.t('post.gutPrice')} ${Number(d.gutPrice).toLocaleString()} KHR/kg</span>` : ''}
                                 </div>
-                                <div style="margin-top:8px;">${toggleBtn}</div>
+                                <div class="card-actions">
+                                    <a href="/pages/farmer/post.html?id=${doc.id}" class="toggle-btn edit-btn">
+                                        <span class="material-symbols-outlined">edit</span>
+                                        ${i18next.t('dashboard.edit')}
+                                    </a>
+                                    ${toggleBtn}
+                                </div>
                             </div>
                         </div>
                     `;
