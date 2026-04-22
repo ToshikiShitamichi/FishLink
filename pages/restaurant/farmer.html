@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .profile-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
+
+        .farmer-hero { text-align: center; padding: 24px 0 8px; }
+        .farmer-hero__avatar {
+            width: 96px; height: 96px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .farmer-hero__avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .farmer-hero__name { font-size: 22px; font-weight: 700; }
+        .farmer-hero__rating {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #fef3c7; color: #92400e;
+            padding: 4px 12px; border-radius: 20px;
+            font-size: 13px; font-weight: 600; line-height: 1;
+            margin-top: 8px;
+        }
+        .farmer-hero__rating .material-symbols-outlined {
+            font-size: 16px; color: #f59e0b;
+            font-variation-settings: 'FILL' 1, 'wght' 500, 'opsz' 24;
+            line-height: 1;
+        }
+        .farmer-hero__location {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 13px; color: var(--color-text-sub);
+            margin-top: 6px; line-height: 1.2;
+        }
+        .farmer-hero__location .material-symbols-outlined {
+            font-size: 16px; line-height: 1;
+        }
+
+        .message-box {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+        }
+        .message-box__label { font-size: 12px; font-weight: 700; color: #065f46; margin-bottom: 4px; }
+        .message-box__text { font-size: 13px; color: #065f46; line-height: 1.6; white-space: pre-wrap; }
+
+        .section { margin-bottom: 20px; }
+        .section__title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+
+        .pond-photo {
+            width: 100%;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #e2e8f0;
+            max-height: 220px;
+            margin-bottom: 10px;
+        }
+        .pond-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .pond-placeholder {
+            width: 100%; height: 160px;
+            display: flex; align-items: center; justify-content: center;
+            color: #94a3b8;
+        }
+
+        .subrating-wrap {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .subrating-head {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px;
+        }
+        .subrating-head__title { font-size: 14px; font-weight: 700; }
+        .subrating-head__link { font-size: 12px; color: #0369a1; font-weight: 600; text-decoration: none; }
+        .subrating-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+        .subrating-card { background: #f8fafc; border-radius: 12px; padding: 10px; text-align: center; }
+        .subrating-card__label { font-size: 11px; color: var(--color-text-sub); }
+        .subrating-card__value { font-size: 20px; font-weight: 700; margin-top: 4px; color: var(--color-text); }
+
+        .review-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+        }
+        .review-card__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+        .review-card__name { font-size: 14px; font-weight: 700; }
+        .review-card__date { font-size: 11px; color: var(--color-text-sub); }
+        .review-card__stars { color: #f59e0b; font-size: 14px; font-variation-settings: 'FILL' 1; margin-bottom: 4px; }
+        .review-card__stars .material-symbols-outlined { font-size: 16px; }
+        .review-card__comment { font-size: 13px; color: var(--color-text); line-height: 1.5; }
+
+        .listings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .listing-mini {
+            background: #fff;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+        }
+        .listing-mini__img { height: 110px; background: #e2e8f0; position: relative; }
+        .listing-mini__img img { width: 100%; height: 100%; object-fit: cover; }
+        .listing-mini__price {
+            position: absolute; top: 8px; left: 8px;
+            background: rgba(0,0,0,.75); color: #fff;
+            font-size: 11px; font-weight: 700;
+            padding: 3px 8px; border-radius: 20px;
+        }
+        .listing-mini__stock {
+            position: absolute; bottom: 8px; right: 8px;
+            background: rgba(16,185,129,.9); color: #fff;
+            font-size: 10px; font-weight: 700;
+            padding: 2px 8px; border-radius: 20px;
+        }
+        .listing-mini__body { padding: 8px; }
+        .listing-mini__name { font-size: 13px; font-weight: 700; }
+        .listing-mini__meta { font-size: 11px; color: var(--color-text-sub); margin-top: 2px; }
+
+        .empty-small { text-align: center; padding: 20px; color: var(--color-text-sub); font-size: 13px; }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="page-header" style="align-items:center; padding:12px 16px;">
+        <a href="javascript:history.back()" class="page-header__back"><span class="material-symbols-outlined">arrow_back</span></a>
+        <div class="page-header__title" style="flex:1; text-align:center; font-size:16px;" data-i18n="profile.farmerTitle"></div>
+        <div style="width:32px;"></div>
+    </div>
+
+    <div class="profile-page">
+
+        <div class="farmer-hero">
+            <div class="farmer-hero__avatar" id="avatar">
+                <span class="material-symbols-outlined" style="font-size:50px; color:#94a3b8;">person</span>
+            </div>
+            <div class="farmer-hero__name" id="name">-</div>
+            <div class="farmer-hero__rating">
+                <span class="material-symbols-outlined">star</span>
+                <span id="rating-value">0.0</span>
+                <span id="rating-count" style="color:#92400e;">（0件）</span>
+            </div>
+            <div class="farmer-hero__location">
+                <span class="material-symbols-outlined" style="font-size:14px;">location_on</span>
+                <span id="location">-</span>
+            </div>
+        </div>
+
+        <div class="message-box" id="message-box" style="display:none;">
+            <div class="message-box__label" data-i18n="profile.farmerMessage"></div>
+            <div class="message-box__text" id="message-text"></div>
+        </div>
+
+        <div class="section">
+            <div class="section__title" data-i18n="profile.pondPhoto"></div>
+            <div class="pond-photo" id="pond-photo">
+                <div class="pond-placeholder">
+                    <span class="material-symbols-outlined" style="font-size:48px;">water</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="subrating-wrap">
+            <div class="subrating-head">
+                <div class="subrating-head__title" data-i18n="review.title"></div>
+                <a class="subrating-head__link" id="reviews-link" href="#" data-i18n-target="review-count">レビューを見る</a>
+            </div>
+            <div class="subrating-grid">
+                <div class="subrating-card">
+                    <div class="subrating-card__label" data-i18n="profile.ratingSatisfaction"></div>
+                    <div class="subrating-card__value" id="sub-overall">0.0</div>
+                </div>
+                <div class="subrating-card">
+                    <div class="subrating-card__label" data-i18n="profile.ratingQuality"></div>
+                    <div class="subrating-card__value" id="sub-quality">0.0</div>
+                </div>
+                <div class="subrating-card">
+                    <div class="subrating-card__label" data-i18n="profile.ratingTime"></div>
+                    <div class="subrating-card__value" id="sub-time">0.0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section__title" data-i18n="profile.activeListings"></div>
+            <div id="listings-container"></div>
+        </div>
+
+        <div class="section">
+            <div class="section__title" data-i18n="profile.reviews"></div>
+            <div id="reviews-list"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            doc, getDoc, collection, collectionGroup, query, where, orderBy, getDocs
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+
+        const targetUid = new URLSearchParams(location.search).get('id');
+        if (!targetUid) { history.back(); }
+
+        function fmtDate(ts) {
+            const d = ts?.toDate?.() || new Date(ts || 0);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const da = String(d.getDate()).padStart(2, '0');
+            return `${y}/${m}/${da}`;
+        }
+
+        function starLine(n) {
+            const rounded = Math.round(Number(n) || 0);
+            return Array.from({ length: 5 }, (_, i) =>
+                `<span class="material-symbols-outlined">${i < rounded ? 'star' : 'star_outline'}</span>`
+            ).join('');
+        }
+
+        function fmtKhr(n) { return `${Number(n || 0).toLocaleString()} KHR`; }
+
+        async function load() {
+            loading.classList.add('show');
+            try {
+                const userSnap = await getDoc(doc(db, 'users', targetUid));
+                if (!userSnap.exists()) { history.back(); return; }
+                const user = userSnap.data();
+
+                document.getElementById('name').textContent = user.displayName || '-';
+                const loc = [user.province, user.district].filter(Boolean).join(', ') || '-';
+                document.getElementById('location').textContent = loc;
+
+                const avg = Number(user.avgRating || 0);
+                const count = Number(user.reviewCount || 0);
+                document.getElementById('rating-value').textContent = avg.toFixed(1);
+                document.getElementById('rating-count').textContent = `（${count}${i18next.t('order.reviews')}）`;
+
+                const sub = user.subRatings || {};
+                document.getElementById('sub-overall').textContent = Number(sub.overall || 0).toFixed(1);
+                document.getElementById('sub-quality').textContent = Number(sub.quality || 0).toFixed(1);
+                document.getElementById('sub-time').textContent = Number(sub.time || 0).toFixed(1);
+
+                // 農家の一言
+                if (user.farmerMessage) {
+                    document.getElementById('message-box').style.display = 'block';
+                    document.getElementById('message-text').textContent = user.farmerMessage;
+                }
+
+                // 養殖環境の写真
+                if (user.pondPhotoUrl) {
+                    document.getElementById('pond-photo').innerHTML = `<img src="${user.pondPhotoUrl}" alt="pond">`;
+                }
+
+                // 出品中の魚
+                const listingsQ = query(
+                    collection(db, 'fishListings'),
+                    where('farmerId', '==', targetUid),
+                    where('isActive', '==', true)
+                );
+                const listSnap = await getDocs(listingsQ);
+                const container = document.getElementById('listings-container');
+                if (listSnap.empty) {
+                    container.innerHTML = `<div class="empty-small">${i18next.t('account.emptyListings')}</div>`;
+                } else {
+                    container.innerHTML = `<div class="listings-grid">${listSnap.docs.map(d => {
+                        const data = d.data();
+                        const name = i18next.exists(`fish.${data.fishType}`) ? i18next.t(`fish.${data.fishType}`) : (data.fishType || '');
+                        const shortName = name.split('/')[0].trim();
+                        const img = data.photoUrl
+                            ? `<img src="${data.photoUrl}" alt="${shortName}">`
+                            : `<div style="display:flex; align-items:center; justify-content:center; height:100%;"><span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span></div>`;
+                        const price = (data.price || 0) + (data.gutPrice || 0);
+                        return `
+                            <a class="listing-mini" href="/pages/restaurant/order.html?id=${d.id}">
+                                <div class="listing-mini__img">
+                                    ${img}
+                                    <div class="listing-mini__price">${fmtKhr(price)}/kg</div>
+                                    ${data.stock > 0 ? `<div class="listing-mini__stock">${i18next.t('restaurant.stock', { kg: data.stock })}</div>` : ''}
+                                </div>
+                                <div class="listing-mini__body">
+                                    <div class="listing-mini__name">${shortName}</div>
+                                    <div class="listing-mini__meta">（${data.size || ''} head/kg）</div>
+                                </div>
+                            </a>
+                        `;
+                    }).join('')}</div>`;
+                }
+
+                // レビュー
+                try {
+                    const rq = query(
+                        collectionGroup(db, 'reviews'),
+                        where('toUid', '==', targetUid),
+                        orderBy('createdAt', 'desc')
+                    );
+                    const reviewSnap = await getDocs(rq);
+                    const listEl = document.getElementById('reviews-list');
+                    if (reviewSnap.empty) {
+                        listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
+                        return;
+                    }
+                    const reviews = [];
+                    const fromUids = new Set();
+                    reviewSnap.forEach(d => { reviews.push({ id: d.id, ...d.data() }); fromUids.add(d.data().fromUid); });
+                    const userMap = {};
+                    await Promise.all([...fromUids].map(async fid => {
+                        const s = await getDoc(doc(db, 'users', fid));
+                        userMap[fid] = s.exists() ? s.data() : {};
+                    }));
+                    listEl.innerHTML = reviews.map(r => {
+                        const from = userMap[r.fromUid] || {};
+                        return `
+                            <div class="review-card">
+                                <div class="review-card__head">
+                                    <div class="review-card__name">${from.displayName || ''}</div>
+                                    <div class="review-card__date">${fmtDate(r.createdAt)}</div>
+                                </div>
+                                <div class="review-card__stars">${starLine(r.avgRating)}</div>
+                                ${r.comment ? `<div class="review-card__comment">${r.comment}</div>` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                } catch (err) {
+                    console.warn('reviews query failed:', err);
+                    document.getElementById('reviews-list').innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        load();
+    </script>
+</body>
+
+</html>

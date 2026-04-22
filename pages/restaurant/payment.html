@@ -231,6 +231,10 @@
 
     <div class="payment-footer">
         <button id="paid-btn" data-i18n="payment.confirmPaid"></button>
+        <a id="review-btn" href="#" style="display:none; margin-top:8px; padding:12px; background:#f97316; color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:14px; align-items:center; justify-content:center; gap:6px; line-height:1;">
+            <span class="material-symbols-outlined" style="font-size:18px; line-height:1;">star</span>
+            <span data-i18n="review.submit" style="line-height:1;"></span>
+        </a>
     </div>
 
     <script type="module">
@@ -294,7 +298,7 @@
                 <div style="font-size:16px; font-weight:700; color:var(--color-text);">${fishName}${size ? `（${size} head/kg）` : ''}</div>
                 <div style="font-size:14px; color:var(--color-text); margin-top:4px;">${i18next.t('orders.quantity')} ${orderData.quantity} kg</div>
                 <div style="font-size:13px; color:var(--color-text-sub); margin-top:6px;">
-                    <span class="material-symbols-outlined" style="font-size:14px; vertical-align:-2px;">storefront</span>
+                    <span class="material-symbols-outlined" style="font-size:14px;">storefront</span>
                     ${farmerName}${place ? ` · ${place}` : ''}
                 </div>
             `;
@@ -308,10 +312,11 @@
 
             document.getElementById('total-amount').textContent = `${total.toLocaleString()} KHR`;
 
+            // レストラン表示：サービス料を魚代に合算
+            const displayFishTotal = fishTotal + serviceFee;
             let html = `
-                <div class="pay-line"><span class="pay-line__label">${i18next.t('payment.subtotal')}</span><span class="pay-line__value">${fishTotal.toLocaleString()} KHR</span></div>
+                <div class="pay-line"><span class="pay-line__label">${i18next.t('payment.subtotal')}</span><span class="pay-line__value">${displayFishTotal.toLocaleString()} KHR</span></div>
                 <div class="pay-line"><span class="pay-line__label">${i18next.t('order.deliveryFee')}</span><span class="pay-line__value">${deliveryFee.toLocaleString()} KHR</span></div>
-                <div class="pay-line"><span class="pay-line__label">${i18next.t('order.serviceFee')}</span><span class="pay-line__value">${serviceFee.toLocaleString()} KHR</span></div>
             `;
             if (campaignDiscount > 0) {
                 html += `<div class="pay-line"><span class="pay-line__label">${i18next.t('order.campaignDiscount')}</span><span class="pay-line__value discount">-${campaignDiscount.toLocaleString()} KHR</span></div>`;
@@ -328,12 +333,16 @@
         function updatePaidState(paymentStatus) {
             const btn = document.getElementById('paid-btn');
             const banner = document.getElementById('paid-banner');
+            const reviewBtn = document.getElementById('review-btn');
             if (paymentStatus === 'paid') {
                 banner.style.display = 'block';
                 btn.classList.add('paid');
                 btn.textContent = i18next.t('payment.alreadyPaid');
                 btn.disabled = true;
             }
+            // レビューボタンは常時表示（受取完了後にこの画面に来ているため）
+            reviewBtn.href = `/pages/restaurant/review.html?id=${orderId}`;
+            reviewBtn.style.display = 'flex';
         }
 
         // 支払い完了ボタン

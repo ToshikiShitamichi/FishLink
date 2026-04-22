@@ -687,16 +687,16 @@
                 <div class="fish-detail__body">
                     <div class="fish-detail__name">${fishName}（${size} head/kg）</div>
                     <div class="fish-detail__price">
-                        ${Number((listingData.price || 0) + (listingData.gutPrice || 0)).toLocaleString()} KHR/kg
+                        ${Math.round(((listingData.price || 0) + (listingData.gutPrice || 0)) * (1 + serviceRate)).toLocaleString()} KHR/kg
                         ${listingData.gutPrice ? `<span style="font-size:13px; font-weight:500; color:var(--color-text-sub);">（${i18next.t('order.priceGutIncluded')}）</span>` : ''}
                     </div>
                     <div class="fish-detail__farmer">
-                        <a href="#" style="text-decoration:none; color:inherit;"><span class="material-symbols-outlined" style="font-size:16px;">person</span> ${farmerData.displayName || ''}</a>
+                        <a href="/pages/restaurant/farmer.html?id=${listingData.farmerId}" style="text-decoration:none; color:inherit;"><span class="material-symbols-outlined" style="font-size:16px;">person</span> ${farmerData.displayName || ''}</a>
                         <span><span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span> ${rating.toFixed(1)}</span>
                         <span style="color:var(--color-text-sub);">(${reviewCount}${i18next.t('order.reviews')})</span>
                     </div>
                     ${placeText ? `<div class="fish-detail__location"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span> ${placeText} · ${dist} km</div>` : ''}
-                    <a href="#" class="fish-detail__comment-btn">${i18next.t('order.comment')}</a>
+                    <a href="/pages/restaurant/comments.html?id=${listingId}" class="fish-detail__comment-btn">${i18next.t('order.comment')}</a>
                     <div class="fish-detail__badges">
                         <span class="${stockClass}">${stockText}</span>
                     </div>
@@ -784,16 +784,16 @@
             // サービス料（内臓処理込みの魚代ベース）
             const serviceFee = Math.round(fishTotal * serviceRate);
 
-            // キャンペーン割引（campaignActive時、サービス料 × 割引率）
-            const campaignDiscount = campaignActive ? Math.round(serviceFee * campaignDiscountRate) : 0;
+            // キャンペーン割引（魚代 × 割引率・ここが今回の変更点）
+            const campaignDiscount = campaignActive ? Math.round(fishTotal * campaignDiscountRate) : 0;
 
             // 合計（レストラン支払額）
             const total = fishTotal + deliveryFee + serviceFee - campaignDiscount;
 
-            // 農家手数料（魚代ベース）+ 農家側キャンペーン割引
+            // 農家手数料（魚代ベース）+ 農家側キャンペーン割引（魚代 × 割引率）
             const farmerCommission = Math.round(fishTotal * farmerRate);
             const farmerCampaignDiscount = farmerCampaignActive
-                ? Math.round(farmerCommission * farmerCampaignDiscountRate) : 0;
+                ? Math.round(fishTotal * farmerCampaignDiscountRate) : 0;
             const farmerCommissionNet = farmerCommission - farmerCampaignDiscount;
             // 農家受取額 = 魚代 - 農家手数料(割引後) + 配送料
             const farmerReceiveAmount = fishTotal - farmerCommissionNet + deliveryFee;
@@ -803,18 +803,16 @@
                 ? i18next.t('order.fishPrice')
                 : i18next.t('order.fishPriceNoGut');
 
+            // レストラン表示：サービス料は魚代に合算（内部計算はそのまま）
+            const displayFishTotal = fishTotal + serviceFee;
             let html = `
                 <div class="price-line">
                     <span class="price-line__label">${fishLabel}</span>
-                    <span class="price-line__value">${fishTotal.toLocaleString()} KHR</span>
+                    <span class="price-line__value">${displayFishTotal.toLocaleString()} KHR</span>
                 </div>
                 <div class="price-line">
                     <span class="price-line__label" data-i18n="order.deliveryFee">${i18next.t('order.deliveryFee')}</span>
                     <span class="price-line__value">${deliveryFee.toLocaleString()} KHR</span>
-                </div>
-                <div class="price-line">
-                    <span class="price-line__label" data-i18n="order.serviceFee">${i18next.t('order.serviceFee')}</span>
-                    <span class="price-line__value">${serviceFee.toLocaleString()} KHR</span>
                 </div>
             `;
 
@@ -886,7 +884,7 @@
                 const [y, m, d] = deliveryDateIso.split('-').map(Number);
                 const deliveryDate = `${m}/${d}`;
 
-                await addDoc(collection(db, 'orders'), {
+                const orderRef = await addDoc(collection(db, 'orders'), {
                     restaurantId: uid,
                     farmerId: listingData.farmerId,
                     listingId,
@@ -920,9 +918,9 @@
                     createdAt: serverTimestamp(),
                 });
 
-                // 注文完了 → ダッシュボードに戻る
+                // 注文完了 → チャット画面へ（承認待ちバナー表示）
                 // ※ 在庫減算・FCM通知はCloud Functionsが自動処理
-                location.href = '/pages/restaurant/dashboard.html';
+                location.href = `/pages/restaurant/delivery.html?id=${orderRef.id}`;
 
             } catch (err) {
                 console.error(err);

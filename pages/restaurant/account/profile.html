@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .sub-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
+        .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
+        .photo-box img { width: 100%; max-height: 240px; object-fit: cover; border-radius: 14px; display: block; }
+        .photo-placeholder { width: 100%; height: 180px; display: flex; align-items: center; justify-content: center; color: #94a3b8; background: #fff; border-radius: 14px; border: 1px dashed var(--color-border); }
+        .img-actions { display: flex; justify-content: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .img-actions button { background: #fff; border: 1px solid var(--color-border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--color-text); font-family: inherit; }
+        .img-actions button.danger { color: #b91c1c; border-color: #fecaca; }
+        .save-row { display: flex; gap: 8px; margin-top: 14px; }
+        .save-row button { flex: 1; border: none; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .save-row .save { background: var(--color-primary); color: #fff; }
+        .edit-toggle { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+        .edit-btn { background: #eef2ff; color: #3730a3; border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+        .label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="page">
+        <div class="page-header" style="align-items:center;">
+            <a href="/pages/restaurant/account.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">EN</option>
+                <option value="ja">JA</option>
+            </select>
+        </div>
+
+        <div class="sub-page__title" data-i18n="profile.restaurantPhoto"></div>
+
+        <div class="sub-page">
+
+        <div class="edit-toggle">
+            <button class="edit-btn" id="btn-edit">
+                <span class="material-symbols-outlined" style="font-size:14px;">edit</span>
+                <span data-i18n="account.edit"></span>
+            </button>
+        </div>
+
+        <div id="view-mode">
+            <div class="label" data-i18n="profile.restaurantPhoto"></div>
+            <div class="photo-box" id="v-photo">
+                <div class="photo-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">storefront</span></div>
+            </div>
+        </div>
+
+        <div id="edit-mode" style="display:none;">
+            <div class="label" data-i18n="profile.restaurantPhoto"></div>
+            <div class="photo-box" id="e-photo">
+                <div class="photo-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">storefront</span></div>
+            </div>
+            <div class="img-actions">
+                <button type="button" id="btn-photo-upload" data-i18n="profile.uploadPhoto"></button>
+                <button type="button" id="btn-photo-remove" class="danger" data-i18n="profile.removePhoto"></button>
+                <input type="file" id="photo-file" accept="image/*" style="display:none;">
+            </div>
+            <div class="save-row">
+                <button class="edit-btn" id="btn-cancel" style="flex:1;" data-i18n="account.cancel"></button>
+                <button class="save" id="btn-save" data-i18n="account.save"></button>
+            </div>
+        </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db, storage } from '/js/firebase-config.js';
+        import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        let userData = null;
+        let editState = { photoUrl: null, file: null, removed: false };
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        function showPhoto(id, url) {
+            const box = document.getElementById(id);
+            if (url) {
+                box.innerHTML = `<img src="${url}" alt="restaurant">`;
+            } else {
+                box.innerHTML = `<div class="photo-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">storefront</span></div>`;
+            }
+        }
+
+        function renderView() { showPhoto('v-photo', userData.restaurantPhotoUrl || null); }
+
+        document.getElementById('btn-edit').addEventListener('click', () => {
+            editState = { photoUrl: userData.restaurantPhotoUrl || null, file: null, removed: false };
+            showPhoto('e-photo', editState.photoUrl);
+            document.getElementById('view-mode').style.display = 'none';
+            document.getElementById('edit-mode').style.display = 'block';
+            document.getElementById('btn-edit').style.display = 'none';
+        });
+        document.getElementById('btn-cancel').addEventListener('click', () => {
+            document.getElementById('view-mode').style.display = 'block';
+            document.getElementById('edit-mode').style.display = 'none';
+            document.getElementById('btn-edit').style.display = 'inline-flex';
+        });
+        document.getElementById('btn-photo-upload').addEventListener('click', () => document.getElementById('photo-file').click());
+        document.getElementById('photo-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            editState.file = file;
+            editState.removed = false;
+            const reader = new FileReader();
+            reader.onload = (ev) => showPhoto('e-photo', ev.target.result);
+            reader.readAsDataURL(file);
+        });
+        document.getElementById('btn-photo-remove').addEventListener('click', () => {
+            editState.file = null;
+            editState.removed = true;
+            editState.photoUrl = null;
+            document.getElementById('photo-file').value = '';
+            showPhoto('e-photo', null);
+        });
+        document.getElementById('btn-save').addEventListener('click', async () => {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            const btn = document.getElementById('btn-save');
+            btn.disabled = true;
+            loading.classList.add('show');
+            try {
+                let restaurantPhotoUrl = editState.photoUrl;
+                if (editState.file) {
+                    const storageRef = ref(storage, `profile/${uid}/rest_${Date.now()}_${editState.file.name}`);
+                    await uploadBytes(storageRef, editState.file);
+                    restaurantPhotoUrl = await getDownloadURL(storageRef);
+                } else if (editState.removed) {
+                    restaurantPhotoUrl = null;
+                }
+                await updateDoc(doc(db, 'users', uid), { restaurantPhotoUrl: restaurantPhotoUrl || null });
+                userData.restaurantPhotoUrl = restaurantPhotoUrl || null;
+                renderView();
+                document.getElementById('btn-cancel').click();
+            } catch (err) {
+                console.error(err);
+                alert(i18next.t('account.saveFailed'));
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+
+        waitForUserData(() => {
+            userData = { ...window.currentUserData };
+            renderView();
+            loading.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

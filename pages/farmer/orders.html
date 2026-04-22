@@ -340,11 +340,36 @@
         <div class="page-header" style="align-items:center;">
             <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector"
-                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
                 <option value="km">ខ្មែរ</option>
                 <option value="en">EN</option>
                 <option value="ja">JA</option>
             </select>
+            <div class="header-actions">
+                <button class="header-action-btn" data-popover="notif" type="button" aria-label="notifications">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span class="header-action-btn__badge" id="notif-badge"></span>
+                </button>
+                <button class="header-action-btn" data-popover="todos" type="button" aria-label="todo list">
+                    <span class="material-symbols-outlined">checklist</span>
+                    <span class="header-action-btn__badge" id="todos-badge"></span>
+                </button>
+                <a class="header-action-btn" href="/pages/farmer/account.html" aria-label="account">
+                    <span class="material-symbols-outlined">account_circle</span>
+                </a>
+                <div class="header-popover" data-popover-for="notif">
+                    <div class="header-popover__head" data-i18n="notifications.title"></div>
+                    <div class="header-popover__body" id="notif-list">
+                        <div class="header-popover__empty" data-i18n="notifications.empty"></div>
+                    </div>
+                </div>
+                <div class="header-popover" data-popover-for="todos">
+                    <div class="header-popover__head" data-i18n="todos.title"></div>
+                    <div class="header-popover__body" id="todos-list">
+                        <div class="header-popover__empty" data-i18n="todos.empty"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div style="text-align:center; font-size:20px; font-weight:700; margin-bottom:16px;" data-i18n="orders.title">
@@ -369,16 +394,15 @@
             <span class="bottom-nav__icon"><span class="material-symbols-outlined">inbox</span></span>
             <span data-i18n="orders.navOrders"></span>
         </a>
-        <a href="/pages/farmer/account.html" class="bottom-nav__item">
-            <span class="bottom-nav__icon"><span class="material-symbols-outlined">person</span></span>
-            <span data-i18n="nav.account"></span>
-        </a>
     </nav>
 
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
+        import { initHeaderPopovers } from '/js/header-actions.js';
+        import { subscribeTodos } from '/js/todos.js';
+        import { subscribeNotifications } from '/js/notifications.js';
         import {
             collection, query, where, orderBy, getDocs, doc, getDoc, updateDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -388,6 +412,7 @@
         watchAuthState({ requireAuth: true });
         await initI18n();
         initLangSelector();
+        initHeaderPopovers();
 
         // ログアウトはアカウントページ内に移動
 
@@ -423,6 +448,8 @@
             try {
                 const uid = window.currentUser?.uid;
                 if (!uid) return;
+                subscribeTodos(uid, 'farmer');
+                subscribeNotifications(uid);
 
                 const myLoc = window.currentUserData?.location;
 
@@ -568,7 +595,7 @@
                         <div class="order-card__row">${i18next.t('orders.deliveryTime')} ${order.deliveryTime}</div>
                         <div class="order-card__divider"></div>
                         <div class="order-card__row">${restName}　<span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span> ${restRating.toFixed(1)}（${restReviews}）</div>
-                        <div class="order-card__row"><a class="order-card__link" href="#">${i18next.t('orders.viewReviews')}</a></div>
+                        <div class="order-card__row"><a class="order-card__link" href="/pages/farmer/restaurant.html?id=${order.restaurantId}">${i18next.t('orders.viewReviews')}</a></div>
                         <div class="order-card__row"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span> ${restPlace}　${dist} km</div>
                         <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
                         <div class="order-card__divider"></div>
@@ -591,11 +618,11 @@
                         ${(order.status === 'completed' && ['remitted', 'done'].includes(order.adminStatus))
                             ? `<div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
                                 <a href="/pages/farmer/review.html?id=${order.id}" style="flex:1; text-align:center; padding:10px; background:#f97316; color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:13px;">
-                                    <span class="material-symbols-outlined" style="font-size:16px; vertical-align:-3px;">star</span>
+                                    <span class="material-symbols-outlined" style="font-size:16px;">star</span>
                                     ${i18next.t('review.submit')}
                                 </a>
                                 <a href="/pages/farmer/report.html?id=${order.id}" style="flex:1; text-align:center; padding:10px; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:12px; font-weight:700; text-decoration:none; font-size:13px;">
-                                    <span class="material-symbols-outlined" style="font-size:16px; vertical-align:-3px;">flag</span>
+                                    <span class="material-symbols-outlined" style="font-size:16px;">flag</span>
                                     ${i18next.t('review.reportIssue')}
                                 </a>
                             </div>`
@@ -788,10 +815,10 @@
                     try {
                         await updateDoc(doc(db, 'orders', orderId), { status: 'approved' });
                         // FCM通知はCloud Functionsが自動送信
-                        location.reload();
+                        // 承認後はチャット画面へ遷移
+                        location.href = `/pages/farmer/delivery.html?id=${orderId}`;
                     } catch (err) {
                         console.error(err);
-                    } finally {
                         btn.disabled = false;
                         loading.classList.remove('show');
                     }

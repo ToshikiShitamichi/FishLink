@@ -152,6 +152,7 @@
         "count": "{{count}}件の魚を表示中",
         "tapHint": "カードを選ぶと注文へ進む",
         "empty": "条件に合う魚が見つかりません",
+        "map": "地図",
         "priceWithFee": "（税サ込）"
     },
     "delivery": {
@@ -166,6 +167,9 @@
         "deliveryComplete": "配送完了",
         "receiveConfirm": "受取確認",
         "chatPlaceholder": "メッセージを入力...",
+        "pendingBanner": "承認お待ちください",
+        "pendingBannerDesc": "農家が注文を承認するとメッセージを送れるようになります",
+        "chatDisabledHint": "農家の承認後に送信できます",
         "send": "送信",
         "imageSent": "画像が送信されました",
         "deletedLabel": "（取り消し済み）",
@@ -321,7 +325,112 @@
     },
     "nav": {
         "logout": "ログアウト",
-        "account": "アカウント"
+        "account": "アカウント",
+        "notifications": "通知",
+        "todos": "やることリスト",
+        "myPage": "マイページ"
+    },
+    "notifications": {
+        "title": "通知",
+        "empty": "新しい通知はありません"
+    },
+    "todos": {
+        "title": "やることリスト",
+        "empty": "やることはありません",
+        "farmer_approve": {
+            "title": "新しい注文が入りました",
+            "body": "承認または辞退をしてください"
+        },
+        "farmer_prepare": {
+            "title": "注文の準備を開始してください",
+            "body": "配送ステータスを「準備開始」に更新しましょう"
+        },
+        "farmer_deliver": {
+            "title": "配送ステータスを更新してください",
+            "body": "配送の進捗をレストランへ伝えましょう"
+        },
+        "farmer_complete_delivery": {
+            "title": "魚を受け渡してください",
+            "body": "到着後、配送完了ボタンを押してください"
+        },
+        "farmer_review": {
+            "title": "レビューをしてください",
+            "body": "取引完了後、レストランを評価しましょう"
+        },
+        "farmer_reply": {
+            "title": "レストランからメッセージが届いています",
+            "body": "返信してください"
+        },
+        "rest_receive": {
+            "title": "魚が到着しました",
+            "body": "受取確認をしてください"
+        },
+        "rest_pay": {
+            "title": "支払いをしてください",
+            "body": "支払い完了後、「支払い完了を確認しました」を押してください"
+        },
+        "rest_review": {
+            "title": "レビューをしてください",
+            "body": "取引完了後、農家を評価しましょう"
+        },
+        "rest_reply": {
+            "title": "農家からメッセージが届いています",
+            "body": "返信してください"
+        },
+        "admin_verify_payment": {
+            "title": "レストラン入金を確認してください",
+            "body": "Merchant App で入金を確認します"
+        },
+        "admin_remit": {
+            "title": "農家へ送金してください",
+            "body": "入金確認後に手動で送金します"
+        },
+        "admin_done": {
+            "title": "取引完了にしてください",
+            "body": "送金後、取引を完了にマークします"
+        }
+    },
+    "profile": {
+        "restTitle": "レストラン情報",
+        "farmerTitle": "生産者ページ",
+        "summary": "評価サマリー",
+        "reviews": "レビュー",
+        "reviewsCount": "全{{count}}件",
+        "noReviews": "まだレビューはありません",
+        "openMap": "Google Mapsで開く",
+        "farmerMessage": "生産者の一言",
+        "pondPhoto": "養殖環境",
+        "restaurantPhoto": "レストラン写真",
+        "activeListings": "出品中の魚",
+        "viewAllReviews": "レビューを見る（{{count}}件）",
+        "ratingOverall": "総合評価",
+        "ratingQuality": "魚の品質",
+        "ratingTime": "配送時間",
+        "ratingSatisfaction": "取引の満足度",
+        "ratingCommunication": "やり取り",
+        "ratingReception": "受取対応",
+        "editProfile": "プロフィール編集",
+        "messagePlaceholder": "お客様への一言を書いてください",
+        "uploadPhoto": "写真を選択",
+        "removePhoto": "削除"
+    },
+    "comments": {
+        "title": "コメント",
+        "publicNote": "コメントは他のレストランにも公開されます。注文前の確認に利用してください。",
+        "inputPlaceholder": "コメントする",
+        "send": "送信",
+        "publicFooter": "公開コメントとして商品ページに表示されます",
+        "empty": "まだコメントはありません",
+        "openThread": "コメントを見る",
+        "errorEmpty": "コメントを入力してください",
+        "errorSubmit": "送信に失敗しました",
+        "justNow": "たった今",
+        "minutesAgo": "{{n}}分前",
+        "hoursAgo": "{{n}}時間前",
+        "daysAgo": "{{n}}日前",
+        "delete": "取り消し",
+        "deleted": "このコメントは取り消されました",
+        "confirmDelete": "このコメントを取り消しますか？"
     },
     "review": {
         "title": "レビュー",
@@ -419,7 +528,14 @@
         "statusPaymentConfirmed": "レストラン入金済",
         "statusDelivered": "受け取り完了",
         "statusOther": "進行中",
-        "logout": "ログアウト"
+        "logout": "ログアウト",
+        "menuHintBasic": "ログインID・表示名・位置情報",
+        "menuHintRemit": "口座名・QRリンク・QR画像",
+        "menuHintPayment": "口座名・支払いQR・支払いリンク",
+        "menuHintSales": "売上金額・取引履歴",
+        "menuHintPurchase": "購入金額・取引履歴",
+        "menuHintProfileFarmer": "生産者の一言・養殖環境写真",
+        "menuHintProfileRestaurant": "レストラン写真"
     },
     "admin": {
         "brand": "FISHLINK 管理画面",
@@ -565,7 +681,21 @@
             "save": "保存する",
             "saved": "保存しました",
             "loadingData": "読み込み中...",
-            "selectFirst": "魚種を選択してください"
+            "selectFirst": "魚種を選択してください",
+            "ocrTitle": "画像から取り込む（OCR）",
+            "ocrHint": "CAA価格表の画像を読み取り、テキストを抽出します。抽出結果を参考にセルへ入力、または「自動流し込み」で一括反映できます（精度は画像品質に依存）。",
+            "ocrPick": "画像を選択",
+            "ocrRun": "OCR実行",
+            "ocrAutofill": "自動流し込み",
+            "ocrRunning": "解析中...",
+            "ocrDone": "完了",
+            "ocrError": "エラー",
+            "ocrPreview": "プレビュー",
+            "ocrText": "抽出テキスト",
+            "ocrTextPlaceholder": "OCR実行後、ここにテキストが表示されます",
+            "ocrAutofillEmpty": "州名に一致する行が見つかりませんでした。画像の品質を確認してください。",
+            "ocrAutofillDone": "{{count}}件のセルに値を入れました。内容を確認してから保存してください。",
+            "ocrAutofillMissing": "以下の州は自動取り込みできませんでした（手動入力してください）"
         }
     }
 }

@@ -155,6 +155,23 @@
         .edit-btn:hover { background: #e0e7ff; }
         .edit-btn .material-symbols-outlined { font-size: 14px; }
 
+        .comment-link {
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .comment-link:hover { background: #fde68a; }
+        .comment-link .material-symbols-outlined { font-size: 14px; }
+
         .card-actions {
             display: flex;
             gap: 6px;
@@ -177,11 +194,36 @@
         <div class="page-header" style="align-items:center;">
             <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector"
-                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
                 <option value="km">ខ្មែរ</option>
                 <option value="en">EN</option>
                 <option value="ja">JA</option>
             </select>
+            <div class="header-actions">
+                <button class="header-action-btn" data-popover="notif" type="button" aria-label="notifications">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span class="header-action-btn__badge" id="notif-badge"></span>
+                </button>
+                <button class="header-action-btn" data-popover="todos" type="button" aria-label="todo list">
+                    <span class="material-symbols-outlined">checklist</span>
+                    <span class="header-action-btn__badge" id="todos-badge"></span>
+                </button>
+                <a class="header-action-btn" href="/pages/farmer/account.html" aria-label="account">
+                    <span class="material-symbols-outlined">account_circle</span>
+                </a>
+                <div class="header-popover" data-popover-for="notif">
+                    <div class="header-popover__head" data-i18n="notifications.title"></div>
+                    <div class="header-popover__body" id="notif-list">
+                        <div class="header-popover__empty" data-i18n="notifications.empty"></div>
+                    </div>
+                </div>
+                <div class="header-popover" data-popover-for="todos">
+                    <div class="header-popover__head" data-i18n="todos.title"></div>
+                    <div class="header-popover__body" id="todos-list">
+                        <div class="header-popover__empty" data-i18n="todos.empty"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- 魚の投稿一覧 -->
@@ -204,16 +246,15 @@
             <span class="nav-badge" id="order-badge" style="display:none;"></span>
             <span data-i18n="orders.navOrders"></span>
         </a>
-        <a href="/pages/farmer/account.html" class="bottom-nav__item">
-            <span class="bottom-nav__icon"><span class="material-symbols-outlined">person</span></span>
-            <span data-i18n="nav.account"></span>
-        </a>
     </nav>
 
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
+        import { initHeaderPopovers } from '/js/header-actions.js';
+        import { subscribeTodos } from '/js/todos.js';
+        import { subscribeNotifications } from '/js/notifications.js';
         import {
             collection, query, where, orderBy, getDocs, doc, updateDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -226,6 +267,7 @@
         // i18n 初期化
         await initI18n();
         initLangSelector();
+        initHeaderPopovers();
 
         // ログアウト
         // ログアウトはアカウントページ内に移動
@@ -254,7 +296,7 @@
                             <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">set_meal</span></div>
                             <div class="empty-state__text">${i18next.t('dashboard.empty')}</div>
                             <a href="/pages/farmer/post.html" class="btn btn-primary" style="display:inline-block; width:auto; padding:12px 24px;">
-                                <span class="material-symbols-outlined" style="font-size:18px; vertical-align:-3px; margin-right:4px;">add_circle</span>
+                                <span class="material-symbols-outlined" style="font-size:18px; margin-right:4px;">add_circle</span>
                                 ${i18next.t('dashboard.newPost')}
                             </a>
                         </div>
@@ -305,6 +347,10 @@
                                     <a href="/pages/farmer/post.html?id=${doc.id}" class="toggle-btn edit-btn">
                                         <span class="material-symbols-outlined">edit</span>
                                         ${i18next.t('dashboard.edit')}
+                                    </a>
+                                    <a href="/pages/restaurant/comments.html?id=${doc.id}" class="comment-link">
+                                        <span class="material-symbols-outlined">chat_bubble_outline</span>
+                                        ${i18next.t('comments.title')}
                                     </a>
                                     ${toggleBtn}
                                 </div>
@@ -359,7 +405,14 @@
         onLanguageChange(() => loadMyFishListings());
 
         // onAuthStateChanged 後にデータ取得
-        setTimeout(() => { loadMyFishListings(); watchOrderBadge(); }, 800);
+        setTimeout(() => {
+            loadMyFishListings();
+            watchOrderBadge();
+            if (window.currentUser?.uid) {
+                subscribeTodos(window.currentUser.uid, 'farmer');
+                subscribeNotifications(window.currentUser.uid);
+            }
+        }, 800);
     </script>
 
 </body>

@@ -17,15 +17,30 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
+// PWAアイコンバッジを増加（SW側ではユーザーの実際の未読数を知れないので +1）
+async function incrementAppBadge() {
+  if (!('setAppBadge' in self.navigator)) return;
+  try {
+    // 既存件数を IndexedDB で保持するのが理想だが、簡易的に +1 ずつ加算
+    // （メインページ再訪時に Firestore の正確な値で上書きされる）
+    const current = Number(self._badgeCount || 0) + 1;
+    self._badgeCount = current;
+    await self.navigator.setAppBadge(current);
+  } catch (e) { /* noop */ }
+}
+
 // アプリが閉じている・バックグラウンドのときにプッシュ通知を受信
 messaging.onBackgroundMessage((payload) => {
-  const { title, body } = payload.notification || {};
-  self.registration.showNotification(title || 'FishLink', {
-    body:  body || '',
+  const data = payload.data || {};
+  const title = data.title || payload.notification?.title || 'FishLink';
+  const body = data.body || payload.notification?.body || '';
+  self.registration.showNotification(title, {
+    body,
     icon:  '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
-    data:  payload.data || {},
+    data,
   });
+  incrementAppBadge();
 });
 
 // 通知をタップしたときの処理

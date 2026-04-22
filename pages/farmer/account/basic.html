@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .sub-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
+        .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
+        .acc-row { background: #f8fafc; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+        .acc-row__label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 4px; }
+        .acc-row__value { font-size: 15px; font-weight: 600; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="page">
+        <div class="page-header" style="align-items:center;">
+            <a href="/pages/farmer/account.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">EN</option>
+                <option value="ja">JA</option>
+            </select>
+        </div>
+
+        <div class="sub-page__title" data-i18n="account.basic"></div>
+
+        <div class="sub-page">
+            <div class="acc-row">
+                <div class="acc-row__label" data-i18n="account.loginId"></div>
+                <div class="acc-row__value" id="v-loginId">-</div>
+            </div>
+            <div class="acc-row">
+                <div class="acc-row__label" data-i18n="account.displayName"></div>
+                <div class="acc-row__value" id="v-displayName">-</div>
+            </div>
+            <div class="acc-row">
+                <div class="acc-row__label" data-i18n="account.location"></div>
+                <div class="acc-row__value" id="v-location">-</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        waitForUserData(() => {
+            const d = window.currentUserData || {};
+            document.getElementById('v-loginId').textContent = d.loginId || '-';
+            document.getElementById('v-displayName').textContent = d.displayName || '-';
+            const loc = [d.province, d.district].filter(Boolean).join(', ') || i18next.t('account.locationUnset');
+            document.getElementById('v-location').textContent = loc;
+            loading.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

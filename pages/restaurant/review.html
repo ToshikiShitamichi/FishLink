@@ -10,7 +10,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
     <style>
@@ -39,23 +39,39 @@
             margin-bottom: 12px;
         }
         .rating-section__label { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--color-text); }
-        .stars { display: flex; gap: 6px; }
+        .stars {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 4px 0;
+        }
         .star-btn {
             border: none;
             background: transparent;
             cursor: pointer;
-            padding: 4px;
+            padding: 2px;
             font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            width: 44px; height: 44px;
+            flex-shrink: 0;
         }
         .star-btn .material-symbols-outlined {
-            font-size: 38px;
+            font-size: 36px;
             color: #d1d5db;
-            font-variation-settings: 'FILL' 0, 'wght' 500, 'opsz' 48;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'opsz' 24;
             transition: color .1s;
+            line-height: 1;
+            display: block;
+            width: 36px; height: 36px;
+            overflow: visible;
         }
         .star-btn.filled .material-symbols-outlined {
             color: #f59e0b;
-            font-variation-settings: 'FILL' 1, 'wght' 500, 'opsz' 48;
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'opsz' 24;
         }
 
         .comment-section textarea {

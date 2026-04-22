@@ -23,4 +23,4 @@ function toInternalEmail(loginId) {
     return `${loginId.toLowerCase()}@fishlink.local`;
 }
 
-export { auth, db, storage, FieldValue, toInternalEmail };
+export { app as firebaseApp, auth, db, storage, FieldValue, toInternalEmail };

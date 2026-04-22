@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .sub-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
+        .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
+        .acc-row { background: #f8fafc; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+        .acc-row__label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 4px; }
+        .acc-row__value { font-size: 15px; font-weight: 600; word-break: break-all; }
+        .acc-row input { width: 100%; border: 1px solid var(--color-border); background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 14px; font-family: inherit; margin-top: 4px; }
+        .qr-box { border: 1px dashed var(--color-border); background: #f9fafb; border-radius: 14px; padding: 12px; text-align: center; }
+        .qr-box img { width: 180px; height: 180px; max-width: 100%; object-fit: contain; border-radius: 8px; background: #fff; }
+        .qr-box__placeholder { width: 180px; height: 180px; max-width: 100%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: #94a3b8; background: #fff; border-radius: 8px; }
+        .qr-actions { display: flex; justify-content: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .qr-actions button { background: #fff; border: 1px solid var(--color-border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--color-text); font-family: inherit; }
+        .qr-actions button.danger { color: #b91c1c; border-color: #fecaca; }
+        .save-row { display: flex; gap: 8px; margin-top: 14px; }
+        .save-row button { flex: 1; border: none; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .save-row .save { background: var(--color-primary); color: #fff; }
+        .edit-toggle { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+        .edit-btn { background: #eef2ff; color: #3730a3; border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="page">
+        <div class="page-header" style="align-items:center;">
+            <a href="/pages/farmer/account.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">EN</option>
+                <option value="ja">JA</option>
+            </select>
+        </div>
+
+        <div class="sub-page__title" data-i18n="account.remit"></div>
+
+        <div class="sub-page">
+
+        <div class="edit-toggle">
+            <button class="edit-btn" id="btn-edit">
+                <span class="material-symbols-outlined" style="font-size:14px;">edit</span>
+                <span data-i18n="account.edit"></span>
+            </button>
+        </div>
+
+        <!-- 表示モード -->
+        <div id="view-mode">
+            <div class="acc-row">
+                <div class="acc-row__label" data-i18n="account.accountName"></div>
+                <div class="acc-row__value" id="v-accountName">-</div>
+            </div>
+            <div class="acc-row">
+                <div class="acc-row__label" data-i18n="account.qrLink"></div>
+                <div class="acc-row__value" id="v-qrLink">-</div>
+            </div>
+            <div class="acc-row">
+                <div class="acc-row__label" data-i18n="account.qrImage"></div>
+                <div class="qr-box" id="v-qrImage">
+                    <div class="qr-box__placeholder"><span class="material-symbols-outlined" style="font-size:40px;">qr_code_2</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 編集モード -->
+        <div id="edit-mode" style="display:none;">
+            <div class="acc-row">
+                <div class="acc-row__label" data-i18n="account.accountName"></div>
+                <input type="text" id="in-accountName" data-i18n="[placeholder]account.accountNamePlaceholder">
+            </div>
+            <div class="acc-row">
+                <div class="acc-row__label" data-i18n="account.qrLink"></div>
+                <input type="url" id="in-qrLink" data-i18n="[placeholder]account.qrLinkPlaceholder">
+            </div>
+            <div class="acc-row">
+                <div class="acc-row__label" data-i18n="account.qrImage"></div>
+                <div class="qr-box" id="e-qrImage">
+                    <div class="qr-box__placeholder"><span class="material-symbols-outlined" style="font-size:40px;">qr_code_2</span></div>
+                </div>
+                <div class="qr-actions">
+                    <button type="button" id="btn-qr-upload" data-i18n="account.qrUpload"></button>
+                    <button type="button" id="btn-qr-remove" class="danger" data-i18n="account.qrRemove"></button>
+                    <input type="file" id="qr-file-input" accept="image/*" style="display:none;">
+                </div>
+            </div>
+            <div class="save-row">
+                <button class="edit-btn" id="btn-cancel" style="flex:1;" data-i18n="account.cancel"></button>
+                <button class="save" id="btn-save" data-i18n="account.save"></button>
+            </div>
+        </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db, storage } from '/js/firebase-config.js';
+        import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        let userData = null;
+        let editState = { qrImageUrl: null, qrFile: null, qrRemoved: false };
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        function showQr(containerId, url) {
+            const box = document.getElementById(containerId);
+            if (url) {
+                box.innerHTML = `<img src="${url}" alt="QR">`;
+            } else {
+                box.innerHTML = `<div class="qr-box__placeholder"><span class="material-symbols-outlined" style="font-size:40px;">qr_code_2</span></div>`;
+            }
+        }
+
+        function renderView() {
+            document.getElementById('v-accountName').textContent = userData.accountName || '-';
+            const linkEl = document.getElementById('v-qrLink');
+            if (userData.qrLink) {
+                linkEl.innerHTML = `<a href="${userData.qrLink}" target="_blank" rel="noopener" style="color:#0369a1;">${userData.qrLink}</a>`;
+            } else {
+                linkEl.textContent = '-';
+            }
+            showQr('v-qrImage', userData.qrImageUrl || null);
+        }
+
+        document.getElementById('btn-edit').addEventListener('click', () => {
+            document.getElementById('in-accountName').value = userData.accountName || '';
+            document.getElementById('in-qrLink').value = userData.qrLink || '';
+            editState = { qrImageUrl: userData.qrImageUrl || null, qrFile: null, qrRemoved: false };
+            showQr('e-qrImage', editState.qrImageUrl);
+            document.getElementById('view-mode').style.display = 'none';
+            document.getElementById('edit-mode').style.display = 'block';
+            document.getElementById('btn-edit').style.display = 'none';
+        });
+
+        document.getElementById('btn-cancel').addEventListener('click', () => {
+            document.getElementById('view-mode').style.display = 'block';
+            document.getElementById('edit-mode').style.display = 'none';
+            document.getElementById('btn-edit').style.display = 'inline-flex';
+        });
+
+        document.getElementById('btn-qr-upload').addEventListener('click', () => {
+            document.getElementById('qr-file-input').click();
+        });
+
+        document.getElementById('qr-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            editState.qrFile = file;
+            editState.qrRemoved = false;
+            const reader = new FileReader();
+            reader.onload = (ev) => showQr('e-qrImage', ev.target.result);
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('btn-qr-remove').addEventListener('click', () => {
+            editState.qrFile = null;
+            editState.qrRemoved = true;
+            editState.qrImageUrl = null;
+            document.getElementById('qr-file-input').value = '';
+            showQr('e-qrImage', null);
+        });
+
+        document.getElementById('btn-save').addEventListener('click', async () => {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            const btn = document.getElementById('btn-save');
+            btn.disabled = true;
+            loading.classList.add('show');
+            try {
+                const accountName = document.getElementById('in-accountName').value.trim();
+                const qrLink = document.getElementById('in-qrLink').value.trim();
+                let qrImageUrl = editState.qrImageUrl;
+                if (editState.qrFile) {
+                    const storageRef = ref(storage, `qr/${uid}/${Date.now()}_${editState.qrFile.name}`);
+                    await uploadBytes(storageRef, editState.qrFile);
+                    qrImageUrl = await getDownloadURL(storageRef);
+                } else if (editState.qrRemoved) {
+                    qrImageUrl = null;
+                }
+                await updateDoc(doc(db, 'users', uid), {
+                    accountName: accountName || null,
+                    qrLink: qrLink || null,
+                    qrImageUrl: qrImageUrl || null,
+                });
+                userData.accountName = accountName || null;
+                userData.qrLink = qrLink || null;
+                userData.qrImageUrl = qrImageUrl || null;
+                renderView();
+                document.getElementById('btn-cancel').click();
+            } catch (err) {
+                console.error(err);
+                alert(i18next.t('account.saveFailed'));
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+
+        waitForUserData(() => {
+            userData = { ...window.currentUserData };
+            renderView();
+            loading.classList.remove('show');
+        });
+    </script>
+</body>
+</html>

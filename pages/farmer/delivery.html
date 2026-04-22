@@ -46,30 +46,8 @@
         }
         .tl-chat.self { margin-left: auto; background: #dbeafe; }
         .tl-chat__img { max-width: 100%; border-radius: 8px; margin-top: 6px; }
-        .tl-chat__delete {
-            font-size: 11px; color: #ef4444; cursor: pointer; margin-top: 4px;
-            display: none; text-align: right;
-        }
-        .tl-chat.self .tl-chat__delete { display: block; }
         .tl-chat__time { font-size: 12px; color: #888; }
         .tl-chat__text { font-size: 15px; margin-top: 2px; line-height: 1.4; }
-
-        /* 取り消し済みメッセージ */
-        .tl-chat.deleted { opacity: 0.6; }
-        .tl-chat.deleted .tl-chat__text {
-            text-decoration: line-through;
-            color: #888;
-        }
-        .tl-chat.deleted .tl-chat__img {
-            opacity: 0.4;
-            filter: grayscale(0.6);
-        }
-        .tl-chat__deleted-label {
-            font-size: 11px;
-            color: #ef4444;
-            margin-top: 4px;
-            font-weight: 600;
-        }
 
         .quick-status {
             margin: 16px;
@@ -205,7 +183,7 @@
         import { watchAuthState } from '/js/auth.js';
         import { db, storage } from '/js/firebase-config.js';
         import {
-            doc, getDoc, updateDoc, addDoc, deleteDoc, collection, query, orderBy, onSnapshot, serverTimestamp
+            doc, getDoc, updateDoc, addDoc, collection, query, orderBy, onSnapshot, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import {
             ref, uploadBytes, getDownloadURL
@@ -273,75 +251,36 @@
                 timeline.innerHTML = '';
                 snap.forEach(d => {
                     const msg = d.data();
-                    const msgId = d.id;
                     const time = msg.createdAt?.toDate();
                     const timeStr = time ? `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}` : '';
                     const isSelf = msg.senderId === myUid;
-                    const isDeleted = msg.isDeleted === true;
                     const imgs = msg.imageUrls || (msg.imageUrl ? [msg.imageUrl] : []);
                     const imgHtml = imgs.map(url => `<img class="tl-chat__img" src="${url}">`).join('');
-                    const statusChange = msg.statusChange || '';
-                    // 取り消し済みは取り消しボタン非表示。本人かつ未取消なら表示
-                    const deleteHtml = (isSelf && !isDeleted)
-                        ? `<div class="tl-chat__delete" data-msg-id="${msgId}" data-status-change="${statusChange}">✕ 取り消し</div>`
-                        : '';
-                    const deletedLabel = isDeleted ? `<div class="tl-chat__deleted-label">${i18next.t('delivery.deletedLabel')}</div>` : '';
 
                     timeline.innerHTML += `
-                        <div class="tl-chat ${isSelf ? 'self' : ''} ${isDeleted ? 'deleted' : ''}">
+                        <div class="tl-chat ${isSelf ? 'self' : ''}">
                             <div class="tl-chat__time">${timeStr}</div>
                             ${msg.text ? `<div class="tl-chat__text">${msg.text}</div>` : ''}
                             ${imgHtml}
-                            ${deletedLabel}
-                            ${deleteHtml}
                         </div>`;
                 });
                 timeline.scrollTop = timeline.scrollHeight;
-
-                // 取り消しボタン：完全削除→isDeleted=true でマークし取り消し線表示
-                const STATUS_ORDER = ['approved', 'preparing', 'delivering', 'delivered'];
-                document.querySelectorAll('.tl-chat__delete').forEach(el => {
-                    el.addEventListener('click', async () => {
-                        if (!confirm(i18next.t('delivery.confirmDelete'))) return;
-                        const statusChange = el.dataset.statusChange;
-                        await updateDoc(doc(db, 'orders', orderId, 'messages', el.dataset.msgId), {
-                            isDeleted: true
-                        });
-
-                        // ステータス変更メッセージの場合、1つ前のステータスに戻す
-                        if (statusChange) {
-                            const idx = STATUS_ORDER.indexOf(statusChange);
-                            const prevStatus = idx > 0 ? STATUS_ORDER[idx - 1] : 'approved';
-                            await updateDoc(doc(db, 'orders', orderId), { status: prevStatus });
-                        }
-                    });
-                });
             });
 
             loading.classList.remove('show');
         });
 
-        // クイックステータス送信
+        // クイックステータス：テンプレをチャット入力欄へ流し込む（送信は「送信」ボタンで）
+        let pendingStatusChange = null;
         document.querySelectorAll('.quick-status__btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
+            btn.addEventListener('click', () => {
                 const msgKey = btn.dataset.msgKey;
-                const orderStatus = btn.dataset.orderStatus;
+                const orderStatus = btn.dataset.orderStatus || null;
                 const text = i18next.t(`delivery.${msgKey}`);
-
-                // チャットメッセージとして送信（通知もトリガーされる）
-                await addDoc(collection(db, 'orders', orderId, 'messages'), {
-                    senderId: myUid,
-                    text,
-                    type: 'chat',
-                    statusChange: orderStatus || null,
-                    isRead: false,
-                    createdAt: serverTimestamp(),
-                });
-
-                // ordersのstatus更新（preparing/deliveringの場合）
-                if (orderStatus) {
-                    await updateDoc(doc(db, 'orders', orderId), { status: orderStatus });
-                }
+                const input = document.getElementById('chat-text');
+                input.value = text;
+                pendingStatusChange = orderStatus;
+                input.focus();
             });
         });
 
@@ -400,9 +339,16 @@
                 text: msgText,
                 imageUrls: imageUrls.length > 0 ? imageUrls : null,
                 type: 'chat',
+                statusChange: pendingStatusChange || null,
                 isRead: false,
                 createdAt: serverTimestamp(),
             });
+
+            // クイックステータスから流し込まれた場合、注文ステータスを更新
+            if (pendingStatusChange) {
+                await updateDoc(doc(db, 'orders', orderId), { status: pendingStatusChange });
+                pendingStatusChange = null;
+            }
 
             input.value = '';
             pendingFiles = [];

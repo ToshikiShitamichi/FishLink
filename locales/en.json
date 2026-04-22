@@ -152,7 +152,8 @@
         "count": "Showing {{count}} fish",
         "tapHint": "Tap a card to order",
         "empty": "No fish found for this filter",
-        "priceWithFee": "(incl. fee)"
+        "priceWithFee": "(incl. fee)",
+        "map": "Map"
     },
     "delivery": {
         "statusNow": "Status: {{status}}",
@@ -166,6 +167,9 @@
         "deliveryComplete": "Delivery Complete",
         "receiveConfirm": "Confirm Receipt",
         "chatPlaceholder": "Type a message...",
+        "pendingBanner": "Waiting for approval",
+        "pendingBannerDesc": "You'll be able to send messages once the farmer approves the order",
+        "chatDisabledHint": "Available after farmer approval",
         "send": "Send",
         "imageSent": "Photo sent",
         "deletedLabel": "(retracted)",
@@ -321,7 +325,112 @@
     },
     "nav": {
         "logout": "Logout",
-        "account": "Account"
+        "account": "Account",
+        "notifications": "Notifications",
+        "todos": "To-do List",
+        "myPage": "My Page"
+    },
+    "notifications": {
+        "title": "Notifications",
+        "empty": "No new notifications"
+    },
+    "todos": {
+        "title": "To-do List",
+        "empty": "Nothing to do",
+        "farmer_approve": {
+            "title": "New order received",
+            "body": "Please approve or decline"
+        },
+        "farmer_prepare": {
+            "title": "Start preparing the order",
+            "body": "Update delivery status to \"Preparing\""
+        },
+        "farmer_deliver": {
+            "title": "Update delivery status",
+            "body": "Keep the restaurant informed"
+        },
+        "farmer_complete_delivery": {
+            "title": "Hand over the fish",
+            "body": "Tap \"Delivery complete\" after arrival"
+        },
+        "farmer_review": {
+            "title": "Please leave a review",
+            "body": "Rate the restaurant now that the transaction is done"
+        },
+        "farmer_reply": {
+            "title": "New message from restaurant",
+            "body": "Please reply"
+        },
+        "rest_receive": {
+            "title": "Fish has arrived",
+            "body": "Please confirm receipt"
+        },
+        "rest_pay": {
+            "title": "Please make the payment",
+            "body": "Tap \"Payment confirmed\" after paying"
+        },
+        "rest_review": {
+            "title": "Please leave a review",
+            "body": "Rate the farmer now that the transaction is done"
+        },
+        "rest_reply": {
+            "title": "New message from farmer",
+            "body": "Please reply"
+        },
+        "admin_verify_payment": {
+            "title": "Verify restaurant payment",
+            "body": "Check payment in Merchant App"
+        },
+        "admin_remit": {
+            "title": "Remit to farmer",
+            "body": "Manually transfer after payment is verified"
+        },
+        "admin_done": {
+            "title": "Mark transaction complete",
+            "body": "Finalize the transaction after remittance"
+        }
+    },
+    "profile": {
+        "restTitle": "Restaurant Info",
+        "farmerTitle": "Farmer Profile",
+        "summary": "Rating Summary",
+        "reviews": "Reviews",
+        "reviewsCount": "{{count}} total",
+        "noReviews": "No reviews yet",
+        "openMap": "Open in Google Maps",
+        "farmerMessage": "Message from the farmer",
+        "pondPhoto": "Farm environment",
+        "restaurantPhoto": "Restaurant photo",
+        "activeListings": "Active listings",
+        "viewAllReviews": "View reviews ({{count}})",
+        "ratingOverall": "Overall",
+        "ratingQuality": "Fish quality",
+        "ratingTime": "Delivery time",
+        "ratingSatisfaction": "Satisfaction",
+        "ratingCommunication": "Communication",
+        "ratingReception": "Reception",
+        "editProfile": "Edit profile",
+        "messagePlaceholder": "Leave a message for customers",
+        "uploadPhoto": "Choose photo",
+        "removePhoto": "Remove"
+    },
+    "comments": {
+        "title": "Comments",
+        "publicNote": "Comments are public to all restaurants. Use them to clarify before ordering.",
+        "inputPlaceholder": "Write a comment",
+        "send": "Send",
+        "publicFooter": "Posted publicly on the product page",
+        "empty": "No comments yet",
+        "openThread": "View comments",
+        "errorEmpty": "Please enter a comment",
+        "errorSubmit": "Failed to send",
+        "justNow": "Just now",
+        "minutesAgo": "{{n}} min ago",
+        "hoursAgo": "{{n}}h ago",
+        "daysAgo": "{{n}}d ago",
+        "delete": "Remove",
+        "deleted": "This comment has been removed",
+        "confirmDelete": "Remove this comment?"
     },
     "review": {
         "title": "Review",
@@ -419,7 +528,14 @@
         "statusPaymentConfirmed": "Payment confirmed",
         "statusDelivered": "Delivered",
         "statusOther": "In progress",
-        "logout": "Logout"
+        "logout": "Logout",
+        "menuHintBasic": "Login ID, display name, location",
+        "menuHintRemit": "Account name, QR link, QR image",
+        "menuHintPayment": "Account name, payment QR, link",
+        "menuHintSales": "Sales amount, transaction history",
+        "menuHintPurchase": "Purchase amount, transaction history",
+        "menuHintProfileFarmer": "Farmer message, farm photo",
+        "menuHintProfileRestaurant": "Restaurant photo"
     },
     "admin": {
         "brand": "FISHLINK Admin",
@@ -565,7 +681,21 @@
             "save": "Save",
             "saved": "Saved",
             "loadingData": "Loading...",
-            "selectFirst": "Please select a fish type"
+            "selectFirst": "Please select a fish type",
+            "ocrTitle": "Import from image (OCR)",
+            "ocrHint": "Extract text from a CAA price sheet image. Use the extracted text as a reference or auto-fill cells (accuracy depends on image quality).",
+            "ocrPick": "Choose image",
+            "ocrRun": "Run OCR",
+            "ocrAutofill": "Auto-fill cells",
+            "ocrRunning": "Processing...",
+            "ocrDone": "Done",
+            "ocrError": "Error",
+            "ocrPreview": "Preview",
+            "ocrText": "Extracted text",
+            "ocrTextPlaceholder": "Text will appear here after running OCR",
+            "ocrAutofillEmpty": "No rows matching province names were found. Check image quality.",
+            "ocrAutofillDone": "Filled {{count}} cells. Please review and save.",
+            "ocrAutofillMissing": "The following provinces could not be auto-filled (please enter manually)"
         }
     }
 }

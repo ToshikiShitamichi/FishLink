@@ -184,6 +184,12 @@
             <div class="info-box__title" data-i18n="payment.aboutRemittance"></div>
             <div data-i18n="payment.remittanceDesc"></div>
         </div>
+
+        <!-- レビュー遷移ボタン（送金完了後に表示） -->
+        <a id="review-btn" href="#" style="display:none; margin:14px 16px 0; padding:12px; background:#f97316; color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:14px; align-items:center; justify-content:center; gap:6px; line-height:1;">
+            <span class="material-symbols-outlined" style="font-size:18px; line-height:1;">star</span>
+            <span data-i18n="review.submit" style="line-height:1;"></span>
+        </a>
     </div>
 
     <script type="module">
@@ -204,6 +210,7 @@
         if (!orderId) location.href = '/pages/farmer/orders.html';
 
         let myUid = null;
+        let orderData = null;
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
@@ -216,7 +223,7 @@
 
             const orderSnap = await getDoc(doc(db, 'orders', orderId));
             if (!orderSnap.exists()) { location.href = '/pages/farmer/orders.html'; return; }
-            const orderData = orderSnap.data();
+            orderData = orderSnap.data();
 
             if (orderData.farmerId !== myUid) { location.href = '/pages/farmer/orders.html'; return; }
 
@@ -245,7 +252,7 @@
                 <div style="font-size:16px; font-weight:700;">${fishName}${size ? `（${size} head/kg）` : ''}</div>
                 <div style="font-size:14px; margin-top:4px;">${i18next.t('orders.quantity')} ${orderData.quantity} kg</div>
                 <div style="font-size:13px; color:var(--color-text-sub); margin-top:6px;">
-                    <span class="material-symbols-outlined" style="font-size:14px; vertical-align:-2px;">restaurant</span>
+                    <span class="material-symbols-outlined" style="font-size:14px;">restaurant</span>
                     ${restName}${place ? ` · ${place}` : ''}
                 </div>
             `;
@@ -275,6 +282,7 @@
             onSnapshot(doc(db, 'orders', orderId), (snap) => {
                 if (!snap.exists()) return;
                 const d = snap.data();
+                orderData = d;
                 renderStatus(d.adminStatus ?? null, d.paymentStatus || 'pending');
             });
 
@@ -301,6 +309,11 @@
                     <div class="status-box__desc">${i18next.t(descKey)}</div>
                 </div>
             `;
+
+            // レビューボタンは常時表示（送金状況ページに来ている時点で delivered/completed）
+            const reviewBtn = document.getElementById('review-btn');
+            reviewBtn.href = `/pages/farmer/review.html?id=${orderId}`;
+            reviewBtn.style.display = 'flex';
         }
     </script>
 </body>

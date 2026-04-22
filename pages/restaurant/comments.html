@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .comments-page { max-width: 480px; margin: 0 auto; padding: 0 16px 140px; }
+
+        .fish-head {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+        }
+        .fish-head__name { font-size: 15px; font-weight: 700; }
+        .fish-head__meta { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
+
+        .info-banner {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 12px;
+            margin-bottom: 14px;
+            line-height: 1.5;
+        }
+
+        .comment-list { display: flex; flex-direction: column; gap: 10px; }
+
+        .day-label { text-align: center; font-size: 11px; color: var(--color-text-sub); margin: 4px 0; }
+
+        .chat-row { display: flex; align-items: flex-end; gap: 6px; }
+        .chat-row.mine { justify-content: flex-end; }
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            line-height: 1.5;
+            word-break: break-word;
+            position: relative;
+        }
+        .chat-bubble.farmer {
+            background: #ecfdf5;
+            color: #065f46;
+            border-top-left-radius: 4px;
+        }
+        .chat-bubble.restaurant {
+            background: #f1f5f9;
+            color: var(--color-text);
+            border-top-left-radius: 4px;
+        }
+        .chat-row.mine .chat-bubble {
+            background: #0f172a;
+            color: #fff;
+            border-top-right-radius: 4px;
+            border-top-left-radius: 16px;
+        }
+        .chat-sender { font-size: 11px; font-weight: 700; color: var(--color-text-sub); margin-bottom: 4px; }
+        .chat-time { font-size: 10px; color: var(--color-text-sub); margin: 4px 6px 0; white-space: nowrap; }
+        .chat-delete-btn {
+            font-size: 10px; color: #b91c1c; background: transparent;
+            border: none; cursor: pointer; padding: 2px 6px;
+            margin-top: 2px; font-family: inherit;
+        }
+        .chat-deleted-bubble {
+            font-size: 12px; color: #94a3b8; font-style: italic;
+            background: #f1f5f9; padding: 8px 12px; border-radius: 12px;
+            display: inline-block; max-width: 80%;
+        }
+
+        .footer-input {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 480px;
+            margin: 0 auto;
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
+            padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        }
+        .footer-input__row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        .footer-input textarea {
+            flex: 1;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
+            border: 1px solid var(--color-border);
+            border-radius: 22px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #f8fafc;
+        }
+        .footer-input textarea:focus { outline: none; background: #fff; border-color: var(--color-primary); }
+        .send-btn {
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            border-radius: 24px;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            align-self: stretch;
+            display: flex;
+            align-items: center;
+        }
+        .send-btn:disabled { opacity: .6; }
+        .footer-input__note { font-size: 11px; color: var(--color-text-sub); margin-top: 4px; }
+
+        .empty-small { text-align: center; padding: 40px 20px; color: var(--color-text-sub); font-size: 13px; }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="page-header" style="align-items:center; padding:12px 16px;">
+        <a href="javascript:history.back()" class="page-header__back"><span class="material-symbols-outlined">arrow_back</span></a>
+        <div class="page-header__title" style="flex:1; text-align:center; font-size:16px;" data-i18n="comments.title"></div>
+        <div style="width:32px;"></div>
+    </div>
+
+    <div class="comments-page">
+
+        <div class="fish-head" id="fish-head">
+            <div class="fish-head__name" id="fish-name">-</div>
+            <div class="fish-head__meta" id="fish-meta">-</div>
+        </div>
+
+        <div class="info-banner" data-i18n="comments.publicNote"></div>
+
+        <div class="comment-list" id="comment-list">
+            <div class="empty-small" data-i18n="comments.empty"></div>
+        </div>
+    </div>
+
+    <div class="footer-input">
+        <div class="footer-input__row">
+            <textarea id="comment-input" data-i18n="[placeholder]comments.inputPlaceholder"></textarea>
+            <button class="send-btn" id="send-btn" data-i18n="comments.send"></button>
+        </div>
+        <div class="footer-input__note" data-i18n="comments.publicFooter"></div>
+    </div>
+
+    <script type="module">
+        import { initI18n } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            doc, getDoc, updateDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+
+        const listingId = new URLSearchParams(location.search).get('id');
+        if (!listingId) { history.back(); }
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        function relative(ts) {
+            const ms = ts?.toMillis?.() || 0;
+            if (!ms) return i18next.t('comments.justNow');
+            const diff = Date.now() - ms;
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return i18next.t('comments.justNow');
+            if (mins < 60) return i18next.t('comments.minutesAgo', { n: mins });
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return i18next.t('comments.hoursAgo', { n: hours });
+            const days = Math.floor(hours / 24);
+            return i18next.t('comments.daysAgo', { n: days });
+        }
+
+        waitForUserData(async () => {
+            loading.classList.add('show');
+            try {
+                const listingSnap = await getDoc(doc(db, 'fishListings', listingId));
+                if (!listingSnap.exists()) { history.back(); return; }
+                const listing = listingSnap.data();
+
+                const fishKey = listing.fishType || '';
+                const fishName = i18next.exists(`fish.${fishKey}`) ? i18next.t(`fish.${fishKey}`) : fishKey;
+                const shortName = fishName ? fishName.split('/')[0].trim() : '';
+                document.getElementById('fish-name').textContent = `${shortName}${listing.size ? `（${listing.size} head/kg）` : ''}`;
+
+                const farmerSnap = await getDoc(doc(db, 'users', listing.farmerId));
+                const farmerName = farmerSnap.data()?.displayName || '';
+                const price = (listing.price || 0) + (listing.gutPrice || 0);
+                document.getElementById('fish-meta').textContent = `${farmerName} · ${price.toLocaleString()} KHR/kg`;
+
+                // ユーザー情報を逐次取得
+                const userCache = {};
+                async function getUser(uid) {
+                    if (userCache[uid]) return userCache[uid];
+                    const s = await getDoc(doc(db, 'users', uid));
+                    userCache[uid] = s.exists() ? s.data() : {};
+                    return userCache[uid];
+                }
+                userCache[listing.farmerId] = farmerSnap.data() || {};
+
+                // 出品者（農家）かどうか
+                const uid = window.currentUser?.uid;
+                const isOwner = uid === listing.farmerId;
+
+                // コメント購読
+                const commentsRef = collection(db, 'fishListings', listingId, 'comments');
+                const q = query(commentsRef, orderBy('createdAt', 'asc'));
+                onSnapshot(q, async (snap) => {
+                    const listEl = document.getElementById('comment-list');
+                    if (snap.empty) {
+                        listEl.innerHTML = `<div class="empty-small">${i18next.t('comments.empty')}</div>`;
+                        return;
+                    }
+                    const items = [];
+                    for (const d of snap.docs) {
+                        const c = d.data();
+                        const from = await getUser(c.senderId);
+                        items.push({ id: d.id, c, from });
+                    }
+                    listEl.innerHTML = items.map(({ id, c, from }) => {
+                        const isMine = c.senderId === uid;
+                        const role = from.role || 'restaurant';
+                        const time = relative(c.createdAt);
+                        const isDeleted = c.isDeleted === true;
+
+                        // 取消済み：プレースホルダー表示（送信者/受信者共通）
+                        if (isDeleted) {
+                            return `
+                                <div class="chat-row ${isMine ? 'mine' : ''}">
+                                    <div class="chat-deleted-bubble">${i18next.t('comments.deleted')}</div>
+                                </div>
+                            `;
+                        }
+
+                        const deleteBtn = isOwner
+                            ? `<button class="chat-delete-btn" data-id="${id}" type="button">${i18next.t('comments.delete')}</button>`
+                            : '';
+
+                        if (isMine) {
+                            return `
+                                <div class="chat-row mine">
+                                    <span class="chat-time">${time}</span>
+                                    <div>
+                                        <div class="chat-bubble">${escapeHtml(c.text || '')}</div>
+                                        ${deleteBtn ? `<div style="text-align:right;">${deleteBtn}</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        const bubbleClass = `chat-bubble ${role === 'farmer' ? 'farmer' : 'restaurant'}`;
+                        return `
+                            <div class="chat-row">
+                                <div style="max-width:80%;">
+                                    <div class="chat-sender">${from.displayName || ''}</div>
+                                    <div class="${bubbleClass}">${escapeHtml(c.text || '')}</div>
+                                    ${deleteBtn}
+                                </div>
+                                <span class="chat-time">${time}</span>
+                            </div>
+                        `;
+                    }).join('');
+
+                    // 取消ボタンハンドラ
+                    listEl.querySelectorAll('.chat-delete-btn').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            if (!confirm(i18next.t('comments.confirmDelete'))) return;
+                            try {
+                                await updateDoc(doc(db, 'fishListings', listingId, 'comments', btn.dataset.id), {
+                                    isDeleted: true,
+                                    deletedAt: serverTimestamp(),
+                                });
+                            } catch (err) {
+                                console.error(err);
+                                alert(i18next.t('comments.errorSubmit'));
+                            }
+                        });
+                    });
+
+                    listEl.scrollIntoView({ block: 'end' });
+                });
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+            }
+        });
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        document.getElementById('send-btn').addEventListener('click', async () => {
+            const input = document.getElementById('comment-input');
+            const text = input.value.trim();
+            if (!text) return;
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            const btn = document.getElementById('send-btn');
+            btn.disabled = true;
+            try {
+                await addDoc(collection(db, 'fishListings', listingId, 'comments'), {
+                    senderId: uid,
+                    text,
+                    createdAt: serverTimestamp(),
+                });
+                input.value = '';
+            } catch (err) {
+                console.error(err);
+                alert(i18next.t('comments.errorSubmit'));
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

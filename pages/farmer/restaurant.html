@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .profile-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
+
+        .hero-photo {
+            width: 100%;
+            height: 220px;
+            border-radius: 18px;
+            overflow: hidden;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+        .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+        .name-block { margin-bottom: 10px; }
+        .name-block__name { font-size: 22px; font-weight: 700; color: var(--color-text); }
+        .name-block__location { font-size: 13px; color: var(--color-text-sub); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+        .name-block__rating { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+        .name-block__rating .material-symbols-outlined { color: #ef4444; font-size: 20px; font-variation-settings: 'FILL' 1; }
+        .name-block__rating-value { font-size: 16px; font-weight: 700; }
+        .name-block__rating-count { font-size: 13px; color: var(--color-text-sub); }
+
+        .map-block {
+            background: #f1f5f9;
+            border-radius: 16px;
+            height: 160px;
+            margin-bottom: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        .map-iframe { width: 100%; height: 100%; border: none; }
+        .map-footer {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,.95);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(0,0,0,.1);
+        }
+        .map-footer a { color: #0369a1; text-decoration: none; }
+
+        .section { margin-bottom: 20px; }
+        .section__title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+
+        .subrating-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+        .subrating-card {
+            border-radius: 14px;
+            padding: 10px;
+            text-align: center;
+        }
+        .subrating-card--orange { background: #fff7ed; }
+        .subrating-card--blue { background: #eff6ff; }
+        .subrating-card--green { background: #f0fdf4; }
+        .subrating-card__label { font-size: 11px; color: var(--color-text-sub); }
+        .subrating-card__value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+        .subrating-card--orange .subrating-card__value { color: #ea580c; }
+        .subrating-card--blue .subrating-card__value { color: #2563eb; }
+        .subrating-card--green .subrating-card__value { color: #16a34a; }
+
+        .review-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+        }
+        .review-card__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+        .review-card__name { font-size: 14px; font-weight: 700; }
+        .review-card__date { font-size: 11px; color: var(--color-text-sub); }
+        .review-card__stars { color: #ef4444; font-size: 14px; font-variation-settings: 'FILL' 1; margin-bottom: 4px; }
+        .review-card__stars .material-symbols-outlined { font-size: 16px; }
+        .review-card__comment { font-size: 13px; color: var(--color-text); line-height: 1.5; }
+
+        .empty-small { text-align: center; padding: 20px; color: var(--color-text-sub); font-size: 13px; }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="page-header" style="align-items:center; padding:12px 16px;">
+        <a href="javascript:history.back()" class="page-header__back"><span class="material-symbols-outlined">arrow_back</span></a>
+        <div class="page-header__title" style="flex:1; text-align:center; font-size:16px;" data-i18n="profile.restTitle"></div>
+        <a id="map-link" href="#" target="_blank" style="color:#0369a1; font-size:13px; text-decoration:none; font-weight:600;" data-i18n="restaurant.map">地図</a>
+    </div>
+
+    <div class="profile-page">
+
+        <div class="hero-photo" id="hero-photo">
+            <span class="material-symbols-outlined" style="font-size:60px; color:#94a3b8;">storefront</span>
+        </div>
+
+        <div class="name-block">
+            <div class="name-block__name" id="name">-</div>
+            <div class="name-block__location"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span><span id="location">-</span></div>
+            <div class="name-block__rating">
+                <span class="material-symbols-outlined">star</span>
+                <span class="name-block__rating-value" id="rating-value">0.0</span>
+                <span class="name-block__rating-count" id="rating-count">0件のレビュー</span>
+            </div>
+        </div>
+
+        <div class="map-block" id="map-block">
+            <iframe class="map-iframe" id="map-iframe" style="display:none;"></iframe>
+            <div class="map-footer">
+                <a id="map-link-footer" href="#" target="_blank" data-i18n="profile.openMap"></a>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section__title" data-i18n="profile.summary"></div>
+            <div class="subrating-grid">
+                <div class="subrating-card subrating-card--orange">
+                    <div class="subrating-card__label" data-i18n="profile.ratingOverall"></div>
+                    <div class="subrating-card__value" id="sub-overall">0.0</div>
+                </div>
+                <div class="subrating-card subrating-card--blue">
+                    <div class="subrating-card__label" data-i18n="profile.ratingCommunication"></div>
+                    <div class="subrating-card__value" id="sub-communication">0.0</div>
+                </div>
+                <div class="subrating-card subrating-card--green">
+                    <div class="subrating-card__label" data-i18n="profile.ratingReception"></div>
+                    <div class="subrating-card__value" id="sub-reception">0.0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div class="section__title" style="margin:0;" data-i18n="profile.reviews"></div>
+                <div id="review-count-label" style="font-size:12px; color:var(--color-text-sub);"></div>
+            </div>
+            <div id="reviews-list"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            doc, getDoc, collectionGroup, query, where, orderBy, getDocs
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+
+        const targetUid = new URLSearchParams(location.search).get('id');
+        if (!targetUid) { history.back(); }
+
+        function fmtDate(ts) {
+            const d = ts?.toDate?.() || new Date(ts || 0);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const da = String(d.getDate()).padStart(2, '0');
+            return `${y}/${m}/${da}`;
+        }
+
+        function starLine(n) {
+            const rounded = Math.round(Number(n) || 0);
+            return Array.from({ length: 5 }, (_, i) =>
+                `<span class="material-symbols-outlined">${i < rounded ? 'star' : 'star_outline'}</span>`
+            ).join('');
+        }
+
+        async function load() {
+            loading.classList.add('show');
+            try {
+                const userSnap = await getDoc(doc(db, 'users', targetUid));
+                if (!userSnap.exists()) { history.back(); return; }
+                const user = userSnap.data();
+
+                // 写真
+                if (user.restaurantPhotoUrl) {
+                    document.getElementById('hero-photo').innerHTML = `<img src="${user.restaurantPhotoUrl}" alt="${user.displayName || ''}">`;
+                }
+                // 名前・場所
+                document.getElementById('name').textContent = user.displayName || '-';
+                const loc = [user.province, user.district].filter(Boolean).join(', ') || '-';
+                document.getElementById('location').textContent = loc;
+
+                // 評価
+                const avg = Number(user.avgRating || 0);
+                const count = Number(user.reviewCount || 0);
+                document.getElementById('rating-value').textContent = avg.toFixed(1);
+                document.getElementById('rating-count').textContent = `${count}${i18next.t('order.reviews')}${i18next.t('profile.reviews').length > 0 ? 'のレビュー' : ''}`;
+                document.getElementById('review-count-label').textContent = i18next.t('profile.reviewsCount', { count });
+
+                // サブ評価
+                const sub = user.subRatings || {};
+                document.getElementById('sub-overall').textContent = Number(sub.overall || 0).toFixed(1);
+                document.getElementById('sub-communication').textContent = Number(sub.communication || 0).toFixed(1);
+                document.getElementById('sub-reception').textContent = Number(sub.reception || 0).toFixed(1);
+
+                // 地図
+                if (user.location?.lat && user.location?.lng) {
+                    const mapsUrl = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}`;
+                    document.getElementById('map-link').href = mapsUrl;
+                    document.getElementById('map-link-footer').href = mapsUrl;
+                    const iframe = document.getElementById('map-iframe');
+                    iframe.src = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}&z=15&output=embed`;
+                    iframe.style.display = 'block';
+                }
+
+                // レビュー取得（collectionGroup）
+                try {
+                    const q = query(
+                        collectionGroup(db, 'reviews'),
+                        where('toUid', '==', targetUid),
+                        orderBy('createdAt', 'desc')
+                    );
+                    const reviewSnap = await getDocs(q);
+                    const listEl = document.getElementById('reviews-list');
+                    if (reviewSnap.empty) {
+                        listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
+                        return;
+                    }
+                    // 評価者名取得
+                    const reviews = [];
+                    const fromUids = new Set();
+                    reviewSnap.forEach(d => { reviews.push({ id: d.id, ...d.data() }); fromUids.add(d.data().fromUid); });
+                    const userMap = {};
+                    await Promise.all([...fromUids].map(async fid => {
+                        const s = await getDoc(doc(db, 'users', fid));
+                        userMap[fid] = s.exists() ? s.data() : {};
+                    }));
+                    listEl.innerHTML = reviews.map(r => {
+                        const from = userMap[r.fromUid] || {};
+                        return `
+                            <div class="review-card">
+                                <div class="review-card__head">
+                                    <div class="review-card__name">${from.displayName || ''}</div>
+                                    <div class="review-card__date">${fmtDate(r.createdAt)}</div>
+                                </div>
+                                <div class="review-card__stars">${starLine(r.avgRating)}</div>
+                                ${r.comment ? `<div class="review-card__comment">${r.comment}</div>` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                } catch (err) {
+                    console.warn('collectionGroup reviews failed (likely missing index):', err);
+                    document.getElementById('reviews-list').innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        load();
+    </script>
+</body>
+
+</html>

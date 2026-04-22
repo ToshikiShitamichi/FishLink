@@ -170,6 +170,98 @@
             padding: 40px 16px; text-align: center; color: #94a3b8;
         }
 
+        /* ── OCR 取り込みパネル ─────────── */
+        .ocr-panel {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+        }
+        .ocr-panel__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .ocr-panel__title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ocr-panel__hint {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+        .ocr-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .ocr-btn {
+            border: 1px solid #e2e8f0;
+            background: #f1f5f9;
+            color: #0f172a;
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .ocr-btn.primary { background: #0f172a; color: #fff; border-color: #0f172a; }
+        .ocr-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .ocr-progress {
+            font-size: 12px;
+            color: #0369a1;
+            display: none;
+            margin-left: 8px;
+        }
+        .ocr-progress.show { display: inline; }
+        .ocr-preview {
+            margin-top: 10px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .ocr-preview__img {
+            flex: 1;
+            min-width: 200px;
+            max-width: 380px;
+        }
+        .ocr-preview__img img {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .ocr-preview__text {
+            flex: 2;
+            min-width: 280px;
+        }
+        .ocr-preview__text textarea {
+            width: 100%;
+            min-height: 180px;
+            font-family: ui-monospace, Menlo, monospace;
+            font-size: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px;
+            resize: vertical;
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        .ocr-preview__text .label {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
         /* ── レスポンシブ ─────────────────── */
         @media (max-width: 1024px) {
             .admin-shell { padding: 20px; }
@@ -216,6 +308,37 @@
             </div>
         </div>
 
+        <!-- OCR 取り込みパネル（画像から価格表テキストを抽出） -->
+        <div class="ocr-panel">
+            <div class="ocr-panel__head">
+                <div class="ocr-panel__title">
+                    <span class="material-symbols-outlined" style="font-size:18px;">image</span>
+                    <span data-i18n="admin.caa.ocrTitle"></span>
+                </div>
+            </div>
+            <div class="ocr-panel__hint" data-i18n="admin.caa.ocrHint"></div>
+            <div class="ocr-actions">
+                <input type="file" id="ocr-file" accept="image/*" multiple style="display:none;">
+                <button type="button" class="ocr-btn primary" id="ocr-pick">
+                    <span class="material-symbols-outlined" style="font-size:14px;">upload</span>
+                    <span data-i18n="admin.caa.ocrPick"></span>
+                </button>
+                <button type="button" class="ocr-btn" id="ocr-run" disabled data-i18n="admin.caa.ocrRun"></button>
+                <button type="button" class="ocr-btn" id="ocr-autofill" disabled data-i18n="admin.caa.ocrAutofill"></button>
+                <span class="ocr-progress" id="ocr-progress"></span>
+            </div>
+            <div class="ocr-preview" id="ocr-preview" style="display:none;">
+                <div class="ocr-preview__img">
+                    <div class="label" data-i18n="admin.caa.ocrPreview"></div>
+                    <div id="ocr-imgs" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+                <div class="ocr-preview__text">
+                    <div class="label" data-i18n="admin.caa.ocrText"></div>
+                    <textarea id="ocr-text" readonly data-i18n="[placeholder]admin.caa.ocrTextPlaceholder"></textarea>
+                </div>
+            </div>
+        </div>
+
         <div class="matrix-card">
             <div class="matrix-scroll">
                 <table class="matrix-table">
@@ -243,6 +366,7 @@
         import {
             doc, getDoc, setDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-functions.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -411,6 +535,218 @@
 
         onLanguageChange(() => {
             if (Object.keys(allData).length > 0) render();
+        });
+
+        // ── OCR 取り込み（Tesseract.js・複数画像対応） ──────────────
+        let ocrFiles = [];  // 選択された複数画像
+        let ocrText = '';
+        const ocrPickBtn = document.getElementById('ocr-pick');
+        const ocrRunBtn = document.getElementById('ocr-run');
+        const ocrAutofillBtn = document.getElementById('ocr-autofill');
+        const ocrProgress = document.getElementById('ocr-progress');
+        const ocrFileInput = document.getElementById('ocr-file');
+        const ocrPreview = document.getElementById('ocr-preview');
+        const ocrImgsContainer = document.getElementById('ocr-imgs');
+        const ocrTextarea = document.getElementById('ocr-text');
+
+        ocrPickBtn.addEventListener('click', () => ocrFileInput.click());
+
+        ocrFileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files || []);
+            if (!files.length) return;
+            ocrFiles = files;
+            ocrImgsContainer.innerHTML = '';
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = document.createElement('img');
+                    img.src = ev.target.result;
+                    ocrImgsContainer.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+            ocrPreview.style.display = 'flex';
+            ocrRunBtn.disabled = false;
+            ocrTextarea.value = '';
+            ocrAutofillBtn.disabled = true;
+        });
+
+        // Cloud Vision API（Cloud Function経由）で画像→テキスト抽出
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // "data:image/png;base64,xxxxx" → "xxxxx" のみ返す
+                    const s = String(reader.result || '');
+                    const comma = s.indexOf(',');
+                    resolve(comma >= 0 ? s.substring(comma + 1) : s);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        ocrRunBtn.addEventListener('click', async () => {
+            if (!ocrFiles.length) return;
+            ocrRunBtn.disabled = true;
+            ocrPickBtn.disabled = true;
+            ocrProgress.classList.add('show');
+
+            try {
+                const { firebaseApp } = await import('/js/firebase-config.js');
+                const functions = getFunctions(firebaseApp, 'asia-southeast1');
+                const ocrImageFn = httpsCallable(functions, 'ocrImage');
+
+                const allTexts = [];
+                for (let i = 0; i < ocrFiles.length; i++) {
+                    ocrProgress.textContent = `${i18next.t('admin.caa.ocrRunning')} (${i + 1}/${ocrFiles.length})`;
+                    const b64 = await fileToBase64(ocrFiles[i]);
+                    const res = await ocrImageFn({ imageBase64: b64 });
+                    allTexts.push(res.data?.text || '');
+                }
+                ocrText = allTexts.join('\n--- PAGE BREAK ---\n');
+                ocrTextarea.value = ocrText;
+                ocrProgress.textContent = i18next.t('admin.caa.ocrDone');
+                ocrAutofillBtn.disabled = !ocrText.trim();
+            } catch (err) {
+                console.error(err);
+                ocrProgress.textContent = `${i18next.t('admin.caa.ocrError')}: ${err.message || err}`;
+            } finally {
+                ocrRunBtn.disabled = false;
+                ocrPickBtn.disabled = false;
+            }
+        });
+
+        // 自動流し込み：OCRテキストから各州行を抽出し、価格+サイズペアを解析して対応セルに入力
+        ocrAutofillBtn.addEventListener('click', () => {
+            if (!ocrText) return;
+            const lines = ocrText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+            // 州名エイリアス（OCR結果のゆらぎ吸収、部分マッチ）
+            // 注：OCR が綴りを誤読しても引っかかるように、よくある誤読パターンも含める
+            const PROV_ALIAS = {
+                'Kandal': ['kandal', 'kasdal', 'kandai'],
+                'Takeo': ['takeo', 'takéo'],
+                'Prey Veng': ['prey veng', 'preyveng'],
+                'Kg. Cham': ['kg cham', 'kg. cham', 'kampong cham', 'kompong cham', 'kg.cham', 'kg cam'],
+                'Kg. Thom': ['kg thom', 'kg. thom', 'kampong thom', 'kg.thom'],
+                'Siemreap': ['siem reap', 'siemreap', 'siem-reap', 'siernreap'],
+                'Battambang': ['battambang', 'battarnbang'],
+                'Pursat': ['pursat'],
+                'Kg. Chhnang': ['kg chhnang', 'kg. chhnang', 'kampong chhnang', 'kg.chhnang', 'chhnang', 'chinang', 'ke. chinang', 'kg chinang'],
+                'BMC': ['bmc', 'banteay meanchey', 'b.m.c'],
+            };
+
+            // N-N / N–N 形式のペアを抽出
+            function extractPairs(text) {
+                const pairs = [];
+                const pairRe = /(\d[\d.,]*)\s*[-–~:]\s*(\d[\d.,]*)/g;
+                let m;
+                while ((m = pairRe.exec(text)) !== null) {
+                    const a = Number(String(m[1]).replace(/,/g, ''));
+                    const b = Number(String(m[2]).replace(/,/g, ''));
+                    if (!isNaN(a) && !isNaN(b)) pairs.push([a, b]);
+                }
+                return pairs;
+            }
+            function countPricePairs(text) {
+                return extractPairs(text).filter(([a, b]) => a >= 100 || b >= 100).length;
+            }
+            function countSizePairs(text) {
+                return extractPairs(text).filter(([a, b]) => a < 100 && b < 100).length;
+            }
+
+            // 州を特定する行（先頭〜途中に州名を含む）
+            const provLines = [];
+            lines.forEach((line, idx) => {
+                const lower = line.toLowerCase();
+                for (const [canonical, aliases] of Object.entries(PROV_ALIAS)) {
+                    if (aliases.some(a => lower.includes(a))) {
+                        provLines.push({ index: idx, prov: canonical });
+                        break;
+                    }
+                }
+            });
+
+            if (provLines.length === 0) {
+                alert(i18next.t('admin.caa.ocrAutofillEmpty'));
+                return;
+            }
+
+            let filled = 0;
+            const matchedProvs = [];
+
+            // 電話番号行（8桁以上の数字が含まれる行）を除外する判定
+            function isPhoneLine(line) {
+                const digits = (line.match(/\d/g) || []).length;
+                const hasHyphenPair = /\d[\d.,]*\s*[-–~]\s*\d/.test(line);
+                // 8桁以上の数字列があり、価格・サイズのペア形式でなければ電話番号
+                return !hasHyphenPair && /\d{8,}/.test(line);
+            }
+
+            // 各州の次の州までをブロックとして扱う
+            provLines.forEach((p, i) => {
+                const startIdx = p.index + 1;
+                const endIdx = i + 1 < provLines.length ? provLines[i + 1].index : lines.length;
+                const block = lines.slice(startIdx, endIdx).filter(l => !isPhoneLine(l));
+
+                // ブロック内のすべてのペアを順序通り抽出
+                const allPairs = [];
+                for (const line of block) {
+                    const pairs = extractPairs(line);
+                    for (const pair of pairs) allPairs.push(pair);
+                }
+
+                // 価格・サイズの交互パターンを想定して魚種毎に割り当てる
+                // 連続ペアを見て (big, small) = (価格, サイズ) なら1セル分として採用
+                let fishIdx = 0;
+                let k = 0;
+                while (fishIdx < FISH_TYPES.length && k < allPairs.length) {
+                    const pair = allPairs[k];
+                    const [a, b] = pair;
+                    const isPricePair = a >= 100 || b >= 100;
+                    const isSizePair = a < 100 && b < 100;
+
+                    if (isPricePair) {
+                        // この価格を fishIdx に、次のサイズペアがあればセットで割り当て
+                        const next = allPairs[k + 1];
+                        const nextIsSize = next && next[0] < 100 && next[1] < 100;
+                        const ft = FISH_TYPES[fishIdx];
+                        const setField = (field, val) => {
+                            if (val == null || isNaN(val)) return;
+                            const input = document.querySelector(
+                                `.cell-inputs input[data-fish="${ft}"][data-prov="${p.prov}"][data-field="${field}"]`
+                            );
+                            if (input) { input.value = val; filled++; }
+                        };
+                        setField('rangeMin', a);
+                        setField('rangeMax', b);
+                        if (nextIsSize) {
+                            setField('sizeMin', next[0]);
+                            setField('sizeMax', next[1]);
+                            k += 2;
+                        } else {
+                            k += 1;
+                        }
+                        fishIdx += 1;
+                    } else if (isSizePair) {
+                        // 価格のないセル（データなし）：サイズのみ捨てる or 前の fish に割り当てるか判断困難
+                        // ここではスキップして次に進む（次の価格から新しい魚として扱う）
+                        k += 1;
+                    } else {
+                        k += 1;
+                    }
+                }
+
+                matchedProvs.push(p.prov);
+            });
+
+            const missingProvs = PROVINCES.filter(p => !matchedProvs.includes(p));
+            let msg = i18next.t('admin.caa.ocrAutofillDone', { count: filled });
+            if (missingProvs.length > 0) {
+                msg += `\n\n${i18next.t('admin.caa.ocrAutofillMissing')}:\n` + missingProvs.join(', ');
+            }
+            alert(msg);
         });
     </script>
 </body>

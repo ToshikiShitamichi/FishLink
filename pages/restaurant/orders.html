@@ -63,9 +63,34 @@
     <div class="page" style="padding-bottom:80px; max-width:480px; margin:0 auto;">
         <div class="page-header" style="align-items:center;">
             <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
-            <select id="lang-selector" style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+            <select id="lang-selector" style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
                 <option value="km">ខ្មែរ</option><option value="en">EN</option><option value="ja">JA</option>
             </select>
+            <div class="header-actions">
+                <button class="header-action-btn" data-popover="notif" type="button" aria-label="notifications">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span class="header-action-btn__badge" id="notif-badge"></span>
+                </button>
+                <button class="header-action-btn" data-popover="todos" type="button" aria-label="todo list">
+                    <span class="material-symbols-outlined">checklist</span>
+                    <span class="header-action-btn__badge" id="todos-badge"></span>
+                </button>
+                <a class="header-action-btn" href="/pages/restaurant/account.html" aria-label="account">
+                    <span class="material-symbols-outlined">account_circle</span>
+                </a>
+                <div class="header-popover" data-popover-for="notif">
+                    <div class="header-popover__head" data-i18n="notifications.title"></div>
+                    <div class="header-popover__body" id="notif-list">
+                        <div class="header-popover__empty" data-i18n="notifications.empty"></div>
+                    </div>
+                </div>
+                <div class="header-popover" data-popover-for="todos">
+                    <div class="header-popover__head" data-i18n="todos.title"></div>
+                    <div class="header-popover__body" id="todos-list">
+                        <div class="header-popover__empty" data-i18n="todos.empty"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div style="text-align:center; font-size:20px; font-weight:700; margin-bottom:16px;" data-i18n="delivery.myOrders"></div>
@@ -82,16 +107,15 @@
             <span class="bottom-nav__icon"><span class="material-symbols-outlined">local_shipping</span></span>
             <span data-i18n="delivery.myOrders"></span>
         </a>
-        <a href="/pages/restaurant/account.html" class="bottom-nav__item">
-            <span class="bottom-nav__icon"><span class="material-symbols-outlined">person</span></span>
-            <span data-i18n="nav.account"></span>
-        </a>
     </nav>
 
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
+        import { initHeaderPopovers } from '/js/header-actions.js';
+        import { subscribeTodos } from '/js/todos.js';
+        import { subscribeNotifications } from '/js/notifications.js';
         import {
             collection, query, where, orderBy, getDocs, doc, getDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -100,6 +124,7 @@
         watchAuthState({ requireAuth: true });
         await initI18n();
         initLangSelector();
+        initHeaderPopovers();
 
         // ログアウトはアカウントページ内に移動
 
@@ -114,11 +139,12 @@
             const stClass = `st-${order.status}`;
             const canTrack = ['approved', 'preparing', 'delivering', 'delivered'].includes(order.status);
             const isCompleted = order.status === 'completed';
+            const isPending = order.status === 'pending';
             let href = '#';
             let actionLabel = '';
-            if (canTrack) {
+            if (canTrack || isPending) {
                 href = `/pages/restaurant/delivery.html?id=${d.id}`;
-                actionLabel = i18next.t('delivery.goTracking');
+                actionLabel = isPending ? i18next.t('delivery.pendingBanner') : i18next.t('delivery.goTracking');
             } else if (isCompleted) {
                 href = `/pages/restaurant/payment.html?id=${d.id}`;
                 actionLabel = order.paymentStatus === 'paid'
@@ -142,11 +168,11 @@
                     ${showReviewLink ? `
                         <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
                             <a href="/pages/restaurant/review.html?id=${d.id}" onclick="event.stopPropagation();" style="flex:1; text-align:center; background:#f97316; color:#fff; border-radius:10px; padding:8px; font-size:12px; font-weight:700; text-decoration:none;">
-                                <span class="material-symbols-outlined" style="font-size:14px; vertical-align:-3px;">star</span>
+                                <span class="material-symbols-outlined" style="font-size:14px;">star</span>
                                 ${i18next.t('review.submit')}
                             </a>
                             <a href="/pages/restaurant/report.html?id=${d.id}" onclick="event.stopPropagation();" style="flex:1; text-align:center; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:10px; padding:8px; font-size:12px; font-weight:700; text-decoration:none;">
-                                <span class="material-symbols-outlined" style="font-size:14px; vertical-align:-3px;">flag</span>
+                                <span class="material-symbols-outlined" style="font-size:14px;">flag</span>
                                 ${i18next.t('review.reportIssue')}
                             </a>
                         </div>
@@ -270,6 +296,10 @@
         onLanguageChange(() => loadOrders());
         waitForUserData(() => {
             localStorage.setItem('fishlink_rest_orders_seen', String(Date.now()));
+            if (window.currentUser?.uid) {
+                subscribeTodos(window.currentUser.uid, 'restaurant');
+                subscribeNotifications(window.currentUser.uid);
+            }
             loadOrders();
         });
     </script>

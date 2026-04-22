@@ -14,223 +14,131 @@
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
     <style>
-        .acc-page { max-width: 480px; margin: 0 auto; padding: 0 16px 100px; }
-        .acc-head { padding: 4px 0 14px; }
-        .acc-head__sub { font-size: 12px; color: var(--color-text-sub); }
-        .acc-head__title { font-size: 22px; font-weight: 700; color: var(--color-text); margin-top: 2px; }
-        .acc-head__hint { font-size: 12px; color: var(--color-text-sub); margin-top: 4px; }
-
-        .acc-section { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 20px; padding: 16px; margin-bottom: 14px; }
-        .acc-section__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-        .acc-section__title { font-size: 16px; font-weight: 700; color: var(--color-text); }
-        .acc-edit-btn { background: #eef2ff; color: #3730a3; border: none; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
-        .acc-edit-btn .material-symbols-outlined { font-size: 14px; }
-
-        .acc-row { background: #f8fafc; border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
-        .acc-row__label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 2px; }
-        .acc-row__value { font-size: 15px; font-weight: 600; color: var(--color-text); word-break: break-all; }
-
-        .acc-row input, .acc-row textarea { width: 100%; border: 1px solid var(--color-border); background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 14px; font-family: inherit; margin-top: 4px; }
-        .acc-row input:focus, .acc-row textarea:focus { outline: none; border-color: var(--color-primary); }
-
-        .qr-box { border: 1px dashed var(--color-border); background: #f9fafb; border-radius: 14px; padding: 12px; text-align: center; }
-        .qr-box img { width: 180px; height: 180px; max-width: 100%; object-fit: contain; border-radius: 8px; background: #fff; }
-        .qr-box__placeholder { width: 180px; height: 180px; max-width: 100%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: #94a3b8; background: #fff; border-radius: 8px; }
-        .qr-actions { display: flex; justify-content: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-        .qr-actions button { background: #fff; border: 1px solid var(--color-border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--color-text); }
-        .qr-actions button.danger { color: #b91c1c; border-color: #fecaca; }
-
-        .save-row { display: flex; gap: 8px; margin-top: 12px; }
-        .save-row button { flex: 1; border: none; border-radius: 12px; padding: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
-        .save-row .cancel { background: #f1f5f9; color: #334155; }
-        .save-row .save { background: var(--color-primary); color: #fff; }
-
-        .tab-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-        .tab-chip { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--color-border); background: #fff; color: var(--color-text); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .tab-chip.active { background: #0f172a; color: #fff; border-color: #0f172a; }
-
-        .custom-range { display: none; gap: 8px; flex-wrap: wrap; background: #f8fafc; border-radius: 14px; padding: 10px; margin-bottom: 12px; align-items: flex-end; }
-        .custom-range.show { display: flex; }
-        .custom-range > div { flex: 1; min-width: 120px; }
-        .custom-range label { font-size: 11px; color: var(--color-text-sub); }
-        .custom-range input { width: 100%; border: 1px solid var(--color-border); border-radius: 10px; padding: 6px 8px; font-size: 13px; font-family: inherit; margin-top: 2px; }
-        .custom-range button { border: none; background: var(--color-primary); color: #fff; border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
-
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-        .summary-card { background: #f8fafc; border-radius: 14px; padding: 10px; }
-        .summary-card__label { font-size: 11px; color: var(--color-text-sub); }
-        .summary-card__value { font-size: 15px; font-weight: 700; color: var(--color-text); margin-top: 2px; }
-
-        .trade-item { background: #fff; border: 1px solid var(--color-border); border-radius: 14px; padding: 12px; margin-bottom: 8px; }
-        .trade-item__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
-        .trade-item__date { font-size: 12px; color: var(--color-text-sub); }
-        .trade-item__counter { font-size: 14px; font-weight: 700; margin-top: 2px; }
-        .trade-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
-        .trade-badge.completed { background: #0f172a; color: #fff; }
-        .trade-badge.remitted { background: #ccfbf1; color: #115e59; }
-        .trade-badge.payment-confirmed { background: #dcfce7; color: #166534; }
-        .trade-badge.delivered { background: #fef3c7; color: #92400e; }
-        .trade-badge.other { background: #f1f5f9; color: #334155; }
-        .trade-item__row { display: flex; justify-content: space-between; font-size: 13px; color: var(--color-text); padding: 2px 0; }
-        .trade-item__row .k { color: var(--color-text-sub); }
-
-        .view-more { display: block; margin: 6px auto 0; background: #fff; border: 1px solid var(--color-border); border-radius: 12px; padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--color-text); }
-
-        .empty-small { font-size: 13px; color: var(--color-text-sub); text-align: center; padding: 20px; }
-
+        .acc-menu-page { max-width: 480px; margin: 0 auto; padding: 0 16px 100px; }
+        .acc-menu-head { padding: 16px 0; }
+        .acc-menu-head__sub { font-size: 12px; color: var(--color-text-sub); }
+        .acc-menu-head__name { font-size: 22px; font-weight: 700; margin-top: 4px; }
+        .acc-menu-head__id { font-size: 13px; color: var(--color-text-sub); margin-top: 2px; }
+        .acc-menu-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+        .acc-menu-item {
+            display: flex; align-items: center; gap: 12px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            text-decoration: none; color: inherit;
+        }
+        .acc-menu-item:hover { background: #f8fafc; }
+        .acc-menu-item__icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            background: #eef2ff; color: #3730a3;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .acc-menu-item__body { flex: 1; min-width: 0; }
+        .acc-menu-item__title { font-size: 15px; font-weight: 700; }
+        .acc-menu-item__meta { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
+        .acc-menu-item__chev { color: #cbd5e1; flex-shrink: 0; }
+        .logout-btn-full {
+            width: 100%;
+            background: #fef2f2; color: #b91c1c;
+            border: 1px solid #fecaca;
+            border-radius: 14px;
+            padding: 12px;
+            font-size: 14px; font-weight: 700;
+            cursor: pointer; font-family: inherit;
+            display: flex; align-items: center; justify-content: center;
+            gap: 6px; margin-top: 20px;
+        }
         .nav-badge { position: absolute; top: 6px; right: 50%; transform: translateX(18px); background: #ef4444; width: 10px; height: 10px; border-radius: 50%; }
-
-        .logout-btn-full { width: 100%; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 14px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; }
     </style>
 </head>
 
 <body>
 
-    <div class="loading-overlay" id="loading">
-        <div class="spinner"></div>
-    </div>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
     <div class="page">
 
         <div class="page-header" style="align-items:center;">
             <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector"
-                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
                 <option value="km">ខ្មែរ</option>
                 <option value="en">EN</option>
                 <option value="ja">JA</option>
             </select>
+            <div class="header-actions">
+                <button class="header-action-btn" data-popover="notif" type="button" aria-label="notifications">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span class="header-action-btn__badge" id="notif-badge"></span>
+                </button>
+                <button class="header-action-btn" data-popover="todos" type="button" aria-label="todo list">
+                    <span class="material-symbols-outlined">checklist</span>
+                    <span class="header-action-btn__badge" id="todos-badge"></span>
+                </button>
+                <div class="header-popover" data-popover-for="notif">
+                    <div class="header-popover__head" data-i18n="notifications.title"></div>
+                    <div class="header-popover__body" id="notif-list">
+                        <div class="header-popover__empty" data-i18n="notifications.empty"></div>
+                    </div>
+                </div>
+                <div class="header-popover" data-popover-for="todos">
+                    <div class="header-popover__head" data-i18n="todos.title"></div>
+                    <div class="header-popover__body" id="todos-list">
+                        <div class="header-popover__empty" data-i18n="todos.empty"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="acc-page">
+        <div class="acc-menu-page">
 
-            <div class="acc-head">
-                <div class="acc-head__sub" data-i18n="role.restaurant"></div>
-                <div class="acc-head__title" data-i18n="account.title"></div>
-                <div class="acc-head__hint" data-i18n="account.restaurantSub"></div>
+            <div class="acc-menu-head">
+                <div class="acc-menu-head__sub" data-i18n="role.restaurant"></div>
+                <div class="acc-menu-head__name" id="display-name">-</div>
+                <div class="acc-menu-head__id" id="login-id">-</div>
             </div>
 
-            <!-- 基本情報 -->
-            <div class="acc-section">
-                <div class="acc-section__head">
-                    <div class="acc-section__title" data-i18n="account.basic"></div>
-                </div>
-                <div class="acc-row">
-                    <div class="acc-row__label" data-i18n="account.loginId"></div>
-                    <div class="acc-row__value" id="basic-loginId">-</div>
-                </div>
-                <div class="acc-row">
-                    <div class="acc-row__label" data-i18n="account.displayName"></div>
-                    <div class="acc-row__value" id="basic-displayName">-</div>
-                </div>
-                <div class="acc-row">
-                    <div class="acc-row__label" data-i18n="account.location"></div>
-                    <div class="acc-row__value" id="basic-location">-</div>
-                </div>
+            <div class="acc-menu-list">
+                <a class="acc-menu-item" href="/pages/restaurant/account/basic.html">
+                    <div class="acc-menu-item__icon"><span class="material-symbols-outlined">person</span></div>
+                    <div class="acc-menu-item__body">
+                        <div class="acc-menu-item__title" data-i18n="account.basic"></div>
+                        <div class="acc-menu-item__meta" data-i18n="account.menuHintBasic"></div>
+                    </div>
+                    <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
+                </a>
+
+                <a class="acc-menu-item" href="/pages/restaurant/account/payment.html">
+                    <div class="acc-menu-item__icon" style="background:#fef3c7; color:#92400e;"><span class="material-symbols-outlined">account_balance_wallet</span></div>
+                    <div class="acc-menu-item__body">
+                        <div class="acc-menu-item__title" data-i18n="account.payment"></div>
+                        <div class="acc-menu-item__meta" data-i18n="account.menuHintPayment"></div>
+                    </div>
+                    <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
+                </a>
+
+                <a class="acc-menu-item" href="/pages/restaurant/account/purchases.html">
+                    <div class="acc-menu-item__icon" style="background:#dcfce7; color:#166534;"><span class="material-symbols-outlined">shopping_cart</span></div>
+                    <div class="acc-menu-item__body">
+                        <div class="acc-menu-item__title" data-i18n="account.purchaseTitle"></div>
+                        <div class="acc-menu-item__meta" data-i18n="account.menuHintPurchase"></div>
+                    </div>
+                    <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
+                </a>
+
+                <a class="acc-menu-item" href="/pages/restaurant/account/profile.html">
+                    <div class="acc-menu-item__icon" style="background:#ede9fe; color:#5b21b6;"><span class="material-symbols-outlined">storefront</span></div>
+                    <div class="acc-menu-item__body">
+                        <div class="acc-menu-item__title" data-i18n="profile.restaurantPhoto"></div>
+                        <div class="acc-menu-item__meta" data-i18n="account.menuHintProfileRestaurant"></div>
+                    </div>
+                    <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
+                </a>
             </div>
 
-            <!-- 支払い情報 -->
-            <div class="acc-section">
-                <div class="acc-section__head">
-                    <div class="acc-section__title" data-i18n="account.payment"></div>
-                    <button class="acc-edit-btn" id="remit-edit">
-                        <span class="material-symbols-outlined">edit</span>
-                        <span data-i18n="account.edit"></span>
-                    </button>
-                </div>
-
-                <div id="remit-view">
-                    <div class="acc-row">
-                        <div class="acc-row__label" data-i18n="account.accountName"></div>
-                        <div class="acc-row__value" id="view-accountName">-</div>
-                    </div>
-                    <div class="acc-row">
-                        <div class="acc-row__label" data-i18n="account.qrLink"></div>
-                        <div class="acc-row__value" id="view-qrLink">-</div>
-                    </div>
-                    <div class="acc-row">
-                        <div class="acc-row__label" data-i18n="account.qrImage"></div>
-                        <div class="qr-box" id="view-qrImage">
-                            <div class="qr-box__placeholder">
-                                <span class="material-symbols-outlined" style="font-size:40px;">qr_code_2</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="remit-edit-form" style="display:none;">
-                    <div class="acc-row">
-                        <div class="acc-row__label" data-i18n="account.accountName"></div>
-                        <input type="text" id="input-accountName" data-i18n="[placeholder]account.accountNamePlaceholder">
-                    </div>
-                    <div class="acc-row">
-                        <div class="acc-row__label" data-i18n="account.qrLink"></div>
-                        <input type="url" id="input-qrLink" data-i18n="[placeholder]account.qrLinkPlaceholder">
-                    </div>
-                    <div class="acc-row">
-                        <div class="acc-row__label" data-i18n="account.qrImage"></div>
-                        <div class="qr-box" id="edit-qrImage">
-                            <div class="qr-box__placeholder">
-                                <span class="material-symbols-outlined" style="font-size:40px;">qr_code_2</span>
-                            </div>
-                        </div>
-                        <div class="qr-actions">
-                            <button type="button" id="btn-qr-upload" data-i18n="account.qrUpload"></button>
-                            <button type="button" id="btn-qr-remove" class="danger" data-i18n="account.qrRemove"></button>
-                            <input type="file" id="qr-file-input" accept="image/*" style="display:none;">
-                        </div>
-                    </div>
-                    <div class="save-row">
-                        <button class="cancel" id="remit-cancel" data-i18n="account.cancel"></button>
-                        <button class="save" id="remit-save" data-i18n="account.save"></button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 購入確認 -->
-            <div class="acc-section">
-                <div class="acc-section__head">
-                    <div class="acc-section__title" data-i18n="account.purchaseTitle"></div>
-                </div>
-
-                <div class="tab-row" id="period-tabs">
-                    <button class="tab-chip active" data-period="today" data-i18n="account.tabToday"></button>
-                    <button class="tab-chip" data-period="custom" data-i18n="account.tabCustom"></button>
-                    <button class="tab-chip" data-period="all" data-i18n="account.tabAll"></button>
-                </div>
-
-                <div class="custom-range" id="custom-range">
-                    <div>
-                        <label data-i18n="account.customFrom"></label>
-                        <input type="date" id="range-from">
-                    </div>
-                    <div>
-                        <label data-i18n="account.customTo"></label>
-                        <input type="date" id="range-to">
-                    </div>
-                    <button type="button" id="range-apply" data-i18n="account.customApply"></button>
-                </div>
-
-                <div class="summary-grid">
-                    <div class="summary-card">
-                        <div class="summary-card__label" data-i18n="account.amountPurchase"></div>
-                        <div class="summary-card__value" id="sum-amount">0 KHR</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-card__label" data-i18n="account.count"></div>
-                        <div class="summary-card__value" id="sum-count">0</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-card__label" data-i18n="account.avgPurchase"></div>
-                        <div class="summary-card__value" id="sum-avg">0 KHR</div>
-                    </div>
-                </div>
-
-                <div id="trade-list"></div>
-                <button class="view-more" id="view-more" style="display:none;" data-i18n="account.viewMore"></button>
-            </div>
-
-            <!-- ログアウト -->
             <button class="logout-btn-full" id="logout-btn">
                 <span class="material-symbols-outlined">logout</span>
                 <span data-i18n="account.logout"></span>
@@ -238,7 +146,6 @@
         </div>
     </div>
 
-    <!-- 下部ナビ -->
     <nav class="bottom-nav">
         <a href="/pages/restaurant/dashboard.html" class="bottom-nav__item">
             <span class="bottom-nav__icon"><span class="material-symbols-outlined">set_meal</span></span>
@@ -249,284 +156,35 @@
             <span class="nav-badge" id="order-badge" style="display:none;"></span>
             <span data-i18n="delivery.myOrders"></span>
         </a>
-        <a href="/pages/restaurant/account.html" class="bottom-nav__item active">
-            <span class="bottom-nav__icon"><span class="material-symbols-outlined">person</span></span>
-            <span data-i18n="nav.account"></span>
-        </a>
     </nav>
 
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState, logout } from '/js/auth.js';
-        import { db, storage } from '/js/firebase-config.js';
+        import { db } from '/js/firebase-config.js';
+        import { initHeaderPopovers } from '/js/header-actions.js';
+        import { subscribeTodos } from '/js/todos.js';
+        import { subscribeNotifications } from '/js/notifications.js';
         import {
-            doc, getDoc, updateDoc, collection, query, where, orderBy, getDocs, onSnapshot
+            collection, query, where, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
-        import {
-            ref, uploadBytes, getDownloadURL
-        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
         await initI18n();
         initLangSelector();
-
-        let userData = null;
-        let allTrades = [];
-        let currentPeriod = 'today';
-        let customFromMs = 0;
-        let customToMs = 0;
-        let displayCount = 3;
+        initHeaderPopovers();
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
             else setTimeout(() => waitForUserData(cb), 200);
         }
 
-        function fmtKhr(n) { return `${Number(n || 0).toLocaleString()} KHR`; }
-        function fmtDate(ts) {
-            const d = ts?.toDate?.() || new Date(ts || 0);
-            const y = d.getFullYear();
-            const mo = String(d.getMonth() + 1).padStart(2, '0');
-            const da = String(d.getDate()).padStart(2, '0');
-            const hh = String(d.getHours()).padStart(2, '0');
-            const mm = String(d.getMinutes()).padStart(2, '0');
-            return `${y}/${mo}/${da} ${hh}:${mm}`;
+        function renderHead() {
+            const d = window.currentUserData || {};
+            document.getElementById('display-name').textContent = d.displayName || '-';
+            document.getElementById('login-id').textContent = d.loginId ? `@${d.loginId}` : '';
         }
-
-        function statusBadge(order) {
-            if (order.adminStatus === 'done') return { cls: 'completed', label: i18next.t('account.statusCompleted') };
-            if (order.adminStatus === 'remitted') return { cls: 'remitted', label: i18next.t('account.statusRemitted') };
-            if (order.adminStatus === 'payment_confirmed') return { cls: 'payment-confirmed', label: i18next.t('account.statusPaymentConfirmed') };
-            if (order.status === 'completed' || order.status === 'delivered') return { cls: 'delivered', label: i18next.t('account.statusDelivered') };
-            return { cls: 'other', label: i18next.t('account.statusOther') };
-        }
-
-        function renderBasic() {
-            document.getElementById('basic-loginId').textContent = userData.loginId || '-';
-            document.getElementById('basic-displayName').textContent = userData.displayName || '-';
-            const loc = [userData.province, userData.district].filter(Boolean).join(', ') || i18next.t('account.locationUnset');
-            document.getElementById('basic-location').textContent = loc;
-        }
-
-        function renderRemitView() {
-            document.getElementById('view-accountName').textContent = userData.accountName || '-';
-            const linkEl = document.getElementById('view-qrLink');
-            if (userData.qrLink) {
-                linkEl.innerHTML = `<a href="${userData.qrLink}" target="_blank" rel="noopener" style="color:#0369a1;">${userData.qrLink}</a>`;
-            } else {
-                linkEl.textContent = '-';
-            }
-            const qrBox = document.getElementById('view-qrImage');
-            if (userData.qrImageUrl) {
-                qrBox.innerHTML = `<img src="${userData.qrImageUrl}" alt="QR">`;
-            } else {
-                qrBox.innerHTML = `<div class="qr-box__placeholder"><span class="material-symbols-outlined" style="font-size:40px;">qr_code_2</span></div>`;
-            }
-        }
-
-        let editState = { qrImageUrl: null, qrFile: null, qrRemoved: false };
-
-        function showEditQrPreview(url) {
-            const box = document.getElementById('edit-qrImage');
-            if (url) {
-                box.innerHTML = `<img src="${url}" alt="QR">`;
-            } else {
-                box.innerHTML = `<div class="qr-box__placeholder"><span class="material-symbols-outlined" style="font-size:40px;">qr_code_2</span></div>`;
-            }
-        }
-
-        document.getElementById('remit-edit').addEventListener('click', () => {
-            document.getElementById('input-accountName').value = userData.accountName || '';
-            document.getElementById('input-qrLink').value = userData.qrLink || '';
-            editState = { qrImageUrl: userData.qrImageUrl || null, qrFile: null, qrRemoved: false };
-            showEditQrPreview(editState.qrImageUrl);
-            document.getElementById('remit-view').style.display = 'none';
-            document.getElementById('remit-edit-form').style.display = 'block';
-            document.getElementById('remit-edit').style.display = 'none';
-        });
-
-        document.getElementById('remit-cancel').addEventListener('click', () => {
-            document.getElementById('remit-view').style.display = 'block';
-            document.getElementById('remit-edit-form').style.display = 'none';
-            document.getElementById('remit-edit').style.display = 'inline-flex';
-        });
-
-        document.getElementById('btn-qr-upload').addEventListener('click', () => {
-            document.getElementById('qr-file-input').click();
-        });
-
-        document.getElementById('qr-file-input').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            editState.qrFile = file;
-            editState.qrRemoved = false;
-            const reader = new FileReader();
-            reader.onload = (ev) => showEditQrPreview(ev.target.result);
-            reader.readAsDataURL(file);
-        });
-
-        document.getElementById('btn-qr-remove').addEventListener('click', () => {
-            editState.qrFile = null;
-            editState.qrRemoved = true;
-            editState.qrImageUrl = null;
-            document.getElementById('qr-file-input').value = '';
-            showEditQrPreview(null);
-        });
-
-        document.getElementById('remit-save').addEventListener('click', async () => {
-            const uid = window.currentUser?.uid;
-            if (!uid) return;
-            const btn = document.getElementById('remit-save');
-            btn.disabled = true;
-            loading.classList.add('show');
-            try {
-                const accountName = document.getElementById('input-accountName').value.trim();
-                const qrLink = document.getElementById('input-qrLink').value.trim();
-
-                let qrImageUrl = editState.qrImageUrl;
-                if (editState.qrFile) {
-                    const storageRef = ref(storage, `qr/${uid}/${Date.now()}_${editState.qrFile.name}`);
-                    await uploadBytes(storageRef, editState.qrFile);
-                    qrImageUrl = await getDownloadURL(storageRef);
-                } else if (editState.qrRemoved) {
-                    qrImageUrl = null;
-                }
-
-                await updateDoc(doc(db, 'users', uid), {
-                    accountName: accountName || null,
-                    qrLink: qrLink || null,
-                    qrImageUrl: qrImageUrl || null,
-                });
-                userData.accountName = accountName || null;
-                userData.qrLink = qrLink || null;
-                userData.qrImageUrl = qrImageUrl || null;
-                renderRemitView();
-                document.getElementById('remit-cancel').click();
-            } catch (err) {
-                console.error(err);
-                alert(i18next.t('account.saveFailed'));
-            } finally {
-                btn.disabled = false;
-                loading.classList.remove('show');
-            }
-        });
-
-        // ── 購入（取引履歴）読み込み ──
-        async function loadTrades() {
-            const uid = window.currentUser?.uid;
-            if (!uid) return;
-            const q = query(
-                collection(db, 'orders'),
-                where('restaurantId', '==', uid),
-                orderBy('createdAt', 'desc')
-            );
-            const snap = await getDocs(q);
-            const targetStatuses = ['delivered', 'completed'];
-            allTrades = [];
-            const farmerIds = new Set();
-            snap.forEach(d => {
-                const o = d.data();
-                if (!targetStatuses.includes(o.status)) return;
-                allTrades.push({ id: d.id, ...o });
-                if (o.farmerId) farmerIds.add(o.farmerId);
-            });
-
-            const farmerMap = {};
-            await Promise.all([...farmerIds].map(async (fid) => {
-                const f = await getDoc(doc(db, 'users', fid));
-                farmerMap[fid] = f.exists() ? f.data() : {};
-            }));
-            allTrades.forEach(t => { t.farmerName = farmerMap[t.farmerId]?.displayName || ''; });
-        }
-
-        function filterByPeriod(trades) {
-            if (currentPeriod === 'all') return trades;
-            if (currentPeriod === 'today') {
-                const start = new Date(); start.setHours(0, 0, 0, 0);
-                const end = new Date(); end.setHours(23, 59, 59, 999);
-                return trades.filter(t => {
-                    const ms = t.createdAt?.toMillis?.() || 0;
-                    return ms >= start.getTime() && ms <= end.getTime();
-                });
-            }
-            if (currentPeriod === 'custom') {
-                if (!customFromMs && !customToMs) return trades;
-                return trades.filter(t => {
-                    const ms = t.createdAt?.toMillis?.() || 0;
-                    if (customFromMs && ms < customFromMs) return false;
-                    if (customToMs && ms > customToMs) return false;
-                    return true;
-                });
-            }
-            return trades;
-        }
-
-        function renderTrades() {
-            const filtered = filterByPeriod(allTrades);
-            // レストラン：totalAmount（全額）を購入金額
-            const totalAmount = filtered.reduce((s, t) => s + (t.totalAmount || 0), 0);
-            const count = filtered.length;
-            const avg = count > 0 ? Math.round(totalAmount / count) : 0;
-
-            document.getElementById('sum-amount').textContent = fmtKhr(totalAmount);
-            document.getElementById('sum-count').textContent = `${count}${i18next.t('account.countUnit')}`;
-            document.getElementById('sum-avg').textContent = fmtKhr(avg);
-
-            const listEl = document.getElementById('trade-list');
-            if (filtered.length === 0) {
-                listEl.innerHTML = `<div class="empty-small">${i18next.t('account.emptyHistory')}</div>`;
-                document.getElementById('view-more').style.display = 'none';
-                return;
-            }
-            const shown = filtered.slice(0, displayCount);
-            listEl.innerHTML = shown.map(t => {
-                const b = statusBadge(t);
-                return `
-                    <div class="trade-item">
-                        <div class="trade-item__head">
-                            <div>
-                                <div class="trade-item__date">${fmtDate(t.createdAt)}</div>
-                                <div class="trade-item__counter">${t.farmerName || ''}</div>
-                            </div>
-                            <span class="trade-badge ${b.cls}">${b.label}</span>
-                        </div>
-                        <div class="trade-item__row"><span class="k">${i18next.t('order.quantity') || ''}</span><span>${t.quantity || 0}kg</span></div>
-                        <div class="trade-item__row"><span class="k">${i18next.t('account.amountPurchase')}</span><span style="font-weight:600;">${fmtKhr(t.totalAmount)}</span></div>
-                    </div>
-                `;
-            }).join('');
-            document.getElementById('view-more').style.display = filtered.length > displayCount ? 'block' : 'none';
-        }
-
-        document.getElementById('view-more').addEventListener('click', () => {
-            displayCount += 5;
-            renderTrades();
-        });
-
-        document.getElementById('period-tabs').addEventListener('click', (e) => {
-            const btn = e.target.closest('button.tab-chip');
-            if (!btn) return;
-            currentPeriod = btn.dataset.period;
-            document.querySelectorAll('#period-tabs .tab-chip').forEach(c => c.classList.toggle('active', c === btn));
-            document.getElementById('custom-range').classList.toggle('show', currentPeriod === 'custom');
-            displayCount = 3;
-            renderTrades();
-        });
-
-        document.getElementById('range-apply').addEventListener('click', () => {
-            const from = document.getElementById('range-from').value;
-            const to = document.getElementById('range-to').value;
-            customFromMs = from ? new Date(from + 'T00:00:00').getTime() : 0;
-            customToMs = to ? new Date(to + 'T23:59:59').getTime() : 0;
-            displayCount = 3;
-            renderTrades();
-        });
-
-        document.getElementById('logout-btn').addEventListener('click', async (e) => {
-            e.preventDefault();
-            await logout();
-        });
 
         function watchOrderBadge() {
             const uid = window.currentUser?.uid;
@@ -542,27 +200,21 @@
             });
         }
 
-        waitForUserData(async () => {
-            loading.classList.add('show');
-            try {
-                userData = { ...window.currentUserData };
-                renderBasic();
-                renderRemitView();
-                watchOrderBadge();
-                await loadTrades();
-                renderTrades();
-            } catch (err) {
-                console.error(err);
-            } finally {
-                loading.classList.remove('show');
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logout();
+        });
+
+        waitForUserData(() => {
+            renderHead();
+            watchOrderBadge();
+            if (window.currentUser?.uid) {
+                subscribeTodos(window.currentUser.uid, 'restaurant');
+                subscribeNotifications(window.currentUser.uid);
             }
         });
 
-        onLanguageChange(() => {
-            renderBasic();
-            renderRemitView();
-            renderTrades();
-        });
+        onLanguageChange(() => renderHead());
     </script>
 </body>
 

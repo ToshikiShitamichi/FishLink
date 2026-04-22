@@ -152,7 +152,8 @@
         "count": "បង្ហាញត្រី {{count}} មុខ",
         "tapHint": "ចុចកាតដើម្បីបញ្ជាទិញ",
         "empty": "រកមិនឃើញត្រីសម្រាប់ការត្រងនេះ",
-        "priceWithFee": "(រួមថ្លៃសេវា)"
+        "priceWithFee": "(រួមថ្លៃសេវា)",
+        "map": "ផែនទី"
     },
     "delivery": {
         "statusNow": "ស្ថានភាព: {{status}}",
@@ -166,6 +167,9 @@
         "deliveryComplete": "ដឹកជញ្ជូនរួចរាល់",
         "receiveConfirm": "បញ្ជាក់ការទទួល",
         "chatPlaceholder": "សរសេរសារ...",
+        "pendingBanner": "កំពុងរង់ចាំការយល់ព្រម",
+        "pendingBannerDesc": "អ្នកអាចផ្ញើសារបន្ទាប់ពីកសិករយល់ព្រមការបញ្ជាទិញ",
+        "chatDisabledHint": "អាចប្រើបានបន្ទាប់ពីកសិករយល់ព្រម",
         "send": "ផ្ញើ",
         "imageSent": "រូបថតត្រូវបានផ្ញើ",
         "deletedLabel": "(បានដកវិញ)",
@@ -321,7 +325,112 @@
     },
     "nav": {
         "logout": "ចាកចេញ",
-        "account": "គណនី"
+        "account": "គណនី",
+        "notifications": "ការជូនដំណឹង",
+        "todos": "បញ្ជីកិច្ចការ",
+        "myPage": "ទំព័ររបស់ខ្ញុំ"
+    },
+    "notifications": {
+        "title": "ការជូនដំណឹង",
+        "empty": "មិនមានការជូនដំណឹងថ្មី"
+    },
+    "todos": {
+        "title": "បញ្ជីកិច្ចការ",
+        "empty": "មិនមានកិច្ចការ",
+        "farmer_approve": {
+            "title": "មានការបញ្ជាទិញថ្មី",
+            "body": "សូមយល់ព្រម ឬ បដិសេធ"
+        },
+        "farmer_prepare": {
+            "title": "ចាប់ផ្ដើមរៀបចំការបញ្ជាទិញ",
+            "body": "ធ្វើបច្ចុប្បន្នភាពស្ថានភាពដឹកជញ្ជូនជា «កំពុងរៀបចំ»"
+        },
+        "farmer_deliver": {
+            "title": "ធ្វើបច្ចុប្បន្នភាពស្ថានភាពដឹកជញ្ជូន",
+            "body": "ប្រាប់ភោជនីយដ្ឋានអំពីវឌ្ឍនភាព"
+        },
+        "farmer_complete_delivery": {
+            "title": "ប្រគល់ត្រី",
+            "body": "ចុច «ដឹកជញ្ជូនបញ្ចប់» បន្ទាប់ពីមកដល់"
+        },
+        "farmer_review": {
+            "title": "សូមវាយតម្លៃ",
+            "body": "វាយតម្លៃភោជនីយដ្ឋានបន្ទាប់ពីប្រតិបត្តិការបញ្ចប់"
+        },
+        "farmer_reply": {
+            "title": "មានសារពីភោជនីយដ្ឋាន",
+            "body": "សូមឆ្លើយតប"
+        },
+        "rest_receive": {
+            "title": "ត្រីមកដល់ហើយ",
+            "body": "សូមបញ្ជាក់ការទទួល"
+        },
+        "rest_pay": {
+            "title": "សូមបង់ប្រាក់",
+            "body": "ចុច «បង់ប្រាក់រួចរាល់» បន្ទាប់ពីបង់"
+        },
+        "rest_review": {
+            "title": "សូមវាយតម្លៃ",
+            "body": "វាយតម្លៃកសិករបន្ទាប់ពីប្រតិបត្តិការបញ្ចប់"
+        },
+        "rest_reply": {
+            "title": "មានសារពីកសិករ",
+            "body": "សូមឆ្លើយតប"
+        },
+        "admin_verify_payment": {
+            "title": "ផ្ទៀងផ្ទាត់ការបង់ប្រាក់ពីភោជនីយដ្ឋាន",
+            "body": "ពិនិត្យក្នុង Merchant App"
+        },
+        "admin_remit": {
+            "title": "ផ្ទេរទៅកសិករ",
+            "body": "ផ្ទេរដោយដៃបន្ទាប់ពីបានផ្ទៀងផ្ទាត់"
+        },
+        "admin_done": {
+            "title": "សម្គាល់ប្រតិបត្តិការបញ្ចប់",
+            "body": "បញ្ចប់ប្រតិបត្តិការបន្ទាប់ពីការផ្ទេរ"
+        }
+    },
+    "profile": {
+        "restTitle": "ព័ត៌មានភោជនីយដ្ឋាន",
+        "farmerTitle": "ទំព័រកសិករ",
+        "summary": "សង្ខេបការវាយតម្លៃ",
+        "reviews": "វាយតម្លៃ",
+        "reviewsCount": "សរុប {{count}}",
+        "noReviews": "មិនទាន់មានការវាយតម្លៃ",
+        "openMap": "បើក Google Maps",
+        "farmerMessage": "សារពីកសិករ",
+        "pondPhoto": "បរិស្ថានចិញ្ចឹម",
+        "restaurantPhoto": "រូបភាពភោជនីយដ្ឋាន",
+        "activeListings": "បញ្ជីដែលកំពុងលក់",
+        "viewAllReviews": "មើលការវាយតម្លៃ ({{count}})",
+        "ratingOverall": "ទូទៅ",
+        "ratingQuality": "គុណភាពត្រី",
+        "ratingTime": "ពេលវេលាដឹកជញ្ជូន",
+        "ratingSatisfaction": "ការពេញចិត្ត",
+        "ratingCommunication": "ការទំនាក់ទំនង",
+        "ratingReception": "ការទទួល",
+        "editProfile": "កែប្រវត្តិរូប",
+        "messagePlaceholder": "ទុកសារមួយឲ្យអតិថិជន",
+        "uploadPhoto": "ជ្រើសរើសរូបភាព",
+        "removePhoto": "លុប"
+    },
+    "comments": {
+        "title": "មតិយោបល់",
+        "publicNote": "មតិយោបល់ត្រូវបានបង្ហាញសាធារណៈ។ ប្រើវាដើម្បីសាកសួរមុនពេលបញ្ជាទិញ។",
+        "inputPlaceholder": "សរសេរមតិយោបល់",
+        "send": "ផ្ញើ",
+        "publicFooter": "ផ្សាយនៅលើទំព័រផលិតផល",
+        "empty": "មិនទាន់មានមតិយោបល់",
+        "openThread": "មើលមតិយោបល់",
+        "errorEmpty": "សូមបញ្ចូលមតិយោបល់",
+        "errorSubmit": "ផ្ញើបរាជ័យ",
+        "justNow": "ឥឡូវនេះ",
+        "minutesAgo": "{{n}} នាទីមុន",
+        "hoursAgo": "{{n}} ម៉ោងមុន",
+        "daysAgo": "{{n}} ថ្ងៃមុន",
+        "delete": "ដកចេញ",
+        "deleted": "មតិនេះត្រូវបានដកចេញ",
+        "confirmDelete": "ដកចេញមតិនេះ?"
     },
     "review": {
         "title": "ការវាយតម្លៃ",
@@ -419,7 +528,14 @@
         "statusPaymentConfirmed": "បានបញ្ជាក់ការបង់",
         "statusDelivered": "បានទទួល",
         "statusOther": "កំពុងដំណើរការ",
-        "logout": "ចាកចេញ"
+        "logout": "ចាកចេញ",
+        "menuHintBasic": "ID, ឈ្មោះបង្ហាញ, ទីតាំង",
+        "menuHintRemit": "ឈ្មោះគណនី, តំណ QR, រូប QR",
+        "menuHintPayment": "ឈ្មោះគណនី, QR, តំណ",
+        "menuHintSales": "ចំនួនលក់, ប្រតិបត្តិការ",
+        "menuHintPurchase": "ចំនួនទិញ, ប្រតិបត្តិការ",
+        "menuHintProfileFarmer": "សារ, រូបភាពស្រែ",
+        "menuHintProfileRestaurant": "រូបភាពភោជនីយដ្ឋាន"
     },
     "admin": {
         "brand": "FISHLINK អ្នកគ្រប់គ្រង",
@@ -565,7 +681,21 @@
             "save": "រក្សាទុក",
             "saved": "បានរក្សាទុក",
             "loadingData": "កំពុងផ្ទុក...",
-            "selectFirst": "សូមជ្រើសប្រភេទត្រី"
+            "selectFirst": "សូមជ្រើសប្រភេទត្រី",
+            "ocrTitle": "នាំចូលពីរូបភាព (OCR)",
+            "ocrHint": "ស្រង់អត្ថបទពីរូបភាពតារាងតម្លៃ CAA។ ប្រើជាឯកសារយោង ឬបំពេញដោយស្វ័យប្រវត្តិ។",
+            "ocrPick": "ជ្រើសរូបភាព",
+            "ocrRun": "ដំណើរការ OCR",
+            "ocrAutofill": "បំពេញដោយស្វ័យប្រវត្តិ",
+            "ocrRunning": "កំពុងដំណើរការ...",
+            "ocrDone": "បានបញ្ចប់",
+            "ocrError": "បញ្ហា",
+            "ocrPreview": "មើលជាមុន",
+            "ocrText": "អត្ថបទ",
+            "ocrTextPlaceholder": "អត្ថបទនឹងបង្ហាញនៅទីនេះបន្ទាប់ពី OCR",
+            "ocrAutofillEmpty": "រកមិនឃើញខេត្ត សូមពិនិត្យគុណភាពរូបភាព",
+            "ocrAutofillDone": "បានបំពេញ {{count}} ក្រឡា សូមពិនិត្យមើលហើយរក្សាទុក",
+            "ocrAutofillMissing": "ខេត្តខាងក្រោមមិនអាចបំពេញស្វ័យប្រវត្តិ (សូមបញ្ចូលដោយដៃ)"
         }
     }
 }

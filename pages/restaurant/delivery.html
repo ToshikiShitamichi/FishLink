@@ -44,11 +44,6 @@
         }
         .tl-chat.self { margin-left: auto; background: #dbeafe; }
         .tl-chat__img { max-width: 100%; border-radius: 8px; margin-top: 6px; }
-        .tl-chat__delete {
-            font-size: 11px; color: #ef4444; cursor: pointer; margin-top: 4px;
-            display: none; text-align: right;
-        }
-        .tl-chat.self .tl-chat__delete { display: block; }
         .photo-preview-area {
             display: none; padding: 8px 16px; gap: 8px; flex-wrap: wrap; align-items: center;
         }
@@ -57,23 +52,6 @@
         .photo-preview-area .remove-all { font-size: 11px; color: #ef4444; cursor: pointer; margin-left: auto; }
         .tl-chat__time { font-size: 12px; color: #888; }
         .tl-chat__text { font-size: 15px; margin-top: 2px; line-height: 1.4; }
-
-        /* 取り消し済みメッセージ */
-        .tl-chat.deleted { opacity: 0.6; }
-        .tl-chat.deleted .tl-chat__text {
-            text-decoration: line-through;
-            color: #888;
-        }
-        .tl-chat.deleted .tl-chat__img {
-            opacity: 0.4;
-            filter: grayscale(0.6);
-        }
-        .tl-chat__deleted-label {
-            font-size: 11px;
-            color: #ef4444;
-            margin-top: 4px;
-            font-weight: 600;
-        }
 
         .chat-input {
             display: flex;
@@ -128,26 +106,37 @@
 
     <div class="delivery-page">
         <div class="page-header" style="align-items:center; padding:16px;">
-            <a href="/pages/restaurant/dashboard.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub);"><span class="material-symbols-outlined">arrow_back</span></a>
-            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <a href="/pages/restaurant/orders.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub);"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/restaurant/orders.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector" style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option><option value="en">EN</option><option value="ja">JA</option>
             </select>
         </div>
 
         <div class="order-summary" id="order-summary"></div>
+
+        <!-- 承認待ちバナー（status=pending のみ表示） -->
+        <div id="pending-banner" style="display:none; margin:12px 16px; padding:14px 16px; background:#fef3c7; border:1px solid #fde68a; border-radius:14px; color:#92400e;">
+            <div style="font-weight:700; font-size:15px; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:18px;">schedule</span>
+                <span data-i18n="delivery.pendingBanner"></span>
+            </div>
+            <div style="font-size:13px; line-height:1.5;" data-i18n="delivery.pendingBannerDesc"></div>
+        </div>
+
         <div class="timeline" id="timeline"></div>
 
         <!-- 写真プレビュー -->
         <div class="photo-preview-area" id="photo-preview"></div>
 
         <!-- チャット入力 -->
-        <div class="chat-input">
+        <div class="chat-input" id="chat-input-wrap">
             <button id="photo-btn" style="border:none; background:var(--color-surface); cursor:pointer; padding:6px 8px; border-radius:50%; color:var(--color-text-sub);"><span class="material-symbols-outlined">photo_camera</span></button>
             <input type="file" id="photo-input" accept="image/*" multiple style="display:none;">
             <input type="text" id="chat-text" data-i18n="[placeholder]delivery.chatPlaceholder">
             <button id="chat-send" data-i18n="delivery.send"></button>
         </div>
+        <div id="chat-disabled-hint" style="display:none; text-align:center; padding:8px 16px; color:#92400e; font-size:12px;" data-i18n="delivery.chatDisabledHint"></div>
     </div>
 
     <!-- 受取確認ボタン -->
@@ -160,7 +149,7 @@
         import { watchAuthState } from '/js/auth.js';
         import { db, storage } from '/js/firebase-config.js';
         import {
-            doc, getDoc, updateDoc, addDoc, deleteDoc, collection, query, orderBy, onSnapshot, serverTimestamp
+            doc, getDoc, updateDoc, addDoc, collection, query, orderBy, onSnapshot, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import {
             ref, uploadBytes, getDownloadURL
@@ -231,46 +220,33 @@
                 timeline.innerHTML = '';
                 snap.forEach(d => {
                     const msg = d.data();
-                    const msgId = d.id;
                     const time = msg.createdAt?.toDate();
                     const timeStr = time ? `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}` : '';
                     const isSelf = msg.senderId === myUid;
-                    const isDeleted = msg.isDeleted === true;
                     const imgs = msg.imageUrls || (msg.imageUrl ? [msg.imageUrl] : []);
                     const imgHtml = imgs.map(url => `<img class="tl-chat__img" src="${url}">`).join('');
-                    const deleteHtml = (isSelf && !isDeleted)
-                        ? `<div class="tl-chat__delete" data-msg-id="${msgId}">✕ 取り消し</div>`
-                        : '';
-                    const deletedLabel = isDeleted ? `<div class="tl-chat__deleted-label">${i18next.t('delivery.deletedLabel')}</div>` : '';
 
                     timeline.innerHTML += `
-                        <div class="tl-chat ${isSelf ? 'self' : ''} ${isDeleted ? 'deleted' : ''}">
+                        <div class="tl-chat ${isSelf ? 'self' : ''}">
                             <div class="tl-chat__time">${timeStr}</div>
                             ${msg.text ? `<div class="tl-chat__text">${msg.text}</div>` : ''}
                             ${imgHtml}
-                            ${deletedLabel}
-                            ${deleteHtml}
                         </div>`;
                 });
                 timeline.scrollTop = timeline.scrollHeight;
-
-                // 取り消しボタン：完全削除→isDeleted=true でマークし取り消し線表示
-                document.querySelectorAll('.tl-chat__delete').forEach(el => {
-                    el.addEventListener('click', async () => {
-                        if (!confirm(i18next.t('delivery.confirmDelete'))) return;
-                        await updateDoc(doc(db, 'orders', orderId, 'messages', el.dataset.msgId), {
-                            isDeleted: true
-                        });
-                    });
-                });
             });
 
-            // orderのステータス変更をリアルタイム監視（delivered時にボタン有効化）
+            // orderのステータス変更をリアルタイム監視（pending/approved/delivered 切替で UI 更新）
             onSnapshot(doc(db, 'orders', orderId), (snap) => {
                 if (snap.exists()) {
-                    updateReceiveBtn(snap.data().status);
+                    const s = snap.data().status;
+                    updateReceiveBtn(s);
+                    updatePendingUi(s);
                 }
             });
+
+            // 初期描画
+            updatePendingUi(orderData.status);
 
             loading.classList.remove('show');
         });
@@ -278,6 +254,20 @@
         function updateReceiveBtn(status) {
             const btn = document.getElementById('receive-btn');
             btn.disabled = status !== 'delivered';
+        }
+
+        // status に応じて pending バナー／チャット入力の表示を切替
+        function updatePendingUi(status) {
+            const isPending = status === 'pending';
+            document.getElementById('pending-banner').style.display = isPending ? 'block' : 'none';
+            document.getElementById('chat-input-wrap').style.display = isPending ? 'none' : 'flex';
+            document.getElementById('chat-disabled-hint').style.display = isPending ? 'block' : 'none';
+            document.getElementById('receive-btn').style.display = isPending ? 'none' : '';
+            // 辞退された場合も UI を無効化
+            if (status === 'declined') {
+                document.getElementById('chat-input-wrap').style.display = 'none';
+                document.getElementById('receive-btn').style.display = 'none';
+            }
         }
 
         // ── 写真プレビュー管理 ──
