@@ -14,16 +14,36 @@
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
     <style>
-        .delivery-page { max-width: 480px; margin: 0 auto; padding-bottom: 100px; }
-
-        .order-summary {
-            padding: 12px 16px;
-            font-size: 14px;
-            color: var(--color-text-sub);
-            line-height: 1.6;
+        html, body { height: 100%; margin: 0; }
+        body { overflow: hidden; }
+        .delivery-page {
+            max-width: 480px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        .timeline { padding: 0 16px; }
+        .order-summary {
+            padding: 8px 14px;
+            color: var(--color-text-sub);
+            line-height: 1.4;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .timeline {
+            padding: 0 16px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .delivery-bottom {
+            flex-shrink: 0;
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
+        }
 
         .tl-status {
             border-radius: 16px;
@@ -37,27 +57,27 @@
 
         .tl-chat {
             max-width: 85%;
-            border-radius: 16px;
+            border-radius: 14px;
             background: #e5e5e5;
-            padding: 10px 14px;
-            margin-bottom: 12px;
+            padding: 6px 12px 4px;
+            margin-bottom: 3px;
         }
         .tl-chat.self { margin-left: auto; background: #dbeafe; }
-        .tl-chat__img { max-width: 100%; border-radius: 8px; margin-top: 6px; }
+        .tl-chat__img { max-width: 100%; border-radius: 8px; margin-top: 4px; }
         .photo-preview-area {
             display: none; padding: 8px 16px; gap: 8px; flex-wrap: wrap; align-items: center;
         }
         .photo-preview-area.show { display: flex; }
         .photo-preview-area img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
         .photo-preview-area .remove-all { font-size: 11px; color: #ef4444; cursor: pointer; margin-left: auto; }
-        .tl-chat__time { font-size: 12px; color: #888; }
-        .tl-chat__text { font-size: 15px; margin-top: 2px; line-height: 1.4; }
+        .tl-chat__time { font-size: 10px; color: #888; text-align: right; margin-top: 2px; }
+        .tl-chat__text { font-size: 14px; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
 
         .chat-input {
             display: flex;
             gap: 8px;
-            padding: 0 16px;
-            margin-top: 12px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--color-border);
         }
         .chat-input input {
             flex: 1;
@@ -78,13 +98,8 @@
         }
 
         .delivery-footer {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 12px 16px;
+            padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
             background: var(--color-surface);
-            border-top: 1px solid var(--color-border);
         }
         .delivery-footer button {
             width: 100%;
@@ -105,11 +120,11 @@
     <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
     <div class="delivery-page">
-        <div class="page-header" style="align-items:center; padding:16px;">
+        <div class="page-header" style="align-items:center; padding:8px 12px;">
             <a href="/pages/restaurant/orders.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub);"><span class="material-symbols-outlined">arrow_back</span></a>
             <a href="/pages/restaurant/orders.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector" style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
-                <option value="km">ខ្មែរ</option><option value="en">EN</option><option value="ja">JA</option>
+                <option value="km">ខ្មែរ</option><option value="en">ENGLISH</option><option value="ja">日本語</option>
             </select>
         </div>
 
@@ -126,22 +141,25 @@
 
         <div class="timeline" id="timeline"></div>
 
-        <!-- 写真プレビュー -->
-        <div class="photo-preview-area" id="photo-preview"></div>
+        <!-- 下部固定エリア -->
+        <div class="delivery-bottom">
+            <!-- 写真プレビュー -->
+            <div class="photo-preview-area" id="photo-preview"></div>
 
-        <!-- チャット入力 -->
-        <div class="chat-input" id="chat-input-wrap">
-            <button id="photo-btn" style="border:none; background:var(--color-surface); cursor:pointer; padding:6px 8px; border-radius:50%; color:var(--color-text-sub);"><span class="material-symbols-outlined">photo_camera</span></button>
-            <input type="file" id="photo-input" accept="image/*" multiple style="display:none;">
-            <input type="text" id="chat-text" data-i18n="[placeholder]delivery.chatPlaceholder">
-            <button id="chat-send" data-i18n="delivery.send"></button>
+            <!-- チャット入力 -->
+            <div class="chat-input" id="chat-input-wrap">
+                <button id="photo-btn" style="border:none; background:var(--color-surface); cursor:pointer; padding:6px 8px; border-radius:50%; color:var(--color-text-sub);"><span class="material-symbols-outlined">photo_camera</span></button>
+                <input type="file" id="photo-input" accept="image/*" multiple style="display:none;">
+                <input type="text" id="chat-text" data-i18n="[placeholder]delivery.chatPlaceholder">
+                <button id="chat-send" data-i18n="delivery.send"></button>
+            </div>
+            <div id="chat-disabled-hint" style="display:none; text-align:center; padding:8px 16px; color:#92400e; font-size:12px;" data-i18n="delivery.chatDisabledHint"></div>
+
+            <!-- 受取確認ボタン -->
+            <div class="delivery-footer">
+                <button id="receive-btn" disabled data-i18n="delivery.receiveConfirm"></button>
+            </div>
         </div>
-        <div id="chat-disabled-hint" style="display:none; text-align:center; padding:8px 16px; color:#92400e; font-size:12px;" data-i18n="delivery.chatDisabledHint"></div>
-    </div>
-
-    <!-- 受取確認ボタン -->
-    <div class="delivery-footer">
-        <button id="receive-btn" disabled data-i18n="delivery.receiveConfirm"></button>
     </div>
 
     <script type="module">
@@ -199,12 +217,12 @@
             const statusText = i18next.exists(statusKey) ? i18next.t(statusKey) : orderData.status;
 
             document.getElementById('order-summary').innerHTML = `
-                <div>${i18next.t('delivery.statusNow', { status: statusText })}</div>
-                <div>${i18next.t('delivery.scheduledTime', { time: orderData.deliveryTime || '' })}</div>
-                <div style="margin-top:4px; font-weight:600; color:var(--color-text);">
+                <div style="font-weight:600; color:var(--color-text); font-size:14px;">
                     ${fishName} ${orderData.quantity}kg · ${farmerName}
                 </div>
-                <div style="font-size:13px;">${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''}</div>
+                <div style="font-size:12px; color:var(--color-text-sub); margin-top:2px;">
+                    ${statusText} · ${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}
+                </div>
             `;
 
             // 受取確認ボタン（delivered時のみ有効）
@@ -228,9 +246,9 @@
 
                     timeline.innerHTML += `
                         <div class="tl-chat ${isSelf ? 'self' : ''}">
-                            <div class="tl-chat__time">${timeStr}</div>
                             ${msg.text ? `<div class="tl-chat__text">${msg.text}</div>` : ''}
                             ${imgHtml}
+                            <div class="tl-chat__time">${timeStr}</div>
                         </div>`;
                 });
                 timeline.scrollTop = timeline.scrollHeight;

@@ -84,12 +84,13 @@ function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRe
 }
 
 // ── 新規登録 ──────────────────────────────────────────────────
-async function register({ loginId, displayName, password, role, location, province, district, lang }) {
+async function register({ loginId, displayName, phone, password, role, location, province, district, lang }) {
     const id = loginId.toLowerCase().trim();
 
     // バリデーション
     if (!isValidLoginId(id)) throw new Error('error.invalidLoginId');
     if (!displayName.trim()) throw new Error('error.displayNameRequired');
+    if (!phone || !String(phone).trim()) throw new Error('error.phoneRequired');
     if (password.length < 6) throw new Error('error.passwordTooShort');
     if (!['farmer', 'restaurant'].includes(role)) throw new Error('error.roleRequired');
     if (!location) throw new Error('error.locationRequired');
@@ -112,6 +113,7 @@ async function register({ loginId, displayName, password, role, location, provin
     await setDoc(doc(db, 'users', uid), {
         loginId: id,
         displayName: displayName.trim(),
+        phone: String(phone).trim(),
         role,
         location: { lat: location.lat, lng: location.lng },
         province: province || null,

@@ -112,16 +112,26 @@
         .submitted-state { text-align: center; padding: 40px 20px; }
         .submitted-state__icon { font-size: 60px; color: #16a34a; }
         .submitted-state__text { font-size: 16px; font-weight: 700; margin-top: 8px; }
+        .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
     </style>
 </head>
 
 <body>
     <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
-    <div class="page-header" style="align-items:center; padding:12px 16px;">
-        <a href="javascript:history.back()" class="page-header__back"><span class="material-symbols-outlined">arrow_back</span></a>
-        <div class="page-header__title" style="flex:1; text-align:center; font-size:16px;" data-i18n="report.title"></div>
-        <div style="width:32px;"></div>
+    <div style="max-width:480px; margin:0 auto;">
+        <div class="page-header" style="align-items:center; padding:12px 16px;">
+            <a href="javascript:history.back()" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
+            </select>
+        </div>
+
+        <div class="sub-page__title" data-i18n="report.title"></div>
     </div>
 
     <div class="report-page">
@@ -179,7 +189,7 @@
     </div>
 
     <script type="module">
-        import { initI18n } from '/js/i18n.js';
+        import { initI18n, initLangSelector } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db, storage } from '/js/firebase-config.js';
         import {
@@ -193,6 +203,7 @@
         const errorMsg = document.getElementById('error-msg');
         watchAuthState({ requireAuth: true });
         await initI18n();
+        initLangSelector();
 
         const orderId = new URLSearchParams(location.search).get('id');
         if (!orderId) { location.href = '/pages/farmer/orders.html'; }

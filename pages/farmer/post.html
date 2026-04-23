@@ -103,7 +103,7 @@
             margin: 0;
         }
 
-        .price-input {
+        input.price-input {
             width: 120px;
             padding: 10px 12px;
             border: 1.5px solid var(--color-border);
@@ -114,7 +114,7 @@
             background: #f9fafb;
         }
 
-        .price-input:focus {
+        input.price-input:focus {
             outline: none;
             border-color: var(--color-primary);
             background: #fff;
@@ -242,6 +242,19 @@
             <!-- 編集モード時のみ表示する案内 -->
             <div id="edit-notice" style="display:none; background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; border-radius:14px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.6;" data-i18n="post.editNotice"></div>
 
+            <!-- 送金先未登録の警告バナー -->
+            <div id="bank-notice" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:14px; padding:14px; margin-bottom:14px; color:#7f1d1d;">
+                <div style="display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; margin-bottom:6px;">
+                    <span class="material-symbols-outlined" style="font-size:18px;">warning</span>
+                    <span data-i18n="post.bankRequiredTitle"></span>
+                </div>
+                <div style="font-size:13px; line-height:1.5; margin-bottom:10px;" data-i18n="post.bankRequiredDesc"></div>
+                <a href="/pages/farmer/account/payment.html" style="display:inline-flex; align-items:center; gap:4px; padding:8px 14px; background:#dc2626; color:#fff; border-radius:10px; text-decoration:none; font-weight:700; font-size:13px;">
+                    <span class="material-symbols-outlined" style="font-size:16px;">account_balance_wallet</span>
+                    <span data-i18n="post.goToBankRegister"></span>
+                </a>
+            </div>
+
             <!-- エラーメッセージ -->
             <div class="error-msg" id="error-msg"></div>
 
@@ -293,9 +306,6 @@
                     <input type="file" id="photo-input" accept="image/*" multiple style="display:none">
                     <div class="photo-preview" id="photo-preview"></div>
                 </div>
-
-                <p style="font-size:13px; color:var(--color-text-sub); margin-top:8px;" data-i18n="post.locationNote">
-                </p>
             </div>
 
             <!-- 販売価格（目安から調整） -->
@@ -594,6 +604,18 @@
         waitForUserData(async () => {
             farmerProvince = window.currentUserData.province || null;
 
+            // 送金先情報チェック（accountName と qrLink/qrImageUrl のどちらかが必須）
+            const userData = window.currentUserData || {};
+            const hasAccountName = !!(userData.accountName && String(userData.accountName).trim());
+            const hasQr = !!(userData.qrLink || userData.qrImageUrl);
+            if (!hasAccountName || !hasQr) {
+                document.getElementById('bank-notice').style.display = 'block';
+                const sb = document.getElementById('submit-btn');
+                sb.disabled = true;
+                sb.style.opacity = '0.5';
+                sb.style.cursor = 'not-allowed';
+            }
+
             // 編集モードの場合は既存データをロード
             if (isEditMode) await loadExistingForEdit();
 
@@ -668,6 +690,16 @@
 
         submitBtn.addEventListener('click', async () => {
             errorMsg.classList.remove('show');
+
+            // 送金先情報が未登録なら中断（UIでもdisabledだが念のため）
+            const ud = window.currentUserData || {};
+            const hasAccountNameSafe = !!(ud.accountName && String(ud.accountName).trim());
+            const hasQrSafe = !!(ud.qrLink || ud.qrImageUrl);
+            if (!hasAccountNameSafe || !hasQrSafe) {
+                errorMsg.textContent = i18next.t('post.bankRequiredDesc');
+                errorMsg.classList.add('show');
+                return;
+            }
 
             const fishTypeSelect = document.getElementById('fish-type').value;
             // コードで保存（例: "clarias_catfish"）。「その他」の場合のみ手入力テキスト

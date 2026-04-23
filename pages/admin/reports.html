@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink Admin</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        body { background: #f8fafc; }
+        .admin-shell { max-width: 1280px; margin: 0 auto; padding: 24px; }
+        .admin-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+        .admin-header__right { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        .admin-brand { font-size: 13px; color: #64748b; margin-bottom: 2px; }
+        .admin-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: #0f172a; }
+        .admin-subtitle { font-size: 13px; color: #475569; margin-top: 4px; }
+        .admin-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+        .admin-nav a { text-decoration: none; color: #475569; padding: 8px 14px; border-radius: 999px; background: #fff; border: 1px solid #e2e8f0; font-size: 13px; font-weight: 600; white-space: nowrap; }
+        .admin-nav a.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+        .admin-nav a:hover:not(.active) { background: #f1f5f9; }
+        #lang-selector { width: auto; font-size: 13px; padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 20px; background: #fff; color: #475569; }
+
+        .tab-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 10px 12px; }
+        .tab-btn { padding: 7px 14px; border-radius: 999px; border: none; background: #f1f5f9; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .tab-btn.active { background: #0f172a; color: #fff; }
+
+        .report-list { display: flex; flex-direction: column; gap: 12px; }
+        .report-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 16px 18px;
+            scroll-margin-top: 80px;
+        }
+        .report-card.open { border-left: 4px solid #f59e0b; }
+        .report-card.resolved { border-left: 4px solid #16a34a; opacity: 0.85; }
+        .report-card__head {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 10px; margin-bottom: 10px; flex-wrap: wrap;
+        }
+        .report-card__type { font-size: 16px; font-weight: 700; color: #0f172a; }
+        .report-card__type .badge {
+            display: inline-block; font-size: 11px; font-weight: 600;
+            padding: 3px 10px; border-radius: 999px; margin-left: 8px;
+            background: #fef3c7; color: #854d0e;
+        }
+        .report-card__status {
+            display: inline-block; font-size: 11px; font-weight: 700;
+            padding: 4px 12px; border-radius: 999px;
+        }
+        .report-card__status.open { background: #fef3c7; color: #92400e; }
+        .report-card__status.resolved { background: #d1fae5; color: #065f46; }
+        .report-card__meta {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+            font-size: 13px; color: #475569;
+            margin-bottom: 10px;
+        }
+        .report-card__meta .k { color: #94a3b8; font-size: 12px; }
+        .report-card__meta .v { color: #0f172a; font-weight: 500; }
+        .report-card__meta a { color: #0369a1; text-decoration: none; }
+        .phone-wrap { margin-top: 4px; }
+        .phone-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #ecfdf5; color: #065f46;
+            border-radius: 999px; padding: 3px 10px;
+            font-size: 12px; font-weight: 600;
+            text-decoration: none;
+        }
+        .phone-chip .material-symbols-outlined { font-size: 14px; }
+        .phone-chip:hover { background: #d1fae5; }
+        .phone-chip--empty { background: #f1f5f9; color: #94a3b8; font-weight: 500; }
+        .report-card__detail {
+            background: #f8fafc; border-radius: 10px;
+            padding: 10px 12px; font-size: 13px; white-space: pre-wrap;
+            color: #0f172a; margin-bottom: 10px;
+        }
+        .report-card__photos { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .report-card__photos a {
+            display: block; width: 96px; height: 96px; border-radius: 10px;
+            overflow: hidden; border: 1px solid #e2e8f0;
+        }
+        .report-card__photos img { width: 100%; height: 100%; object-fit: cover; }
+        .report-card__actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .btn-resolve {
+            background: #0f172a; color: #fff;
+            border: none; border-radius: 10px;
+            padding: 8px 14px; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+        }
+        .btn-resolve:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-reopen {
+            background: #fff; color: #475569;
+            border: 1px solid #cbd5e1; border-radius: 10px;
+            padding: 8px 14px; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+        }
+        .btn-view-order {
+            background: #fff; color: #334155;
+            border: 1px solid #cbd5e1; border-radius: 10px;
+            padding: 8px 14px; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit; text-decoration: none;
+        }
+
+        .empty-box { background: #fff; border: 1px dashed #cbd5e1; border-radius: 14px; padding: 48px 16px; text-align: center; color: #94a3b8; }
+
+        @media (max-width: 720px) {
+            .admin-shell { padding: 14px; }
+            .admin-header { flex-direction: column; align-items: stretch; gap: 12px; }
+            .admin-title { font-size: 20px; }
+            .admin-nav a { padding: 7px 12px; font-size: 12px; }
+            .tab-row { padding: 8px; gap: 6px; overflow-x: auto; flex-wrap: nowrap; }
+            .tab-btn { padding: 6px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+            .report-card__meta { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="admin-shell">
+        <div class="admin-header">
+            <div>
+                <div class="admin-brand" data-i18n="admin.brand"></div>
+                <div class="admin-title" data-i18n="admin.reports.title"></div>
+                <div class="admin-subtitle" data-i18n="admin.reports.subtitle"></div>
+            </div>
+            <div class="admin-header__right">
+                <nav class="admin-nav">
+                    <a href="/pages/admin/index.html" data-i18n="admin.navTransactions"></a>
+                    <a href="/pages/admin/settings.html" data-i18n="admin.navSettings"></a>
+                    <a href="/pages/admin/caa.html" data-i18n="admin.navCaa"></a>
+                    <a href="/pages/admin/reports.html" class="active" data-i18n="admin.navReports"></a>
+                    <a href="#" id="logout-btn" data-i18n="admin.navLogout"></a>
+                </nav>
+                <select id="lang-selector">
+                    <option value="km">ខ្មែរ</option>
+                    <option value="en">ENGLISH</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="tab-row" id="tab-row"></div>
+        <div id="report-container"></div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState, logout } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logout();
+        });
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        const TABS = ['open', 'resolved', 'all'];
+        let currentTab = 'open';
+        let allReports = [];
+        let userCache = {};
+
+        function buildTabs() {
+            const row = document.getElementById('tab-row');
+            row.innerHTML = '';
+            TABS.forEach(key => {
+                const btn = document.createElement('button');
+                btn.className = 'tab-btn' + (key === currentTab ? ' active' : '');
+                btn.textContent = i18next.t(`admin.reports.tab${key.charAt(0).toUpperCase() + key.slice(1)}`);
+                btn.addEventListener('click', () => {
+                    currentTab = key;
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    render();
+                });
+                row.appendChild(btn);
+            });
+        }
+
+        function formatDate(ts) {
+            const d = ts?.toDate?.() || new Date(ts || 0);
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function typeLabel(t) { return i18next.t(`admin.reports.type${t.charAt(0).toUpperCase() + t.slice(1)}`) || t; }
+        function roleLabel(r) { return i18next.t(`admin.reports.role${r.charAt(0).toUpperCase() + r.slice(1)}`) || r; }
+
+        async function preloadUsers(reports) {
+            const uids = new Set();
+            reports.forEach(r => {
+                if (r.fromUid) uids.add(r.fromUid);
+                if (r.reportedUid) uids.add(r.reportedUid);
+            });
+            await Promise.all([...uids].filter(u => !userCache[u]).map(async uid => {
+                const s = await getDoc(doc(db, 'users', uid));
+                if (s.exists()) userCache[uid] = s.data();
+            }));
+        }
+
+        function render() {
+            const filtered = allReports.filter(r => {
+                if (currentTab === 'all') return true;
+                if (currentTab === 'open') return r.status !== 'resolved';
+                return r.status === 'resolved';
+            });
+
+            const container = document.getElementById('report-container');
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="empty-box">${i18next.t('admin.reports.empty')}</div>`;
+                return;
+            }
+
+            container.innerHTML = `<div class="report-list">${filtered.map(r => {
+                const fromRole = r.fromRole || 'restaurant';
+                const reporter = userCache[r.fromUid]?.displayName || '-';
+                const reporterPhone = userCache[r.fromUid]?.phone || '';
+                const target = userCache[r.reportedUid]?.displayName || '-';
+                const targetPhone = userCache[r.reportedUid]?.phone || '';
+                const isOpen = r.status !== 'resolved';
+                const statusKey = isOpen ? 'open' : 'resolved';
+                const photos = Array.isArray(r.photos) ? r.photos : [];
+
+                const phoneChip = (p) => p
+                    ? `<a class="phone-chip" href="tel:${escapeHtml(p)}"><span class="material-symbols-outlined">call</span>${escapeHtml(p)}</a>`
+                    : `<span class="phone-chip phone-chip--empty">${i18next.t('admin.reports.noPhone')}</span>`;
+
+                return `
+                    <div class="report-card ${statusKey}" id="report-${r.id}">
+                        <div class="report-card__head">
+                            <div class="report-card__type">
+                                ${escapeHtml(typeLabel(r.type || 'other'))}
+                                <span class="badge">${escapeHtml(roleLabel(fromRole))}</span>
+                            </div>
+                            <span class="report-card__status ${statusKey}">${i18next.t('admin.reports.status' + (isOpen ? 'Open' : 'Resolved'))}</span>
+                        </div>
+                        <div class="report-card__meta">
+                            <div><div class="k">${i18next.t('admin.reports.colDate')}</div><div class="v">${formatDate(r.createdAt)}</div></div>
+                            <div><div class="k">${i18next.t('admin.reports.colOrder')}</div><div class="v">${r.orderId ? `<a href="/pages/admin/order.html?id=${r.orderId}">${escapeHtml(r.orderId)}</a>` : '-'}</div></div>
+                            <div>
+                                <div class="k">${i18next.t('admin.reports.colReporter')}</div>
+                                <div class="v">${escapeHtml(reporter)}</div>
+                                <div class="phone-wrap">${phoneChip(reporterPhone)}</div>
+                            </div>
+                            <div>
+                                <div class="k">${i18next.t('admin.reports.colTarget')}</div>
+                                <div class="v">${escapeHtml(target)}</div>
+                                <div class="phone-wrap">${phoneChip(targetPhone)}</div>
+                            </div>
+                        </div>
+                        ${r.detail
+                            ? `<div class="report-card__detail">${escapeHtml(r.detail)}</div>`
+                            : `<div class="report-card__detail">${i18next.t('admin.reports.detailEmpty')}</div>`
+                        }
+                        ${photos.length
+                            ? `<div class="report-card__photos">${photos.map(u => `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="photo"></a>`).join('')}</div>`
+                            : ''
+                        }
+                        <div class="report-card__actions">
+                            ${r.orderId ? `<a class="btn-view-order" href="/pages/admin/order.html?id=${r.orderId}">${i18next.t('admin.reports.viewDetail')}</a>` : ''}
+                            ${isOpen
+                                ? `<button class="btn-resolve" data-id="${r.id}">${i18next.t('admin.reports.markResolved')}</button>`
+                                : `<button class="btn-reopen" data-id="${r.id}">${i18next.t('admin.reports.markOpen')}</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('')}</div>`;
+
+            // アクションバインド
+            container.querySelectorAll('.btn-resolve').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm(i18next.t('admin.reports.confirmResolve'))) return;
+                    btn.disabled = true;
+                    try {
+                        await updateDoc(doc(db, 'reports', btn.dataset.id), {
+                            status: 'resolved',
+                            resolvedAt: new Date(),
+                            resolvedBy: window.currentUser?.uid || null,
+                        });
+                    } catch (err) {
+                        console.error(err);
+                        alert(err.message || 'failed');
+                        btn.disabled = false;
+                    }
+                });
+            });
+            container.querySelectorAll('.btn-reopen').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    btn.disabled = true;
+                    try {
+                        await updateDoc(doc(db, 'reports', btn.dataset.id), { status: 'open' });
+                    } catch (err) {
+                        console.error(err);
+                        alert(err.message || 'failed');
+                        btn.disabled = false;
+                    }
+                });
+            });
+
+            // URLハッシュがあれば該当レポートへスクロール
+            if (location.hash) {
+                const el = document.querySelector(location.hash);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        waitForUserData(() => {
+            if (window.currentUserData?.role !== 'admin') {
+                alert('Admin access required');
+                location.href = '/index.html';
+                return;
+            }
+            loading.classList.add('show');
+            const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
+            onSnapshot(q, async (snap) => {
+                allReports = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                await preloadUsers(allReports);
+                buildTabs();
+                render();
+                loading.classList.remove('show');
+            }, (err) => {
+                console.error(err);
+                loading.classList.remove('show');
+            });
+        });
+
+        onLanguageChange(() => {
+            buildTabs();
+            render();
+        });
+    </script>
+</body>
+
+</html>

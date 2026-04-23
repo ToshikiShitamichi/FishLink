@@ -64,7 +64,7 @@
         <div class="page-header" style="align-items:center;">
             <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector" style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
-                <option value="km">ខ្មែរ</option><option value="en">EN</option><option value="ja">JA</option>
+                <option value="km">ខ្មែរ</option><option value="en">ENGLISH</option><option value="ja">日本語</option>
             </select>
             <div class="header-actions">
                 <button class="header-action-btn" data-popover="notif" type="button" aria-label="notifications">
@@ -156,7 +156,7 @@
             const showReviewLink = isCompleted && order.paymentStatus === 'paid';
 
             return `
-                <a class="order-item" href="${href}">
+                <a class="order-item" id="order-${d.id}" href="${href}">
                     <div class="order-item__top">
                         <div class="order-item__fish">${fishName}</div>
                         <div class="order-item__status ${stClass}">${statusText}</div>
@@ -285,6 +285,27 @@
                         ? i18next.t('orders.declinedSectionOpen', { count: declined.length })
                         : i18next.t('orders.declinedSectionClosed', { count: declined.length });
                 });
+
+                // 通知からの遷移時に該当注文までスクロール
+                if (location.hash) {
+                    let target;
+                    try { target = document.querySelector(location.hash); } catch (e) { target = null; }
+                    if (target) {
+                        const accBody = target.closest('.accordion-body');
+                        if (accBody && !accBody.classList.contains('open')) {
+                            const hdrId = accBody.id.replace('-body', '');
+                            document.getElementById(hdrId)?.click();
+                        }
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                target.style.transition = 'box-shadow 0.4s';
+                                target.style.boxShadow = '0 0 0 3px #fbbf24';
+                                setTimeout(() => { target.style.boxShadow = ''; }, 2500);
+                            });
+                        });
+                    }
+                }
 
             } catch (err) {
                 console.error(err);

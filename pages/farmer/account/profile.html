@@ -21,6 +21,14 @@
         .acc-row textarea { width: 100%; border: 1px solid var(--color-border); border-radius: 10px; padding: 8px 10px; font-size: 14px; font-family: inherit; margin-top: 4px; min-height: 80px; resize: vertical; }
         .pond-box img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; display: block; }
         .pond-placeholder { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; color: #94a3b8; background: #fff; border-radius: 12px; border: 1px dashed var(--color-border); }
+        .avatar-box { display: flex; justify-content: center; }
+        .avatar-circle {
+            width: 120px; height: 120px; border-radius: 50%;
+            background: #fff; border: 1px dashed var(--color-border);
+            overflow: hidden; display: flex; align-items: center; justify-content: center;
+            color: #94a3b8;
+        }
+        .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
         .img-actions { display: flex; justify-content: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
         .img-actions button { background: #fff; border: 1px solid var(--color-border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--color-text); font-family: inherit; }
         .img-actions button.danger { color: #b91c1c; border-color: #fecaca; }
@@ -41,8 +49,8 @@
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option>
-                <option value="en">EN</option>
-                <option value="ja">JA</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
             </select>
         </div>
 
@@ -59,6 +67,14 @@
 
         <div id="view-mode">
             <div class="acc-row">
+                <div class="acc-row__label" data-i18n="profile.avatar"></div>
+                <div class="avatar-box">
+                    <div class="avatar-circle" id="v-avatar">
+                        <span class="material-symbols-outlined" style="font-size:56px;">person</span>
+                    </div>
+                </div>
+            </div>
+            <div class="acc-row">
                 <div class="acc-row__label" data-i18n="profile.farmerMessage"></div>
                 <div class="acc-row__value" id="v-message">-</div>
             </div>
@@ -71,6 +87,19 @@
         </div>
 
         <div id="edit-mode" style="display:none;">
+            <div class="acc-row">
+                <div class="acc-row__label" data-i18n="profile.avatar"></div>
+                <div class="avatar-box">
+                    <div class="avatar-circle" id="e-avatar">
+                        <span class="material-symbols-outlined" style="font-size:56px;">person</span>
+                    </div>
+                </div>
+                <div class="img-actions">
+                    <button type="button" id="btn-avatar-upload" data-i18n="profile.uploadPhoto"></button>
+                    <button type="button" id="btn-avatar-remove" class="danger" data-i18n="profile.removePhoto"></button>
+                    <input type="file" id="avatar-file" accept="image/*" style="display:none;">
+                </div>
+            </div>
             <div class="acc-row">
                 <div class="acc-row__label" data-i18n="profile.farmerMessage"></div>
                 <textarea id="in-message" rows="3" data-i18n="[placeholder]profile.messagePlaceholder"></textarea>
@@ -108,7 +137,7 @@
         initLangSelector();
 
         let userData = null;
-        let editState = { pondPhotoUrl: null, pondFile: null, pondRemoved: false };
+        let editState = { pondPhotoUrl: null, pondFile: null, pondRemoved: false, avatarUrl: null, avatarFile: null, avatarRemoved: false };
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
@@ -124,15 +153,29 @@
             }
         }
 
+        function showAvatar(id, url) {
+            const box = document.getElementById(id);
+            if (url) {
+                box.innerHTML = `<img src="${url}" alt="avatar">`;
+            } else {
+                box.innerHTML = `<span class="material-symbols-outlined" style="font-size:56px;">person</span>`;
+            }
+        }
+
         function renderView() {
             document.getElementById('v-message').textContent = userData.farmerMessage || '-';
             showPond('v-pond', userData.pondPhotoUrl || null);
+            showAvatar('v-avatar', userData.avatarUrl || null);
         }
 
         document.getElementById('btn-edit').addEventListener('click', () => {
             document.getElementById('in-message').value = userData.farmerMessage || '';
-            editState = { pondPhotoUrl: userData.pondPhotoUrl || null, pondFile: null, pondRemoved: false };
+            editState = {
+                pondPhotoUrl: userData.pondPhotoUrl || null, pondFile: null, pondRemoved: false,
+                avatarUrl: userData.avatarUrl || null, avatarFile: null, avatarRemoved: false,
+            };
             showPond('e-pond', editState.pondPhotoUrl);
+            showAvatar('e-avatar', editState.avatarUrl);
             document.getElementById('view-mode').style.display = 'none';
             document.getElementById('edit-mode').style.display = 'block';
             document.getElementById('btn-edit').style.display = 'none';
@@ -159,6 +202,23 @@
             document.getElementById('pond-file').value = '';
             showPond('e-pond', null);
         });
+        document.getElementById('btn-avatar-upload').addEventListener('click', () => document.getElementById('avatar-file').click());
+        document.getElementById('avatar-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            editState.avatarFile = file;
+            editState.avatarRemoved = false;
+            const reader = new FileReader();
+            reader.onload = (ev) => showAvatar('e-avatar', ev.target.result);
+            reader.readAsDataURL(file);
+        });
+        document.getElementById('btn-avatar-remove').addEventListener('click', () => {
+            editState.avatarFile = null;
+            editState.avatarRemoved = true;
+            editState.avatarUrl = null;
+            document.getElementById('avatar-file').value = '';
+            showAvatar('e-avatar', null);
+        });
         document.getElementById('btn-save').addEventListener('click', async () => {
             const uid = window.currentUser?.uid;
             if (!uid) return;
@@ -175,12 +235,22 @@
                 } else if (editState.pondRemoved) {
                     pondPhotoUrl = null;
                 }
+                let avatarUrl = editState.avatarUrl;
+                if (editState.avatarFile) {
+                    const storageRef = ref(storage, `profile/${uid}/avatar_${Date.now()}_${editState.avatarFile.name}`);
+                    await uploadBytes(storageRef, editState.avatarFile);
+                    avatarUrl = await getDownloadURL(storageRef);
+                } else if (editState.avatarRemoved) {
+                    avatarUrl = null;
+                }
                 await updateDoc(doc(db, 'users', uid), {
                     farmerMessage: farmerMessage || null,
                     pondPhotoUrl: pondPhotoUrl || null,
+                    avatarUrl: avatarUrl || null,
                 });
                 userData.farmerMessage = farmerMessage || null;
                 userData.pondPhotoUrl = pondPhotoUrl || null;
+                userData.avatarUrl = avatarUrl || null;
                 renderView();
                 document.getElementById('btn-cancel').click();
             } catch (err) {

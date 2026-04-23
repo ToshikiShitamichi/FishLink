@@ -143,16 +143,26 @@
         .listing-mini__meta { font-size: 11px; color: var(--color-text-sub); margin-top: 2px; }
 
         .empty-small { text-align: center; padding: 20px; color: var(--color-text-sub); font-size: 13px; }
+        .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
     </style>
 </head>
 
 <body>
     <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
-    <div class="page-header" style="align-items:center; padding:12px 16px;">
-        <a href="javascript:history.back()" class="page-header__back"><span class="material-symbols-outlined">arrow_back</span></a>
-        <div class="page-header__title" style="flex:1; text-align:center; font-size:16px;" data-i18n="profile.farmerTitle"></div>
-        <div style="width:32px;"></div>
+    <div style="max-width:480px; margin:0 auto;">
+        <div class="page-header" style="align-items:center; padding:12px 16px;">
+            <a href="javascript:history.back()" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
+            </select>
+        </div>
+
+        <div class="sub-page__title" data-i18n="profile.farmerTitle"></div>
     </div>
 
     <div class="profile-page">
@@ -220,7 +230,7 @@
     </div>
 
     <script type="module">
-        import { initI18n } from '/js/i18n.js';
+        import { initI18n, initLangSelector } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import {
@@ -230,6 +240,7 @@
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
         await initI18n();
+        initLangSelector();
 
         const targetUid = new URLSearchParams(location.search).get('id');
         if (!targetUid) { history.back(); }
@@ -261,6 +272,10 @@
                 document.getElementById('name').textContent = user.displayName || '-';
                 const loc = [user.province, user.district].filter(Boolean).join(', ') || '-';
                 document.getElementById('location').textContent = loc;
+
+                if (user.avatarUrl) {
+                    document.getElementById('avatar').innerHTML = `<img src="${user.avatarUrl}" alt="avatar">`;
+                }
 
                 const avg = Number(user.avgRating || 0);
                 const count = Number(user.reviewCount || 0);

@@ -179,6 +179,10 @@ label {
 
 input[type="text"],
 input[type="password"],
+input[type="tel"],
+input[type="url"],
+input[type="email"],
+input[type="number"],
 select {
     width: 100%;
     padding: 12px 14px;
@@ -608,3 +612,13 @@ select:focus {
 .popover-item__title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
 .popover-item__body { font-size: 12px; color: var(--color-text-sub); line-height: 1.4; }
 .popover-item__time { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+
+/* ── 言語セレクタ：文字を中央揃え（文字列長が言語によって異なるため） ── */
+#lang-selector {
+    text-align: center;
+    text-align-last: center;
+    -moz-text-align-last: center;
+}
+#lang-selector option {
+    text-align: center;
+}

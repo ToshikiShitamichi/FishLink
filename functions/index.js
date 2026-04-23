@@ -57,6 +57,24 @@ async function clearOrderTodos(uid, types, orderId) {
   }
 }
 
+// 指定 orderId に紐づく open な todo を type 問わず全て clear（辞退・完了時のクリーンアップ用）
+async function clearAllTodosForOrder(uid, orderId) {
+  if (!uid || !orderId) return;
+  const snap = await db.collection(`todos/${uid}/items`)
+    .where('orderId', '==', orderId)
+    .where('status', '==', 'open')
+    .get();
+  if (snap.empty) return;
+  const admin = require("firebase-admin/firestore");
+  const batch = db.batch();
+  snap.forEach(d => batch.update(d.ref, {
+    status: 'completed',
+    completedAt: admin.FieldValue.serverTimestamp(),
+  }));
+  await batch.commit();
+  console.log('All todos cleared for order:', uid, orderId, snap.size);
+}
+
 // 管理者UID取得（全管理者）
 async function getAdminUids() {
   const snap = await db.collection('users').where('role', '==', 'admin').get();
@@ -138,6 +156,24 @@ const MESSAGES = {
     en: { title: "Delivery is tomorrow", body: "{{fish}} {{qty}}kg\nDelivery: {{date}} {{time}}\n{{farmer}}" },
     km: { title: "ការដឹកជញ្ជូននៅថ្ងៃស្អែក", body: "{{fish}} {{qty}}kg\nដឹកជញ្ជូន: {{date}} {{time}}\n{{farmer}}" },
   },
+  adminReport: {
+    ja: { title: "新しいトラブル報告", body: "{{fromRole}} → {{type}}\n{{reporter}}" },
+    en: { title: "New trouble report", body: "{{fromRole}} → {{type}}\n{{reporter}}" },
+    km: { title: "របាយការណ៍បញ្ហាថ្មី", body: "{{fromRole}} → {{type}}\n{{reporter}}" },
+  },
+};
+
+const REPORT_TYPE_LABELS = {
+  shortage:      { ja: "数量不足", en: "Shortage", km: "បរិមាណខ្វះ" },
+  quality:       { ja: "品質",     en: "Quality",  km: "គុណភាព" },
+  delay:         { ja: "配送遅延", en: "Delay",    km: "យឺត" },
+  reception:     { ja: "受取対応", en: "Reception", km: "ការទទួល" },
+  communication: { ja: "やり取り", en: "Communication", km: "ទំនាក់ទំនង" },
+  other:         { ja: "その他",   en: "Other",    km: "ផ្សេងទៀត" },
+};
+const REPORTER_ROLE_LABELS = {
+  restaurant: { ja: "レストラン", en: "Restaurant", km: "ភោជនីយដ្ឋាន" },
+  farmer:     { ja: "農家",       en: "Farmer",     km: "កសិករ" },
 };
 
 function getMessage(type, lang, vars) {
@@ -206,7 +242,7 @@ exports.onOrderCreated = onDocumentCreated(
     await notifyUser(order.farmerId, {
       type: "new_order",
       title, body,
-      url: `/pages/farmer/delivery.html?id=${event.params.orderId}`,
+      url: `/pages/farmer/orders.html#order-${event.params.orderId}`,
       orderId: event.params.orderId,
     });
 
@@ -238,9 +274,10 @@ exports.onOrderUpdated = onDocumentUpdated(
         await clearTodo(after.farmerId, 'farmer_approve', orderId);
         await createTodo(after.farmerId, 'farmer_prepare', orderId);
       }
-      // 辞退 → 農家の承認待ち解消
+      // 辞退 → 農家・レストラン側の関連todoを全て解消
       if (after.status === "declined") {
-        await clearTodo(after.farmerId, 'farmer_approve', orderId);
+        await clearAllTodosForOrder(after.farmerId, orderId);
+        await clearAllTodosForOrder(after.restaurantId, orderId);
       }
       // 準備中 → 準備todo解消＋配送todo作成
       if (after.status === "preparing") {
@@ -299,8 +336,9 @@ exports.onOrderUpdated = onDocumentUpdated(
 
     if (!statusChanged) return;
 
-    // 辞退時：在庫復元
-    if (after.status === "declined" && after.listingId && after.quantity > 0) {
+    // 辞退時：在庫復元（自動辞退は autoDeclineExpiredOrders 内で復元済みのためスキップ）
+    if (after.status === "declined" && after.listingId && after.quantity > 0
+        && after.autoDeclined !== true) {
       const listingRef = db.doc(`fishListings/${after.listingId}`);
       await listingRef.update({
         stock: admin.FieldValue.increment(after.quantity),
@@ -419,94 +457,202 @@ exports.onMessageCreated = onDocumentCreated(
   }
 );
 
+// 期限切れ注文を辞退処理（ステータス更新／在庫復元／todo解消／農家・レストラン通知まで一括）
+async function autoDeclineOrder(orderDoc, reason = "承認期限切れによる自動辞退") {
+  const admin = require("firebase-admin/firestore");
+  const order = orderDoc.data();
+  const orderId = orderDoc.id;
+
+  // すでに declined 済みならスキップ（冪等性）
+  if (order.status === "declined") return;
+
+  // ステータスを declined に変更（autoDeclined フラグで通知経路を分岐）
+  await orderDoc.ref.update({
+    status: "declined",
+    declineReason: reason,
+    autoDeclined: true,
+  });
+
+  // 在庫復元
+  if (order.listingId && order.quantity > 0) {
+    await db.doc(`fishListings/${order.listingId}`).update({
+      stock: admin.FieldValue.increment(order.quantity),
+    });
+  }
+
+  // 農家側・レストラン側の関連todoを全て解消（念のため type 問わず）
+  await clearAllTodosForOrder(order.farmerId, orderId);
+  await clearAllTodosForOrder(order.restaurantId, orderId);
+
+  // 魚種名（snap優先）
+  let fishName = order.snapFishType || "";
+  if (!fishName && order.listingId) {
+    const listingSnap = await db.doc(`fishListings/${order.listingId}`).get();
+    fishName = listingSnap.data()?.fishType || "";
+  }
+
+  // ユーザー情報
+  const [farmerSnap, restSnap] = await Promise.all([
+    db.doc(`users/${order.farmerId}`).get(),
+    db.doc(`users/${order.restaurantId}`).get(),
+  ]);
+  const farmerData = farmerSnap.data() || {};
+  const restData = restSnap.data() || {};
+  const farmerName = farmerData.displayName || "Farmer";
+  const restName = restData.displayName || "Restaurant";
+
+  // 農家へ通知（通知履歴 + FCM）
+  {
+    const { title, body } = getMessage("expiredDeclinedFarmer", farmerData.lang || "en", {
+      restaurant: restName,
+      fish: fishName,
+      qty: String(order.quantity || ""),
+    });
+    await notifyUser(order.farmerId, {
+      type: "order_expired_declined",
+      title, body,
+      url: "/pages/farmer/orders.html",
+      orderId,
+    });
+  }
+
+  // レストランへ通知
+  {
+    const { title, body } = getMessage("expiredDeclinedRestaurant", restData.lang || "en", {
+      farmer: farmerName,
+      fish: fishName,
+      qty: String(order.quantity || ""),
+    });
+    await notifyUser(order.restaurantId, {
+      type: "order_expired_declined",
+      title, body,
+      url: "/pages/restaurant/orders.html",
+      orderId,
+    });
+  }
+
+  console.log("Auto-declined expired order:", orderId);
+}
+
 // ── 期限切れ注文の自動辞退（5分ごとにチェック） ──────────────
 exports.autoDeclineExpiredOrders = onSchedule(
   { schedule: "every 5 minutes", region: "asia-southeast1" },
   async () => {
-    const admin = require("firebase-admin/firestore");
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
-    const snap = await db.collection("orders")
-      .where("status", "==", "pending")
-      .where("createdAt", "<", oneHourAgo)
-      .get();
+    let snap;
+    try {
+      snap = await db.collection("orders")
+        .where("status", "==", "pending")
+        .where("createdAt", "<", oneHourAgo)
+        .get();
+    } catch (e) {
+      console.warn("autoDeclineExpiredOrders query failed:", e.message);
+      await sweepOrphanTodos();
+      return;
+    }
 
     if (snap.empty) {
       console.log("No expired orders");
+      await sweepOrphanTodos();
       return;
     }
 
     for (const doc of snap.docs) {
-      const order = doc.data();
-
-      // ステータスを declined に変更（autoDeclined フラグで通知経路を分岐）
-      await doc.ref.update({
-        status: "declined",
-        declineReason: "承認期限切れによる自動辞退",
-        autoDeclined: true,
-      });
-
-      // 在庫復元
-      if (order.listingId && order.quantity > 0) {
-        await db.doc(`fishListings/${order.listingId}`).update({
-          stock: admin.FieldValue.increment(order.quantity),
-        });
-      }
-
-      // 農家の承認todo解消
-      await clearTodo(order.farmerId, 'farmer_approve', doc.id);
-
-      // 魚種名（snap優先）
-      let fishName = order.snapFishType || "";
-      if (!fishName && order.listingId) {
-        const listingSnap = await db.doc(`fishListings/${order.listingId}`).get();
-        fishName = listingSnap.data()?.fishType || "";
-      }
-
-      // ユーザー情報
-      const [farmerSnap, restSnap] = await Promise.all([
-        db.doc(`users/${order.farmerId}`).get(),
-        db.doc(`users/${order.restaurantId}`).get(),
-      ]);
-      const farmerData = farmerSnap.data() || {};
-      const restData = restSnap.data() || {};
-      const farmerName = farmerData.displayName || "Farmer";
-      const restName = restData.displayName || "Restaurant";
-
-      // 農家へ通知
-      {
-        const { title, body } = getMessage("expiredDeclinedFarmer", farmerData.lang || "en", {
-          restaurant: restName,
-          fish: fishName,
-          qty: String(order.quantity || ""),
-        });
-        await notifyUser(order.farmerId, {
-          type: "order_expired_declined",
-          title, body,
-          url: "/pages/farmer/orders.html",
-          orderId: doc.id,
-        });
-      }
-
-      // レストランへ通知
-      {
-        const { title, body } = getMessage("expiredDeclinedRestaurant", restData.lang || "en", {
-          farmer: farmerName,
-          fish: fishName,
-          qty: String(order.quantity || ""),
-        });
-        await notifyUser(order.restaurantId, {
-          type: "order_expired_declined",
-          title, body,
-          url: "/pages/restaurant/orders.html",
-          orderId: doc.id,
-        });
-      }
-
-      console.log("Auto-declined expired order:", doc.id);
+      await autoDeclineOrder(doc);
     }
+
+    // 孤立した todo を一括クリーンアップ
+    await sweepOrphanTodos();
   }
 );
+
+// todoのtype → 対象orderが取りうるべき order.status のセット
+// （下記以外の status の場合、その todo は孤立として扱って閉じる）
+const TODO_VALID_STATUSES = {
+  farmer_approve: ['pending'],
+  farmer_prepare: ['approved'],
+  farmer_deliver: ['preparing'],
+  farmer_complete_delivery: ['delivering'],
+  rest_receive: ['delivered'],
+  rest_pay: ['completed'],
+  farmer_review: ['delivered', 'completed'],
+  rest_review: ['delivered', 'completed'],
+  farmer_reply: ['pending', 'approved', 'preparing', 'delivering', 'delivered', 'completed'],
+  rest_reply: ['pending', 'approved', 'preparing', 'delivering', 'delivered', 'completed'],
+};
+
+async function sweepOrphanTodos() {
+  const admin = require("firebase-admin/firestore");
+
+  // STEP 1: autoDecline がまだ走っていない期限切れ pending 注文をここで辞退させる
+  // （scheduled function が失敗している場合のフォールバック。通知も忘れずに送る）
+  try {
+    const pendingSnap = await db.collection("orders")
+      .where("status", "==", "pending")
+      .get();
+    const oneHourAgoMs = Date.now() - 60 * 60 * 1000;
+    for (const orderDoc of pendingSnap.docs) {
+      const order = orderDoc.data();
+      const createdAtMs = order.createdAt?.toMillis?.() || 0;
+      if (createdAtMs === 0 || createdAtMs > oneHourAgoMs) continue;
+      await autoDeclineOrder(orderDoc, "承認期限切れによる自動辞退（スイープ）");
+    }
+  } catch (e) {
+    console.warn('Sweep: expired pending decline failed:', e.message);
+  }
+
+  // STEP 2: 農家・レストラン両方のユーザーの todo を走査
+  const userSnap = await db.collection('users')
+    .where('role', 'in', ['farmer', 'restaurant'])
+    .get();
+
+  let count = 0;
+  for (const userDoc of userSnap.docs) {
+    const uid = userDoc.id;
+    const todosSnap = await db.collection(`todos/${uid}/items`)
+      .where('status', '==', 'open')
+      .get();
+
+    for (const todoDoc of todosSnap.docs) {
+      const todo = todoDoc.data();
+      if (!todo.type) continue;
+      const validStatuses = TODO_VALID_STATUSES[todo.type];
+      if (!validStatuses) continue;
+
+      let shouldClear = false;
+
+      if (!todo.orderId) {
+        shouldClear = true;
+      } else {
+        const orderSnap = await db.doc(`orders/${todo.orderId}`).get();
+        if (!orderSnap.exists) {
+          shouldClear = true;
+        } else {
+          const orderStatus = orderSnap.data().status;
+          shouldClear = orderStatus === 'declined' || !validStatuses.includes(orderStatus);
+        }
+      }
+
+      // フォールバック: farmer_approve は承認期限 60 分なので、90 分以上経った open todo は孤立扱い
+      if (!shouldClear && todo.type === 'farmer_approve' && todo.createdAt) {
+        const todoAgeMs = Date.now() - todo.createdAt.toMillis();
+        if (todoAgeMs > 90 * 60 * 1000) {
+          shouldClear = true;
+        }
+      }
+
+      if (shouldClear) {
+        await todoDoc.ref.update({
+          status: 'completed',
+          completedAt: admin.FieldValue.serverTimestamp(),
+        });
+        count++;
+      }
+    }
+  }
+  if (count > 0) console.log('Orphan todos swept:', count);
+}
 
 // ── レビュー作成時：対象ユーザーの avgRating / reviewCount / サブ評価 を更新 ──
 exports.onReviewCreated = onDocumentCreated(
@@ -628,6 +774,76 @@ exports.remindUpcomingDeliveries = onSchedule(
       });
       console.log("Delivery reminder sent:", d.id);
     }
+  }
+);
+
+// ── トラブル報告作成時：管理者全員に通知＋todo作成 ──────────────
+exports.onReportCreated = onDocumentCreated(
+  {
+    document: "reports/{reportId}",
+    region: "asia-southeast1",
+    database: "(default)",
+  },
+  async (event) => {
+    const report = event.data.data();
+    const reportId = event.params.reportId;
+    const fromRole = report.fromRole || "restaurant";
+    const type = report.type || "other";
+
+    // 報告者名
+    let reporterName = "";
+    if (report.fromUid) {
+      const fromSnap = await db.doc(`users/${report.fromUid}`).get();
+      reporterName = fromSnap.data()?.displayName || "";
+    }
+
+    const adminUids = await getAdminUids();
+    for (const auid of adminUids) {
+      // admin_report todo を作成（orderId 紐付き）
+      await createTodo(auid, 'admin_report', report.orderId || reportId);
+
+      const adminSnap = await db.doc(`users/${auid}`).get();
+      const lang = adminSnap.data()?.lang || "en";
+      const typeLabel = (REPORT_TYPE_LABELS[type] || {})[lang] || type;
+      const roleLabel = (REPORTER_ROLE_LABELS[fromRole] || {})[lang] || fromRole;
+
+      const { title, body } = getMessage("adminReport", lang, {
+        fromRole: roleLabel,
+        type: typeLabel,
+        reporter: reporterName,
+      });
+
+      await notifyUser(auid, {
+        type: "admin_report",
+        title, body,
+        url: `/pages/admin/reports.html#report-${reportId}`,
+        orderId: report.orderId || null,
+      });
+    }
+
+    console.log("Report notification sent to admins:", reportId, "admins:", adminUids.length);
+  }
+);
+
+// ── トラブル報告更新時：resolved になったら管理者todoを解消 ──
+exports.onReportUpdated = onDocumentUpdated(
+  {
+    document: "reports/{reportId}",
+    region: "asia-southeast1",
+    database: "(default)",
+  },
+  async (event) => {
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+    if (before.status === after.status) return;
+    if (after.status !== "resolved") return;
+
+    const orderIdOrReport = after.orderId || event.params.reportId;
+    const adminUids = await getAdminUids();
+    for (const auid of adminUids) {
+      await clearTodo(auid, 'admin_report', orderIdOrReport);
+    }
+    console.log("Report resolved, todos cleared:", event.params.reportId);
   }
 );
 

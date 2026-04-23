@@ -14,16 +14,53 @@
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
     <style>
-        .delivery-page { max-width: 480px; margin: 0 auto; padding-bottom: 100px; }
-
-        .order-summary {
-            padding: 12px 16px;
-            font-size: 14px;
-            color: var(--color-text-sub);
-            line-height: 1.6;
+        html, body { height: 100%; margin: 0; }
+        body { overflow: hidden; }
+        .delivery-page {
+            max-width: 480px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        .timeline { padding: 0 16px; }
+        .order-summary {
+            padding: 8px 14px;
+            color: var(--color-text-sub);
+            line-height: 1.4;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .location-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #eef2ff;
+            color: #3730a3;
+            border-radius: 12px;
+            padding: 3px 10px;
+            margin-top: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .location-link .material-symbols-outlined { font-size: 14px; }
+
+        .timeline {
+            padding: 0 16px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        /* 下部固定エリア：クイックステータス・チャット入力・配送完了ボタン */
+        .delivery-bottom {
+            flex-shrink: 0;
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
+        }
 
         .tl-status {
             width: 86%;
@@ -39,43 +76,41 @@
 
         .tl-chat {
             max-width: 78%;
-            border-radius: 16px;
+            border-radius: 14px;
             background: #e5e5e5;
-            padding: 10px 14px;
-            margin-bottom: 12px;
+            padding: 6px 12px 4px;
+            margin-bottom: 3px;
         }
         .tl-chat.self { margin-left: auto; background: #dbeafe; }
-        .tl-chat__img { max-width: 100%; border-radius: 8px; margin-top: 6px; }
-        .tl-chat__time { font-size: 12px; color: #888; }
-        .tl-chat__text { font-size: 15px; margin-top: 2px; line-height: 1.4; }
+        .tl-chat__img { max-width: 100%; border-radius: 8px; margin-top: 4px; }
+        .tl-chat__time { font-size: 10px; color: #888; text-align: right; margin-top: 2px; }
+        .tl-chat__text { font-size: 14px; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
 
         .quick-status {
-            margin: 16px;
-            border-radius: 16px;
-            border: 1px solid var(--color-border);
-            background: var(--color-surface);
-            padding: 14px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--color-border);
         }
-        .quick-status__title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
-        .quick-status__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .quick-status__title { font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--color-text-sub); }
+        .quick-status__grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; }
         .quick-status__btn {
-            border-radius: 12px;
+            border-radius: 10px;
             border: 1px solid var(--color-border);
             background: #f9fafb;
-            padding: 10px;
-            font-size: 14px;
+            padding: 8px 4px;
+            font-size: 12px;
             font-weight: 700;
             cursor: pointer;
             text-align: center;
+            font-family: inherit;
         }
         .quick-status__btn:hover { background: #fff7ed; border-color: #fdba74; }
-        .quick-status__hint { font-size: 12px; color: var(--color-text-sub); margin-top: 8px; }
+        .quick-status__hint { font-size: 11px; color: var(--color-text-sub); margin-top: 6px; }
 
         .chat-input {
             display: flex;
             gap: 8px;
-            padding: 0 16px;
-            margin-top: 12px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--color-border);
         }
         .chat-input input {
             flex: 1;
@@ -97,27 +132,23 @@
 
         .photo-preview-area {
             display: none;
-            padding: 8px 16px;
-            gap: 8px;
+            padding: 6px 14px;
+            gap: 6px;
             flex-wrap: wrap;
             align-items: center;
+            border-bottom: 1px solid var(--color-border);
         }
         .photo-preview-area.show { display: flex; }
         .photo-preview-area img {
-            width: 60px; height: 60px; object-fit: cover; border-radius: 8px;
+            width: 50px; height: 50px; object-fit: cover; border-radius: 8px;
         }
         .photo-preview-area .remove-all {
             font-size: 11px; color: #ef4444; cursor: pointer; margin-left: auto;
         }
 
         .delivery-footer {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 12px 16px;
+            padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
             background: var(--color-surface);
-            border-top: 1px solid var(--color-border);
         }
         .delivery-footer button {
             width: 100%;
@@ -138,44 +169,46 @@
     <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
     <div class="delivery-page">
-        <div class="page-header" style="align-items:center; padding:16px;">
+        <div class="page-header" style="align-items:center; padding:8px 12px;">
             <a href="/pages/farmer/orders.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub);"><span class="material-symbols-outlined">arrow_back</span></a>
             <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector" style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
-                <option value="km">ខ្មែរ</option><option value="en">EN</option><option value="ja">JA</option>
+                <option value="km">ខ្មែរ</option><option value="en">ENGLISH</option><option value="ja">日本語</option>
             </select>
         </div>
 
         <div class="order-summary" id="order-summary"></div>
         <div class="timeline" id="timeline"></div>
 
-        <!-- クイックステータス -->
-        <div class="quick-status">
-            <div class="quick-status__title" data-i18n="delivery.sendStatus"></div>
-            <div class="quick-status__grid">
-                <button class="quick-status__btn" data-status="preparing" data-msg-key="statusPrepareMsg" data-order-status="preparing" data-i18n="delivery.statusPreparing"></button>
-                <button class="quick-status__btn" data-status="delivering" data-msg-key="statusDeliverMsg" data-order-status="delivering" data-i18n="delivery.statusDelivering"></button>
-                <button class="quick-status__btn" data-status="delayed" data-msg-key="statusDelayedMsg" data-i18n="delivery.statusDelayed"></button>
-                <button class="quick-status__btn" data-status="arrived" data-msg-key="statusArrivedMsg" data-i18n="delivery.statusArrived"></button>
+        <!-- 下部固定エリア：クイックステータス + チャット入力 + 配送完了ボタン -->
+        <div class="delivery-bottom">
+            <!-- クイックステータス -->
+            <div class="quick-status">
+                <div class="quick-status__title" data-i18n="delivery.sendStatus"></div>
+                <div class="quick-status__grid">
+                    <button class="quick-status__btn" data-status="preparing" data-msg-key="statusPrepareMsg" data-order-status="preparing" data-i18n="delivery.statusPreparing"></button>
+                    <button class="quick-status__btn" data-status="delivering" data-msg-key="statusDeliverMsg" data-order-status="delivering" data-i18n="delivery.statusDelivering"></button>
+                    <button class="quick-status__btn" data-status="delayed" data-msg-key="statusDelayedMsg" data-i18n="delivery.statusDelayed"></button>
+                    <button class="quick-status__btn" data-status="arrived" data-msg-key="statusArrivedMsg" data-i18n="delivery.statusArrived"></button>
+                </div>
             </div>
-            <div class="quick-status__hint" data-i18n="delivery.sendStatusHint"></div>
+
+            <!-- 写真プレビュー -->
+            <div class="photo-preview-area" id="photo-preview"></div>
+
+            <!-- チャット入力 -->
+            <div class="chat-input">
+                <button id="photo-btn" style="border:none; background:var(--color-surface); cursor:pointer; padding:6px 8px; border-radius:50%; color:var(--color-text-sub);"><span class="material-symbols-outlined">photo_camera</span></button>
+                <input type="file" id="photo-input" accept="image/*" multiple style="display:none;">
+                <input type="text" id="chat-text" data-i18n="[placeholder]delivery.chatPlaceholder">
+                <button id="chat-send" data-i18n="delivery.send"></button>
+            </div>
+
+            <!-- 配送完了ボタン -->
+            <div class="delivery-footer">
+                <button id="complete-btn" data-i18n="delivery.deliveryComplete"></button>
+            </div>
         </div>
-
-        <!-- 写真プレビュー -->
-        <div class="photo-preview-area" id="photo-preview"></div>
-
-        <!-- チャット入力 -->
-        <div class="chat-input">
-            <button id="photo-btn" style="border:none; background:var(--color-surface); cursor:pointer; padding:6px 8px; border-radius:50%; color:var(--color-text-sub);"><span class="material-symbols-outlined">photo_camera</span></button>
-            <input type="file" id="photo-input" accept="image/*" multiple style="display:none;">
-            <input type="text" id="chat-text" data-i18n="[placeholder]delivery.chatPlaceholder">
-            <button id="chat-send" data-i18n="delivery.send"></button>
-        </div>
-    </div>
-
-    <!-- 配送完了ボタン -->
-    <div class="delivery-footer">
-        <button id="complete-btn" data-i18n="delivery.deliveryComplete"></button>
     </div>
 
     <script type="module">
@@ -227,18 +260,31 @@
 
             // レストラン情報
             const restSnap = await getDoc(doc(db, 'users', orderData.restaurantId));
-            const restName = restSnap.data()?.displayName || '';
+            const rest = restSnap.data() || {};
+            const restName = rest.displayName || '';
+            const restLoc = rest.location || null;
+            const locLabel = [rest.province, rest.district].filter(Boolean).join(', ');
 
             const statusKey = `delivery.${orderData.status}`;
             const statusText = i18next.exists(statusKey) ? i18next.t(statusKey) : orderData.status;
 
+            const mapLink = restLoc && restLoc.lat && restLoc.lng
+                ? `https://www.google.com/maps/search/?api=1&query=${restLoc.lat},${restLoc.lng}`
+                : null;
+
             document.getElementById('order-summary').innerHTML = `
-                <div>${i18next.t('delivery.statusNow', { status: statusText })}</div>
-                <div>${i18next.t('delivery.scheduledTime', { time: orderData.deliveryTime || '' })}</div>
-                <div style="margin-top:4px; font-weight:600; color:var(--color-text);">
+                <div style="font-weight:600; color:var(--color-text); font-size:14px;">
                     ${fishName} ${orderData.quantity}kg · ${restName}
                 </div>
-                <div style="font-size:13px;">${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''}</div>
+                <div style="font-size:12px; color:var(--color-text-sub); margin-top:2px;">
+                    ${statusText} · ${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}
+                </div>
+                ${mapLink ? `
+                    <a class="location-link" href="${mapLink}" target="_blank" rel="noopener">
+                        <span class="material-symbols-outlined">location_on</span>
+                        <span>${locLabel ? locLabel + ' · ' : ''}${i18next.t('delivery.viewLocation')}</span>
+                    </a>
+                ` : ''}
             `;
 
             // タイムライン購読
@@ -259,9 +305,9 @@
 
                     timeline.innerHTML += `
                         <div class="tl-chat ${isSelf ? 'self' : ''}">
-                            <div class="tl-chat__time">${timeStr}</div>
                             ${msg.text ? `<div class="tl-chat__text">${msg.text}</div>` : ''}
                             ${imgHtml}
+                            <div class="tl-chat__time">${timeStr}</div>
                         </div>`;
                 });
                 timeline.scrollTop = timeline.scrollHeight;
@@ -364,6 +410,8 @@
         // 配送完了
         document.getElementById('complete-btn').addEventListener('click', async () => {
             const btn = document.getElementById('complete-btn');
+            // 誤送信防止の確認ダイアログ
+            if (!confirm(i18next.t('delivery.confirmComplete'))) return;
             btn.disabled = true;
 
             await updateDoc(doc(db, 'orders', orderId), { status: 'delivered' });

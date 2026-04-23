@@ -342,8 +342,8 @@
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
                 <option value="km">ខ្មែរ</option>
-                <option value="en">EN</option>
-                <option value="ja">JA</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
             </select>
             <div class="header-actions">
                 <button class="header-action-btn" data-popover="notif" type="button" aria-label="notifications">
@@ -759,6 +759,33 @@
                 this.textContent = body.classList.contains('open')
                     ? i18next.t('orders.declinedSectionOpen', { count: declinedOrders.length })
                     : i18next.t('orders.declinedSectionClosed', { count: declinedOrders.length });
+            });
+
+            scrollToHashTarget();
+        }
+
+        // URLハッシュ（通知からの遷移）で対象カードまで自動スクロール
+        function scrollToHashTarget() {
+            if (!location.hash) return;
+            let target;
+            try { target = document.querySelector(location.hash); } catch (e) { return; }
+            if (!target) return;
+            // アコーディオン内にあれば開く
+            const accBody = target.closest('.accordion-body');
+            if (accBody && !accBody.classList.contains('open')) {
+                const hdrId = accBody.id.replace('-body', '');
+                document.getElementById(hdrId)?.click();
+            }
+            // レイアウト確定後にスクロール＋ハイライト
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    target.style.transition = 'box-shadow 0.4s, background-color 0.4s';
+                    target.style.boxShadow = '0 0 0 3px #fbbf24';
+                    setTimeout(() => {
+                        target.style.boxShadow = '';
+                    }, 2500);
+                });
             });
         }
 

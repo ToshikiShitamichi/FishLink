@@ -196,8 +196,8 @@
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
                 <option value="km">ខ្មែរ</option>
-                <option value="en">EN</option>
-                <option value="ja">JA</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
             </select>
             <div class="header-actions">
                 <button class="header-action-btn" data-popover="notif" type="button" aria-label="notifications">
@@ -341,7 +341,7 @@
                                 </div>
                                 <div class="fish-card__price">
                                     ${Number(d.price).toLocaleString()} KHR/kg
-                                    ${d.gutPrice ? `<span style="font-size:12px; font-weight:500; color:var(--color-text-sub);"> + ${i18next.t('post.gutPrice')} ${Number(d.gutPrice).toLocaleString()} KHR/kg</span>` : ''}
+                                    ${d.gutPrice ? `<span style="font-size:12px; font-weight:500; color:var(--color-text-sub);"> ${i18next.t('post.gutPrice')} ${Number(d.gutPrice).toLocaleString()} KHR/kg</span>` : ''}
                                 </div>
                                 <div class="card-actions">
                                     <a href="/pages/farmer/post.html?id=${doc.id}" class="toggle-btn edit-btn">

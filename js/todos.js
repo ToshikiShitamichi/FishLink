@@ -37,6 +37,8 @@ function resolveTodoUrl(todo, role) {
         case 'admin_remit':
         case 'admin_done':
             return `/pages/admin/order.html?id=${oid}`;
+        case 'admin_report':
+            return `/pages/admin/reports.html`;
         default:
             return '#';
     }

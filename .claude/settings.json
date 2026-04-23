@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs sed *)",
+      "Bash(node -c c:/work/FishLink/functions/index.js)",
+      "Bash(node -e \"for \\(const f of ['c:/work/FishLink/locales/ja.json','c:/work/FishLink/locales/en.json','c:/work/FishLink/locales/km.json']\\) { JSON.parse\\(require\\('fs'\\).readFileSync\\(f,'utf8'\\)\\); console.log\\('OK', f\\); }\")"
+    ]
+  }
+}
