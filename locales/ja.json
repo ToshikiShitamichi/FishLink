@@ -37,6 +37,12 @@
         "location": "位置情報を設定",
         "locationHint": "地図上でピンを置いてください",
         "locationSet": "位置情報を設定済み",
+        "locationTapHint": "現在地を取得中...難しい場合は地図をタップしてピンを設置してください",
+        "locationFinding": "現在地を取得しています...",
+        "locationDenied": "位置情報の利用が拒否されました。ブラウザの設定から許可するか、地図をタップしてピンを設置してください。",
+        "locationFailed": "現在地が取得できませんでした。地図をタップしてピンを設置してください。",
+        "locationGeoUnavailable": "お使いの端末では現在地が取得できません。地図をタップしてピンを設置してください。",
+        "useCurrentLocation": "現在地を使う",
         "lang": "言語",
         "submit": "登録する",
         "hasAccount": "すでにアカウントをお持ちの方",
@@ -104,6 +110,7 @@
         "deliveryNote2": "※ それを超える場合は、送料単価 × 距離で自動計算されます",
         "freeDeliveryDistance": "送料無料距離",
         "sectionTerms": "取引条件",
+        "sectionDescription": "商品の説明",
         "minOrder": "最低注文量",
         "maxDistance": "配送可能距離",
         "submit": "投稿する",
@@ -147,12 +154,17 @@
     "restaurant": {
         "title": "魚一覧",
         "subtitle": "近くの養殖農家から選ぶ",
+        "campaignTitle": "特別割引キャンペーン中",
+        "campaignDesc": "今ならお得にご注文いただけます",
         "sort": "並び替え",
         "sortDistance": "距離が近い順",
         "sortPrice": "価格が安い順",
         "sortNewest": "新着順",
         "filter": "絞り込み",
         "filterAll": "すべて",
+        "filterFavorites": "お気に入り",
+        "favorite": "お気に入りに追加",
+        "unfavorite": "お気に入りから外す",
         "stock": "在庫 {{kg}}kg",
         "distance": "{{km}} km",
         "place": "{{place}}",
@@ -174,6 +186,7 @@
         "deliveryComplete": "配送完了",
         "confirmComplete": "配達完了にしますか？\nレストランへ受取確認を依頼するステータスになります。",
         "receiveConfirm": "受取確認",
+        "confirmReceive": "魚を受け取り、受取を確認しますか？\n確認するとお支払い画面に進みます。",
         "chatPlaceholder": "メッセージを入力...",
         "viewLocation": "地図を見る",
         "pendingBanner": "承認お待ちください",
@@ -221,6 +234,7 @@
         "reviews": "件",
         "comment": "コメントする",
         "priceGutIncluded": "内臓処理込み",
+        "descriptionLabel": "商品の説明",
         "deliveryBadge": "{{date}} {{time}}",
         "stockAvailable": "在庫あり",
         "stockUnavailable": "在庫なし",
@@ -233,6 +247,7 @@
     "orders": {
         "title": "注文内容を確認",
         "unitPrice": "魚単価",
+        "otherItems": "点",
         "quantity": "注文数量",
         "gutProcessing": "内臓処理",
         "gutYes": "あり",
@@ -428,6 +443,84 @@
         "uploadPhoto": "写真を選択",
         "removePhoto": "削除"
     },
+    "cart": {
+        "title": "カート",
+        "empty": "カートに商品はありません",
+        "browse": "魚を探す",
+        "addedTitle": "カートに追加しました",
+        "addToCart": "カートに追加",
+        "viewCart": "カートを見る",
+        "remove": "削除",
+        "confirmRemove": "この商品をカートから削除しますか？",
+        "gutToggle": "内臓処理（+{{price}}/kg）",
+        "deliveryDate": "納品日",
+        "deliveryTime": "時間帯",
+        "fishTotal": "魚代（サービス料込み）",
+        "campaignDiscount": "キャンペーン割引",
+        "deliveryFee": "配送料",
+        "groupTotal": "この農家への小計",
+        "grandTotal": "合計",
+        "checkout": "注文する",
+        "toConfirm": "確認画面へ",
+        "next": "次へ",
+        "placeOrder": "注文を確定する",
+        "suggestTitle": "配送料節約のご提案",
+        "suggestDesc": "別の農家さんでも同じ魚を扱っています。1箇所にまとめると配送料を節約できます。提案を採用するかはお選びください。",
+        "suggestLabel": "{{fish}} の農家を変えると配送料を節約できます",
+        "currentSide": "現在",
+        "proposedSide": "提案",
+        "saveDelivery": "配送料 約 {{amount}} KHR 節約",
+        "sameDelivery": "配送料の節約は見込めませんが、まとめることも可能です",
+        "keepOriginal": "このまま",
+        "acceptSwap": "変更する",
+        "applied": "変更しました",
+        "viewDetail": "詳細を見る",
+        "listingDetail": "出品の詳細",
+        "confirmTitle": "注文内容の確認",
+        "confirmDesc": "この内容で注文を確定します。よろしければ下の「注文を確定する」ボタンを押してください。",
+        "errorStock": "{{name}} の在庫が不足しています（残り{{stock}}kg）",
+        "errorDelivery": "納品日時を選んでください",
+        "errorSubmit": "注文に失敗しました。再度お試しください",
+        "navCart": "カート"
+    },
+    "notifMessages": {
+        "newOrder": {
+            "title": "{{restaurant}} から新しい注文",
+            "body": "{{fish}} {{qty}}kg\n納品：{{date}} {{time}}\n承認期限：{{deadline}}"
+        },
+        "approved": {
+            "title": "{{farmer}} が注文を承認",
+            "body": "{{fish}} {{qty}}kg\n納品：{{date}} {{time}}"
+        },
+        "declined": {
+            "title": "{{farmer}} が注文を辞退",
+            "body": "{{fish}} {{qty}}kg"
+        },
+        "expiredDeclinedFarmer": {
+            "title": "{{restaurant}} の注文が期限切れ辞退",
+            "body": "{{fish}} {{qty}}kg"
+        },
+        "expiredDeclinedRestaurant": {
+            "title": "{{farmer}} が期限切れで自動辞退",
+            "body": "{{fish}} {{qty}}kg"
+        },
+        "statusUpdate": {
+            "title": "{{farmer}} 注文ステータス更新",
+            "body": "ステータス: {{status}}"
+        },
+        "deliveryReminder": {
+            "title": "{{farmer}} の納品は明日",
+            "body": "{{fish}} {{qty}}kg\n納品：{{date}} {{time}}"
+        },
+        "chatMessage": {
+            "title": "{{sender}} からメッセージ",
+            "body": "{{text}}"
+        },
+        "adminReport": {
+            "title": "新しいトラブル報告",
+            "body": "{{fromRole}} → {{type}}\n{{reporter}}"
+        }
+    },
     "comments": {
         "title": "コメント",
         "publicNote": "コメントは他のレストランにも公開されます。注文前の確認に利用してください。",
@@ -522,7 +615,9 @@
         "salesTitle": "売上確認",
         "purchaseTitle": "購入確認",
         "tabToday": "本日",
-        "tabCustom": "Custom Period",
+        "tabWeek": "1週間",
+        "tabMonth": "1か月",
+        "tabCustom": "カスタム",
         "tabAll": "All",
         "customFrom": "開始日",
         "customTo": "終了日",
@@ -668,6 +763,9 @@
             "subtitle": "サービス料率・手数料率およびキャンペーンの設定",
             "restaurantSection": "レストラン側",
             "farmerSection": "農家側",
+            "bannerSection": "レストラン画面のバナー表示",
+            "bannerActiveLabel": "キャンペーンバナー表示",
+            "bannerActiveHint": "ONにするとレストランの魚一覧の上部に「特別割引キャンペーン中」のバナーが表示されます",
             "serviceRateLabel": "サービス料率（%）",
             "serviceRateHint": "レストランの支払額に加算される料率（デフォルト5%）",
             "campaignActiveLabel": "キャンペーン有効化",
@@ -712,7 +810,14 @@
             "ocrTextPlaceholder": "OCR実行後、ここにテキストが表示されます",
             "ocrAutofillEmpty": "州名に一致する行が見つかりませんでした。画像の品質を確認してください。",
             "ocrAutofillDone": "{{count}}件のセルに値を入れました。内容を確認してから保存してください。",
-            "ocrAutofillMissing": "以下の州は自動取り込みできませんでした（手動入力してください）"
+            "ocrAutofillMissing": "以下の州は自動取り込みできませんでした（手動入力してください）",
+            "historyBtn": "履歴",
+            "historyTitle": "保存履歴",
+            "historyLoading": "読み込み中...",
+            "historyEmpty": "保存履歴はまだありません",
+            "historyError": "履歴の取得に失敗しました",
+            "viewingHistory": "{{date}} の履歴を閲覧中（読み取り専用）",
+            "backToCurrent": "現在に戻る"
         },
         "reports": {
             "title": "トラブル報告",

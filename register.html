@@ -163,18 +163,40 @@
             // 地図クリックでピン設置
             map.addListener('click', (e) => placePin(e.latLng));
 
-            // 現在地を取得して自動ピン設置
-            if (navigator.geolocation) {
+            // 現在地を取得して自動ピン設置（失敗時はステータスにヒントを表示）
+            function tryGeolocation(showError) {
+                if (!navigator.geolocation) {
+                    if (showError) {
+                        document.getElementById('location-status-text').textContent =
+                            window.i18next?.t?.('register.locationGeoUnavailable') || 'お使いの端末では現在地が取得できません。地図をタップしてピンを設置してください。';
+                    }
+                    return;
+                }
+                document.getElementById('location-status-text').textContent =
+                    window.i18next?.t?.('register.locationFinding') || '現在地を取得しています...';
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
                         const latLng = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
                         map.setCenter(latLng);
-                        map.setZoom(13);
+                        map.setZoom(15);
                         placePin(latLng);
                     },
-                    () => { }
+                    (err) => {
+                        // 失敗時はユーザーに状況を伝え、地図タップを促す
+                        const reason = err.code === 1 // PERMISSION_DENIED
+                            ? (window.i18next?.t?.('register.locationDenied') || '位置情報の利用が拒否されました。地図をタップしてピンを設置してください。')
+                            : (window.i18next?.t?.('register.locationFailed') || '現在地が取得できませんでした。地図をタップしてピンを設置してください。');
+                        document.getElementById('location-status-text').textContent = reason;
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
                 );
             }
+
+            // 初回ロード時：自動取得を試みる（失敗してもエラーは静か）
+            tryGeolocation(false);
+
+            // 「現在地を使う」ボタン：明示的に再試行（失敗時はエラー表示）
+            document.getElementById('use-current-loc-btn')?.addEventListener('click', () => tryGeolocation(true));
         }
 
         window.gm_authFailure = function () {
@@ -352,9 +374,14 @@
                             <span>Google Maps API key required</span>
                         </div>
                     </div>
+                    <button type="button" id="use-current-loc-btn"
+                        style="display:inline-flex; align-items:center; gap:6px; margin-top:8px; padding:8px 14px; border:1px solid var(--color-border); border-radius:20px; background:#fff; color:var(--color-text); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;">
+                        <span class="material-symbols-outlined" style="font-size:16px;">my_location</span>
+                        <span data-i18n="register.useCurrentLocation"></span>
+                    </button>
                     <div class="location-status" id="location-status">
                         <div class="location-status__dot"></div>
-                        <span id="location-status-text" data-i18n="register.locationHint"></span>
+                        <span id="location-status-text" data-i18n="register.locationTapHint"></span>
                     </div>
                 </div>
 

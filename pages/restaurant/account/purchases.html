@@ -22,7 +22,7 @@
         .custom-range.show { display: flex; }
         .custom-range > div { flex: 1; min-width: 120px; }
         .custom-range label { font-size: 11px; color: var(--color-text-sub); }
-        .custom-range input { width: 100%; border: 1px solid var(--color-border); border-radius: 10px; padding: 6px 8px; font-size: 13px; font-family: inherit; margin-top: 2px; }
+        .custom-range input { width: 100%; border: 1px solid var(--color-border); border-radius: 10px; padding: 6px 8px; font-size: 16px; font-family: inherit; margin-top: 2px; }
         .custom-range button { border: none; background: var(--color-primary); color: #fff; border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
         .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
         .summary-card { background: #f8fafc; border-radius: 14px; padding: 10px; }
@@ -65,8 +65,9 @@
 
         <div class="tab-row" id="period-tabs">
             <button class="tab-chip active" data-period="today" data-i18n="account.tabToday"></button>
+            <button class="tab-chip" data-period="week" data-i18n="account.tabWeek"></button>
+            <button class="tab-chip" data-period="month" data-i18n="account.tabMonth"></button>
             <button class="tab-chip" data-period="custom" data-i18n="account.tabCustom"></button>
-            <button class="tab-chip" data-period="all" data-i18n="account.tabAll"></button>
         </div>
 
         <div class="custom-range" id="custom-range">
@@ -135,10 +136,25 @@
         }
 
         function filterByPeriod(trades) {
-            if (currentPeriod === 'all') return trades;
             if (currentPeriod === 'today') {
                 const s = new Date(); s.setHours(0, 0, 0, 0);
                 const e = new Date(); e.setHours(23, 59, 59, 999);
+                return trades.filter(t => {
+                    const ms = t.createdAt?.toMillis?.() || 0;
+                    return ms >= s.getTime() && ms <= e.getTime();
+                });
+            }
+            if (currentPeriod === 'week') {
+                const e = new Date(); e.setHours(23, 59, 59, 999);
+                const s = new Date(); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - 6);
+                return trades.filter(t => {
+                    const ms = t.createdAt?.toMillis?.() || 0;
+                    return ms >= s.getTime() && ms <= e.getTime();
+                });
+            }
+            if (currentPeriod === 'month') {
+                const e = new Date(); e.setHours(23, 59, 59, 999);
+                const s = new Date(); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - 29);
                 return trades.filter(t => {
                     const ms = t.createdAt?.toMillis?.() || 0;
                     return ms >= s.getTime() && ms <= e.getTime();

@@ -103,6 +103,11 @@
             <span class="bottom-nav__icon"><span class="material-symbols-outlined">set_meal</span></span>
             <span data-i18n="restaurant.title"></span>
         </a>
+        <a href="/pages/restaurant/cart.html" class="bottom-nav__item" style="position:relative;">
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">shopping_cart</span></span>
+            <span class="nav-badge" id="cart-badge" style="display:none;"></span>
+            <span data-i18n="cart.navCart"></span>
+        </a>
         <a href="/pages/restaurant/orders.html" class="bottom-nav__item active">
             <span class="bottom-nav__icon"><span class="material-symbols-outlined">local_shipping</span></span>
             <span data-i18n="delivery.myOrders"></span>
@@ -116,6 +121,7 @@
         import { initHeaderPopovers } from '/js/header-actions.js';
         import { subscribeTodos } from '/js/todos.js';
         import { subscribeNotifications } from '/js/notifications.js';
+        import { subscribeCart } from '/js/cart.js';
         import {
             collection, query, where, orderBy, getDocs, doc, getDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -155,10 +161,15 @@
             // 支払済みの完了注文にレビューリンクを追加
             const showReviewLink = isCompleted && order.paymentStatus === 'paid';
 
+            const itemCount = Array.isArray(order.items) ? order.items.length : 1;
+            const multiBadge = itemCount > 1
+                ? ` <span style="display:inline-block; margin-left:4px; padding:1px 8px; background:#fef3c7; color:#92400e; border-radius:10px; font-size:10px; font-weight:700;">+${itemCount - 1} ${i18next.t('orders.otherItems')}</span>`
+                : '';
+
             return `
                 <a class="order-item" id="order-${d.id}" href="${href}">
                     <div class="order-item__top">
-                        <div class="order-item__fish">${fishName}</div>
+                        <div class="order-item__fish">${fishName}${multiBadge}</div>
                         <div class="order-item__status ${stClass}">${statusText}</div>
                     </div>
                     <div class="order-item__meta">
@@ -200,22 +211,31 @@
                     return;
                 }
 
-                // 注文データ取得
-                const allOrders = [];
-                for (const d of snap.docs) {
+                // ── 注文データ取得（並列で高速化） ──
+                // snapFishType がない legacy 注文のみ fishListings を取得
+                const legacyListingIds = [...new Set(
+                    snap.docs.map(d => d.data())
+                        .filter(o => !o.snapFishType && o.listingId)
+                        .map(o => o.listingId)
+                )];
+                const listingCache = {};
+                await Promise.all(legacyListingIds.map(async lid => {
+                    try {
+                        const lSnap = await getDoc(doc(db, 'fishListings', lid));
+                        listingCache[lid] = lSnap.exists() ? lSnap.data() : {};
+                    } catch (e) { listingCache[lid] = {}; }
+                }));
+
+                const allOrders = snap.docs.map(d => {
                     const order = d.data();
-                    let fishName = '';
-                    // スナップショット優先（編集後も注文表示は不変）
-                    let fishTypeKey = order.snapFishType;
-                    if (!fishTypeKey && order.listingId) {
-                        const lSnap = await getDoc(doc(db, 'fishListings', order.listingId));
-                        fishTypeKey = lSnap.data()?.fishType;
-                    }
-                    if (fishTypeKey) {
-                        fishName = i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey;
-                    }
-                    allOrders.push({ d, order, fishName });
-                }
+                    let fishTypeKey = order.snapFishType
+                        || listingCache[order.listingId]?.fishType
+                        || '';
+                    let fishName = fishTypeKey
+                        ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey)
+                        : '';
+                    return { d, order, fishName };
+                });
 
                 // グループ分け
                 const delivered = allOrders.filter(o => o.order.status === 'delivered');
@@ -320,6 +340,10 @@
             if (window.currentUser?.uid) {
                 subscribeTodos(window.currentUser.uid, 'restaurant');
                 subscribeNotifications(window.currentUser.uid);
+                subscribeCart(window.currentUser.uid, (items) => {
+                    const badge = document.getElementById('cart-badge');
+                    if (badge) badge.style.display = items.length > 0 ? 'block' : 'none';
+                });
             }
             loadOrders();
         });

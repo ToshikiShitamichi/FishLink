@@ -84,7 +84,7 @@
             border: 1px solid var(--color-border);
             border-radius: 20px;
             padding: 10px 16px;
-            font-size: 14px;
+            font-size: 16px; /* iOS Safari の自動ズーム回避（16px以上必須） */
         }
         .chat-input button {
             border: none;
@@ -123,6 +123,9 @@
         <div class="page-header" style="align-items:center; padding:8px 12px;">
             <a href="/pages/restaurant/orders.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub);"><span class="material-symbols-outlined">arrow_back</span></a>
             <a href="/pages/restaurant/orders.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <a id="call-btn" href="#" style="display:none; width:36px; height:36px; border-radius:50%; background:#ecfdf5; color:#047857; align-items:center; justify-content:center; margin-right:6px; text-decoration:none;" aria-label="call">
+                <span class="material-symbols-outlined" style="font-size:20px;">call</span>
+            </a>
             <select id="lang-selector" style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option><option value="en">ENGLISH</option><option value="ja">日本語</option>
             </select>
@@ -211,7 +214,15 @@
 
             // 農家情報
             const farmerSnap = await getDoc(doc(db, 'users', orderData.farmerId));
-            const farmerName = farmerSnap.data()?.displayName || '';
+            const farmer = farmerSnap.data() || {};
+            const farmerName = farmer.displayName || '';
+
+            // 電話ボタン：相手の電話番号があれば表示
+            if (farmer.phone) {
+                const callBtn = document.getElementById('call-btn');
+                callBtn.href = `tel:${farmer.phone}`;
+                callBtn.style.display = 'inline-flex';
+            }
 
             const statusKey = `delivery.${orderData.status}`;
             const statusText = i18next.exists(statusKey) ? i18next.t(statusKey) : orderData.status;
@@ -357,6 +368,7 @@
 
         // 受取確認
         document.getElementById('receive-btn').addEventListener('click', async () => {
+            if (!confirm(i18next.t('delivery.confirmReceive'))) return;
             const btn = document.getElementById('receive-btn');
             btn.disabled = true;
 

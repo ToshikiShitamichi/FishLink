@@ -11,6 +11,10 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 import { setBadge } from '/js/header-actions.js';
 import { setTodoBadgeCount } from '/js/app-badge.js';
+import { onLanguageChange } from '/js/i18n.js';
+
+// 言語切替時に自動で再描画
+onLanguageChange(() => renderTodoList());
 
 // todo.type → 遷移URL（orderIdを含めて）を解決
 function resolveTodoUrl(todo, role) {
@@ -80,9 +84,25 @@ function escapeHtml(s) {
 // 指定UIDのやることリストを購読してポップオーバーに描画
 // role: 'farmer' | 'restaurant' | 'admin'
 let unsubscribeTodos = null;
+// 言語切替時の再描画用：最新スナップショット items と role を保持
+let lastTodoItems = [];
+let lastTodoRole = null;
+
+function renderTodoList() {
+    const listEl = document.getElementById('todos-list');
+    if (!listEl) return;
+    if (lastTodoItems.length === 0) {
+        listEl.innerHTML = `<div class="header-popover__empty">${window.i18next.t('todos.empty')}</div>`;
+        return;
+    }
+    listEl.innerHTML = lastTodoItems.map(t => renderTodoItem(t, lastTodoRole)).join('');
+}
+
 export function subscribeTodos(uid, role) {
     if (unsubscribeTodos) unsubscribeTodos();
     if (!uid) return;
+
+    lastTodoRole = role;
 
     const listEl = document.getElementById('todos-list');
     if (!listEl) return;
@@ -94,7 +114,8 @@ export function subscribeTodos(uid, role) {
     );
     unsubscribeTodos = onSnapshot(q, (snap) => {
         if (snap.empty) {
-            listEl.innerHTML = `<div class="header-popover__empty">${window.i18next.t('todos.empty')}</div>`;
+            lastTodoItems = [];
+            renderTodoList();
             setBadge('todos-badge', 0);
             setTodoBadgeCount(0);
             return;
@@ -103,10 +124,16 @@ export function subscribeTodos(uid, role) {
         snap.forEach(d => items.push({ id: d.id, ...d.data() }));
         // 作成日時降順ソート
         items.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-        listEl.innerHTML = items.map(t => renderTodoItem(t, role)).join('');
+        lastTodoItems = items;
+        renderTodoList();
         setBadge('todos-badge', items.length);
         setTodoBadgeCount(items.length);
     }, (err) => {
         console.warn('todos subscribe error:', err);
     });
+}
+
+// 言語切替時に現在のtodosを再描画
+export function refreshTodosI18n() {
+    renderTodoList();
 }

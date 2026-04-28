@@ -8,6 +8,10 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 import { setBadge } from '/js/header-actions.js';
 import { setNotifBadgeCount } from '/js/app-badge.js';
+import { onLanguageChange } from '/js/i18n.js';
+
+// 言語切替時に自動で再描画
+onLanguageChange(() => renderNotifList());
 
 function relativeTime(ts) {
     const ms = ts?.toMillis?.() || 0;
@@ -26,13 +30,26 @@ function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// msgKey/vars が保存されていれば現在の言語で翻訳、なければ保存された title/body をそのまま使う
+function resolveTitleBody(n) {
+    const i18n = window.i18next;
+    if (n.msgKey && n.vars && i18n?.exists?.(`notifMessages.${n.msgKey}.title`)) {
+        return {
+            title: i18n.t(`notifMessages.${n.msgKey}.title`, n.vars || {}),
+            body: i18n.t(`notifMessages.${n.msgKey}.body`, n.vars || {}),
+        };
+    }
+    return { title: n.title || '', body: n.body || '' };
+}
+
 function renderNotifItem(n) {
     const url = n.url || '#';
     const time = relativeTime(n.createdAt);
+    const { title, body } = resolveTitleBody(n);
     return `
         <a class="popover-item ${!n.read ? 'unread' : ''}" href="${url}" data-id="${n.id}">
-            <div class="popover-item__title">${escapeHtml(n.title || '')}</div>
-            ${n.body ? `<div class="popover-item__body">${escapeHtml(n.body)}</div>` : ''}
+            <div class="popover-item__title">${escapeHtml(title)}</div>
+            ${body ? `<div class="popover-item__body">${escapeHtml(body)}</div>` : ''}
             ${time ? `<div class="popover-item__time">${time}</div>` : ''}
         </a>
     `;
@@ -41,6 +58,22 @@ function renderNotifItem(n) {
 let unsubscribeNotifs = null;
 let cachedUid = null;
 let cachedItems = [];
+
+function renderNotifList() {
+    const listEl = document.getElementById('notif-list');
+    if (!listEl) return;
+    const display = cachedItems.slice(0, 50);
+    if (display.length === 0) {
+        listEl.innerHTML = `<div class="header-popover__empty">${window.i18next.t('notifications.empty')}</div>`;
+    } else {
+        listEl.innerHTML = display.map(renderNotifItem).join('');
+    }
+}
+
+// 言語切替時に現在の通知を再描画（時間ラベル＋msgKey 翻訳を現在言語で更新）
+export function refreshNotificationsI18n() {
+    renderNotifList();
+}
 
 // ポップオーバーを開いたときに全既読化（ベル側 aria 経由の外部コール）
 export async function markAllNotificationsRead() {
@@ -68,13 +101,7 @@ export function subscribeNotifications(uid) {
         cachedItems = [];
         snap.forEach(d => cachedItems.push({ id: d.id, ...d.data() }));
         cachedItems.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-        // 最新50件のみ表示
-        const display = cachedItems.slice(0, 50);
-        if (display.length === 0) {
-            listEl.innerHTML = `<div class="header-popover__empty">${window.i18next.t('notifications.empty')}</div>`;
-        } else {
-            listEl.innerHTML = display.map(renderNotifItem).join('');
-        }
+        renderNotifList();
         // 未読数をバッジに反映
         const unreadCount = cachedItems.filter(n => !n.read).length;
         setBadge('notif-badge', unreadCount);

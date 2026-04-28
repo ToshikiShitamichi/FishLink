@@ -37,6 +37,12 @@
         "location": "កំណត់ទីតាំង",
         "locationHint": "ដាក់ pin លើផែនទី",
         "locationSet": "បានកំណត់ទីតាំងរួចហើយ",
+        "locationTapHint": "កំពុងស្វែងរកទីតាំងបច្ចុប្បន្ន... បើមិនបាន សូមចុចលើផែនទីដើម្បីដាក់ pin",
+        "locationFinding": "កំពុងស្វែងរកទីតាំងបច្ចុប្បន្ន...",
+        "locationDenied": "ការអនុញ្ញាតទីតាំងត្រូវបានបដិសេធ។ អនុញ្ញាតក្នុងការកំណត់ browser ឬចុចលើផែនទីដើម្បីដាក់ pin",
+        "locationFailed": "មិនអាចស្វែងរកទីតាំង។ សូមចុចលើផែនទីដើម្បីដាក់ pin",
+        "locationGeoUnavailable": "ឧបករណ៍មិនអាចផ្ដល់ទីតាំងទេ។ សូមចុចលើផែនទីដើម្បីដាក់ pin",
+        "useCurrentLocation": "ប្រើទីតាំងបច្ចុប្បន្ន",
         "lang": "ភាសា",
         "submit": "ចុះឈ្មោះ",
         "hasAccount": "មានគណនីរួចហើយ?",
@@ -104,6 +110,7 @@
         "deliveryNote2": "※ លើសពីនោះ គណនាដោយស្វ័យប្រវត្តិ = អត្រាដឹកជញ្ជូន × ចម្ងាយ",
         "freeDeliveryDistance": "ចម្ងាយដឹកជញ្ជូនឥតគិតថ្លៃ",
         "sectionTerms": "លក្ខខណ្ឌពាណិជ្ជកម្ម",
+        "sectionDescription": "ការពិពណ៌នាផលិតផល",
         "minOrder": "បរិមាណបញ្ជាទិញអប្បបរមា",
         "maxDistance": "ចម្ងាយដឹកជញ្ជូនអតិបរមា",
         "submit": "បង្ហោះ",
@@ -147,12 +154,17 @@
     "restaurant": {
         "title": "បញ្ជីត្រី",
         "subtitle": "រកមើលកសិដ្ឋានត្រីនៅជិត",
+        "campaignTitle": "បញ្ចុះតម្លៃពិសេស",
+        "campaignDesc": "កម្ម៉ង់ឥឡូវនេះ ទទួលបានតម្លៃពិសេស",
         "sort": "តម្រៀប",
         "sortDistance": "នៅជិតបំផុត",
         "sortPrice": "តម្លៃទាបបំផុត",
         "sortNewest": "ថ្មីបំផុត",
         "filter": "ត្រង",
         "filterAll": "ទាំងអស់",
+        "filterFavorites": "ចូលចិត្ត",
+        "favorite": "បន្ថែមទៅចូលចិត្ត",
+        "unfavorite": "យកចេញពីចូលចិត្ត",
         "stock": "ស្តុក {{kg}}kg",
         "distance": "{{km}} km",
         "place": "{{place}}",
@@ -174,6 +186,7 @@
         "deliveryComplete": "ដឹកជញ្ជូនរួចរាល់",
         "confirmComplete": "បញ្ជាក់ការដឹកជញ្ជូនបញ្ចប់?\nភោជនីយដ្ឋាននឹងទទួលសារដើម្បីបញ្ជាក់ការទទួល។",
         "receiveConfirm": "បញ្ជាក់ការទទួល",
+        "confirmReceive": "តើអ្នកបានទទួលត្រីហើយ និងចង់បញ្ជាក់ការទទួល?\nនឹងបន្តទៅទំព័របង់ប្រាក់។",
         "chatPlaceholder": "សរសេរសារ...",
         "viewLocation": "មើលនៅលើផែនទី",
         "pendingBanner": "កំពុងរង់ចាំការយល់ព្រម",
@@ -221,6 +234,7 @@
         "reviews": "វាយតម្លៃ",
         "comment": "មតិយោបល់",
         "priceGutIncluded": "រួមកាត់ពោះ",
+        "descriptionLabel": "ការពិពណ៌នាផលិតផល",
         "deliveryBadge": "{{date}} {{time}}",
         "stockAvailable": "មានស្តុក",
         "stockUnavailable": "អស់ស្តុក",
@@ -233,6 +247,7 @@
     "orders": {
         "title": "បញ្ជាក់ការបញ្ជាទិញ",
         "unitPrice": "តម្លៃឯកតា",
+        "otherItems": "ធាតុ",
         "quantity": "បរិមាណបញ្ជាទិញ",
         "gutProcessing": "កាត់ពោះ",
         "gutYes": "យក",
@@ -428,6 +443,84 @@
         "uploadPhoto": "ជ្រើសរើសរូបភាព",
         "removePhoto": "លុប"
     },
+    "cart": {
+        "title": "កន្ត្រក",
+        "empty": "កន្ត្រកទទេ",
+        "browse": "រកមើលត្រី",
+        "addedTitle": "បានបន្ថែមទៅកន្ត្រក",
+        "addToCart": "បន្ថែមទៅកន្ត្រក",
+        "viewCart": "មើលកន្ត្រក",
+        "remove": "លុប",
+        "confirmRemove": "លុបទំនិញនេះពីកន្ត្រក?",
+        "gutToggle": "សម្អាតក្រពះ (+{{price}}/kg)",
+        "deliveryDate": "ថ្ងៃដឹកជញ្ជូន",
+        "deliveryTime": "ពេលវេលា",
+        "fishTotal": "តម្លៃត្រី (រួមបញ្ចូលថ្លៃសេវា)",
+        "campaignDiscount": "ការបញ្ចុះតម្លៃ",
+        "deliveryFee": "ថ្លៃដឹកជញ្ជូន",
+        "groupTotal": "សរុបរងសម្រាប់កសិករនេះ",
+        "grandTotal": "សរុប",
+        "checkout": "បញ្ជាទិញ",
+        "toConfirm": "ទៅការពិនិត្យ",
+        "next": "បន្ទាប់",
+        "placeOrder": "បញ្ជាក់ការបញ្ជាទិញ",
+        "suggestTitle": "ការណែនាំសន្សំថ្លៃដឹកជញ្ជូន",
+        "suggestDesc": "កសិករផ្សេងទៀតក្នុងកន្ត្រកក៏លក់ត្រីប្រភេទនេះ។ ការបញ្ចូលទំនិញពីកសិករតែម្នាក់អាចសន្សំថ្លៃដឹកជញ្ជូន។ នេះគ្រាន់តែជាការណែនាំ អ្នកជ្រើសរើសដោយខ្លួនឯង។",
+        "suggestLabel": "អាចផ្លាស់ប្តូរកសិករសម្រាប់ {{fish}} ដើម្បីសន្សំ",
+        "currentSide": "បច្ចុប្បន្ន",
+        "proposedSide": "ណែនាំ",
+        "saveDelivery": "សន្សំប្រហែល {{amount}} KHR",
+        "sameDelivery": "មិនអាចសន្សំថ្លៃដឹកជញ្ជូនបានទេ ប៉ុន្តែអាចបញ្ចូលគ្នាបាន",
+        "keepOriginal": "រក្សាដដែល",
+        "acceptSwap": "ប្តូរ",
+        "applied": "បានធ្វើបច្ចុប្បន្នភាព",
+        "viewDetail": "មើលព័ត៌មានលម្អិត",
+        "listingDetail": "ព័ត៌មានលម្អិតនៃការផ្សាយ",
+        "confirmTitle": "ពិនិត្យការបញ្ជាទិញ",
+        "confirmDesc": "ការបញ្ជាទិញរបស់អ្នកនឹងត្រូវបានបញ្ចូលដូចខាងក្រោម។ ចុច \"បញ្ជាក់\" ដើម្បីបញ្ចប់។",
+        "errorStock": "ស្តុកមិនគ្រប់គ្រាន់សម្រាប់ {{name}} (នៅសល់ {{stock}}kg)",
+        "errorDelivery": "សូមជ្រើសកាលបរិច្ឆេទ និងពេលវេលា",
+        "errorSubmit": "បញ្ជាទិញបរាជ័យ។ សូមព្យាយាមម្តងទៀត",
+        "navCart": "កន្ត្រក"
+    },
+    "notifMessages": {
+        "newOrder": {
+            "title": "ការបញ្ជាទិញថ្មីពី {{restaurant}}",
+            "body": "{{fish}} {{qty}}kg\nដឹកជញ្ជូន: {{date}} {{time}}\nកំណត់ពេល: {{deadline}}"
+        },
+        "approved": {
+            "title": "{{farmer}} យល់ព្រមបញ្ជាទិញ",
+            "body": "{{fish}} {{qty}}kg\nដឹកជញ្ជូន: {{date}} {{time}}"
+        },
+        "declined": {
+            "title": "{{farmer}} បានបដិសេធបញ្ជាទិញ",
+            "body": "{{fish}} {{qty}}kg"
+        },
+        "expiredDeclinedFarmer": {
+            "title": "បញ្ជាទិញពី {{restaurant}} ហួសកំណត់ពេល",
+            "body": "{{fish}} {{qty}}kg"
+        },
+        "expiredDeclinedRestaurant": {
+            "title": "{{farmer}} បដិសេធដោយហួសកំណត់ពេល",
+            "body": "{{fish}} {{qty}}kg"
+        },
+        "statusUpdate": {
+            "title": "{{farmer}} ស្ថានភាពបញ្ជាទិញបានផ្លាស់ប្ដូរ",
+            "body": "ស្ថានភាព: {{status}}"
+        },
+        "deliveryReminder": {
+            "title": "ការដឹកជញ្ជូនពី {{farmer}} នៅថ្ងៃស្អែក",
+            "body": "{{fish}} {{qty}}kg\nដឹកជញ្ជូន: {{date}} {{time}}"
+        },
+        "chatMessage": {
+            "title": "សារពី {{sender}}",
+            "body": "{{text}}"
+        },
+        "adminReport": {
+            "title": "របាយការណ៍បញ្ហាថ្មី",
+            "body": "{{fromRole}} → {{type}}\n{{reporter}}"
+        }
+    },
     "comments": {
         "title": "មតិយោបល់",
         "publicNote": "មតិយោបល់ត្រូវបានបង្ហាញសាធារណៈ។ ប្រើវាដើម្បីសាកសួរមុនពេលបញ្ជាទិញ។",
@@ -522,6 +615,8 @@
         "salesTitle": "ការលក់",
         "purchaseTitle": "ការទិញ",
         "tabToday": "ថ្ងៃនេះ",
+        "tabWeek": "1 សប្តាហ៍",
+        "tabMonth": "1 ខែ",
         "tabCustom": "កំណត់ពេល",
         "tabAll": "ទាំងអស់",
         "customFrom": "ចាប់ពី",
@@ -668,6 +763,9 @@
             "subtitle": "កំណត់អត្រាថ្លៃសេវា កម្រៃ និងយុទ្ធនាការ",
             "restaurantSection": "ផ្នែកភោជនីយដ្ឋាន",
             "farmerSection": "ផ្នែកកសិករ",
+            "bannerSection": "បាននៀរនៅទំព័រភោជនីយដ្ឋាន",
+            "bannerActiveLabel": "បង្ហាញបាននៀរយុទ្ធនាការ",
+            "bannerActiveHint": "នៅពេលបើក បាននៀរ \"បញ្ចុះតម្លៃពិសេស\" នឹងបង្ហាញនៅខាងលើបញ្ជីត្រី។",
             "serviceRateLabel": "អត្រាថ្លៃសេវា (%)",
             "serviceRateHint": "បន្ថែមលើការបង់ពីភោជនីយដ្ឋាន (លំនាំដើម 5%)",
             "campaignActiveLabel": "បើកយុទ្ធនាការ",
@@ -712,7 +810,14 @@
             "ocrTextPlaceholder": "អត្ថបទនឹងបង្ហាញនៅទីនេះបន្ទាប់ពី OCR",
             "ocrAutofillEmpty": "រកមិនឃើញខេត្ត សូមពិនិត្យគុណភាពរូបភាព",
             "ocrAutofillDone": "បានបំពេញ {{count}} ក្រឡា សូមពិនិត្យមើលហើយរក្សាទុក",
-            "ocrAutofillMissing": "ខេត្តខាងក្រោមមិនអាចបំពេញស្វ័យប្រវត្តិ (សូមបញ្ចូលដោយដៃ)"
+            "ocrAutofillMissing": "ខេត្តខាងក្រោមមិនអាចបំពេញស្វ័យប្រវត្តិ (សូមបញ្ចូលដោយដៃ)",
+            "historyBtn": "ប្រវត្តិ",
+            "historyTitle": "ប្រវត្តិរក្សាទុក",
+            "historyLoading": "កំពុងផ្ទុក...",
+            "historyEmpty": "មិនទាន់មានប្រវត្តិ",
+            "historyError": "ផ្ទុកប្រវត្តិបរាជ័យ",
+            "viewingHistory": "កំពុងមើលប្រវត្តិពី {{date}} (មើលបានតែម្នាក់ឯង)",
+            "backToCurrent": "ត្រឡប់មកបច្ចុប្បន្ន"
         },
         "reports": {
             "title": "របាយការណ៍បញ្ហា",

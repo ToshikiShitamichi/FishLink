@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&libraries=geometry&loading=async" async defer></script>
+    <style>
+        .cart-page { max-width: 480px; margin: 0 auto; padding: 0 16px 180px; }
+        .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
+
+        .cart-empty {
+            background: #fff;
+            border: 1px dashed var(--color-border);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--color-text-sub);
+            font-size: 14px;
+        }
+        .cart-empty__icon { font-size: 48px; color: #cbd5e1; margin-bottom: 10px; }
+        .cart-empty__cta {
+            display: inline-block; margin-top: 14px;
+            background: var(--color-primary); color: #fff;
+            padding: 10px 20px; border-radius: 22px;
+            font-size: 13px; font-weight: 700; text-decoration: none;
+        }
+
+        .farmer-group {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .farmer-group__head {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px;
+        }
+        .farmer-group__name {
+            font-size: 15px; font-weight: 700; color: var(--color-text);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .farmer-group__meta { font-size: 11px; color: var(--color-text-sub); }
+
+        .cart-item {
+            display: flex; gap: 10px;
+            padding: 10px 0;
+            border-top: 1px solid #f1f5f9;
+        }
+        .cart-item__img {
+            width: 64px; height: 64px; border-radius: 10px;
+            background: #e2e8f0;
+            flex-shrink: 0; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .cart-item__img img { width: 100%; height: 100%; object-fit: cover; }
+        .cart-item__body { flex: 1; min-width: 0; }
+        .cart-item__name { font-size: 14px; font-weight: 700; }
+        .cart-item__size { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
+        .cart-item__price { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
+        .cart-item__ctrl {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 8px; gap: 10px; flex-wrap: wrap;
+        }
+        .qty-box {
+            display: flex; align-items: center; gap: 6px;
+            background: #f8fafc; border-radius: 20px; padding: 3px 8px;
+        }
+        .qty-box button {
+            width: 24px; height: 24px; border-radius: 50%;
+            border: 1px solid var(--color-border); background: #fff;
+            font-size: 14px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .qty-box button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .qty-box__value { font-size: 13px; font-weight: 700; min-width: 30px; text-align: center; }
+
+        .gut-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11px; padding: 3px 8px; border-radius: 12px;
+            background: #f1f5f9; color: var(--color-text-sub);
+            border: 1px solid transparent; cursor: pointer;
+            font-family: inherit;
+        }
+        .gut-chip.active {
+            background: #ecfdf5; color: #047857;
+            border-color: #a7f3d0; font-weight: 600;
+        }
+
+        .remove-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-family: inherit;
+        }
+        .remove-btn:hover { background: #fee2e2; }
+        .remove-btn .material-symbols-outlined { font-size: 14px; }
+
+        .cart-item__subtotal {
+            text-align: right; font-size: 13px; font-weight: 700; color: var(--color-text);
+            margin-top: 6px;
+        }
+
+        .delivery-pick {
+            display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap;
+        }
+        .delivery-pick > div { flex: 1; min-width: 130px; }
+        .delivery-pick label { display: block; font-size: 11px; color: var(--color-text-sub); margin-bottom: 4px; font-weight: 600; }
+        .delivery-pick input, .delivery-pick select {
+            width: 100%; padding: 8px 10px;
+            border: 1px solid var(--color-border); border-radius: 10px;
+            font-size: 16px; font-family: inherit; background: #fff;
+        }
+
+        .group-breakdown {
+            margin-top: 12px; padding-top: 10px;
+            border-top: 1px solid #f1f5f9;
+            font-size: 12px; color: var(--color-text-sub);
+        }
+        .group-breakdown__row {
+            display: flex; justify-content: space-between; padding: 3px 0;
+        }
+        .group-breakdown__row.total {
+            font-weight: 700; color: var(--color-text); font-size: 14px;
+            margin-top: 6px; padding-top: 8px; border-top: 1px solid #e2e8f0;
+        }
+        .group-breakdown .discount { color: #dc2626; }
+
+        .grand-total-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            max-width: 480px; margin: 0 auto;
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
+            padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+            z-index: 10;
+        }
+        .grand-total-row {
+            display: flex; justify-content: space-between; align-items: baseline;
+            margin-bottom: 8px;
+        }
+        .grand-total-row__label { font-size: 13px; color: var(--color-text-sub); }
+        .grand-total-row__value { font-size: 22px; font-weight: 700; color: var(--color-text); }
+        .checkout-btn {
+            width: 100%; padding: 14px;
+            background: var(--color-primary); color: #fff;
+            border: none; border-radius: 14px;
+            font-size: 16px; font-weight: 700; cursor: pointer;
+            font-family: inherit;
+        }
+        .checkout-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .err-msg {
+            font-size: 12px; color: #b91c1c;
+            margin-top: 6px; text-align: center;
+            display: none;
+        }
+        .err-msg.show { display: block; }
+
+        /* Stage オーバーレイ（提案／確認） */
+        .stage-page {
+            display: none;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 16px 180px;
+        }
+        .stage-page.show { display: block; }
+
+        .stage-intro {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 14px;
+            padding: 12px 14px;
+            font-size: 13px;
+            color: #065f46;
+            margin-bottom: 14px;
+            line-height: 1.5;
+        }
+        .stage-intro__title {
+            font-size: 14px; font-weight: 700; margin-bottom: 4px;
+            display: flex; align-items: center; gap: 6px;
+        }
+
+        .suggest-card {
+            background: #fff;
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+        }
+        .suggest-card__label { font-size: 11px; font-weight: 700; color: #b45309; margin-bottom: 4px; }
+        .suggest-card__row {
+            display: flex; gap: 8px; align-items: center; padding: 8px 0;
+            border-top: 1px solid #f1f5f9;
+        }
+        .suggest-card__row:first-of-type { border-top: none; }
+        .suggest-card__thumb {
+            width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0;
+            background: #e2e8f0; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .suggest-card__thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .suggest-card__info { flex: 1; min-width: 0; }
+        .suggest-card__title { font-size: 13px; font-weight: 700; color: var(--color-text); }
+        .suggest-card__sub { font-size: 12px; color: var(--color-text-sub); margin-top: 1px; }
+        .suggest-card__side {
+            font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+            white-space: nowrap; flex-shrink: 0;
+        }
+        .suggest-card__side.current { background: #f1f5f9; color: #334155; }
+        .suggest-card__side.proposed { background: #d1fae5; color: #065f46; }
+        .suggest-card__savings {
+            margin-top: 8px; padding: 6px 10px;
+            background: #fef3c7; border-radius: 10px;
+            font-size: 12px; font-weight: 700; color: #92400e;
+            text-align: center;
+        }
+        .suggest-card__actions {
+            display: flex; gap: 8px; margin-top: 10px;
+        }
+        .suggest-card__actions button {
+            flex: 1; border: none; border-radius: 10px;
+            padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer;
+            font-family: inherit;
+        }
+        .suggest-card__actions .accept { background: var(--color-primary); color: #fff; }
+        .suggest-card__actions .keep { background: #fff; color: #334155; border: 1px solid var(--color-border); }
+
+        .confirm-group {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+        .confirm-group__head {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 14px; font-weight: 700; margin-bottom: 8px;
+        }
+        .confirm-group__row {
+            display: flex; gap: 8px; padding: 4px 0;
+            font-size: 13px;
+        }
+        .confirm-group__row span.v { margin-left: auto; }
+        .confirm-group__total {
+            border-top: 1px solid #e2e8f0; margin-top: 8px; padding-top: 6px;
+            font-weight: 700;
+        }
+        .confirm-group__deliv {
+            font-size: 12px; color: var(--color-text-sub); margin-top: 6px;
+        }
+
+        /* 出品詳細モーダル */
+        .listing-modal {
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 100;
+        }
+        .listing-modal.show { display: flex; }
+        .listing-modal__sheet {
+            width: 100%; max-width: 480px;
+            background: var(--color-surface);
+            border-radius: 20px 20px 0 0;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            animation: slideUp 0.2s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .listing-modal__head {
+            position: sticky; top: 0;
+            background: var(--color-surface);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--color-border);
+            z-index: 1;
+        }
+        .listing-modal__title { font-size: 16px; font-weight: 700; }
+        .listing-modal__close {
+            width: 36px; height: 36px; border-radius: 50%;
+            border: none; background: #f1f5f9;
+            cursor: pointer; font-family: inherit;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .listing-modal__body { padding: 16px; }
+
+        .lm-gallery {
+            display: flex; overflow-x: auto; gap: 6px;
+            scroll-snap-type: x mandatory;
+            margin: -16px -16px 14px;
+            padding: 0 16px;
+        }
+        .lm-gallery::-webkit-scrollbar { display: none; }
+        .lm-gallery img {
+            width: 280px; height: 210px; object-fit: cover;
+            border-radius: 14px; flex-shrink: 0; scroll-snap-align: start;
+        }
+        .lm-gallery__placeholder {
+            width: 100%; height: 210px;
+            background: #e2e8f0;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            color: #94a3b8;
+        }
+
+        .lm-farmer-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 0; border-bottom: 1px solid #f1f5f9; margin-bottom: 10px;
+        }
+        .lm-farmer-row__avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: #e2e8f0; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .lm-farmer-row__avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .lm-farmer-row__name { font-size: 14px; font-weight: 700; }
+        .lm-farmer-row__meta { font-size: 11px; color: var(--color-text-sub); }
+        .lm-farmer-row__rating {
+            font-size: 12px; color: var(--color-text-sub);
+            display: inline-flex; align-items: center; gap: 3px;
+        }
+        .lm-farmer-row__rating .material-symbols-outlined {
+            font-size: 13px; color: #f59e0b;
+            font-variation-settings: 'FILL' 1;
+        }
+
+        .lm-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+        .lm-meta { font-size: 12px; color: var(--color-text-sub); margin-bottom: 12px; }
+        .lm-price-row {
+            display: flex; align-items: baseline; gap: 6px;
+            margin-bottom: 12px;
+        }
+        .lm-price { font-size: 22px; font-weight: 700; color: var(--color-text); }
+        .lm-price-unit { font-size: 12px; color: var(--color-text-sub); }
+
+        .lm-info-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 8px 16px; margin-bottom: 12px;
+        }
+        .lm-info-grid .k { font-size: 11px; color: var(--color-text-sub); }
+        .lm-info-grid .v { font-size: 14px; font-weight: 600; color: var(--color-text); }
+
+        .lm-section {
+            margin-top: 14px; padding-top: 14px;
+            border-top: 1px solid #f1f5f9;
+        }
+        .lm-section__title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+        .lm-section__body { font-size: 13px; color: var(--color-text); line-height: 1.6; }
+
+        .detail-link {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: 11px; color: #0369a1; cursor: pointer;
+            background: none; border: none; padding: 2px 0;
+            font-family: inherit; margin-top: 2px;
+        }
+        .detail-link:hover { text-decoration: underline; }
+        .detail-link .material-symbols-outlined { font-size: 14px; }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div style="max-width:480px; margin:0 auto;">
+        <div class="page-header" style="align-items:center; padding:12px 16px;">
+            <a href="javascript:history.back()" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
+            </select>
+        </div>
+
+        <div class="sub-page__title" data-i18n="cart.title"></div>
+    </div>
+
+    <div class="cart-page" id="cart-page">
+        <div class="cart-empty" id="cart-empty" style="display:none;">
+            <div class="cart-empty__icon"><span class="material-symbols-outlined" style="font-size:48px;">shopping_cart</span></div>
+            <div data-i18n="cart.empty"></div>
+            <a class="cart-empty__cta" href="/pages/restaurant/dashboard.html" data-i18n="cart.browse"></a>
+        </div>
+
+        <div id="cart-container"></div>
+    </div>
+
+    <!-- 提案ステージ -->
+    <div class="stage-page" id="suggest-page">
+        <div class="stage-intro">
+            <div class="stage-intro__title">
+                <span class="material-symbols-outlined" style="font-size:18px;">lightbulb</span>
+                <span data-i18n="cart.suggestTitle"></span>
+            </div>
+            <div data-i18n="cart.suggestDesc"></div>
+        </div>
+        <div id="suggest-container"></div>
+    </div>
+
+    <!-- 確認ステージ -->
+    <div class="stage-page" id="confirm-page">
+        <div class="stage-intro" style="background:#eef2ff; border-color:#c7d2fe; color:#312e81;">
+            <div class="stage-intro__title">
+                <span class="material-symbols-outlined" style="font-size:18px;">fact_check</span>
+                <span data-i18n="cart.confirmTitle"></span>
+            </div>
+            <div data-i18n="cart.confirmDesc"></div>
+        </div>
+        <div id="confirm-container"></div>
+    </div>
+
+    <!-- 出品詳細モーダル -->
+    <div class="listing-modal" id="listing-modal">
+        <div class="listing-modal__sheet">
+            <div class="listing-modal__head">
+                <div class="listing-modal__title" data-i18n="cart.listingDetail"></div>
+                <button class="listing-modal__close" type="button" id="modal-close" aria-label="close">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="listing-modal__body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <div class="grand-total-bar" id="grand-total-bar" style="display:none;">
+        <div class="grand-total-row">
+            <span class="grand-total-row__label" data-i18n="cart.grandTotal"></span>
+            <span class="grand-total-row__value" id="grand-total">0 KHR</span>
+        </div>
+        <button class="checkout-btn" id="checkout-btn" data-i18n="cart.checkout"></button>
+        <div class="err-msg" id="err-msg"></div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            doc, getDoc, collection, writeBatch, serverTimestamp,
+            query, where, getDocs
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import {
+            subscribeCart, updateCartItem, removeCartItem, clearCart, groupByFarmer
+        } from '/js/cart.js';
+        import {
+            calcItemPrices, calcDeliveryFee, sumItems, calcOrderTotal
+        } from '/js/order-utils.js';
+        import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
+
+        const loading = document.getElementById('loading');
+        const errEl = document.getElementById('err-msg');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        // 状態
+        let cartItems = [];                // [{ listingId, farmerId, quantity, gutProcessing }]
+        const listingCache = new Map();    // listingId -> listing data
+        const farmerCache = new Map();     // farmerId -> farmer data
+        const distanceCache = new Map();   // farmerId -> km
+        // 農家ごとの納品日時（UI入力値）
+        const deliveryPick = new Map();    // farmerId -> { dateIso, time }
+
+        // 料率
+        let serviceRate = 0.05, campaignActive = false, campaignDiscountRate = 0;
+        let farmerRate = 0.05, farmerCampaignActive = false, farmerCampaignDiscountRate = 0;
+
+        // ── Google Maps ready 待ち ──
+        function waitForGoogleMaps() {
+            return new Promise((resolve) => {
+                if (typeof google !== 'undefined' && google.maps) return resolve();
+                const iv = setInterval(() => {
+                    if (typeof google !== 'undefined' && google.maps) {
+                        clearInterval(iv); resolve();
+                    }
+                }, 200);
+                setTimeout(() => { clearInterval(iv); resolve(); }, 5000);
+            });
+        }
+
+        function haversine(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // {km, ok} を返す（ok=true のときキャッシュ対象）
+        async function calcRoadDistance(lat1, lng1, lat2, lng2) {
+            await waitForGoogleMaps();
+            if (typeof google === 'undefined' || !google.maps) {
+                return { km: haversine(lat1, lng1, lat2, lng2), ok: false };
+            }
+            return new Promise((resolve) => {
+                const service = new google.maps.DistanceMatrixService();
+                service.getDistanceMatrix({
+                    origins: [new google.maps.LatLng(lat1, lng1)],
+                    destinations: [new google.maps.LatLng(lat2, lng2)],
+                    travelMode: google.maps.TravelMode.DRIVING,
+                }, (response, status) => {
+                    if (status === 'OK' && response.rows[0]?.elements[0]?.status === 'OK') {
+                        resolve({ km: response.rows[0].elements[0].distance.value / 1000, ok: true });
+                    } else {
+                        resolve({ km: haversine(lat1, lng1, lat2, lng2), ok: false });
+                    }
+                });
+            });
+        }
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        const DELIVERY_TIME_SLOTS = [
+            '6:00–7:00','7:00–8:00','8:00–9:00','9:00–10:00',
+            '10:00–11:00','11:00–12:00','12:00–13:00','13:00–14:00',
+            '14:00–15:00','15:00–16:00','16:00–17:00','17:00–18:00',
+        ];
+
+        function todayIso() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        async function ensureListing(listingId) {
+            if (listingCache.has(listingId)) return listingCache.get(listingId);
+            const snap = await getDoc(doc(db, 'fishListings', listingId));
+            const data = snap.exists() ? snap.data() : null;
+            listingCache.set(listingId, data);
+            return data;
+        }
+
+        async function ensureFarmer(farmerId) {
+            if (farmerCache.has(farmerId)) return farmerCache.get(farmerId);
+            const snap = await getDoc(doc(db, 'users', farmerId));
+            const data = snap.exists() ? snap.data() : null;
+            farmerCache.set(farmerId, data);
+            return data;
+        }
+
+        async function ensureDistance(farmerId, farmer) {
+            if (distanceCache.has(farmerId)) return distanceCache.get(farmerId);
+            const myLoc = window.currentUserData?.location;
+            const farmerLoc = farmer?.location;
+            if (!myLoc || !farmerLoc) {
+                distanceCache.set(farmerId, 0);
+                return 0;
+            }
+            // localStorage キャッシュ優先（Distance Matrix API 呼出を節約）
+            const uid = window.currentUser?.uid;
+            const locs = { rLat: myLoc.lat, rLng: myLoc.lng, fLat: farmerLoc.lat, fLng: farmerLoc.lng };
+            const cached = getCachedDistance(uid, farmerId, locs);
+            if (cached !== null) {
+                distanceCache.set(farmerId, cached);
+                return cached;
+            }
+            const r = await calcRoadDistance(myLoc.lat, myLoc.lng, farmerLoc.lat, farmerLoc.lng);
+            if (r.ok) setCachedDistance(uid, farmerId, r.km, locs);
+            distanceCache.set(farmerId, r.km);
+            return r.km;
+        }
+
+        // カート購読開始
+        waitForUserData(async () => {
+            loading.classList.add('show');
+            try {
+                // 料率取得
+                const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
+                if (campSnap.exists()) {
+                    const c = campSnap.data();
+                    serviceRate = c.serviceRate ?? 0.05;
+                    campaignActive = c.campaignActive === true;
+                    campaignDiscountRate = c.campaignDiscount ?? 0;
+                    farmerRate = c.farmerRate ?? 0.05;
+                    farmerCampaignActive = c.farmerCampaignActive === true;
+                    farmerCampaignDiscountRate = c.farmerCampaignDiscount ?? 0;
+                }
+
+                subscribeCart(window.currentUser.uid, async (items) => {
+                    cartItems = items;
+                    await render();
+                });
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+            }
+        });
+
+        function fmtKhr(n) { return `${Math.round(n).toLocaleString()} KHR`; }
+
+        async function render() {
+            const container = document.getElementById('cart-container');
+            const empty = document.getElementById('cart-empty');
+            const bar = document.getElementById('grand-total-bar');
+
+            if (cartItems.length === 0) {
+                container.innerHTML = '';
+                empty.style.display = 'block';
+                bar.style.display = 'none';
+                return;
+            }
+            empty.style.display = 'none';
+            bar.style.display = 'block';
+
+            // listings / farmers を先読み
+            const listingIds = [...new Set(cartItems.map(it => it.listingId))];
+            const farmerIds = [...new Set(cartItems.map(it => it.farmerId))];
+            await Promise.all(listingIds.map(ensureListing));
+            await Promise.all(farmerIds.map(ensureFarmer));
+            await Promise.all(farmerIds.map(fid => ensureDistance(fid, farmerCache.get(fid))));
+
+            const groups = groupByFarmer(cartItems);
+            let html = '';
+            let grandTotal = 0;
+
+            for (const [farmerId, items] of groups.entries()) {
+                const farmer = farmerCache.get(farmerId) || {};
+                const farmerName = farmer.displayName || '-';
+                const dist = distanceCache.get(farmerId) || 0;
+
+                // 各itemの料金計算
+                const calcItems = [];
+                for (const item of items) {
+                    const listing = listingCache.get(item.listingId);
+                    if (!listing) continue;
+                    const prices = calcItemPrices({
+                        listing, quantity: item.quantity, gutProcessing: item.gutProcessing,
+                        serviceRate, campaignActive, campaignDiscountRate,
+                        farmerRate, farmerCampaignActive, farmerCampaignDiscountRate,
+                    });
+                    calcItems.push({ raw: item, listing, prices });
+                }
+
+                // 配送料は農家ごとに1回（先頭item の設定を使う・同じ農家なら同じ）
+                const firstListing = calcItems[0]?.listing;
+                const deliveryFee = firstListing
+                    ? calcDeliveryFee(firstListing.deliveryRate, firstListing.freeDeliveryDistance, dist)
+                    : 0;
+
+                // 合計
+                const itemsSum = sumItems(calcItems.map(c => c.prices));
+                const groupTotal = calcOrderTotal(itemsSum, deliveryFee);
+                grandTotal += groupTotal;
+
+                // 納品日時デフォルト（初回のみ）
+                if (!deliveryPick.has(farmerId)) {
+                    deliveryPick.set(farmerId, { dateIso: todayIso(), time: DELIVERY_TIME_SLOTS[1] });
+                }
+                const pick = deliveryPick.get(farmerId);
+
+                html += `<div class="farmer-group" data-farmer="${farmerId}">
+                    <div class="farmer-group__head">
+                        <div class="farmer-group__name">
+                            <span class="material-symbols-outlined" style="font-size:18px; color:#047857;">storefront</span>
+                            <span>${escapeHtml(farmerName)}</span>
+                        </div>
+                        <span class="farmer-group__meta">${dist.toFixed(1)} km</span>
+                    </div>`;
+
+                // items
+                calcItems.forEach((c, idx) => {
+                    const origIndex = cartItems.indexOf(c.raw);
+                    const fishType = c.raw.snapFishType || c.listing.fishType || '';
+                    const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
+                    const shortName = fishName.split('/')[0].trim();
+                    const photoUrl = c.listing.photoUrl || (c.listing.photos?.[0]);
+                    const unitPrice = (c.listing.price || 0) + (c.raw.gutProcessing ? (c.listing.gutPrice || 0) : 0);
+                    const minOrder = c.listing.minOrder || 1;
+
+                    html += `<div class="cart-item">
+                        <div class="cart-item__img">
+                            ${photoUrl ? `<img src="${photoUrl}" alt="">` : `<span class="material-symbols-outlined" style="font-size:32px; color:#94a3b8;">set_meal</span>`}
+                        </div>
+                        <div class="cart-item__body">
+                            <div class="cart-item__name">${escapeHtml(shortName)}</div>
+                            <div class="cart-item__size">${c.listing.size || ''} head/kg</div>
+                            <div class="cart-item__price">${unitPrice.toLocaleString()} KHR/kg</div>
+                            <div class="cart-item__ctrl">
+                                <div class="qty-box">
+                                    <button type="button" data-act="qty-minus" data-idx="${origIndex}" ${c.raw.quantity <= minOrder ? 'disabled' : ''}>−</button>
+                                    <div class="qty-box__value">${c.raw.quantity} kg</div>
+                                    <button type="button" data-act="qty-plus" data-idx="${origIndex}">＋</button>
+                                </div>
+                                <button class="gut-chip ${c.raw.gutProcessing ? 'active' : ''}" type="button" data-act="toggle-gut" data-idx="${origIndex}">
+                                    ${i18next.t('cart.gutToggle', { price: (c.listing.gutPrice || 0).toLocaleString() })}
+                                </button>
+                                <button class="remove-btn" type="button" data-act="remove" data-idx="${origIndex}">
+                                    <span class="material-symbols-outlined">delete</span>
+                                    <span>${i18next.t('cart.remove')}</span>
+                                </button>
+                            </div>
+                            <div class="cart-item__subtotal">${fmtKhr(c.prices.fishPrice)}</div>
+                        </div>
+                    </div>`;
+                });
+
+                // 配送日時選択
+                const dateOptions = `<input type="date" data-act="date" data-farmer="${farmerId}" value="${pick.dateIso}" min="${todayIso()}">`;
+                const timeOptions = DELIVERY_TIME_SLOTS.map(t =>
+                    `<option value="${t}" ${t === pick.time ? 'selected' : ''}>${t}</option>`
+                ).join('');
+                html += `<div class="delivery-pick">
+                    <div><label>${i18next.t('cart.deliveryDate')}</label>${dateOptions}</div>
+                    <div><label>${i18next.t('cart.deliveryTime')}</label>
+                        <select data-act="time" data-farmer="${farmerId}">${timeOptions}</select>
+                    </div>
+                </div>`;
+
+                // 内訳
+                html += `<div class="group-breakdown">
+                    <div class="group-breakdown__row"><span>${i18next.t('cart.fishTotal')}</span><span>${fmtKhr(itemsSum.fishPrice + itemsSum.serviceFee)}</span></div>
+                    ${campaignActive && itemsSum.campaignDiscount > 0 ? `<div class="group-breakdown__row discount"><span>${i18next.t('cart.campaignDiscount')}</span><span>-${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
+                    <div class="group-breakdown__row"><span>${i18next.t('cart.deliveryFee')}</span><span>${fmtKhr(deliveryFee)}</span></div>
+                    <div class="group-breakdown__row total"><span>${i18next.t('cart.groupTotal')}</span><span>${fmtKhr(groupTotal)}</span></div>
+                </div>`;
+
+                html += `</div>`;
+            }
+
+            container.innerHTML = html;
+            document.getElementById('grand-total').textContent = fmtKhr(grandTotal);
+            bindActions();
+        }
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function bindActions() {
+            const uid = window.currentUser.uid;
+            document.querySelectorAll('[data-act="qty-minus"]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const idx = Number(btn.dataset.idx);
+                    const item = cartItems[idx];
+                    const listing = listingCache.get(item.listingId);
+                    const minOrder = listing?.minOrder || 1;
+                    if (item.quantity > minOrder) {
+                        await updateCartItem(uid, idx, { quantity: item.quantity - 1 });
+                    }
+                });
+            });
+            document.querySelectorAll('[data-act="qty-plus"]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const idx = Number(btn.dataset.idx);
+                    await updateCartItem(uid, idx, { quantity: cartItems[idx].quantity + 1 });
+                });
+            });
+            document.querySelectorAll('[data-act="toggle-gut"]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const idx = Number(btn.dataset.idx);
+                    await updateCartItem(uid, idx, { gutProcessing: !cartItems[idx].gutProcessing });
+                });
+            });
+            document.querySelectorAll('[data-act="remove"]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm(i18next.t('cart.confirmRemove'))) return;
+                    const idx = Number(btn.dataset.idx);
+                    await removeCartItem(uid, idx);
+                });
+            });
+            document.querySelectorAll('[data-act="date"]').forEach(inp => {
+                inp.addEventListener('change', () => {
+                    const farmerId = inp.dataset.farmer;
+                    const pick = deliveryPick.get(farmerId) || {};
+                    deliveryPick.set(farmerId, { ...pick, dateIso: inp.value });
+                });
+            });
+            document.querySelectorAll('[data-act="time"]').forEach(sel => {
+                sel.addEventListener('change', () => {
+                    const farmerId = sel.dataset.farmer;
+                    const pick = deliveryPick.get(farmerId) || {};
+                    deliveryPick.set(farmerId, { ...pick, time: sel.value });
+                });
+            });
+        }
+
+        // ── ステージ管理（cart / suggest / confirm）──
+        let stage = 'cart';
+
+        function setStage(next) {
+            stage = next;
+            const cartPage = document.getElementById('cart-page');
+            const suggestPage = document.getElementById('suggest-page');
+            const confirmPage = document.getElementById('confirm-page');
+            cartPage.style.display = stage === 'cart' ? 'block' : 'none';
+            suggestPage.classList.toggle('show', stage === 'suggest');
+            confirmPage.classList.toggle('show', stage === 'confirm');
+
+            const btn = document.getElementById('checkout-btn');
+            if (stage === 'cart') {
+                btn.textContent = i18next.t('cart.toConfirm');
+            } else if (stage === 'suggest') {
+                btn.textContent = i18next.t('cart.next');
+            } else {
+                btn.textContent = i18next.t('cart.placeOrder');
+            }
+        }
+
+        // ── 提案ロジック：カート内各itemに対して、別農家にも同じfishTypeの出品があれば提案 ──
+        // 戻り値: [{ idx, currentListing, currentFarmerName, altListing, altFarmerName, altFarmerId, savingsDeliveryFee }]
+        async function computeSuggestions() {
+            const farmerIds = [...new Set(cartItems.map(it => it.farmerId))];
+            if (farmerIds.length < 2) return []; // 1農家だけなら提案不要
+
+            // カートに入っている各農家のアクティブな全出品を取得
+            // （大規模化したら server-side に移動推奨）
+            const listingsByFarmer = new Map();
+            await Promise.all(farmerIds.map(async (fid) => {
+                const q = query(
+                    collection(db, 'fishListings'),
+                    where('farmerId', '==', fid),
+                    where('isActive', '==', true)
+                );
+                const snap = await getDocs(q);
+                const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                listingsByFarmer.set(fid, arr);
+                // 将来 swap 受理時に listingCache から参照できるようにここで温めておく
+                arr.forEach(l => { if (!listingCache.has(l.id)) listingCache.set(l.id, l); });
+            }));
+
+            const suggestions = [];
+            const alreadyProposed = new Set(); // 同じ swap を重複提案しないため
+
+            for (let i = 0; i < cartItems.length; i++) {
+                const it = cartItems[i];
+                const curListing = listingCache.get(it.listingId);
+                if (!curListing) continue;
+                const curFishType = curListing.fishType;
+                if (!curFishType) continue;
+
+                // 他農家がこの魚種を扱っているか探す
+                for (const otherFarmerId of farmerIds) {
+                    if (otherFarmerId === it.farmerId) continue;
+                    const otherListings = listingsByFarmer.get(otherFarmerId) || [];
+                    const match = otherListings.find(l =>
+                        l.fishType === curFishType
+                        && (l.stock || 0) >= it.quantity
+                    );
+                    if (!match) continue;
+                    // 他農家は既にカートに入っている場合のみ提案（＝今の配送料が節約できる）
+                    // 実際は別農家→同農家に寄せる方向のみ
+                    const altFarmer = farmerCache.get(otherFarmerId);
+                    const dedupKey = `${i}-${otherFarmerId}`;
+                    if (alreadyProposed.has(dedupKey)) continue;
+                    alreadyProposed.add(dedupKey);
+
+                    // 節約額：この item を other 農家に移したら、現在の農家グループから抜ける
+                    // → 現農家グループの item数が 1 なら配送料が丸々消える、そうでなければ 0
+                    const currentGroupItems = cartItems.filter(c => c.farmerId === it.farmerId);
+                    let savings = 0;
+                    if (currentGroupItems.length === 1) {
+                        const curDist = distanceCache.get(it.farmerId) || 0;
+                        savings = calcDeliveryFee(curListing.deliveryRate, curListing.freeDeliveryDistance, curDist);
+                    }
+
+                    suggestions.push({
+                        idx: i,
+                        currentListing: curListing,
+                        currentListingId: it.listingId,
+                        currentFarmerId: it.farmerId,
+                        currentFarmerName: farmerCache.get(it.farmerId)?.displayName || '',
+                        altListing: match,
+                        altListingId: match.id,
+                        altFarmerId: otherFarmerId,
+                        altFarmerName: altFarmer?.displayName || '',
+                        savingsDeliveryFee: savings,
+                    });
+                }
+            }
+
+            return suggestions;
+        }
+
+        function renderSuggestions(suggestions) {
+            const container = document.getElementById('suggest-container');
+            if (suggestions.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = suggestions.map((s, sIdx) => {
+                const curFishType = s.currentListing.fishType;
+                const curName = i18next.exists(`fish.${curFishType}`) ? i18next.t(`fish.${curFishType}`) : curFishType;
+                const curShort = curName.split('/')[0].trim();
+                const altName = curShort; // 同じ fishType なので同じ名前
+                const curPrice = (s.currentListing.price || 0) + (s.currentListing.gutPrice || 0);
+                const altPrice = (s.altListing.price || 0) + (s.altListing.gutPrice || 0);
+                const priceDiff = altPrice - curPrice;
+
+                const curPhoto = s.currentListing.photoUrl || (s.currentListing.photos?.[0]);
+                const altPhoto = s.altListing.photoUrl || (s.altListing.photos?.[0]);
+
+                const savingsText = s.savingsDeliveryFee > 0
+                    ? i18next.t('cart.saveDelivery', { amount: s.savingsDeliveryFee.toLocaleString() })
+                    : i18next.t('cart.sameDelivery');
+
+                const priceDiffText = priceDiff === 0 ? ''
+                    : priceDiff > 0 ? ` (+${priceDiff.toLocaleString()} KHR/kg)`
+                    : ` (${priceDiff.toLocaleString()} KHR/kg)`;
+
+                return `
+                    <div class="suggest-card" data-suggest-idx="${sIdx}">
+                        <div class="suggest-card__label">${i18next.t('cart.suggestLabel', { fish: curShort })}</div>
+                        <div class="suggest-card__row">
+                            <div class="suggest-card__thumb">${curPhoto ? `<img src="${curPhoto}" alt="" loading="lazy">` : ''}</div>
+                            <div class="suggest-card__info">
+                                <div class="suggest-card__title">${escapeHtml(s.currentFarmerName)}</div>
+                                <div class="suggest-card__sub">${curShort} · ${curPrice.toLocaleString()} KHR/kg</div>
+                                <button class="detail-link" type="button" data-act="show-detail" data-listing-id="${s.currentListingId}" data-farmer-id="${s.currentFarmerId}">
+                                    <span class="material-symbols-outlined">info</span>
+                                    <span>${i18next.t('cart.viewDetail')}</span>
+                                </button>
+                            </div>
+                            <span class="suggest-card__side current">${i18next.t('cart.currentSide')}</span>
+                        </div>
+                        <div class="suggest-card__row">
+                            <div class="suggest-card__thumb">${altPhoto ? `<img src="${altPhoto}" alt="" loading="lazy">` : ''}</div>
+                            <div class="suggest-card__info">
+                                <div class="suggest-card__title">${escapeHtml(s.altFarmerName)}</div>
+                                <div class="suggest-card__sub">${altName} · ${altPrice.toLocaleString()} KHR/kg${priceDiffText}</div>
+                                <button class="detail-link" type="button" data-act="show-detail" data-listing-id="${s.altListingId}" data-farmer-id="${s.altFarmerId}">
+                                    <span class="material-symbols-outlined">info</span>
+                                    <span>${i18next.t('cart.viewDetail')}</span>
+                                </button>
+                            </div>
+                            <span class="suggest-card__side proposed">${i18next.t('cart.proposedSide')}</span>
+                        </div>
+                        <div class="suggest-card__savings">${savingsText}</div>
+                        <div class="suggest-card__actions">
+                            <button class="keep" type="button" data-act="keep">${i18next.t('cart.keepOriginal')}</button>
+                            <button class="accept" type="button" data-act="accept">${i18next.t('cart.acceptSwap')}</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.suggest-card').forEach(card => {
+                const sIdx = Number(card.dataset.suggestIdx);
+                const s = suggestions[sIdx];
+                card.querySelector('[data-act="keep"]').addEventListener('click', () => {
+                    card.style.opacity = '0.5';
+                    card.querySelectorAll('button').forEach(b => b.disabled = true);
+                });
+                card.querySelector('[data-act="accept"]').addEventListener('click', async () => {
+                    card.querySelectorAll('button').forEach(b => b.disabled = true);
+                    try {
+                        await updateCartItem(window.currentUser.uid, s.idx, {
+                            listingId: s.altListingId,
+                            farmerId: s.altFarmerId,
+                        });
+                        card.style.opacity = '0.5';
+                        card.querySelector('.suggest-card__savings').textContent = i18next.t('cart.applied');
+                    } catch (e) {
+                        card.querySelectorAll('button').forEach(b => b.disabled = false);
+                        console.error(e);
+                    }
+                });
+            });
+
+            // 詳細を見るボタン
+            container.querySelectorAll('[data-act="show-detail"]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const listingId = btn.dataset.listingId;
+                    const farmerId = btn.dataset.farmerId;
+                    await openListingDetail(listingId, farmerId);
+                });
+            });
+        }
+
+        // ── 出品詳細モーダル ──
+        async function openListingDetail(listingId, farmerId) {
+            const listing = listingCache.get(listingId) || (await (async () => {
+                const snap = await getDoc(doc(db, 'fishListings', listingId));
+                const data = snap.exists() ? snap.data() : null;
+                if (data) listingCache.set(listingId, data);
+                return data;
+            })());
+            if (!listing) return;
+            const farmer = farmerCache.get(farmerId) || {};
+            const dist = distanceCache.get(farmerId) || 0;
+
+            const fishType = listing.fishType || '';
+            const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
+            const photos = Array.isArray(listing.photos) && listing.photos.length > 0
+                ? listing.photos
+                : (listing.photoUrl ? [listing.photoUrl] : []);
+
+            const galleryHtml = photos.length > 0
+                ? `<div class="lm-gallery">${photos.map(u => `<img src="${u}" alt="" loading="lazy">`).join('')}</div>`
+                : `<div class="lm-gallery__placeholder"><span class="material-symbols-outlined" style="font-size:64px;">set_meal</span></div>`;
+
+            const unitPrice = (listing.price || 0) + (listing.gutPrice || 0);
+            const province = farmer.province || '';
+            const district = farmer.district || '';
+            const place = [province, district].filter(Boolean).join(', ');
+            const rating = Number(farmer.avgRating || 0).toFixed(1);
+            const reviews = farmer.reviewCount || 0;
+            const avatarUrl = farmer.avatarUrl;
+            const avatarHtml = avatarUrl
+                ? `<img src="${avatarUrl}" alt="">`
+                : `<span class="material-symbols-outlined" style="font-size:24px; color:#94a3b8;">person</span>`;
+
+            document.getElementById('modal-body').innerHTML = `
+                ${galleryHtml}
+                <div class="lm-farmer-row">
+                    <div class="lm-farmer-row__avatar">${avatarHtml}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div class="lm-farmer-row__name">${escapeHtml(farmer.displayName || '')}</div>
+                        <div class="lm-farmer-row__meta">
+                            <span class="lm-farmer-row__rating">
+                                <span class="material-symbols-outlined">star</span> ${rating} (${reviews})
+                            </span>
+                            ${place ? ` · ${escapeHtml(place)}` : ''}
+                            ${dist > 0 ? ` · ${dist.toFixed(1)} km` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="lm-name">${escapeHtml(fishName)}</div>
+                <div class="lm-meta">${listing.size || ''} head/kg</div>
+                <div class="lm-price-row">
+                    <span class="lm-price">${unitPrice.toLocaleString()}</span>
+                    <span class="lm-price-unit">KHR/kg</span>
+                </div>
+                <div class="lm-info-grid">
+                    <div><div class="k">${i18next.t('order.stock').replace(/[:：]\s*$/, '')}</div><div class="v">${listing.stock || 0} kg</div></div>
+                    <div><div class="k">${i18next.t('order.minOrder')}</div><div class="v">${listing.minOrder || 0} kg</div></div>
+                    <div><div class="k">${i18next.t('post.priceUnit')}</div><div class="v">${(listing.price || 0).toLocaleString()} KHR/kg</div></div>
+                    <div><div class="k">${i18next.t('post.gutPrice')}</div><div class="v">+${(listing.gutPrice || 0).toLocaleString()} KHR/kg</div></div>
+                    <div><div class="k">${i18next.t('post.deliveryRate')}</div><div class="v">${(listing.deliveryRate || 0).toLocaleString()} KHR/km</div></div>
+                    <div><div class="k">${i18next.t('post.freeDeliveryDistance')}</div><div class="v">${listing.freeDeliveryDistance || 0} km</div></div>
+                </div>
+                ${listing.description ? `
+                    <div class="lm-section">
+                        <div class="lm-section__title">${i18next.t('order.descriptionLabel')}</div>
+                        <div class="lm-section__body" style="white-space:pre-wrap;">${escapeHtml(listing.description)}</div>
+                    </div>
+                ` : ''}
+                ${farmer.farmerMessage ? `
+                    <div class="lm-section">
+                        <div class="lm-section__title">${i18next.t('profile.farmerMessage')}</div>
+                        <div class="lm-section__body">${escapeHtml(farmer.farmerMessage)}</div>
+                    </div>
+                ` : ''}
+            `;
+            document.getElementById('listing-modal').classList.add('show');
+        }
+
+        function closeListingDetail() {
+            document.getElementById('listing-modal').classList.remove('show');
+        }
+
+        document.getElementById('modal-close').addEventListener('click', closeListingDetail);
+        document.getElementById('listing-modal').addEventListener('click', (e) => {
+            // 背景（シート外）クリックで閉じる
+            if (e.target.id === 'listing-modal') closeListingDetail();
+        });
+
+        async function renderConfirm() {
+            const container = document.getElementById('confirm-container');
+            // render と同じロジックで最終内訳を算出
+            const groups = groupByFarmer(cartItems);
+            let html = '';
+            let grandTotal = 0;
+            for (const [farmerId, items] of groups.entries()) {
+                const farmer = farmerCache.get(farmerId) || {};
+                const dist = distanceCache.get(farmerId) || 0;
+                const calcItems = items.map(item => {
+                    const listing = listingCache.get(item.listingId);
+                    if (!listing) return null;
+                    const prices = calcItemPrices({
+                        listing, quantity: item.quantity, gutProcessing: item.gutProcessing,
+                        serviceRate, campaignActive, campaignDiscountRate,
+                        farmerRate, farmerCampaignActive, farmerCampaignDiscountRate,
+                    });
+                    return { listing, item, prices };
+                }).filter(Boolean);
+                const firstListing = calcItems[0]?.listing;
+                const deliveryFee = firstListing
+                    ? calcDeliveryFee(firstListing.deliveryRate, firstListing.freeDeliveryDistance, dist)
+                    : 0;
+                const itemsSum = sumItems(calcItems.map(c => c.prices));
+                const groupTotal = calcOrderTotal(itemsSum, deliveryFee);
+                grandTotal += groupTotal;
+
+                const pick = deliveryPick.get(farmerId) || { dateIso: '', time: '' };
+
+                const rows = calcItems.map(c => {
+                    const fishType = c.listing.fishType || '';
+                    const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
+                    const shortName = fishName.split('/')[0].trim();
+                    const gutMark = c.item.gutProcessing ? ` (${i18next.t('order.gutYes')})` : '';
+                    return `<div class="confirm-group__row"><span>${escapeHtml(shortName)} ${c.item.quantity}kg${gutMark}</span><span class="v">${fmtKhr(c.prices.fishPrice + c.prices.serviceFee)}</span></div>`;
+                }).join('');
+
+                html += `
+                    <div class="confirm-group">
+                        <div class="confirm-group__head">
+                            <span><span class="material-symbols-outlined" style="font-size:16px; color:#047857; vertical-align:-3px;">storefront</span> ${escapeHtml(farmer.displayName || '')}</span>
+                            <span style="font-size:11px; color:var(--color-text-sub);">${dist.toFixed(1)} km</span>
+                        </div>
+                        ${rows}
+                        ${campaignActive && itemsSum.campaignDiscount > 0 ? `<div class="confirm-group__row" style="color:#dc2626;"><span>${i18next.t('cart.campaignDiscount')}</span><span class="v">-${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
+                        <div class="confirm-group__row"><span>${i18next.t('cart.deliveryFee')}</span><span class="v">${fmtKhr(deliveryFee)}</span></div>
+                        <div class="confirm-group__row confirm-group__total"><span>${i18next.t('cart.groupTotal')}</span><span class="v">${fmtKhr(groupTotal)}</span></div>
+                        <div class="confirm-group__deliv">${i18next.t('cart.deliveryDate')}: ${pick.dateIso || '-'} / ${i18next.t('cart.deliveryTime')}: ${pick.time || '-'}</div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+            document.getElementById('grand-total').textContent = fmtKhr(grandTotal);
+        }
+
+        // 注文確定処理（旧インライン実装を関数化）
+        async function placeOrders() {
+            const uid = window.currentUser.uid;
+
+            // 最新の在庫をチェック
+            for (const it of cartItems) {
+                const snap = await getDoc(doc(db, 'fishListings', it.listingId));
+                const stock = snap.data()?.stock || 0;
+                if (stock < it.quantity) {
+                    throw new Error(i18next.t('cart.errorStock', {
+                        name: it.listingId, stock
+                    }) || `Stock insufficient for ${it.listingId}`);
+                }
+            }
+
+            const batch = writeBatch(db);
+            const groups = groupByFarmer(cartItems);
+
+            for (const [farmerId, items] of groups.entries()) {
+                    const pick = deliveryPick.get(farmerId);
+                    if (!pick?.dateIso || !pick?.time) {
+                        throw new Error(i18next.t('cart.errorDelivery'));
+                    }
+
+                    const dist = distanceCache.get(farmerId) || 0;
+                    const firstListing = listingCache.get(items[0].listingId);
+                    const deliveryFee = calcDeliveryFee(
+                        firstListing?.deliveryRate, firstListing?.freeDeliveryDistance, dist
+                    );
+
+                    // 各item の料金計算＋snap
+                    const itemDocs = [];
+                    for (const it of items) {
+                        const listing = listingCache.get(it.listingId);
+                        if (!listing) continue;
+                        const prices = calcItemPrices({
+                            listing, quantity: it.quantity, gutProcessing: it.gutProcessing,
+                            serviceRate, campaignActive, campaignDiscountRate,
+                            farmerRate, farmerCampaignActive, farmerCampaignDiscountRate,
+                        });
+                        itemDocs.push({
+                            listingId: it.listingId,
+                            quantity: it.quantity,
+                            gutProcessing: !!it.gutProcessing,
+                            ...prices,
+                            snapFishType: listing.fishType || null,
+                            snapSize: listing.size || null,
+                            snapPhotoUrl: listing.photoUrl || null,
+                            snapPrice: listing.price ?? null,
+                            snapGutPrice: listing.gutPrice ?? null,
+                        });
+                    }
+
+                    const itemsSum = sumItems(itemDocs);
+                    const total = calcOrderTotal(itemsSum, deliveryFee);
+                    const first = itemDocs[0];
+
+                    // M/D 形式
+                    const [y, m, d] = pick.dateIso.split('-').map(Number);
+                    const deliveryDate = `${m}/${d}`;
+
+                    const orderRef = doc(collection(db, 'orders'));
+                    batch.set(orderRef, {
+                        restaurantId: uid,
+                        farmerId,
+                        // order-level
+                        deliveryDate,
+                        deliveryDateIso: pick.dateIso,
+                        deliveryTime: pick.time,
+                        deliveryFee,
+                        // items[] 新方式
+                        items: itemDocs,
+                        // legacy: 合計値（fishPrice/serviceFee/... は items合計）
+                        fishPrice: itemsSum.fishPrice,
+                        serviceFee: itemsSum.serviceFee,
+                        campaignDiscount: itemsSum.campaignDiscount,
+                        totalAmount: total,
+                        serviceRateUsed: serviceRate,
+                        farmerCommission: itemsSum.farmerCommission,
+                        farmerCommissionGross: itemsSum.farmerCommissionGross,
+                        farmerCampaignDiscount: itemsSum.farmerCampaignDiscount,
+                        farmerRateUsed: farmerRate,
+                        farmerReceiveAmount: itemsSum.farmerReceiveAmount + deliveryFee,
+                        // legacy: 先頭item由来（既存表示・通知向け）
+                        listingId: first.listingId,
+                        quantity: first.quantity,
+                        gutProcessing: first.gutProcessing,
+                        snapFishType: first.snapFishType,
+                        snapSize: first.snapSize,
+                        snapPhotoUrl: first.snapPhotoUrl,
+                        snapPrice: first.snapPrice,
+                        snapGutPrice: first.snapGutPrice,
+                        // ステータス
+                        status: 'pending',
+                        declineReason: null,
+                        paymentStatus: 'pending',
+                        createdAt: serverTimestamp(),
+                    });
+                }
+
+            await batch.commit();
+            await clearCart(uid);
+            location.href = '/pages/restaurant/orders.html';
+        }
+
+        // ── チェックアウトボタン：ステージ遷移を制御 ──
+        document.getElementById('checkout-btn').addEventListener('click', async () => {
+            errEl.classList.remove('show');
+            const btn = document.getElementById('checkout-btn');
+            btn.disabled = true;
+            loading.classList.add('show');
+            try {
+                if (stage === 'cart') {
+                    if (cartItems.length === 0) return;
+                    // 納品日時が全て設定されているか確認
+                    const farmerIdsInCart = [...new Set(cartItems.map(it => it.farmerId))];
+                    for (const fid of farmerIdsInCart) {
+                        const pick = deliveryPick.get(fid);
+                        if (!pick?.dateIso || !pick?.time) {
+                            throw new Error(i18next.t('cart.errorDelivery'));
+                        }
+                    }
+
+                    // 提案を計算
+                    const suggestions = await computeSuggestions();
+                    if (suggestions.length > 0) {
+                        renderSuggestions(suggestions);
+                        setStage('suggest');
+                    } else {
+                        await renderConfirm();
+                        setStage('confirm');
+                    }
+                } else if (stage === 'suggest') {
+                    await renderConfirm();
+                    setStage('confirm');
+                } else if (stage === 'confirm') {
+                    await placeOrders();
+                }
+            } catch (err) {
+                console.error(err);
+                errEl.textContent = err.message || i18next.t('cart.errorSubmit');
+                errEl.classList.add('show');
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+
+        // 戻る矢印：ステージを1つ戻す、最前面なら history.back()
+        const backLink = document.querySelector('.page-header__back');
+        if (backLink) {
+            backLink.addEventListener('click', (e) => {
+                if (stage === 'confirm') {
+                    e.preventDefault();
+                    // 提案があった場合のみ suggest に戻す
+                    const confirmContainer = document.getElementById('confirm-container');
+                    if (document.getElementById('suggest-container').children.length > 0) {
+                        setStage('suggest');
+                    } else {
+                        setStage('cart');
+                    }
+                } else if (stage === 'suggest') {
+                    e.preventDefault();
+                    setStage('cart');
+                }
+            });
+        }
+
+        // 初期化：ボタンラベルをセット
+        setStage('cart');
+    </script>
+</body>
+
+</html>

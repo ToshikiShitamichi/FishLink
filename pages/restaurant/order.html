@@ -512,6 +512,7 @@
         import {
             doc, getDoc, addDoc, collection, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -525,10 +526,11 @@
         if (!listingId) { location.href = '/pages/restaurant/dashboard.html'; }
 
         // ── 道路距離計算（Google Maps Distance Matrix） ──
+        // {km, ok} を返す。ok=true のとき道路距離成功（キャッシュ対象）
         async function calcRoadDistance(lat1, lng1, lat2, lng2) {
             return new Promise((resolve) => {
                 if (typeof google === 'undefined' || !google.maps) {
-                    resolve(haversine(lat1, lng1, lat2, lng2));
+                    resolve({ km: haversine(lat1, lng1, lat2, lng2), ok: false });
                     return;
                 }
                 const service = new google.maps.DistanceMatrixService();
@@ -538,9 +540,9 @@
                     travelMode: google.maps.TravelMode.DRIVING,
                 }, (response, status) => {
                     if (status === 'OK' && response.rows[0]?.elements[0]?.status === 'OK') {
-                        resolve(response.rows[0].elements[0].distance.value / 1000);
+                        resolve({ km: response.rows[0].elements[0].distance.value / 1000, ok: true });
                     } else {
-                        resolve(haversine(lat1, lng1, lat2, lng2));
+                        resolve({ km: haversine(lat1, lng1, lat2, lng2), ok: false });
                     }
                 });
             });
@@ -598,11 +600,20 @@
                 const farmerSnap = await getDoc(doc(db, 'users', listingData.farmerId));
                 farmerData = farmerSnap.exists() ? farmerSnap.data() : {};
 
-                // 距離計算
+                // 距離計算（キャッシュ優先、なければ Distance Matrix 呼出）
                 const myLoc = window.currentUserData?.location;
                 const farmerLoc = farmerData.location;
                 if (myLoc && farmerLoc) {
-                    distanceKm = await calcRoadDistance(myLoc.lat, myLoc.lng, farmerLoc.lat, farmerLoc.lng);
+                    const uid = window.currentUser?.uid;
+                    const locs = { rLat: myLoc.lat, rLng: myLoc.lng, fLat: farmerLoc.lat, fLng: farmerLoc.lng };
+                    const cached = getCachedDistance(uid, listingData.farmerId, locs);
+                    if (cached !== null) {
+                        distanceKm = cached;
+                    } else {
+                        const r = await calcRoadDistance(myLoc.lat, myLoc.lng, farmerLoc.lat, farmerLoc.lng);
+                        distanceKm = r.km;
+                        if (r.ok) setCachedDistance(uid, listingData.farmerId, r.km, locs);
+                    }
                 }
 
                 // キャンペーン・料率取得（レストラン側 + 農家側）
@@ -643,6 +654,10 @@
         });
 
         // ── 魚情報カード描画 ──
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
         function renderFishDetail() {
             const fishName = i18next.exists(`fish.${listingData.fishType}`)
                 ? i18next.t(`fish.${listingData.fishType}`)
@@ -700,6 +715,12 @@
                     <div class="fish-detail__badges">
                         <span class="${stockClass}">${stockText}</span>
                     </div>
+                    ${listingData.description ? `
+                        <div style="margin-top:14px; padding:12px 14px; background:#f8fafc; border-radius:12px; border:1px solid var(--color-border);">
+                            <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:6px;">${i18next.t('order.descriptionLabel')}</div>
+                            <div style="font-size:13px; color:var(--color-text); line-height:1.6; white-space:pre-wrap; word-break:break-word;">${escapeHtml(listingData.description)}</div>
+                        </div>
+                    ` : ''}
                 </div>
             `;
 
@@ -884,34 +905,56 @@
                 const [y, m, d] = deliveryDateIso.split('-').map(Number);
                 const deliveryDate = `${m}/${d}`;
 
-                const orderRef = await addDoc(collection(db, 'orders'), {
-                    restaurantId: uid,
-                    farmerId: listingData.farmerId,
+                // 単一item だが items[] 形式でも保存（カート経路と統一）
+                const itemDoc = {
                     listingId,
                     quantity,
                     gutProcessing,
-                    deliveryDate,
-                    deliveryDateIso,
-                    deliveryTime,
                     fishPrice: calc.fishTotal,
-                    deliveryFee: calc.deliveryFee,
-                    // レストラン側
                     serviceFee: calc.serviceFee,
                     campaignDiscount: calc.campaignDiscount,
-                    totalAmount: calc.total,
-                    serviceRateUsed: calc.serviceRateUsed,
-                    // 農家側
-                    farmerCommission: calc.farmerCommissionNet,        // 割引後の最終手数料
-                    farmerCommissionGross: calc.farmerCommission,       // 割引前
+                    farmerCommission: calc.farmerCommissionNet,
+                    farmerCommissionGross: calc.farmerCommission,
                     farmerCampaignDiscount: calc.farmerCampaignDiscount,
-                    farmerRateUsed: calc.farmerRateUsed,
-                    farmerReceiveAmount: calc.farmerReceiveAmount,
-                    // 注文時点の listing スナップショット（編集後も注文表示は変わらない）
+                    farmerReceiveAmount: calc.fishTotal - calc.farmerCommissionNet,
                     snapFishType: listingData.fishType || null,
                     snapSize: listingData.size || null,
                     snapPhotoUrl: listingData.photoUrl || null,
                     snapPrice: listingData.price ?? null,
                     snapGutPrice: listingData.gutPrice ?? null,
+                };
+
+                const orderRef = await addDoc(collection(db, 'orders'), {
+                    restaurantId: uid,
+                    farmerId: listingData.farmerId,
+                    // order-level
+                    deliveryDate,
+                    deliveryDateIso,
+                    deliveryTime,
+                    deliveryFee: calc.deliveryFee,
+                    // items[] 新方式
+                    items: [itemDoc],
+                    // 合計値（items合計）
+                    fishPrice: calc.fishTotal,
+                    serviceFee: calc.serviceFee,
+                    campaignDiscount: calc.campaignDiscount,
+                    totalAmount: calc.total,
+                    serviceRateUsed: calc.serviceRateUsed,
+                    farmerCommission: calc.farmerCommissionNet,
+                    farmerCommissionGross: calc.farmerCommission,
+                    farmerCampaignDiscount: calc.farmerCampaignDiscount,
+                    farmerRateUsed: calc.farmerRateUsed,
+                    farmerReceiveAmount: calc.farmerReceiveAmount,
+                    // legacy: 先頭item（= この場合のみ）由来
+                    listingId,
+                    quantity,
+                    gutProcessing,
+                    snapFishType: listingData.fishType || null,
+                    snapSize: listingData.size || null,
+                    snapPhotoUrl: listingData.photoUrl || null,
+                    snapPrice: listingData.price ?? null,
+                    snapGutPrice: listingData.gutPrice ?? null,
+                    // ステータス
                     status: 'pending',
                     declineReason: null,
                     paymentStatus: 'pending',

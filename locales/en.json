@@ -37,6 +37,12 @@
         "location": "Set Your Location",
         "locationHint": "Place a pin on the map",
         "locationSet": "Location set",
+        "locationTapHint": "Detecting your location... If it doesn't work, tap the map to set a pin.",
+        "locationFinding": "Detecting your location...",
+        "locationDenied": "Location access was denied. Allow it in your browser settings, or tap the map to set a pin.",
+        "locationFailed": "Could not detect your location. Tap the map to set a pin.",
+        "locationGeoUnavailable": "Your device cannot provide location. Tap the map to set a pin.",
+        "useCurrentLocation": "Use current location",
         "lang": "Language",
         "submit": "Create Account",
         "hasAccount": "Already have an account?",
@@ -104,6 +110,7 @@
         "deliveryNote2": "※ Beyond that, auto-calculated as delivery rate × distance",
         "freeDeliveryDistance": "Free Delivery Distance",
         "sectionTerms": "Trade Conditions",
+        "sectionDescription": "Product description",
         "minOrder": "Minimum Order",
         "maxDistance": "Max Delivery Distance",
         "submit": "Post Listing",
@@ -147,12 +154,17 @@
     "restaurant": {
         "title": "Fish Market",
         "subtitle": "Browse nearby fish farms",
+        "campaignTitle": "Special Discount Campaign",
+        "campaignDesc": "Order now and enjoy special pricing",
         "sort": "Sort",
         "sortDistance": "Nearest",
         "sortPrice": "Lowest price",
         "sortNewest": "Newest",
         "filter": "Filter",
         "filterAll": "All",
+        "filterFavorites": "Favorites",
+        "favorite": "Add to favorites",
+        "unfavorite": "Remove from favorites",
         "stock": "Stock {{kg}}kg",
         "distance": "{{km}} km",
         "place": "{{place}}",
@@ -174,6 +186,7 @@
         "deliveryComplete": "Delivery Complete",
         "confirmComplete": "Mark delivery as complete?\nThis will prompt the restaurant to confirm receipt.",
         "receiveConfirm": "Confirm Receipt",
+        "confirmReceive": "Have you received the fish and want to confirm receipt?\nYou will proceed to the payment screen.",
         "chatPlaceholder": "Type a message...",
         "viewLocation": "View on map",
         "pendingBanner": "Waiting for approval",
@@ -221,6 +234,7 @@
         "reviews": "reviews",
         "comment": "Comment",
         "priceGutIncluded": "Gutting included",
+        "descriptionLabel": "Product description",
         "deliveryBadge": "{{date}} {{time}}",
         "stockAvailable": "In Stock",
         "stockUnavailable": "Out of Stock",
@@ -233,6 +247,7 @@
     "orders": {
         "title": "Confirm Order",
         "unitPrice": "Unit Price",
+        "otherItems": "items",
         "quantity": "Order Quantity",
         "gutProcessing": "Gutting",
         "gutYes": "Yes",
@@ -428,6 +443,84 @@
         "uploadPhoto": "Choose photo",
         "removePhoto": "Remove"
     },
+    "cart": {
+        "title": "Cart",
+        "empty": "Your cart is empty",
+        "browse": "Browse fish",
+        "addedTitle": "Added to cart",
+        "addToCart": "Add to cart",
+        "viewCart": "View cart",
+        "remove": "Remove",
+        "confirmRemove": "Remove this item from the cart?",
+        "gutToggle": "Gut processing (+{{price}}/kg)",
+        "deliveryDate": "Delivery date",
+        "deliveryTime": "Time slot",
+        "fishTotal": "Fish (service fee incl.)",
+        "campaignDiscount": "Campaign discount",
+        "deliveryFee": "Delivery fee",
+        "groupTotal": "Subtotal for this farmer",
+        "grandTotal": "Grand total",
+        "checkout": "Place order",
+        "toConfirm": "Go to review",
+        "next": "Next",
+        "placeOrder": "Confirm order",
+        "suggestTitle": "Suggestion to save delivery fees",
+        "suggestDesc": "Another farmer in your cart also sells this fish. Merging items from one farmer can save on delivery fees. It is just a suggestion—you choose what to do.",
+        "suggestLabel": "You could switch the farmer for {{fish}} to save",
+        "currentSide": "Current",
+        "proposedSide": "Proposed",
+        "saveDelivery": "Saves ~{{amount}} KHR in delivery fees",
+        "sameDelivery": "No delivery savings expected, but merging is still possible",
+        "keepOriginal": "Keep current",
+        "acceptSwap": "Switch",
+        "applied": "Updated",
+        "viewDetail": "View details",
+        "listingDetail": "Listing details",
+        "confirmTitle": "Review your order",
+        "confirmDesc": "Your order will be placed as shown below. Tap \"Confirm order\" to finalize.",
+        "errorStock": "Not enough stock for {{name}} ({{stock}}kg left)",
+        "errorDelivery": "Please pick a delivery date & time",
+        "errorSubmit": "Order failed. Please try again",
+        "navCart": "Cart"
+    },
+    "notifMessages": {
+        "newOrder": {
+            "title": "New order from {{restaurant}}",
+            "body": "{{fish}} {{qty}}kg\nDelivery: {{date}} {{time}}\nDeadline: {{deadline}}"
+        },
+        "approved": {
+            "title": "{{farmer}} approved your order",
+            "body": "{{fish}} {{qty}}kg\nDelivery: {{date}} {{time}}"
+        },
+        "declined": {
+            "title": "{{farmer}} declined your order",
+            "body": "{{fish}} {{qty}}kg"
+        },
+        "expiredDeclinedFarmer": {
+            "title": "Order from {{restaurant}} auto-declined (expired)",
+            "body": "{{fish}} {{qty}}kg"
+        },
+        "expiredDeclinedRestaurant": {
+            "title": "{{farmer}} auto-declined (expired)",
+            "body": "{{fish}} {{qty}}kg"
+        },
+        "statusUpdate": {
+            "title": "{{farmer}} order status updated",
+            "body": "Status: {{status}}"
+        },
+        "deliveryReminder": {
+            "title": "Delivery from {{farmer}} is tomorrow",
+            "body": "{{fish}} {{qty}}kg\nDelivery: {{date}} {{time}}"
+        },
+        "chatMessage": {
+            "title": "Message from {{sender}}",
+            "body": "{{text}}"
+        },
+        "adminReport": {
+            "title": "New trouble report",
+            "body": "{{fromRole}} → {{type}}\n{{reporter}}"
+        }
+    },
     "comments": {
         "title": "Comments",
         "publicNote": "Comments are public to all restaurants. Use them to clarify before ordering.",
@@ -522,7 +615,9 @@
         "salesTitle": "Sales",
         "purchaseTitle": "Purchases",
         "tabToday": "Today",
-        "tabCustom": "Custom Period",
+        "tabWeek": "1 week",
+        "tabMonth": "1 month",
+        "tabCustom": "Custom",
         "tabAll": "All",
         "customFrom": "From",
         "customTo": "To",
@@ -668,6 +763,9 @@
             "subtitle": "Configure service rate, commission rate, and campaigns",
             "restaurantSection": "Restaurant Side",
             "farmerSection": "Farmer Side",
+            "bannerSection": "Restaurant page banner",
+            "bannerActiveLabel": "Show campaign banner",
+            "bannerActiveHint": "When ON, a 'Special Discount Campaign' banner is shown at the top of the restaurant's fish list.",
             "serviceRateLabel": "Service Rate (%)",
             "serviceRateHint": "Rate added to restaurant payment (default 5%)",
             "campaignActiveLabel": "Enable Campaign",
@@ -712,7 +810,14 @@
             "ocrTextPlaceholder": "Text will appear here after running OCR",
             "ocrAutofillEmpty": "No rows matching province names were found. Check image quality.",
             "ocrAutofillDone": "Filled {{count}} cells. Please review and save.",
-            "ocrAutofillMissing": "The following provinces could not be auto-filled (please enter manually)"
+            "ocrAutofillMissing": "The following provinces could not be auto-filled (please enter manually)",
+            "historyBtn": "History",
+            "historyTitle": "Save history",
+            "historyLoading": "Loading...",
+            "historyEmpty": "No saved history yet",
+            "historyError": "Failed to load history",
+            "viewingHistory": "Viewing snapshot from {{date}} (read-only)",
+            "backToCurrent": "Back to current"
         },
         "reports": {
             "title": "Trouble Reports",

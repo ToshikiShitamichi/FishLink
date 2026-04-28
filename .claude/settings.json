@@ -3,7 +3,12 @@
     "allow": [
       "Bash(xargs sed *)",
       "Bash(node -c c:/work/FishLink/functions/index.js)",
-      "Bash(node -e \"for \\(const f of ['c:/work/FishLink/locales/ja.json','c:/work/FishLink/locales/en.json','c:/work/FishLink/locales/km.json']\\) { JSON.parse\\(require\\('fs'\\).readFileSync\\(f,'utf8'\\)\\); console.log\\('OK', f\\); }\")"
+      "Bash(node -e \"for \\(const f of ['c:/work/FishLink/locales/ja.json','c:/work/FishLink/locales/en.json','c:/work/FishLink/locales/km.json']\\) { JSON.parse\\(require\\('fs'\\).readFileSync\\(f,'utf8'\\)\\); console.log\\('OK', f\\); }\")",
+      "Bash(node -c c:/work/FishLink/js/cart.js)",
+      "Bash(node -c c:/work/FishLink/js/order-utils.js)",
+      "Bash(grep -iE \"textarea\\\\s*\\\\{|textarea,|input\\\\s*\\\\{|input,|input\\\\[\")",
+      "Bash(sed -i '655,729d' c:/work/FishLink/CLAUDE.md)",
+      "Bash(sed -n '645,660p' c:/work/FishLink/CLAUDE.md)"
     ]
   }
 }

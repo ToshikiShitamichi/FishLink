@@ -250,6 +250,20 @@
                 </div>
             </div>
 
+            <!-- レストラン画面のバナー表示 -->
+            <div class="card">
+                <div class="section-heading" data-i18n="admin.settings.bannerSection"></div>
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.settings.bannerActiveLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.settings.bannerActiveHint"></div>
+                        </div>
+                        <div class="toggle" id="banner-toggle"><div class="toggle__knob"></div></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="save-row" style="margin-top:0;">
                     <span class="save-note" id="save-note" data-i18n="admin.settings.saved"></span>
@@ -287,6 +301,8 @@
         toggle.addEventListener('click', () => toggle.classList.toggle('on'));
         const farmerToggle = document.getElementById('farmer-campaign-toggle');
         farmerToggle.addEventListener('click', () => farmerToggle.classList.toggle('on'));
+        const bannerToggle = document.getElementById('banner-toggle');
+        bannerToggle.addEventListener('click', () => bannerToggle.classList.toggle('on'));
 
         waitForUserData(async () => {
             if (window.currentUserData?.role !== 'admin') {
@@ -314,6 +330,9 @@
                 document.getElementById('farmer-rate').value = (farmerRate * 100).toFixed(1);
                 document.getElementById('farmer-campaign-discount').value = (farmerCampaignDiscount * 100).toFixed(1);
                 farmerToggle.classList.toggle('on', farmerCampaignActive);
+
+                // バナー表示（独立フラグ・未設定時は OFF）
+                bannerToggle.classList.toggle('on', data.bannerActive === true);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -337,10 +356,13 @@
             const farmerCampaignDiscount = parseFloat(document.getElementById('farmer-campaign-discount').value) / 100 || 0;
             const farmerCampaignActive = farmerToggle.classList.contains('on');
 
+            const bannerActive = bannerToggle.classList.contains('on');
+
             try {
                 await setDoc(doc(db, 'settings', 'campaign'), {
                     serviceRate, campaignDiscount, campaignActive,
-                    farmerRate, farmerCampaignDiscount, farmerCampaignActive
+                    farmerRate, farmerCampaignDiscount, farmerCampaignActive,
+                    bannerActive,
                 }, { merge: true });
                 note.classList.add('show');
                 setTimeout(() => note.classList.remove('show'), 1800);

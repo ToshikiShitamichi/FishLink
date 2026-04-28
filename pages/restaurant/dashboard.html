@@ -180,6 +180,49 @@
             margin-top: 4px;
         }
 
+        .fish-grid-card__cart-btn {
+            position: absolute;
+            right: 8px; bottom: 8px;
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            color: #fff;
+            border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,.2);
+            font-family: inherit;
+        }
+        .fish-grid-card__cart-btn:hover { background: var(--color-primary-dk); }
+        .fish-grid-card__cart-btn .material-symbols-outlined { font-size: 18px; }
+        .fish-grid-card__cart-btn.added { background: #047857; }
+
+        .fish-grid-card__fav-btn {
+            position: absolute;
+            right: 6px; top: 6px;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            color: #94a3b8;
+            border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,.15);
+            font-family: inherit;
+            z-index: 2;
+        }
+        .fish-grid-card__fav-btn:hover { background: #fff; }
+        .fish-grid-card__fav-btn .material-symbols-outlined {
+            font-size: 18px;
+            font-variation-settings: 'FILL' 0, 'wght' 500;
+        }
+        .fish-grid-card__fav-btn.active {
+            background: #fff;
+            color: #ef4444;
+        }
+        .fish-grid-card__fav-btn.active .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 500;
+        }
         .fish-grid-card__distance {
             font-size: 12px;
             font-weight: 700;
@@ -251,6 +294,17 @@
 
         <!-- 魚一覧ヘッダー -->
         <div style="padding: 0 16px;">
+            <!-- 特別割引キャンペーンバナー（管理者の campaignActive が true のとき表示） -->
+            <div id="campaign-banner" style="display:none; margin-bottom:12px; padding:12px 14px; border-radius:14px; background:linear-gradient(135deg, #f97316, #f59e0b); color:#fff; box-shadow:0 2px 8px rgba(249,115,22,.25);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="material-symbols-outlined" style="font-size:22px;">local_offer</span>
+                    <div>
+                        <div style="font-size:14px; font-weight:700;" data-i18n="restaurant.campaignTitle"></div>
+                        <div style="font-size:12px; opacity:0.95;" data-i18n="restaurant.campaignDesc"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="market-header">
                 <div class="market-header__title" data-i18n="restaurant.title"></div>
                 <div class="market-header__sub" data-i18n="restaurant.subtitle"></div>
@@ -289,6 +343,11 @@
                 <span class="bottom-nav__icon"><span class="material-symbols-outlined">set_meal</span></span>
                 <span data-i18n="restaurant.title"></span>
             </a>
+            <a href="/pages/restaurant/cart.html" class="bottom-nav__item" style="position:relative;">
+                <span class="bottom-nav__icon"><span class="material-symbols-outlined">shopping_cart</span></span>
+                <span class="nav-badge" id="cart-badge" style="display:none;"></span>
+                <span data-i18n="cart.navCart"></span>
+            </a>
             <a href="/pages/restaurant/orders.html" class="bottom-nav__item" style="position:relative;">
                 <span class="bottom-nav__icon"><span class="material-symbols-outlined">local_shipping</span></span>
                 <span class="nav-badge" id="order-badge" style="display:none;"></span>
@@ -307,8 +366,13 @@
         import {
             collection, query, where, orderBy, getDocs, doc, getDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { subscribeCart, addToCart } from '/js/cart.js';
+        import { subscribeFavorites, toggleFavorite } from '/js/favorites.js';
+        import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
 
         const loading = document.getElementById('loading');
+        let cartListingIds = new Set();
+        let favoriteIds = new Set();
 
         watchAuthState({ requireAuth: true });
         await initI18n();
@@ -338,6 +402,14 @@
             allBtn.dataset.value = '';
             allBtn.textContent = i18next.t('restaurant.filterAll');
             row.appendChild(allBtn);
+
+            // お気に入りフィルタ
+            const favBtn = document.createElement('button');
+            favBtn.type = 'button';
+            favBtn.className = 'chip chip--filter' + (currentFilter === '__favorites' ? ' active' : '');
+            favBtn.dataset.value = '__favorites';
+            favBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:-2px; color:#ef4444; font-variation-settings:'FILL' 1;">favorite</span> ${i18next.t('restaurant.filterFavorites')}`;
+            row.appendChild(favBtn);
 
             FISH_FILTER_KEYS.forEach(key => {
                 const btn = document.createElement('button');
@@ -375,11 +447,11 @@
         });
 
         // ── 距離計算（Google Maps Distance Matrix） ──────────────
-        // 起点1つ、終点を複数渡して道路距離（km）を取得
+        // 起点1つ、終点を複数渡して {km, ok}（ok=true=道路距離成功、false=haversine フォールバック）の配列を返す
         async function calcRoadDistances(originLat, originLng, destinations) {
             return new Promise((resolve) => {
                 if (typeof google === 'undefined' || !google.maps) {
-                    resolve(destinations.map(d => haversine(originLat, originLng, d.lat, d.lng)));
+                    resolve(destinations.map(d => ({ km: haversine(originLat, originLng, d.lat, d.lng), ok: false })));
                     return;
                 }
                 const service = new google.maps.DistanceMatrixService();
@@ -393,14 +465,13 @@
                     unitSystem: google.maps.UnitSystem.METRIC,
                 }, (response, status) => {
                     if (status !== 'OK' || !response.rows[0]) {
-                        resolve(destinations.map(d => haversine(originLat, originLng, d.lat, d.lng)));
+                        resolve(destinations.map(d => ({ km: haversine(originLat, originLng, d.lat, d.lng), ok: false })));
                         return;
                     }
                     const results = response.rows[0].elements.map((el, idx) => {
-                        if (el.status === 'OK') return el.distance.value / 1000;
-                        // 道路距離不可の場合は直線距離にフォールバック
+                        if (el.status === 'OK') return { km: el.distance.value / 1000, ok: true };
                         const dest = destinations[idx];
-                        return haversine(originLat, originLng, dest.lat, dest.lng);
+                        return { km: haversine(originLat, originLng, dest.lat, dest.lng), ok: false };
                     });
                     resolve(results);
                 });
@@ -430,10 +501,18 @@
 
                 const myLoc = window.currentUserData?.location;
 
-                // サービス料率を取得
+                // サービス料率＋キャンペーンバナー表示
                 try {
                     const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
-                    if (campSnap.exists()) serviceRate = campSnap.data().serviceRate ?? 0.05;
+                    if (campSnap.exists()) {
+                        const c = campSnap.data();
+                        serviceRate = c.serviceRate ?? 0.05;
+                        // 管理者の bannerActive フラグでバナー表示制御
+                        if (c.bannerActive === true) {
+                            const banner = document.getElementById('campaign-banner');
+                            if (banner) banner.style.display = 'block';
+                        }
+                    }
                 } catch (e) { }
 
                 // 全アクティブ投稿を取得
@@ -458,23 +537,48 @@
                     return { id: d.id, data, farmer };
                 });
 
-                // 位置ありのアイテムだけ距離計算
+                // 位置ありのアイテムだけ距離計算（キャッシュ優先）
                 const locsWithIndex = [];
                 itemsRaw.forEach((it, i) => {
-                    if (it.farmer.location) locsWithIndex.push({ index: i, loc: it.farmer.location });
+                    if (it.farmer.location) locsWithIndex.push({ index: i, loc: it.farmer.location, farmerId: it.data.farmerId });
                 });
 
                 const distanceMap = {}; // index → km
                 if (myLoc && locsWithIndex.length > 0) {
-                    try {
-                        const locs = locsWithIndex.map(l => l.loc);
-                        const results = await calcRoadDistances(myLoc.lat, myLoc.lng, locs);
-                        locsWithIndex.forEach((l, j) => { distanceMap[l.index] = results[j]; });
-                    } catch (e) {
-                        console.warn('Distance Matrix failed, using haversine:', e);
-                        locsWithIndex.forEach(l => {
-                            distanceMap[l.index] = haversine(myLoc.lat, myLoc.lng, l.loc.lat, l.loc.lng);
+                    // まずキャッシュで解決（位置変更検知つき）
+                    const uncached = [];
+                    locsWithIndex.forEach(l => {
+                        const cached = getCachedDistance(uid, l.farmerId, {
+                            rLat: myLoc.lat, rLng: myLoc.lng,
+                            fLat: l.loc.lat, fLng: l.loc.lng,
                         });
+                        if (cached !== null) {
+                            distanceMap[l.index] = cached;
+                        } else {
+                            uncached.push(l);
+                        }
+                    });
+
+                    // 未キャッシュ分のみ Distance Matrix API へ
+                    if (uncached.length > 0) {
+                        try {
+                            const locs = uncached.map(l => l.loc);
+                            const results = await calcRoadDistances(myLoc.lat, myLoc.lng, locs);
+                            uncached.forEach((l, j) => {
+                                const r = results[j];
+                                distanceMap[l.index] = r.km;
+                                // 道路距離が取れたときだけキャッシュ（haversine フォールバックは保存しない）
+                                if (r.ok) setCachedDistance(uid, l.farmerId, r.km, {
+                                    rLat: myLoc.lat, rLng: myLoc.lng,
+                                    fLat: l.loc.lat, fLng: l.loc.lng,
+                                });
+                            });
+                        } catch (e) {
+                            console.warn('Distance Matrix failed, using haversine:', e);
+                            uncached.forEach(l => {
+                                distanceMap[l.index] = haversine(myLoc.lat, myLoc.lng, l.loc.lat, l.loc.lng);
+                            });
+                        }
                     }
                 }
 
@@ -520,8 +624,11 @@
                 return true;
             });
 
-            // 魚種フィルター
-            if (filterVal) {
+            // お気に入りフィルタ
+            if (filterVal === '__favorites') {
+                items = items.filter(it => favoriteIds.has(it.id));
+            } else if (filterVal) {
+                // 魚種フィルター
                 items = items.filter(it => {
                     if (it.fishType === filterVal) return true;
                     // 旧データ（日本語テキスト保存）との比較: fishTypeにコード名を含むか
@@ -566,7 +673,28 @@
                     ? `<img src="${item.photoUrl}" alt="${fishName}">`
                     : `<span class="fish-grid-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">set_meal</span></span>`;
 
+                const inCart = cartListingIds.has(item.id);
+                const outOfStock = item.stock <= 0;
+                const cartBtnHtml = outOfStock ? '' : `
+                    <button class="fish-grid-card__cart-btn ${inCart ? 'added' : ''}" type="button"
+                        data-act="add-to-cart" data-id="${item.id}" data-farmer="${item.farmerId}"
+                        data-min="${item.minOrder || 1}"
+                        title="${i18next.t('cart.addToCart')}">
+                        <span class="material-symbols-outlined">${inCart ? 'check' : 'add_shopping_cart'}</span>
+                    </button>`;
+
+                const isFav = favoriteIds.has(item.id);
+                const favBtnHtml = `
+                    <button class="fish-grid-card__fav-btn ${isFav ? 'active' : ''}" type="button"
+                        data-act="toggle-fav" data-id="${item.id}"
+                        title="${i18next.t(isFav ? 'restaurant.unfavorite' : 'restaurant.favorite')}"
+                        aria-pressed="${isFav}">
+                        <span class="material-symbols-outlined">favorite</span>
+                    </button>`;
+
                 return `
+                    <div style="position:relative;">
+                    ${favBtnHtml}
                     <a class="fish-grid-card" href="/pages/restaurant/order.html?id=${item.id}">
                         <div class="fish-grid-card__img">
                             ${imgHtml}
@@ -584,6 +712,8 @@
                             ${distText ? `<div class="fish-grid-card__distance">${distText}</div>` : ''}
                         </div>
                     </a>
+                    ${cartBtnHtml}
+                    </div>
                 `;
             }).join('');
 
@@ -620,6 +750,83 @@
             });
         }
 
+        // カートバッジ＋「追加済み」UI 反映
+        function watchCartBadge() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            subscribeCart(uid, (items) => {
+                cartListingIds = new Set(items.map(it => it.listingId));
+                const badge = document.getElementById('cart-badge');
+                if (badge) badge.style.display = items.length > 0 ? 'block' : 'none';
+                // 表示されているカードのボタンを更新（再描画せず差分更新）
+                document.querySelectorAll('[data-act="add-to-cart"]').forEach(btn => {
+                    const inCart = cartListingIds.has(btn.dataset.id);
+                    btn.classList.toggle('added', inCart);
+                    const icon = btn.querySelector('.material-symbols-outlined');
+                    if (icon) icon.textContent = inCart ? 'check' : 'add_shopping_cart';
+                });
+            });
+        }
+
+        // お気に入り購読＋UI差分更新
+        function watchFavorites() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            subscribeFavorites(uid, (ids) => {
+                favoriteIds = new Set(ids);
+                // 表示中のカードのお気に入りボタンを即時反映
+                document.querySelectorAll('[data-act="toggle-fav"]').forEach(btn => {
+                    const isFav = favoriteIds.has(btn.dataset.id);
+                    btn.classList.toggle('active', isFav);
+                    btn.setAttribute('aria-pressed', isFav);
+                });
+                // お気に入りフィルタ中なら一覧を再描画
+                if (currentFilter === '__favorites') {
+                    renderList();
+                }
+            });
+        }
+
+        // 「カートに追加」/ お気に入りトグル のクリック処理を集約
+        document.getElementById('fish-grid').addEventListener('click', async (e) => {
+            const favBtn = e.target.closest('[data-act="toggle-fav"]');
+            if (favBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const listingId = favBtn.dataset.id;
+                const uid = window.currentUser?.uid;
+                if (!uid) return;
+                favBtn.disabled = true;
+                try {
+                    await toggleFavorite(uid, listingId);
+                } catch (err) {
+                    console.error('toggleFavorite failed:', err);
+                } finally {
+                    favBtn.disabled = false;
+                }
+                return;
+            }
+
+            const btn = e.target.closest('[data-act="add-to-cart"]');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const listingId = btn.dataset.id;
+            const farmerId = btn.dataset.farmer;
+            const minOrder = Number(btn.dataset.min) || 1;
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            btn.disabled = true;
+            try {
+                await addToCart(uid, { listingId, farmerId, quantity: minOrder, gutProcessing: true });
+            } catch (err) {
+                console.error('addToCart failed:', err);
+                alert(err.message || 'Failed');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
         // Google Maps API & currentUserData の両方を待ってから実行
         function waitForGoogleMaps(cb) {
             if (typeof google !== 'undefined' && google.maps) { cb(); }
@@ -633,6 +840,8 @@
 
         waitForUserData(() => {
             watchOrderBadge();
+            watchCartBadge();
+            watchFavorites();
             if (window.currentUser?.uid) {
                 subscribeTodos(window.currentUser.uid, 'restaurant');
                 subscribeNotifications(window.currentUser.uid);

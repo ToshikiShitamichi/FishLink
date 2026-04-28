@@ -389,6 +389,16 @@
                 </div>
             </div>
 
+            <!-- 商品の説明（任意） -->
+            <div class="section-block">
+                <div class="section-title">
+                    <span data-i18n="post.sectionDescription"></span>
+                    <span class="optional-tag" data-i18n="post.optional"></span>
+                </div>
+                <textarea id="description" rows="6"
+                    style="width:100%; padding:12px; border:1.5px solid var(--color-border); border-radius:12px; font-size:16px; font-family:inherit; background:#f9fafb; resize:vertical;"></textarea>
+            </div>
+
         </div><!-- /padding -->
     </div><!-- /page -->
 
@@ -468,6 +478,7 @@
             document.getElementById('free-delivery-distance').value = d.freeDeliveryDistance ?? '';
             document.getElementById('min-order').value = d.minOrder ?? '';
             document.getElementById('max-distance').value = d.maxDistance ?? '';
+            document.getElementById('description').value = d.description || '';
             window.updateTotalPrice();
             updateCaaDisplay(fishTypeSel.value);
         }
@@ -714,6 +725,7 @@
             const freeDelivDist = parseFloat(document.getElementById('free-delivery-distance').value) || 0;
             const minOrder = parseFloat(document.getElementById('min-order').value) || 0;
             const maxDistance = parseFloat(document.getElementById('max-distance').value) || 0;
+            const description = document.getElementById('description').value.trim();
 
             // バリデーション
             if (!fishType) {
@@ -762,6 +774,7 @@
                         freeDeliveryDistance: freeDelivDist || null,
                         minOrder: minOrder || null,
                         maxDistance: maxDistance || null,
+                        description: description || null,
                         updatedAt: serverTimestamp(),
                     });
                 } else {
@@ -784,6 +797,7 @@
                         freeDeliveryDistance: freeDelivDist || null,
                         minOrder: minOrder || null,
                         maxDistance: maxDistance || null,
+                        description: description || null,
                         photos: photoUrls,
                         photoUrl: photoUrls[0] || null,
                         isActive: true,

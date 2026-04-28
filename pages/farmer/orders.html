@@ -19,9 +19,52 @@
             border: 1px solid var(--color-border);
             background: var(--color-surface);
             overflow: hidden;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
         }
+
+        /* コンパクトヘッダー（常時表示） */
+        .order-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            user-select: none;
+            background: var(--color-surface);
+        }
+        .order-row:hover { background: #f8fafc; }
+        .order-row__img {
+            width: 56px; height: 56px; border-radius: 10px;
+            background: #e2e8f0; flex-shrink: 0;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .order-row__img img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .order-row__body { flex: 1; min-width: 0; }
+        .order-row__date { font-size: 11px; color: var(--color-text-sub); }
+        .order-row__fish { font-size: 14px; font-weight: 700; color: var(--color-text); margin-top: 2px; }
+        .order-row__rest { font-size: 12px; color: var(--color-text-sub); margin-top: 1px; }
+        .order-row__status {
+            font-size: 11px; font-weight: 700;
+            padding: 3px 8px; border-radius: 10px;
+            white-space: nowrap; flex-shrink: 0;
+        }
+        .order-row__status.pending { background: #fef3c7; color: #92400e; }
+        .order-row__status.approved { background: #dbeafe; color: #1e40af; }
+        .order-row__status.preparing { background: #e2e8f0; color: #334155; }
+        .order-row__status.delivering { background: #dbeafe; color: #1d4ed8; }
+        .order-row__status.delivered { background: #ede9fe; color: #6d28d9; }
+        .order-row__status.completed { background: #fef3c7; color: #854d0e; }
+        .order-row__status.declined { background: #fee2e2; color: #991b1b; }
+        .order-row__chev {
+            color: #cbd5e1; flex-shrink: 0;
+            transition: transform 0.2s;
+        }
+        .order-card.expanded .order-row__chev { transform: rotate(90deg); }
+
+        .order-card__details { display: none; }
+        .order-card.expanded .order-card__details { display: block; }
 
         .order-card__img {
             aspect-ratio: 4/3;
@@ -215,7 +258,7 @@
             border: 1px solid var(--color-border);
             border-radius: 12px;
             padding: 10px;
-            font-size: 14px;
+            font-size: 16px;
             font-family: inherit;
             resize: vertical;
         }
@@ -471,31 +514,44 @@
                     return;
                 }
 
-                // 注文データを整理（pendingを先頭に）
-                const orders = [];
-                for (const d of snap.docs) {
+                // ── 注文データを整理（並列・重複排除で高速化） ──
+                // 1) レストラン一覧を重複排除して並列取得
+                const restIds = [...new Set(
+                    snap.docs.map(d => d.data().restaurantId).filter(Boolean)
+                )];
+                const restCache = {};
+                await Promise.all(restIds.map(async rid => {
+                    try {
+                        const rSnap = await getDoc(doc(db, 'users', rid));
+                        restCache[rid] = rSnap.exists() ? rSnap.data() : {};
+                    } catch (e) { restCache[rid] = {}; }
+                }));
+
+                // 2) fishListings は snapFishType が無い legacy 注文のみ取得
+                const legacyListingIds = [...new Set(
+                    snap.docs.map(d => d.data())
+                        .filter(o => !o.snapFishType && o.listingId)
+                        .map(o => o.listingId)
+                )];
+                const listingCache = {};
+                await Promise.all(legacyListingIds.map(async lid => {
+                    try {
+                        const lSnap = await getDoc(doc(db, 'fishListings', lid));
+                        listingCache[lid] = lSnap.exists() ? lSnap.data() : {};
+                    } catch (e) { listingCache[lid] = {}; }
+                }));
+
+                // 3) 組み立て（同期ループ）
+                const orders = snap.docs.map(d => {
                     const data = d.data();
-                    // listing情報
-                    let listingData = {};
-                    try {
-                        const lSnap = await getDoc(doc(db, 'fishListings', data.listingId));
-                        if (lSnap.exists()) listingData = lSnap.data();
-                    } catch (e) { }
-
-                    // レストラン情報
-                    let restData = {};
-                    try {
-                        const rSnap = await getDoc(doc(db, 'users', data.restaurantId));
-                        if (rSnap.exists()) restData = rSnap.data();
-                    } catch (e) { }
-
+                    const listingData = listingCache[data.listingId] || {};
+                    const restData = restCache[data.restaurantId] || {};
                     let distKm = 0;
                     if (myLoc && restData.location) {
                         distKm = calcDistanceKm(myLoc.lat, myLoc.lng, restData.location.lat, restData.location.lng);
                     }
-
-                    orders.push({ id: d.id, ...data, listingData, restData, distKm });
-                }
+                    return { id: d.id, ...data, listingData, restData, distKm };
+                });
 
                 // pendingを先頭にソート
                 orders.sort((a, b) => {
@@ -581,10 +637,42 @@
             const restLoc = order.restData.location;
             const mapsUrl = restLoc ? `https://www.google.com/maps?q=${restLoc.lat},${restLoc.lng}` : '#';
 
+            const itemCount = Array.isArray(order.items) ? order.items.length : 1;
+            const multiItemBadge = itemCount > 1
+                ? `<div style="display:inline-block; margin-left:8px; padding:2px 10px; background:#fef3c7; color:#92400e; border-radius:10px; font-size:11px; font-weight:700;">+${itemCount - 1} ${i18next.t('orders.otherItems')}</div>`
+                : '';
+
+            // コンパクト行用の表示値
+            const createdMs = order.createdAt?.toMillis?.() || 0;
+            const createdDate = createdMs ? new Date(createdMs) : null;
+            const dateShort = createdDate
+                ? `${createdDate.getFullYear()}/${String(createdDate.getMonth()+1).padStart(2,'0')}/${String(createdDate.getDate()).padStart(2,'0')}`
+                : '';
+            let statusKey = order.status || 'pending';
+            if (isExpiredPending) statusKey = 'declined';
+            const statusText = i18next.exists(`delivery.${statusKey}`) ? i18next.t(`delivery.${statusKey}`) : statusKey;
+            // 初期開閉：承認待ち(未期限切れ)のみ展開（アクションが必要なため）
+            const isPendingAction = order.status === 'pending' && !isExpiredPending;
+            const expandedClass = isPendingAction ? ' expanded' : '';
+            const rowThumb = photoUrl
+                ? `<img src="${photoUrl}" alt="" loading="lazy">`
+                : `<span class="material-symbols-outlined" style="font-size:28px; color:#94a3b8;">set_meal</span>`;
+
             let html = `
-                <div class="order-card" id="order-${order.id}">
+                <div class="order-card${expandedClass}" id="order-${order.id}">
+                    <div class="order-row" data-toggle="${order.id}">
+                        <div class="order-row__img">${rowThumb}</div>
+                        <div class="order-row__body">
+                            <div class="order-row__date">${dateShort}</div>
+                            <div class="order-row__fish">${fishName}${multiItemBadge}</div>
+                            <div class="order-row__rest">${restName}</div>
+                        </div>
+                        <span class="order-row__status ${statusKey}">${statusText}</span>
+                        <span class="material-symbols-outlined order-row__chev">chevron_right</span>
+                    </div>
+                    <div class="order-card__details">
                     <div class="order-card__img">${imgHtml}</div>
-                    <div class="order-card__fish-label">${fishName}（${size} head/kg）</div>
+                    <div class="order-card__fish-label">${fishName}（${size} head/kg）${multiItemBadge}</div>
                     <div class="order-card__section">
                         ${statusBadge}
                         ${deadlineHtml}
@@ -615,7 +703,7 @@
                             ? `<a href="/pages/farmer/payment.html?id=${order.id}" style="display:block; margin-top:12px; text-align:center; padding:10px; background:#0ea5e9; color:#fff; border-radius:12px; font-weight:600; text-decoration:none;">${i18next.t('payment.goToRemittance')}</a>`
                             : ''
                         }
-                        ${(order.status === 'completed' && ['remitted', 'done'].includes(order.adminStatus))
+                        ${(['approved', 'preparing', 'delivering', 'delivered', 'completed'].includes(order.status))
                             ? `<div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
                                 <a href="/pages/farmer/review.html?id=${order.id}" style="flex:1; text-align:center; padding:10px; background:#f97316; color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:13px;">
                                     <span class="material-symbols-outlined" style="font-size:16px;">star</span>
@@ -661,7 +749,8 @@
                     </div>`;
             }
 
-            html += '</div>';
+            // close .order-card__details, then .order-card
+            html += '</div></div>';
             return html;
         }
 
@@ -770,7 +859,11 @@
             let target;
             try { target = document.querySelector(location.hash); } catch (e) { return; }
             if (!target) return;
-            // アコーディオン内にあれば開く
+            // 対象が order-card ならアコーディオン展開
+            if (target.classList.contains('order-card')) {
+                target.classList.add('expanded');
+            }
+            // アコーディオン（完了/辞退済みセクション）内にあれば開く
             const accBody = target.closest('.accordion-body');
             if (accBody && !accBody.classList.contains('open')) {
                 const hdrId = accBody.id.replace('-body', '');
@@ -794,6 +887,16 @@
         const declineReasons = {}; // { orderId: 'reason text' }
 
         function bindEvents(orders) {
+            // アコーディオン開閉
+            document.querySelectorAll('.order-row[data-toggle]').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    // 既に開いているカードの中のリンク/ボタンは無視
+                    if (e.target.closest('a,button,input,textarea')) return;
+                    const card = row.closest('.order-card');
+                    if (card) card.classList.toggle('expanded');
+                });
+            });
+
             // ラジオ切り替え
             document.querySelectorAll('.radio-option').forEach(el => {
                 el.addEventListener('click', () => {
