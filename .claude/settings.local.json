@@ -4,7 +4,10 @@
       "Bash(gsutil --version)",
       "Bash(gcloud --version)",
       "Bash(npm --version)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(node -e ' *)",
+      "Bash(node --check index.js)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

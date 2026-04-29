@@ -107,6 +107,12 @@
             errorMsg.classList.add('show');
         }
 
+        // 直前にBANで強制ログアウトされた場合はメッセージ表示
+        if (sessionStorage.getItem('fishlink_banned') === '1') {
+            sessionStorage.removeItem('fishlink_banned');
+            showError(i18next.t('error.accountBanned'));
+        }
+
         loginBtn.addEventListener('click', async () => {
             errorMsg.classList.remove('show');
             const loginId = document.getElementById('login-id').value.trim();

@@ -118,3 +118,13 @@ export function getFishDisplayName(item, listing, i18next) {
     if (!key) return '';
     return i18next?.exists?.(`fish.${key}`) ? i18next.t(`fish.${key}`) : key;
 }
+
+/**
+ * 取引番号の表示文字列を返す。`order.orderNumber` があればそれ、なければ
+ * doc id の先頭8文字を `FL-XXXXXXXX` として一時表示（Cloud Function 採番前 or 旧データ用）。
+ */
+export function getOrderNumber(order) {
+    if (order?.orderNumber) return order.orderNumber;
+    if (order?.id) return `FL-${String(order.id).slice(0, 8).toUpperCase()}`;
+    return '';
+}

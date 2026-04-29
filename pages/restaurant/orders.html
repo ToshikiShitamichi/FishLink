@@ -54,6 +54,96 @@
         }
         .accordion-body { display: none; }
         .accordion-body.open { display: block; }
+
+        /* お支払い待ちカード（強調版） */
+        .order-item.pay-now {
+            border: 2px solid #f97316;
+            background: linear-gradient(180deg, #fff7ed, #fff);
+            box-shadow: 0 2px 10px rgba(249, 115, 22, 0.15);
+        }
+        .order-item.pay-now.overdue {
+            border-color: #dc2626;
+            background: linear-gradient(180deg, #fef2f2, #fff);
+            box-shadow: 0 2px 10px rgba(220, 38, 38, 0.18);
+        }
+        .pay-now__amount {
+            font-size: 22px; font-weight: 800; color: #c2410c;
+            margin-top: 6px; line-height: 1.1;
+        }
+        .order-item.pay-now.overdue .pay-now__amount { color: #b91c1c; }
+        .pay-now__deadline {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 12px; font-weight: 700;
+            background: #fff7ed; color: #9a3412;
+            padding: 4px 10px; border-radius: 999px;
+            margin-top: 6px;
+        }
+        .order-item.pay-now.overdue .pay-now__deadline {
+            background: #fee2e2; color: #991b1b;
+        }
+        .pay-now__deadline .material-symbols-outlined { font-size: 14px; }
+        .pay-now__cta {
+            display: block; margin-top: 10px;
+            background: #f97316; color: #fff;
+            text-align: center; padding: 10px;
+            border-radius: 12px; font-weight: 700; font-size: 14px;
+            text-decoration: none;
+        }
+        .order-item.pay-now.overdue .pay-now__cta { background: #dc2626; }
+
+        /* カード + アクション群を1ブロックとして視覚的にまとめる */
+        .order-block {
+            margin-bottom: 12px;
+        }
+        .order-block.has-actions .order-item {
+            margin-bottom: 0;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            border-bottom: none;
+        }
+        .order-block.has-actions .order-actions {
+            display: flex;
+            gap: 6px;
+            padding: 8px 12px 12px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-top: 1px dashed var(--color-border);
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+        }
+        .order-action {
+            flex: 1;
+            text-align: center;
+            padding: 9px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .order-action--review { background: #f97316; color: #fff; }
+        .order-action--report {
+            background: #fef2f2; color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+        .order-action .material-symbols-outlined { font-size: 14px; }
+
+        /* カード内のメイン CTA（配送状況／支払いへ） */
+        .order-cta {
+            display: flex; align-items: center; justify-content: center;
+            gap: 4px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #0d6e4c; color: #fff;
+            border-radius: 10px;
+            font-size: 13px; font-weight: 700;
+            text-decoration: none;
+        }
+        .order-cta .material-symbols-outlined { font-size: 16px; }
+        .order-cta--paid { background: #475569; }
     </style>
 </head>
 
@@ -96,6 +186,12 @@
         <div style="text-align:center; font-size:20px; font-weight:700; margin-bottom:16px;" data-i18n="delivery.myOrders"></div>
 
         <div id="orders-list" style="padding:0 16px;"></div>
+
+        <div id="load-more-wrap" style="display:none; padding:12px 16px 24px; text-align:center;">
+            <button type="button" id="load-more-btn"
+                style="padding:10px 24px; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); border-radius:999px; font-size:13px; font-weight:600; cursor:pointer;"
+                data-i18n="restaurant.loadMore"></button>
+        </div>
     </div>
 
     <nav class="bottom-nav">
@@ -122,8 +218,9 @@
         import { subscribeTodos } from '/js/todos.js';
         import { subscribeNotifications } from '/js/notifications.js';
         import { subscribeCart } from '/js/cart.js';
+        import { getOrderNumber } from '/js/order-utils.js';
         import {
-            collection, query, where, orderBy, getDocs, doc, getDoc
+            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
         const loading = document.getElementById('loading');
@@ -139,12 +236,57 @@
             else setTimeout(() => waitForUserData(cb), 300);
         }
 
+        // お支払い待ちカード（強調版）：金額・支払期限を目立たせる
+        function renderPayNowItem(d, order, fishName) {
+            const orderNo = getOrderNumber({ id: d.id, ...order });
+            const total = (order.totalAmount || 0).toLocaleString();
+            const deadlineMs = order.paymentDeadline?.toMillis?.() || null;
+            const isOverdue = deadlineMs && Date.now() > deadlineMs;
+            let deadlineLine = '';
+            if (deadlineMs) {
+                const dd = new Date(deadlineMs);
+                const hh = String(dd.getHours()).padStart(2, '0');
+                const mm = String(dd.getMinutes()).padStart(2, '0');
+                const label = isOverdue
+                    ? i18next.t('orders.deadlinePassedShort')
+                    : i18next.t('orders.payByTime', { time: `${hh}:${mm}` });
+                deadlineLine = `
+                    <div class="pay-now__deadline">
+                        <span class="material-symbols-outlined">schedule</span>
+                        ${label}
+                    </div>`;
+            }
+
+            const itemCount = Array.isArray(order.items) ? order.items.length : 1;
+            const multiBadge = itemCount > 1
+                ? ` <span style="display:inline-block; margin-left:4px; padding:1px 8px; background:#fef3c7; color:#92400e; border-radius:10px; font-size:10px; font-weight:700;">+${itemCount - 1} ${i18next.t('orders.otherItems')}</span>`
+                : '';
+
+            return `
+                <a class="order-item pay-now ${isOverdue ? 'overdue' : ''}" id="order-${d.id}" href="/pages/restaurant/payment.html?id=${d.id}">
+                    <div class="order-item__top">
+                        <div class="order-item__fish">${fishName}${multiBadge}</div>
+                        <div class="order-item__status st-completed">${i18next.t('orders.payNow')}</div>
+                    </div>
+                    <div style="font-size:11px; color:#94a3b8; font-family:monospace; margin-top:2px;">${orderNo}</div>
+                    <div class="order-item__meta" style="margin-top:6px;">
+                        ${order.quantity}kg · ${order.deliveryDate || ''} ${order.deliveryTime || ''}
+                    </div>
+                    <div class="pay-now__amount">${total} KHR</div>
+                    ${deadlineLine}
+                    <div class="pay-now__cta">${i18next.t('payment.goToPayment')}</div>
+                </a>
+            `;
+        }
+
         function renderOrderItem(d, order, fishName) {
-            const statusKey = `delivery.${order.status}`;
-            const statusText = i18next.exists(statusKey) ? i18next.t(statusKey) : order.status;
-            const stClass = `st-${order.status}`;
-            const canTrack = ['approved', 'preparing', 'delivering', 'delivered'].includes(order.status);
-            const isCompleted = order.status === 'completed';
+            // 4/28: delivered ステータス廃止。旧データ保護のため delivered は completed として表示
+            const effectiveStatus = order.status === 'delivered' ? 'completed' : order.status;
+            const statusKey = `delivery.${effectiveStatus}`;
+            const statusText = i18next.exists(statusKey) ? i18next.t(statusKey) : effectiveStatus;
+            const stClass = `st-${effectiveStatus}`;
+            const canTrack = ['approved', 'preparing', 'delivering'].includes(effectiveStatus);
+            const isCompleted = effectiveStatus === 'completed';
             const isPending = order.status === 'pending';
             let href = '#';
             let actionLabel = '';
@@ -158,56 +300,96 @@
                     : i18next.t('payment.goToPayment');
             }
 
-            // 支払済みの完了注文にレビューリンクを追加
-            const showReviewLink = isCompleted && order.paymentStatus === 'paid';
+            // 4/28: 承認以降は常にレビュー・問題報告へ導線を出す（旧: 支払済み完了のみ）
+            const showReviewLink = ['approved', 'preparing', 'delivering', 'completed', 'delivered'].includes(order.status);
 
             const itemCount = Array.isArray(order.items) ? order.items.length : 1;
             const multiBadge = itemCount > 1
                 ? ` <span style="display:inline-block; margin-left:4px; padding:1px 8px; background:#fef3c7; color:#92400e; border-radius:10px; font-size:10px; font-weight:700;">+${itemCount - 1} ${i18next.t('orders.otherItems')}</span>`
                 : '';
 
+            const reviewActionsHtml = showReviewLink ? `
+                <div class="order-actions">
+                    <a class="order-action order-action--review" href="/pages/restaurant/review.html?id=${d.id}">
+                        <span class="material-symbols-outlined" style="font-size:14px;">star</span>
+                        ${i18next.t('review.submit')}
+                    </a>
+                    <a class="order-action order-action--report" href="/pages/restaurant/report.html?id=${d.id}">
+                        <span class="material-symbols-outlined" style="font-size:14px;">flag</span>
+                        ${i18next.t('review.reportIssue')}
+                    </a>
+                </div>
+            ` : '';
+
+            // カード内のメイン CTA（配送状況へ／支払いへ）
+            let ctaHtml = '';
+            if (canTrack || isPending) {
+                const ctaIcon = isPending ? 'hourglass_top' : 'local_shipping';
+                ctaHtml = `
+                    <a class="order-cta" href="/pages/restaurant/delivery.html?id=${d.id}">
+                        <span class="material-symbols-outlined">${ctaIcon}</span>
+                        ${actionLabel}
+                    </a>`;
+            } else if (isCompleted) {
+                const isPaid = order.paymentStatus === 'paid';
+                ctaHtml = `
+                    <a class="order-cta ${isPaid ? 'order-cta--paid' : ''}" href="/pages/restaurant/payment.html?id=${d.id}">
+                        <span class="material-symbols-outlined">${isPaid ? 'receipt_long' : 'payments'}</span>
+                        ${actionLabel}
+                    </a>`;
+            }
+
             return `
-                <a class="order-item" id="order-${d.id}" href="${href}">
-                    <div class="order-item__top">
-                        <div class="order-item__fish">${fishName}${multiBadge}</div>
-                        <div class="order-item__status ${stClass}">${statusText}</div>
-                    </div>
-                    <div class="order-item__meta">
-                        ${order.quantity}kg · ${order.deliveryDate || ''} ${order.deliveryTime || ''}
-                        ${actionLabel ? `<br>${actionLabel}` : ''}
-                    </div>
-                    ${showReviewLink ? `
-                        <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
-                            <a href="/pages/restaurant/review.html?id=${d.id}" onclick="event.stopPropagation();" style="flex:1; text-align:center; background:#f97316; color:#fff; border-radius:10px; padding:8px; font-size:12px; font-weight:700; text-decoration:none;">
-                                <span class="material-symbols-outlined" style="font-size:14px;">star</span>
-                                ${i18next.t('review.submit')}
-                            </a>
-                            <a href="/pages/restaurant/report.html?id=${d.id}" onclick="event.stopPropagation();" style="flex:1; text-align:center; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:10px; padding:8px; font-size:12px; font-weight:700; text-decoration:none;">
-                                <span class="material-symbols-outlined" style="font-size:14px;">flag</span>
-                                ${i18next.t('review.reportIssue')}
-                            </a>
+                <div class="order-block${showReviewLink ? ' has-actions' : ''}">
+                    <div class="order-item" id="order-${d.id}">
+                        <div class="order-item__top">
+                            <div class="order-item__fish">${fishName}${multiBadge}</div>
+                            <div class="order-item__status ${stClass}">${statusText}</div>
                         </div>
-                    ` : ''}
-                </a>
+                        <div style="font-size:11px; color:#94a3b8; font-family:monospace; margin-top:2px;">${getOrderNumber({ id: d.id, ...order })}</div>
+                        <div class="order-item__meta">
+                            ${order.quantity}kg · ${order.deliveryDate || ''} ${order.deliveryTime || ''}
+                        </div>
+                        ${ctaHtml}
+                    </div>
+                    ${reviewActionsHtml}
+                </div>
             `;
         }
 
-        async function loadOrders() {
-            loading.classList.add('show');
+        const ORDERS_PAGE_SIZE = 200;
+        let ordersLastDoc = null;
+        let ordersHasMore = false;
+        let ordersLoadingMore = false;
+        let allOrdersCache = [];
+
+        async function loadOrders({ append = false } = {}) {
+            if (!append) {
+                loading.classList.add('show');
+                ordersLastDoc = null;
+                allOrdersCache = [];
+            }
             try {
                 const uid = window.currentUser?.uid;
                 if (!uid) return;
 
-                const q = query(
+                const baseConds = [
                     collection(db, 'orders'),
                     where('restaurantId', '==', uid),
-                    orderBy('createdAt', 'desc')
-                );
+                    orderBy('createdAt', 'desc'),
+                ];
+                if (append && ordersLastDoc) baseConds.push(startAfter(ordersLastDoc));
+                baseConds.push(limit(ORDERS_PAGE_SIZE));
+                const q = query(...baseConds);
                 const snap = await getDocs(q);
+                ordersLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : ordersLastDoc;
+                ordersHasMore = snap.docs.length === ORDERS_PAGE_SIZE;
+
                 const listEl = document.getElementById('orders-list');
 
-                if (snap.empty) {
+                if (!append && snap.empty) {
                     listEl.innerHTML = `<div class="empty-state"><div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">local_shipping</span></div><div>${i18next.t('orders.empty')}</div></div>`;
+                    document.getElementById('load-more-wrap').style.display = 'none';
                     return;
                 }
 
@@ -226,7 +408,7 @@
                     } catch (e) { listingCache[lid] = {}; }
                 }));
 
-                const allOrders = snap.docs.map(d => {
+                const newOrders = snap.docs.map(d => {
                     const order = d.data();
                     let fishTypeKey = order.snapFishType
                         || listingCache[order.listingId]?.fishType
@@ -237,42 +419,54 @@
                     return { d, order, fishName };
                 });
 
-                // グループ分け
-                const delivered = allOrders.filter(o => o.order.status === 'delivered');
-                const active = allOrders.filter(o => ['approved', 'preparing', 'delivering'].includes(o.order.status));
-                const pending = allOrders.filter(o => o.order.status === 'pending');
-                // 受取完了：未払い（=支払い待ち）は表示・支払済みのみトグルへ
-                const awaitingPayment = allOrders.filter(o => o.order.status === 'completed' && o.order.paymentStatus !== 'paid');
-                const completed = allOrders.filter(o => o.order.status === 'completed' && o.order.paymentStatus === 'paid');
+                // 既存と結合（重複除去）
+                const seen = new Set(allOrdersCache.map(o => o.d.id));
+                newOrders.forEach(o => { if (!seen.has(o.d.id)) allOrdersCache.push(o); });
+                const allOrders = allOrdersCache;
+
+                // グループ分け（4/28: 大グループ「お支払い待ち」 / 中グループ「対応中」 / トグル）
+                const isCompletedStatus = (s) => s === 'completed' || s === 'delivered';
+                const isInProgress = (s) => ['pending', 'approved', 'preparing', 'delivering'].includes(s);
+
+                // ソート関数
+                const sortByPaymentDeadline = (a, b) => {
+                    const da = a.order.paymentDeadline?.toMillis?.() || 0;
+                    const dbb = b.order.paymentDeadline?.toMillis?.() || 0;
+                    return da - dbb;
+                };
+                const sortByDelivery = (a, b) => {
+                    const da = a.order.deliveryDateIso || '';
+                    const dbb = b.order.deliveryDateIso || '';
+                    if (da !== dbb) return da.localeCompare(dbb);
+                    return (a.order.deliveryTime || '').localeCompare(b.order.deliveryTime || '');
+                };
+
+                const awaitingPayment = allOrders
+                    .filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus !== 'paid')
+                    .sort(sortByPaymentDeadline);
+                const inProgress = allOrders
+                    .filter(o => isInProgress(o.order.status))
+                    .sort(sortByDelivery);
+                const completed = allOrders.filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus === 'paid');
                 const declined = allOrders.filter(o => o.order.status === 'declined');
 
                 listEl.innerHTML = '';
 
-                // ① 対応中（承認済み・準備中・配送中）
-                if (active.length > 0) {
-                    listEl.innerHTML += `<div class="section-label">${i18next.t('orders.activeSection', { count: active.length })}</div>`;
-                    active.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName); });
-                }
-
-                // ② 新規注文（承認待ち）
-                if (pending.length > 0) {
-                    listEl.innerHTML += `<div class="section-label pending-label">${i18next.t('orders.pendingSection', { count: pending.length })}</div>`;
-                    pending.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName); });
-                }
-
-                // ③ 配送完了（受取待ち）
-                if (delivered.length > 0) {
-                    listEl.innerHTML += `<div class="section-label delivered-label">${i18next.t('delivery.delivered')}（${delivered.length}）</div>`;
-                    delivered.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName); });
-                }
-
-                // ④ お支払い待ち（受取済み・未払い）
+                // 大グループ：お支払い待ち（強調表示・期限昇順）
                 if (awaitingPayment.length > 0) {
                     listEl.innerHTML += `<div class="section-label payment-label">${i18next.t('orders.awaitingPaymentSection', { count: awaitingPayment.length })}</div>`;
-                    awaitingPayment.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName); });
+                    awaitingPayment.forEach(o => {
+                        listEl.innerHTML += renderPayNowItem(o.d, o.order, o.fishName);
+                    });
                 }
 
-                // ⑤ 支払完了（トグル）
+                // 中グループ：対応中（pending + approved + preparing + delivering、納品日昇順）
+                if (inProgress.length > 0) {
+                    listEl.innerHTML += `<div class="section-label">${i18next.t('orders.activeSection', { count: inProgress.length })}</div>`;
+                    inProgress.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName); });
+                }
+
+                // トグル：完了済み
                 if (completed.length > 0) {
                     listEl.innerHTML += `
                         <div class="accordion-header" id="acc-completed">${i18next.t('orders.approvedSectionClosed', { count: completed.length })}</div>
@@ -281,7 +475,7 @@
                         </div>`;
                 }
 
-                // ⑥ 辞退済み（トグル）
+                // トグル：辞退済み
                 if (declined.length > 0) {
                     listEl.innerHTML += `
                         <div class="accordion-header" id="acc-declined">${i18next.t('orders.declinedSectionClosed', { count: declined.length })}</div>
@@ -327,12 +521,29 @@
                     }
                 }
 
+                document.getElementById('load-more-wrap').style.display = ordersHasMore ? 'block' : 'none';
+
             } catch (err) {
                 console.error(err);
             } finally {
                 loading.classList.remove('show');
+                ordersLoadingMore = false;
             }
         }
+
+        document.getElementById('load-more-btn').addEventListener('click', async () => {
+            if (ordersLoadingMore || !ordersHasMore) return;
+            ordersLoadingMore = true;
+            const btn = document.getElementById('load-more-btn');
+            btn.disabled = true;
+            btn.textContent = '...';
+            try {
+                await loadOrders({ append: true });
+            } finally {
+                btn.disabled = false;
+                btn.textContent = i18next.t('restaurant.loadMore');
+            }
+        });
 
         onLanguageChange(() => loadOrders());
         waitForUserData(() => {

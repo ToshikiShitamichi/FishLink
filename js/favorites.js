@@ -1,11 +1,19 @@
 // お気に入り管理（Firestore: favorites/{uid}）
 import { db } from '/js/firebase-config.js';
 import {
-    doc, getDoc, setDoc, onSnapshot, serverTimestamp
+    doc, getDoc, setDoc, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
 function favRef(uid) {
     return doc(db, 'favorites', uid);
+}
+
+const favListeners = new Set();
+
+function notifyFavListeners(listingIds) {
+    favListeners.forEach(cb => {
+        try { cb(listingIds); } catch (e) { console.error(e); }
+    });
 }
 
 export async function getFavorites(uid) {
@@ -26,17 +34,18 @@ export async function toggleFavorite(uid, listingId) {
         listingIds: next,
         updatedAt: serverTimestamp(),
     }, { merge: true });
+    notifyFavListeners(next);
     return next;
 }
 
 /**
- * お気に入り一覧をリアルタイム購読。コールバックには listingIds[] が渡る。
+ * お気に入り一覧を購読。
+ * onSnapshot は使わず初回 getDoc + 自身のトグルのみで通知。
+ * 戻り値: unsubscribe 関数
  */
 export function subscribeFavorites(uid, onChange) {
-    if (!uid) return () => {};
-    return onSnapshot(favRef(uid), (snap) => {
-        const data = snap.exists() ? snap.data() : {};
-        const listingIds = Array.isArray(data.listingIds) ? data.listingIds : [];
-        onChange(listingIds);
-    });
+    if (!uid) return () => { };
+    favListeners.add(onChange);
+    getFavorites(uid).then(ids => onChange(ids)).catch(() => onChange([]));
+    return () => favListeners.delete(onChange);
 }

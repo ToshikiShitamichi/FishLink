@@ -50,7 +50,7 @@ self.addEventListener('notificationclick', (event) => {
 
 // ── PWAキャッシュ ────────────────────────────────────────────
 // デプロイごとにバージョンを上げる → 旧キャッシュが自動削除される
-const CACHE_NAME = 'fishlink-v49';
+const CACHE_NAME = 'fishlink-v64';
 
 const PRECACHE_URLS = [
     '/',

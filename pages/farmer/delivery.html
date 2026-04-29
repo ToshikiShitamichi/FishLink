@@ -282,6 +282,7 @@
                 ? `https://www.google.com/maps/search/?api=1&query=${restLoc.lat},${restLoc.lng}`
                 : null;
 
+            const orderNo = orderData.orderNumber || `FL-${orderId.slice(0, 8).toUpperCase()}`;
             document.getElementById('order-summary').innerHTML = `
                 <div style="font-weight:600; color:var(--color-text); font-size:14px;">
                     ${fishName} ${orderData.quantity}kg · ${restName}
@@ -289,6 +290,7 @@
                 <div style="font-size:12px; color:var(--color-text-sub); margin-top:2px;">
                     ${statusText} · ${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}
                 </div>
+                <div style="font-family:monospace; font-size:11px; color:#94a3b8; margin-top:2px;">${orderNo}</div>
                 ${mapLink ? `
                     <a class="location-link" href="${mapLink}" target="_blank" rel="noopener">
                         <span class="material-symbols-outlined">location_on</span>
@@ -424,7 +426,8 @@
             if (!confirm(i18next.t('delivery.confirmComplete'))) return;
             btn.disabled = true;
 
-            await updateDoc(doc(db, 'orders', orderId), { status: 'delivered' });
+            // 4/28: delivered ステータス廃止。直接 completed に遷移
+            await updateDoc(doc(db, 'orders', orderId), { status: 'completed' });
             await addDoc(collection(db, 'orders', orderId, 'messages'), {
                 senderId: myUid,
                 text: i18next.t('delivery.statusDeliveredMsg'),

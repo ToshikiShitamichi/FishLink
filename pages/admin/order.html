@@ -220,10 +220,12 @@
                 <div class="admin-brand" data-i18n="admin.brand"></div>
                 <div class="admin-title" data-i18n="admin.order.title"></div>
                 <div class="admin-subtitle" data-i18n="admin.order.subtitle"></div>
+                <div id="order-no-display" style="font-family:monospace; font-size:13px; color:#475569; margin-top:6px;"></div>
             </div>
             <div class="admin-header__right">
                 <nav class="admin-nav">
                     <a href="/pages/admin/index.html" class="active" data-i18n="admin.navTransactions"></a>
+                    <a href="/pages/admin/users.html" data-i18n="admin.navUsers"></a>
                     <a href="/pages/admin/settings.html" data-i18n="admin.navSettings"></a>
                     <a href="/pages/admin/caa.html" data-i18n="admin.navCaa"></a>
                     <a href="/pages/admin/reports.html" data-i18n="admin.navReports"></a>
@@ -400,6 +402,10 @@
                         listingData = l.data() || {};
                     }
 
+                    // 取引番号表示
+                    const orderNo = orderData.orderNumber || `FL-${orderId.slice(0, 8).toUpperCase()}`;
+                    document.getElementById('order-no-display').textContent = orderNo;
+
                     render();
                     loading.classList.remove('show');
                 });
@@ -413,8 +419,8 @@
             if (orderData.adminStatus === 'done') return 'done';
             if (orderData.adminStatus === 'remitted') return 'remitted';
             if (orderData.adminStatus === 'payment_confirmed') return 'paymentConfirmed';
-            if (orderData.status === 'completed') return 'completed';
-            if (orderData.status === 'delivered') return 'delivered';
+            // 4/28: 旧 delivered は completed として扱う
+            if (orderData.status === 'completed' || orderData.status === 'delivered') return 'completed';
             if (orderData.status === 'delivering') return 'delivering';
             if (orderData.status === 'preparing') return 'preparing';
             if (orderData.status === 'approved') return 'approved';

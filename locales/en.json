@@ -149,7 +149,8 @@
         "fieldsRequired": "Please fill in all fields",
         "userNotFound": "User not found",
         "loginFailed": "Login failed. Please check your ID and password",
-        "registerFailed": "Registration failed. Please try again later"
+        "registerFailed": "Registration failed. Please try again later",
+        "accountBanned": "This account has been suspended. Please contact the admin for details."
     },
     "restaurant": {
         "title": "Fish Market",
@@ -163,6 +164,8 @@
         "filter": "Filter",
         "filterAll": "All",
         "filterFavorites": "Favorites",
+        "filterProvince": "Province",
+        "loadMore": "Load more",
         "favorite": "Add to favorites",
         "unfavorite": "Remove from favorites",
         "stock": "Stock {{kg}}kg",
@@ -191,6 +194,8 @@
         "viewLocation": "View on map",
         "pendingBanner": "Waiting for approval",
         "pendingBannerDesc": "You'll be able to send messages once the farmer approves the order",
+        "completedBannerTitle": "Delivery completed",
+        "completedBannerCta": "Go to payment",
         "chatDisabledHint": "Available after farmer approval",
         "send": "Send",
         "imageSent": "Photo sent",
@@ -266,6 +271,11 @@
         "approve": "Approve",
         "decline": "Decline",
         "submit": "Submit",
+        "confirmApproveTitle": "Approve this order?",
+        "confirmApproveAsk": "The restaurant will be notified once you approve.",
+        "fishLabel": "Fish",
+        "restaurantLabel": "Restaurant",
+        "otherItemsAddon": "+{{n}} more",
         "declineTitle": "Select Decline Reason",
         "declineReason1": "Insufficient stock",
         "declineReason2": "Size doesn't match",
@@ -283,8 +293,15 @@
         "approved": "Approved",
         "declined": "Declined",
         "activeSection": "Active ({{count}})",
+        "todaySection": "Today ({{count}})",
+        "futureSection": "Tomorrow & later ({{count}})",
         "waitingRemittanceSection": "Awaiting Remittance ({{count}})",
+        "waitingRemittanceClosed": "▶ Awaiting Remittance ({{count}})",
+        "waitingRemittanceOpen": "▼ Awaiting Remittance ({{count}})",
         "awaitingPaymentSection": "Awaiting Payment ({{count}})",
+        "payNow": "Please pay",
+        "payByTime": "Pay by {{time}}",
+        "deadlinePassedShort": "Payment deadline passed",
         "pendingSection": "New Orders ({{count}})",
         "approvedSectionClosed": "▶ Completed ({{count}})",
         "approvedSectionOpen": "▼ Completed ({{count}})",
@@ -305,6 +322,9 @@
         "total": "Total",
         "subtotal": "Subtotal (fish)",
         "discountApplied": "(discount applied)",
+        "deadlineBy": "Please pay by {{time}}",
+        "deadlinePassed": "Payment deadline has passed. Please pay as soon as possible.",
+        "payOnReceipt": "Pay upon receipt",
         "qrTitle": "Pay by QR Code (KHQR)",
         "qrHint": "※ If you can't scan on this phone, tap \"Open Link\" to pay, or save the QR image",
         "openLink": "Open Link",
@@ -519,6 +539,18 @@
         "adminReport": {
             "title": "New trouble report",
             "body": "{{fromRole}} → {{type}}\n{{reporter}}"
+        },
+        "paymentDeadlineSet": {
+            "title": "Delivery completed by {{farmer}}. Please pay now",
+            "body": "Please pay by {{deadline}}"
+        },
+        "paymentDeadlineExpired": {
+            "title": "Payment deadline has passed",
+            "body": "{{farmer}} {{fish}} {{qty}}kg ({{orderNo}})\nPlease complete the payment"
+        },
+        "remitDone": {
+            "title": "Payment received",
+            "body": "Order from {{restaurant}}: {{fish}} {{qty}}kg"
         }
     },
     "comments": {
@@ -645,15 +677,62 @@
         "menuHintSales": "Sales amount, transaction history",
         "menuHintPurchase": "Purchase amount, transaction history",
         "menuHintProfileFarmer": "Farmer message, farm photo",
-        "menuHintProfileRestaurant": "Restaurant photo"
+        "menuHintProfileRestaurant": "Restaurant photo",
+        "adminChat": "Admin chat",
+        "adminChatHint": "Chat with FishLink admin"
+    },
+    "adminChat": {
+        "title": "Admin Chat",
+        "subtitle": "Send a message to the FishLink admin",
+        "loading": "Loading...",
+        "empty": "No messages yet. Feel free to start.",
+        "placeholder": "Type a message..."
     },
     "admin": {
         "brand": "FISHLINK Admin",
         "navTransactions": "Transactions",
+        "navUsers": "Users",
         "navSettings": "Fees",
         "navCaa": "CAA Prices",
         "navReports": "Reports",
         "navLogout": "Logout",
+        "users": {
+            "title": "User Management",
+            "subtitle": "Filter by role / province / banned, then BAN / unban or chat from the detail panel",
+            "searchPlaceholder": "Search by ID, name, phone, province",
+            "roleAll": "All",
+            "roleFarmer": "Farmer",
+            "roleRestaurant": "Restaurant",
+            "roleAdmin": "Admin",
+            "roleBanned": "Banned",
+            "banned": "BANNED",
+            "noResult": "No matching users",
+            "selectHint": "Select a user from the list",
+            "detail": {
+                "uid": "UID",
+                "phone": "Phone",
+                "location": "Location",
+                "viewMap": "Open map",
+                "lang": "Language",
+                "rating": "Rating",
+                "createdAt": "Registered"
+            },
+            "notBanned": "Active (not banned)",
+            "bannedSince": "Banned since: {{time}}",
+            "bannedReason": "Reason",
+            "cannotBanAdmin": "Admin users cannot be banned",
+            "banBtn": "BAN this user",
+            "unbanBtn": "Unban",
+            "banReasonPlaceholder": "Reason (optional, admin note)",
+            "confirmBan": "Ban this user?\nThey will be signed out immediately and prevented from logging in.\nFor farmers, all active listings will be deactivated.",
+            "confirmUnban": "Unban this user?",
+            "bannedAlsoDeactivated": "User banned. {{count}} active listings have been deactivated.",
+            "chatTitle": "Admin Chat",
+            "chatLoading": "Loading...",
+            "chatEmpty": "No messages yet",
+            "chatPlaceholder": "Type a message (Enter to send, Shift+Enter for newline)",
+            "send": "Send"
+        },
         "tx": {
             "title": "Transactions",
             "subtitle": "Track each order by status and handle payment / remittance / completion from the detail page",
@@ -671,6 +750,7 @@
             "tabPaymentConfirmed": "Restaurant Paid",
             "tabRemitted": "Farmer Remitted",
             "tabDone": "Completed",
+            "colOrderNo": "Order No.",
             "colStatus": "Status",
             "colDate": "Order Date",
             "colRestaurant": "Restaurant",

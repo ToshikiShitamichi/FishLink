@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <title>FishLink Admin - Users</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        body { background: #f8fafc; }
+
+        .admin-shell { max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+        .admin-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .admin-header__right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .admin-brand { font-size: 13px; color: #64748b; margin-bottom: 2px; }
+        .admin-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: #0f172a; }
+        .admin-subtitle { font-size: 13px; color: #475569; margin-top: 4px; }
+
+        .admin-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+        .admin-nav a {
+            text-decoration: none; color: #475569; padding: 8px 14px;
+            border-radius: 999px; background: #fff; border: 1px solid #e2e8f0;
+            font-size: 13px; font-weight: 600; white-space: nowrap;
+        }
+        .admin-nav a.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+        .admin-nav a:hover:not(.active) { background: #f1f5f9; }
+
+        .users-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 880px) {
+            .users-layout { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .filters-row {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+        }
+
+        .filter-chip {
+            border: 1px solid #e2e8f0; background: #fff; color: #475569;
+            padding: 6px 12px; border-radius: 999px; font-size: 12px;
+            font-weight: 600; cursor: pointer;
+        }
+        .filter-chip.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+
+        .search-input {
+            width: 100%; padding: 10px 12px; font-size: 14px;
+            border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px;
+        }
+
+        .user-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 8px; border-radius: 8px; cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .user-row:hover { background: #f8fafc; }
+        .user-row.active { background: #ecfdf5; }
+
+        .user-row__role {
+            width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; flex-shrink: 0;
+            background: #f1f5f9; color: #475569;
+        }
+        .user-row__role.farmer { background: #ecfdf5; color: #047857; }
+        .user-row__role.restaurant { background: #fef3c7; color: #92400e; }
+        .user-row__role.admin { background: #ddd6fe; color: #5b21b6; }
+
+        .user-row__main { flex: 1; min-width: 0; }
+        .user-row__name { font-size: 14px; font-weight: 600; color: #0f172a; }
+        .user-row__sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+        .user-row__badge {
+            font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 700;
+        }
+        .user-row__badge.banned { background: #fee2e2; color: #b91c1c; }
+
+        .users-list-wrap {
+            max-height: 65vh; overflow-y: auto;
+        }
+
+        .detail-empty {
+            text-align: center; color: #94a3b8; padding: 60px 0;
+            font-size: 13px;
+        }
+
+        .detail-header {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+            padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;
+        }
+
+        .detail-name { font-size: 18px; font-weight: 700; color: #0f172a; }
+        .detail-sub { font-size: 12px; color: #64748b; }
+
+        .detail-rows { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13px; }
+        .detail-rows dt { color: #64748b; font-weight: 600; }
+        .detail-rows dd { color: #0f172a; word-break: break-all; }
+
+        .ban-section {
+            margin-top: 16px; padding: 12px; border-radius: 8px;
+            background: #fef2f2; border: 1px solid #fecaca;
+        }
+        .ban-section.banned { background: #fef2f2; }
+        .ban-section.normal { background: #f0fdf4; border-color: #bbf7d0; }
+
+        .ban-status { font-weight: 700; margin-bottom: 8px; font-size: 14px; }
+        .ban-status.banned { color: #b91c1c; }
+        .ban-status.normal { color: #047857; }
+
+        .reason-input {
+            width: 100%; padding: 8px 10px; font-size: 13px;
+            border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 8px;
+            font-family: inherit;
+        }
+
+        .ban-btn {
+            padding: 8px 16px; border: none; border-radius: 8px;
+            font-size: 13px; font-weight: 700; cursor: pointer;
+        }
+        .ban-btn.ban { background: #dc2626; color: #fff; }
+        .ban-btn.ban:hover { background: #b91c1c; }
+        .ban-btn.ban:disabled { background: #fca5a5; cursor: not-allowed; }
+        .ban-btn.unban { background: #047857; color: #fff; }
+        .ban-btn.unban:hover { background: #065f46; }
+
+        /* チャット */
+        .chat-section { margin-top: 20px; }
+        .chat-section h3 {
+            font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 8px;
+        }
+        .chat-thread {
+            max-height: 280px; overflow-y: auto;
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+            padding: 12px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .chat-msg {
+            max-width: 75%; padding: 8px 12px; border-radius: 12px;
+            font-size: 13px; line-height: 1.4; word-break: break-word;
+        }
+        .chat-msg.admin { background: #0f172a; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-msg.user { background: #fff; color: #0f172a; align-self: flex-start; border: 1px solid #e2e8f0; border-bottom-left-radius: 4px; }
+        .chat-msg__time { font-size: 10px; opacity: 0.7; margin-top: 4px; }
+
+        .chat-empty { text-align: center; color: #94a3b8; padding: 30px 0; font-size: 12px; }
+
+        .chat-input-row {
+            display: flex; gap: 8px; margin-top: 8px;
+        }
+        .chat-input {
+            flex: 1; padding: 10px 12px; font-size: 14px;
+            border: 1px solid #e2e8f0; border-radius: 8px;
+            font-family: inherit; resize: none;
+        }
+        .send-btn {
+            padding: 0 18px; border: none; border-radius: 8px;
+            background: #0d6e4c; color: #fff; font-weight: 700;
+            font-size: 13px; cursor: pointer; flex-shrink: 0;
+        }
+        .send-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+        @media (max-width: 480px) {
+            .admin-shell { padding: 14px; }
+            .admin-title { font-size: 22px; }
+            .panel { padding: 12px; }
+            .users-list-wrap { max-height: 40vh; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="admin-shell">
+        <div class="admin-header">
+            <div>
+                <div class="admin-brand" data-i18n="admin.brand"></div>
+                <div class="admin-title" data-i18n="admin.users.title"></div>
+                <div class="admin-subtitle" data-i18n="admin.users.subtitle"></div>
+            </div>
+            <div class="admin-header__right">
+                <nav class="admin-nav">
+                    <a href="/pages/admin/index.html" data-i18n="admin.navTransactions"></a>
+                    <a href="/pages/admin/users.html" class="active" data-i18n="admin.navUsers"></a>
+                    <a href="/pages/admin/settings.html" data-i18n="admin.navSettings"></a>
+                    <a href="/pages/admin/caa.html" data-i18n="admin.navCaa"></a>
+                    <a href="/pages/admin/reports.html" data-i18n="admin.navReports"></a>
+                    <a href="#" id="logout-btn" data-i18n="admin.navLogout"></a>
+                </nav>
+                <select id="lang-selector">
+                    <option value="km">ខ្មែរ</option>
+                    <option value="en">ENGLISH</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="users-layout">
+            <!-- 左カラム：一覧 -->
+            <div class="panel">
+                <input type="text" class="search-input" id="search-input"
+                    placeholder="" data-i18n-placeholder="admin.users.searchPlaceholder">
+                <div class="filters-row" id="role-filters">
+                    <button class="filter-chip active" data-role="" data-i18n="admin.users.roleAll"></button>
+                    <button class="filter-chip" data-role="farmer" data-i18n="admin.users.roleFarmer"></button>
+                    <button class="filter-chip" data-role="restaurant" data-i18n="admin.users.roleRestaurant"></button>
+                    <button class="filter-chip" data-role="admin" data-i18n="admin.users.roleAdmin"></button>
+                    <button class="filter-chip" data-role="banned" data-i18n="admin.users.roleBanned"></button>
+                </div>
+                <div class="users-list-wrap" id="users-list"></div>
+            </div>
+
+            <!-- 右カラム：詳細 -->
+            <div class="panel">
+                <div id="detail-pane" class="detail-empty" data-i18n="admin.users.selectHint"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState, logout } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-functions.js';
+        import {
+            collection, query, where, orderBy, onSnapshot, getDocs, doc, getDoc,
+            addDoc, serverTimestamp, updateDoc
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        const functions = getFunctions(undefined, 'asia-southeast1');
+        const setUserBanned = httpsCallable(functions, 'setUserBanned');
+
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        document.getElementById('logout-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            logout();
+        });
+
+        // 管理者チェック
+        function waitAdmin(cb) {
+            if (window.currentUserData) {
+                if (window.currentUserData.role !== 'admin') {
+                    location.href = '/index.html';
+                    return;
+                }
+                cb();
+            } else {
+                setTimeout(() => waitAdmin(cb), 200);
+            }
+        }
+
+        let allUsers = [];
+        let currentRoleFilter = '';
+        let currentSearch = '';
+        let selectedUid = null;
+        let chatUnsub = null;
+
+        async function loadUsers() {
+            loading.classList.add('show');
+            try {
+                const snap = await getDocs(query(
+                    collection(db, 'users'),
+                    orderBy('createdAt', 'desc')
+                ));
+                allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+                renderUserList();
+
+                // URLパラメータで指定されたユーザーを開く
+                const params = new URLSearchParams(location.search);
+                const targetUid = params.get('uid');
+                if (targetUid && allUsers.find(u => u.uid === targetUid)) {
+                    selectUser(targetUid);
+                }
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        function renderUserList() {
+            const list = document.getElementById('users-list');
+            const term = currentSearch.toLowerCase();
+            let filtered = allUsers.filter(u => {
+                if (currentRoleFilter === 'banned') {
+                    if (u.isBanned !== true) return false;
+                } else if (currentRoleFilter && u.role !== currentRoleFilter) {
+                    return false;
+                }
+                if (term) {
+                    const hay = `${u.loginId || ''} ${u.displayName || ''} ${u.phone || ''} ${u.province || ''}`.toLowerCase();
+                    if (!hay.includes(term)) return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div class="detail-empty">${i18next.t('admin.users.noResult')}</div>`;
+                return;
+            }
+
+            list.innerHTML = filtered.map(u => {
+                const role = u.role || 'unknown';
+                const roleIcon = role === 'farmer' ? 'agriculture'
+                    : role === 'restaurant' ? 'restaurant'
+                    : role === 'admin' ? 'admin_panel_settings' : 'person';
+                const placeText = [u.province, u.district].filter(Boolean).join(', ');
+                const banBadge = u.isBanned
+                    ? `<span class="user-row__badge banned">${i18next.t('admin.users.banned')}</span>`
+                    : '';
+                return `
+                    <div class="user-row${selectedUid === u.uid ? ' active' : ''}" data-uid="${u.uid}">
+                        <div class="user-row__role ${role}">
+                            <span class="material-symbols-outlined" style="font-size:18px;">${roleIcon}</span>
+                        </div>
+                        <div class="user-row__main">
+                            <div class="user-row__name">${escapeHtml(u.displayName || u.loginId || u.uid)}</div>
+                            <div class="user-row__sub">@${escapeHtml(u.loginId || '')} ${placeText ? '· ' + escapeHtml(placeText) : ''}</div>
+                        </div>
+                        ${banBadge}
+                    </div>
+                `;
+            }).join('');
+
+            list.querySelectorAll('.user-row').forEach(row => {
+                row.addEventListener('click', () => selectUser(row.dataset.uid));
+            });
+        }
+
+        function escapeHtml(s) {
+            return String(s || '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function fmtTs(ts) {
+            if (!ts) return '';
+            const d = ts.toDate ? ts.toDate() : new Date(ts);
+            return d.toLocaleString();
+        }
+
+        async function selectUser(uid) {
+            selectedUid = uid;
+            // 一覧の active 表示更新
+            document.querySelectorAll('.user-row').forEach(r => {
+                r.classList.toggle('active', r.dataset.uid === uid);
+            });
+
+            const u = allUsers.find(x => x.uid === uid);
+            if (!u) return;
+
+            const pane = document.getElementById('detail-pane');
+            pane.className = '';
+
+            const roleLabel = u.role === 'farmer' ? i18next.t('admin.users.roleFarmer')
+                : u.role === 'restaurant' ? i18next.t('admin.users.roleRestaurant')
+                : u.role === 'admin' ? i18next.t('admin.users.roleAdmin')
+                : u.role || '';
+
+            const placeText = [u.province, u.district].filter(Boolean).join(', ');
+            const isBanned = u.isBanned === true;
+
+            pane.innerHTML = `
+                <div class="detail-header">
+                    <div>
+                        <div class="detail-name">${escapeHtml(u.displayName || u.loginId || u.uid)}</div>
+                        <div class="detail-sub">@${escapeHtml(u.loginId || '')} · ${escapeHtml(roleLabel)}</div>
+                    </div>
+                </div>
+
+                <dl class="detail-rows">
+                    <dt>${i18next.t('admin.users.detail.uid')}</dt>
+                    <dd>${escapeHtml(u.uid)}</dd>
+                    <dt>${i18next.t('admin.users.detail.phone')}</dt>
+                    <dd>${u.phone ? `<a href="tel:${escapeHtml(u.phone)}">${escapeHtml(u.phone)}</a>` : '—'}</dd>
+                    <dt>${i18next.t('admin.users.detail.location')}</dt>
+                    <dd>${placeText ? escapeHtml(placeText) : '—'}${u.location ? ` (<a href="https://www.google.com/maps?q=${u.location.lat},${u.location.lng}" target="_blank">${i18next.t('admin.users.detail.viewMap')}</a>)` : ''}</dd>
+                    <dt>${i18next.t('admin.users.detail.lang')}</dt>
+                    <dd>${escapeHtml(u.lang || '')}</dd>
+                    <dt>${i18next.t('admin.users.detail.rating')}</dt>
+                    <dd>${(u.avgRating ?? 0).toFixed(2)} (${u.reviewCount ?? 0})</dd>
+                    <dt>${i18next.t('admin.users.detail.createdAt')}</dt>
+                    <dd>${fmtTs(u.createdAt)}</dd>
+                </dl>
+
+                <div class="ban-section ${isBanned ? 'banned' : 'normal'}">
+                    <div class="ban-status ${isBanned ? 'banned' : 'normal'}">
+                        ${isBanned
+                            ? i18next.t('admin.users.bannedSince', { time: fmtTs(u.bannedAt) })
+                            : i18next.t('admin.users.notBanned')}
+                    </div>
+                    ${isBanned && u.bannedReason
+                        ? `<div style="font-size:12px; color:#7f1d1d; margin-bottom:8px;">${i18next.t('admin.users.bannedReason')}: ${escapeHtml(u.bannedReason)}</div>`
+                        : ''}
+                    ${u.role === 'admin'
+                        ? `<div style="font-size:12px; color:#64748b;">${i18next.t('admin.users.cannotBanAdmin')}</div>`
+                        : isBanned
+                            ? `<button class="ban-btn unban" id="unban-btn">${i18next.t('admin.users.unbanBtn')}</button>`
+                            : `
+                                <textarea class="reason-input" id="ban-reason" rows="2"
+                                    placeholder="${i18next.t('admin.users.banReasonPlaceholder')}"></textarea>
+                                <button class="ban-btn ban" id="ban-btn">${i18next.t('admin.users.banBtn')}</button>
+                            `}
+                </div>
+
+                <div class="chat-section">
+                    <h3>${i18next.t('admin.users.chatTitle')}</h3>
+                    <div class="chat-thread" id="chat-thread">
+                        <div class="chat-empty">${i18next.t('admin.users.chatLoading')}</div>
+                    </div>
+                    <div class="chat-input-row">
+                        <textarea class="chat-input" id="chat-input" rows="2"
+                            placeholder="${i18next.t('admin.users.chatPlaceholder')}"></textarea>
+                        <button class="send-btn" id="send-btn">${i18next.t('admin.users.send')}</button>
+                    </div>
+                </div>
+            `;
+
+            // BAN/解除ボタン
+            document.getElementById('ban-btn')?.addEventListener('click', () => doBan(uid, true));
+            document.getElementById('unban-btn')?.addEventListener('click', () => doBan(uid, false));
+
+            // チャット購読
+            subscribeChat(uid);
+
+            // 送信
+            const input = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.addEventListener('click', async () => {
+                const text = input.value.trim();
+                if (!text) return;
+                sendBtn.disabled = true;
+                try {
+                    await addDoc(collection(db, `adminChats/${uid}/messages`), {
+                        senderId: window.currentUser.uid,
+                        senderRole: 'admin',
+                        text,
+                        isRead: false,
+                        createdAt: serverTimestamp(),
+                    });
+                    input.value = '';
+                    // ユーザーからの未読メッセージを既読化
+                    await markUserMessagesRead(uid);
+                } catch (err) {
+                    alert(err.message || 'Failed to send');
+                } finally {
+                    sendBtn.disabled = false;
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendBtn.click();
+                }
+            });
+
+            // 開いた時点で未読を既読化
+            markUserMessagesRead(uid);
+        }
+
+        async function doBan(uid, banned) {
+            const reason = banned ? (document.getElementById('ban-reason')?.value.trim() || '') : '';
+            const confirmMsg = banned
+                ? i18next.t('admin.users.confirmBan')
+                : i18next.t('admin.users.confirmUnban');
+            if (!confirm(confirmMsg)) return;
+
+            loading.classList.add('show');
+            try {
+                const result = await setUserBanned({ uid, banned, reason });
+                const deactivated = result.data?.deactivated || 0;
+                // ローカル更新
+                const u = allUsers.find(x => x.uid === uid);
+                if (u) {
+                    u.isBanned = banned;
+                    u.bannedAt = banned ? new Date() : null;
+                    u.bannedReason = banned ? reason : null;
+                }
+                renderUserList();
+                selectUser(uid);
+                if (banned && deactivated > 0) {
+                    alert(i18next.t('admin.users.bannedAlsoDeactivated', { count: deactivated }));
+                }
+            } catch (err) {
+                console.error(err);
+                alert(err.message || 'Failed');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        function subscribeChat(uid) {
+            if (chatUnsub) { chatUnsub(); chatUnsub = null; }
+            const q = query(
+                collection(db, `adminChats/${uid}/messages`),
+                orderBy('createdAt', 'asc')
+            );
+            chatUnsub = onSnapshot(q, (snap) => {
+                if (selectedUid !== uid) return;
+                const thread = document.getElementById('chat-thread');
+                if (!thread) return;
+                if (snap.empty) {
+                    thread.innerHTML = `<div class="chat-empty">${i18next.t('admin.users.chatEmpty')}</div>`;
+                    return;
+                }
+                thread.innerHTML = snap.docs.map(d => {
+                    const m = d.data();
+                    const cls = m.senderRole === 'admin' ? 'admin' : 'user';
+                    const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString() : '';
+                    return `
+                        <div class="chat-msg ${cls}">
+                            ${escapeHtml(m.text || '')}
+                            <div class="chat-msg__time">${time}</div>
+                        </div>
+                    `;
+                }).join('');
+                thread.scrollTop = thread.scrollHeight;
+            });
+        }
+
+        async function markUserMessagesRead(uid) {
+            try {
+                const snap = await getDocs(query(
+                    collection(db, `adminChats/${uid}/messages`),
+                    where('senderRole', '==', 'user'),
+                    where('isRead', '==', false)
+                ));
+                await Promise.all(snap.docs.map(d => updateDoc(d.ref, { isRead: true })));
+            } catch (e) { /* ignore */ }
+        }
+
+        // フィルタ
+        document.getElementById('role-filters').addEventListener('click', (e) => {
+            const btn = e.target.closest('.filter-chip');
+            if (!btn) return;
+            currentRoleFilter = btn.dataset.role;
+            document.querySelectorAll('#role-filters .filter-chip').forEach(c => c.classList.toggle('active', c === btn));
+            renderUserList();
+        });
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            renderUserList();
+        });
+
+        onLanguageChange(() => {
+            // 一覧再描画と詳細パネル再描画
+            renderUserList();
+            if (selectedUid) selectUser(selectedUid);
+        });
+
+        waitAdmin(() => loadUsers());
+    </script>
+</body>
+
+</html>

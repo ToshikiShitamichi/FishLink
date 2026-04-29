@@ -4,6 +4,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { initializeApp } = require("firebase-admin/app");
 const { getMessaging } = require("firebase-admin/messaging");
 const { getFirestore } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 
 initializeApp();
 const db = getFirestore();
@@ -76,9 +77,40 @@ async function clearAllTodosForOrder(uid, orderId) {
 }
 
 // 管理者UID取得（全管理者）
+// 4/29: コスト削減のため `settings/adminUids.uids[]` をキャッシュとして使用
+//       キャッシュが存在しない場合のみ users をスキャンしてキャッシュを生成
+let _adminUidsCache = null;
+let _adminUidsCacheAt = 0;
+const ADMIN_CACHE_TTL_MS = 10 * 60 * 1000; // 10分
+
 async function getAdminUids() {
+  // メモリキャッシュ（同じプロセス内）
+  if (_adminUidsCache && Date.now() - _adminUidsCacheAt < ADMIN_CACHE_TTL_MS) {
+    return _adminUidsCache;
+  }
+  // Firestore キャッシュ
+  try {
+    const cacheSnap = await db.doc('settings/adminUids').get();
+    if (cacheSnap.exists) {
+      const uids = Array.isArray(cacheSnap.data()?.uids) ? cacheSnap.data().uids : null;
+      if (uids && uids.length > 0) {
+        _adminUidsCache = uids;
+        _adminUidsCacheAt = Date.now();
+        return uids;
+      }
+    }
+  } catch (e) { /* fallthrough to user scan */ }
+
+  // フォールバック: users をスキャン
   const snap = await db.collection('users').where('role', '==', 'admin').get();
-  return snap.docs.map(d => d.id);
+  const uids = snap.docs.map(d => d.id);
+  // キャッシュを保存
+  try {
+    await db.doc('settings/adminUids').set({ uids, updatedAt: new Date() });
+  } catch (e) { /* ignore */ }
+  _adminUidsCache = uids;
+  _adminUidsCacheAt = Date.now();
+  return uids;
 }
 
 // ── 通知履歴 ヘルパー ─────────────────────────────────────────
@@ -166,6 +198,31 @@ const MESSAGES = {
     en: { title: "New trouble report", body: "{{fromRole}} → {{type}}\n{{reporter}}" },
     km: { title: "របាយការណ៍បញ្ហាថ្មី", body: "{{fromRole}} → {{type}}\n{{reporter}}" },
   },
+  paymentDeadlineSet: {
+    ja: { title: "{{farmer}} 配送完了。お支払いをお願いします", body: "{{deadline}}までにお支払いください" },
+    en: { title: "Delivery completed by {{farmer}}. Please pay now", body: "Please pay by {{deadline}}" },
+    km: { title: "{{farmer}} ដឹកជញ្ជូនរួចរាល់។ សូមបង់ប្រាក់", body: "សូមបង់ប្រាក់មុន {{deadline}}" },
+  },
+  paymentDeadlineExpired: {
+    ja: { title: "支払期限が過ぎました", body: "{{farmer}} {{fish}} {{qty}}kg ({{orderNo}})\nお支払いをお願いします" },
+    en: { title: "Payment deadline has passed", body: "{{farmer}} {{fish}} {{qty}}kg ({{orderNo}})\nPlease complete the payment" },
+    km: { title: "ហួសកំណត់ពេលបង់ប្រាក់", body: "{{farmer}} {{fish}} {{qty}}kg ({{orderNo}})\nសូមបញ្ចប់ការបង់ប្រាក់" },
+  },
+  remitDone: {
+    ja: { title: "ご入金がありました", body: "{{restaurant}} の注文 {{fish}} {{qty}}kg" },
+    en: { title: "Payment received", body: "Order from {{restaurant}}: {{fish}} {{qty}}kg" },
+    km: { title: "បានទទួលប្រាក់", body: "ការបញ្ជាទិញពី {{restaurant}}: {{fish}} {{qty}}kg" },
+  },
+  adminChat: {
+    ja: { title: "運営からのメッセージ", body: "{{text}}" },
+    en: { title: "Message from admin", body: "{{text}}" },
+    km: { title: "សារពីរដ្ឋបាល", body: "{{text}}" },
+  },
+  adminChatFromUser: {
+    ja: { title: "{{name}} からの問い合わせ", body: "{{text}}" },
+    en: { title: "Inquiry from {{name}}", body: "{{text}}" },
+    km: { title: "សំណើពី {{name}}", body: "{{text}}" },
+  },
 };
 
 const REPORT_TYPE_LABELS = {
@@ -193,6 +250,28 @@ function getMessage(type, lang, vars) {
   return { title, body };
 }
 
+// ── 取引番号採番（カンボジア時間 UTC+7 ベースの YYMMDD で日次カウンター）──
+async function assignOrderNumber(orderRef, createdAtMs) {
+  const admin = require("firebase-admin/firestore");
+  // カンボジア時間（UTC+7）の YYMMDD
+  const khm = new Date((createdAtMs || Date.now()) + 7 * 60 * 60 * 1000);
+  const yy = String(khm.getUTCFullYear()).slice(-2);
+  const mm = String(khm.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(khm.getUTCDate()).padStart(2, '0');
+  const dateKey = `${yy}${mm}${dd}`;
+  const counterRef = db.doc(`counters/orderNumber_${dateKey}`);
+
+  let seq;
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(counterRef);
+    seq = (snap.data()?.count || 0) + 1;
+    tx.set(counterRef, { count: seq });
+  });
+  const orderNumber = `FL-${dateKey}-${String(seq).padStart(3, '0')}`;
+  await orderRef.update({ orderNumber });
+  return orderNumber;
+}
+
 // ── 注文作成時 → 農家に通知 ──────────────────────────────────
 exports.onOrderCreated = onDocumentCreated(
   {
@@ -203,6 +282,11 @@ exports.onOrderCreated = onDocumentCreated(
   async (event) => {
     const order = event.data.data();
     const admin = require("firebase-admin/firestore");
+
+    // 取引番号を採番（FL-YYMMDD-NNN）
+    const createdAtMs = order.createdAt?.toMillis?.() || Date.now();
+    const orderNumber = await assignOrderNumber(event.data.ref, createdAtMs);
+    console.log("Order number assigned:", event.params.orderId, orderNumber);
 
     // 在庫減算：items[] があれば各item毎に、なければ legacy の listingId/quantity で
     const items = Array.isArray(order.items) && order.items.length > 0
@@ -304,20 +388,45 @@ exports.onOrderUpdated = onDocumentUpdated(
         await clearTodo(after.farmerId, 'farmer_prepare', orderId);
         await createTodo(after.farmerId, 'farmer_deliver', orderId);
       }
-      // 配送中 → 配送todo解消＋受渡todo作成
+      // 配送中 → 配送todo解消＋配送完了todo作成
       if (after.status === "delivering") {
         await clearTodo(after.farmerId, 'farmer_deliver', orderId);
         await createTodo(after.farmerId, 'farmer_complete_delivery', orderId);
       }
-      // 到着（delivered）→ 受渡todo解消＋レストラン受取todo作成
-      if (after.status === "delivered") {
-        await clearTodo(after.farmerId, 'farmer_complete_delivery', orderId);
-        await createTodo(after.restaurantId, 'rest_receive', orderId);
-      }
-      // 完了（restaurant が受取確認）→ 受取todo解消＋支払todo作成
+      // 配送完了（completed）→ 農家todo解消＋レストラン支払todo作成＋支払期限設定＋通知
+      // 4/28: delivered ステータスを廃止。農家の「配送完了」で直接 completed に遷移
+      // 通知は2本: ①paymentDeadlineSet（即時・「HH:MMまでに支払って」）+
+      //          ②paymentDeadlineExpired（期限超過後・「期限が過ぎました」）
       if (after.status === "completed") {
-        await clearTodo(after.restaurantId, 'rest_receive', orderId);
+        await clearTodo(after.farmerId, 'farmer_complete_delivery', orderId);
         await createTodo(after.restaurantId, 'rest_pay', orderId);
+
+        // paymentDeadline = 配送完了時刻 + 10分（既にセット済みならスキップ）
+        if (!after.paymentDeadline) {
+          const now = new Date();
+          const deadline = new Date(now.getTime() + 10 * 60 * 1000);
+          await event.data.after.ref.update({
+            paymentDeadline: deadline,
+            paymentReminderSent: false,
+          });
+
+          // ①即時通知：「HH:MMまでにお支払いください」（カンボジア時間 UTC+7）
+          const khm = new Date(deadline.getTime() + 7 * 60 * 60 * 1000);
+          const deadlineStr = `${khm.getUTCHours()}:${String(khm.getUTCMinutes()).padStart(2, '0')}`;
+          const restSnap2 = await db.doc(`users/${after.restaurantId}`).get();
+          const lang2 = restSnap2.data()?.lang || "en";
+          const farmerSnap2 = await db.doc(`users/${after.farmerId}`).get();
+          const farmerName2 = farmerSnap2.data()?.displayName || "Farmer";
+          const payVars = { deadline: deadlineStr, farmer: farmerName2 };
+          const { title, body } = getMessage("paymentDeadlineSet", lang2, payVars);
+          await notifyUser(after.restaurantId, {
+            type: "payment_deadline_set",
+            title, body,
+            msgKey: "paymentDeadlineSet", vars: payVars,
+            url: `/pages/restaurant/payment.html?id=${orderId}`,
+            orderId,
+          });
+        }
       }
     }
 
@@ -346,6 +455,40 @@ exports.onOrderUpdated = onDocumentUpdated(
         // 送金完了時に両者にレビューtodo作成
         await createTodo(after.farmerId, 'farmer_review', orderId);
         await createTodo(after.restaurantId, 'rest_review', orderId);
+
+        // 4/28: 農家へ「ご入金がありました」FCM通知（既存ロジックでは抜けていた）
+        try {
+          const farmerSnap = await db.doc(`users/${after.farmerId}`).get();
+          const farmerLang = farmerSnap.data()?.lang || "en";
+          const restSnap = await db.doc(`users/${after.restaurantId}`).get();
+          const restName = restSnap.data()?.displayName || "Restaurant";
+
+          // 魚種名・数量（items[]対応・複数なら「他n件」表記）
+          const remitItems = Array.isArray(after.items) && after.items.length > 0
+            ? after.items
+            : (after.listingId ? [{ listingId: after.listingId, quantity: after.quantity, snapFishType: after.snapFishType }] : []);
+          const remitFirst = remitItems[0] || {};
+          let remitFishName = remitFirst.snapFishType || after.snapFishType || "";
+          if (!remitFishName && remitFirst.listingId) {
+            const lSnap = await db.doc(`fishListings/${remitFirst.listingId}`).get();
+            remitFishName = lSnap.data()?.fishType || "";
+          }
+          const remitQtyLabel = remitItems.length > 1
+            ? `${remitFirst.quantity || ""} 他${remitItems.length - 1}件`
+            : String(remitFirst.quantity || after.quantity || "");
+
+          const remitVars = { restaurant: restName, fish: remitFishName, qty: remitQtyLabel };
+          const { title, body } = getMessage("remitDone", farmerLang, remitVars);
+          await notifyUser(after.farmerId, {
+            type: "remit_done",
+            title, body,
+            msgKey: "remitDone", vars: remitVars,
+            url: `/pages/farmer/payment.html?id=${orderId}`,
+            orderId,
+          });
+        } catch (e) {
+          console.warn("remitDone notification failed:", e.message);
+        }
       }
       if (after.adminStatus === "done") {
         for (const auid of adminUids) {
@@ -396,7 +539,14 @@ exports.onOrderUpdated = onDocumentUpdated(
       ? `${firstItem.quantity || ""} 他${afterItems.length - 1}件`
       : String(firstItem.quantity || after.quantity || "");
 
-    let type;
+    // preparing/delivering/completed は農家のクイック操作で必ずチャットメッセージが
+    // 同時送信されるため、ここでの statusUpdate 通知は重複となり省略する。
+    // （completed は paymentDeadlineSet 通知も別途飛ぶ）
+    if (!["approved", "declined"].includes(after.status)) {
+      console.log("Skip statusUpdate notification (chat covers it):", orderId, after.status);
+      return;
+    }
+
     const vars = {
       farmer: farmerName,
       fish: fishName,
@@ -406,24 +556,13 @@ exports.onOrderUpdated = onDocumentUpdated(
       status: after.status,
     };
 
-    if (after.status === "approved") {
-      type = "approved";
-    } else if (after.status === "declined") {
-      type = "declined";
-    } else {
-      type = "statusUpdate";
-    }
-
+    const type = after.status; // "approved" or "declined"
     const { title, body } = getMessage(type, lang, vars);
-
-    // 配送系ステータスならチャット画面へ、それ以外は注文一覧へ
-    const url = ["preparing", "delivering", "delivered"].includes(after.status)
-      ? `/pages/restaurant/delivery.html?id=${orderId}`
-      : "/pages/restaurant/orders.html";
 
     await notifyUser(after.restaurantId, {
       type: `order_${after.status}`,
-      title, body, url,
+      title, body,
+      url: "/pages/restaurant/orders.html",
       msgKey: type,
       vars,
       orderId,
@@ -587,38 +726,42 @@ exports.autoDeclineExpiredOrders = onSchedule(
         .get();
     } catch (e) {
       console.warn("autoDeclineExpiredOrders query failed:", e.message);
-      await sweepOrphanTodos();
       return;
     }
 
     if (snap.empty) {
       console.log("No expired orders");
-      await sweepOrphanTodos();
       return;
     }
 
     for (const doc of snap.docs) {
       await autoDeclineOrder(doc);
     }
+  }
+);
 
-    // 孤立した todo を一括クリーンアップ
+// ── 孤立 todo クリーンアップ（1時間ごと）──
+// 4/29: コスト削減のため5分→1時間へ。autoDeclineExpiredOrders から分離
+exports.sweepOrphanTodosHourly = onSchedule(
+  { schedule: "every 60 minutes", region: "asia-southeast1" },
+  async () => {
     await sweepOrphanTodos();
   }
 );
 
 // todoのtype → 対象orderが取りうるべき order.status のセット
 // （下記以外の status の場合、その todo は孤立として扱って閉じる）
+// 4/28: delivered ステータスは廃止し completed に統合済み
 const TODO_VALID_STATUSES = {
   farmer_approve: ['pending'],
   farmer_prepare: ['approved'],
   farmer_deliver: ['preparing'],
   farmer_complete_delivery: ['delivering'],
-  rest_receive: ['delivered'],
   rest_pay: ['completed'],
-  farmer_review: ['delivered', 'completed'],
-  rest_review: ['delivered', 'completed'],
-  farmer_reply: ['pending', 'approved', 'preparing', 'delivering', 'delivered', 'completed'],
-  rest_reply: ['pending', 'approved', 'preparing', 'delivering', 'delivered', 'completed'],
+  farmer_review: ['completed'],
+  rest_review: ['completed'],
+  farmer_reply: ['pending', 'approved', 'preparing', 'delivering', 'completed'],
+  rest_reply: ['pending', 'approved', 'preparing', 'delivering', 'completed'],
 };
 
 async function sweepOrphanTodos() {
@@ -749,6 +892,75 @@ exports.onReviewCreated = onDocumentCreated(
     await clearTodo(review.fromUid, reviewerTodoType, event.params.orderId);
 
     console.log("Review aggregated for user:", toUid, "avg:", newRating);
+  }
+);
+
+// ── 支払期限切れ催促（5分ごとに監視） ──
+// status === 'completed' && paymentStatus !== 'paid' && paymentDeadline 経過済み
+// && paymentReminderSent !== true の注文に対し、レストランへ催促通知を送る
+// ※ ステータス自動変更はしない（催促のみ）
+exports.checkPaymentDeadlineExpired = onSchedule(
+  // 10分の支払期限に対し、最遅でも+5分で催促が飛ぶように 5分間隔
+  { schedule: "every 5 minutes", region: "asia-southeast1" },
+  async () => {
+    const now = new Date();
+    let snap;
+    try {
+      snap = await db.collection("orders")
+        .where("status", "==", "completed")
+        .where("paymentDeadline", "<", now)
+        .get();
+    } catch (e) {
+      // 失敗の99%は複合インデックス未作成。Firebase 管理コンソールに作成リンクが出る
+      console.error("[checkPaymentDeadlineExpired] query failed (likely missing composite index status==+paymentDeadline<):", e.message);
+      return;
+    }
+    console.log(`[checkPaymentDeadlineExpired] candidates: ${snap.size}`);
+    if (snap.empty) return;
+
+    for (const d of snap.docs) {
+      const order = d.data();
+      if (order.paymentStatus === "paid") continue;
+      if (order.paymentReminderSent === true) continue;
+
+      // 重複防止フラグを先に立てる
+      await d.ref.update({ paymentReminderSent: true });
+
+      const restSnap = await db.doc(`users/${order.restaurantId}`).get();
+      const lang = restSnap.data()?.lang || "en";
+      const farmerSnap = await db.doc(`users/${order.farmerId}`).get();
+      const farmerName = farmerSnap.data()?.displayName || "Farmer";
+
+      // 注文識別用の情報（魚種・数量・取引番号）
+      const itemsArr = Array.isArray(order.items) && order.items.length > 0
+        ? order.items
+        : (order.listingId ? [{ listingId: order.listingId, quantity: order.quantity, snapFishType: order.snapFishType }] : []);
+      const firstItem = itemsArr[0] || {};
+      let fishName = firstItem.snapFishType || order.snapFishType || "";
+      if (!fishName && firstItem.listingId) {
+        const lSnap = await db.doc(`fishListings/${firstItem.listingId}`).get();
+        fishName = lSnap.data()?.fishType || "";
+      }
+      const qtyLabel = itemsArr.length > 1
+        ? `${firstItem.quantity || ""} 他${itemsArr.length - 1}件`
+        : String(firstItem.quantity || order.quantity || "");
+
+      const vars = {
+        farmer: farmerName,
+        fish: fishName,
+        qty: qtyLabel,
+        orderNo: order.orderNumber || d.id.slice(-6).toUpperCase(),
+      };
+      const { title, body } = getMessage("paymentDeadlineExpired", lang, vars);
+      await notifyUser(order.restaurantId, {
+        type: "payment_deadline_expired",
+        title, body,
+        msgKey: "paymentDeadlineExpired", vars,
+        url: `/pages/restaurant/payment.html?id=${d.id}`,
+        orderId: d.id,
+      });
+      console.log("Payment deadline expired reminder sent:", d.id);
+    }
   }
 );
 
@@ -897,6 +1109,34 @@ exports.onReportUpdated = onDocumentUpdated(
   }
 );
 
+// ── 一時マイグレーション: 既存の delivered → completed に変換（管理者のみ） ──
+// 4/28 の status フロー変更に伴う一回限りの移行用。実行後は本関数は削除可
+exports.migrateDeliveredToCompleted = onCall(
+  {
+    region: "asia-southeast1",
+    invoker: "public",
+    cors: true,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required");
+    }
+    const userSnap = await db.doc(`users/${request.auth.uid}`).get();
+    if (userSnap.data()?.role !== "admin") {
+      throw new HttpsError("permission-denied", "Admin role required");
+    }
+
+    const snap = await db.collection("orders").where("status", "==", "delivered").get();
+    if (snap.empty) return { migrated: 0 };
+
+    const batch = db.batch();
+    snap.forEach(d => batch.update(d.ref, { status: "completed" }));
+    await batch.commit();
+
+    return { migrated: snap.size };
+  }
+);
+
 // ── Cloud Vision API 経由の画像OCR（CAA価格表取り込み用） ──
 // クライアントは base64 文字列を渡し、抽出テキストを受け取る
 // 管理者のみ呼び出し可能
@@ -934,6 +1174,127 @@ exports.ocrImage = onCall(
     } catch (err) {
       console.error("Vision OCR failed:", err);
       throw new HttpsError("internal", err.message || "OCR failed");
+    }
+  }
+);
+
+// ── ユーザー BAN / 解除（管理者専用 callable） ───────────────────
+// クライアントから {uid, banned, reason} を受け取り
+//   1) users/{uid} に isBanned/bannedAt/bannedReason を書き込み
+//   2) auth.revokeRefreshTokens で強制サインアウト
+//   3) BAN対象が農家なら出品中の fishListings.isActive=false に
+exports.setUserBanned = onCall(
+  {
+    region: "asia-southeast1",
+    invoker: "public",
+    cors: true,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required");
+    }
+    const callerSnap = await db.doc(`users/${request.auth.uid}`).get();
+    if (callerSnap.data()?.role !== "admin") {
+      throw new HttpsError("permission-denied", "Admin role required");
+    }
+
+    const { uid, banned, reason } = request.data || {};
+    if (!uid || typeof banned !== "boolean") {
+      throw new HttpsError("invalid-argument", "uid and banned are required");
+    }
+    if (uid === request.auth.uid) {
+      throw new HttpsError("invalid-argument", "Cannot ban yourself");
+    }
+
+    const targetSnap = await db.doc(`users/${uid}`).get();
+    if (!targetSnap.exists) {
+      throw new HttpsError("not-found", "User not found");
+    }
+    const targetData = targetSnap.data();
+    if (banned && targetData.role === "admin") {
+      throw new HttpsError("permission-denied", "Cannot ban admin");
+    }
+
+    const admin = require("firebase-admin/firestore");
+    const batch = db.batch();
+    batch.update(db.doc(`users/${uid}`), {
+      isBanned: banned,
+      bannedAt: banned ? admin.FieldValue.serverTimestamp() : null,
+      bannedReason: banned ? (reason || null) : null,
+    });
+
+    // 農家の場合、出品を全て停止
+    let deactivated = 0;
+    if (banned && targetData.role === "farmer") {
+      const listSnap = await db.collection("fishListings")
+        .where("farmerId", "==", uid)
+        .where("isActive", "==", true)
+        .get();
+      listSnap.forEach(d => {
+        batch.update(d.ref, { isActive: false });
+        deactivated++;
+      });
+    }
+    await batch.commit();
+
+    // BAN時はリフレッシュトークン失効で強制サインアウト
+    if (banned) {
+      try {
+        await getAuth().revokeRefreshTokens(uid);
+      } catch (e) {
+        console.warn("revokeRefreshTokens failed:", e.message);
+      }
+    }
+
+    return { ok: true, deactivated };
+  }
+);
+
+// ── 運営チャット: メッセージ作成時の通知 ──────────────────────────
+// adminChats/{uid}/messages/{msgId} 作成 → 受信側に FCM 通知
+//   senderRole==='admin' → ユーザーに通知
+//   senderRole==='user'  → 全管理者に通知
+exports.onAdminChatMessage = onDocumentCreated(
+  {
+    document: "adminChats/{uid}/messages/{msgId}",
+    region: "asia-southeast1",
+  },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    const { uid } = event.params;
+    const senderRole = data.senderRole;
+    const text = data.text || "";
+
+    if (senderRole === "admin") {
+      const userSnap = await db.doc(`users/${uid}`).get();
+      const lang = userSnap.data()?.lang || "km";
+      const vars = { text: text.slice(0, 80) };
+      const msg = getMessage("adminChat", lang, vars);
+      await notifyUser(uid, {
+        type: "admin_chat",
+        title: msg.title, body: msg.body,
+        url: "/pages/admin-chat.html",
+        msgKey: "adminChat",
+        vars,
+      });
+    } else if (senderRole === "user") {
+      const adminUids = await getAdminUids();
+      const senderSnap = await db.doc(`users/${uid}`).get();
+      const senderName = senderSnap.data()?.displayName || senderSnap.data()?.loginId || "user";
+      const vars = { name: senderName, text: text.slice(0, 80) };
+      await Promise.all(adminUids.map(async adminUid => {
+        const adminSnap = await db.doc(`users/${adminUid}`).get();
+        const lang = adminSnap.data()?.lang || "ja";
+        const msg = getMessage("adminChatFromUser", lang, vars);
+        await notifyUser(adminUid, {
+          type: "admin_chat",
+          title: msg.title, body: msg.body,
+          url: `/pages/admin/users.html?uid=${uid}`,
+          msgKey: "adminChatFromUser",
+          vars,
+        });
+      }));
     }
   }
 );

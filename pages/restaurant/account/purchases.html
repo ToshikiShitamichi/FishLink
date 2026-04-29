@@ -131,7 +131,8 @@
             if (o.adminStatus === 'done') return { cls: 'completed', label: i18next.t('account.statusCompleted') };
             if (o.adminStatus === 'remitted') return { cls: 'remitted', label: i18next.t('account.statusRemitted') };
             if (o.adminStatus === 'payment_confirmed') return { cls: 'payment-confirmed', label: i18next.t('account.statusPaymentConfirmed') };
-            if (o.status === 'completed' || o.status === 'delivered') return { cls: 'delivered', label: i18next.t('account.statusDelivered') };
+            // 4/28: delivered は廃止、両方とも「完了」として扱う
+            if (o.status === 'completed' || o.status === 'delivered') return { cls: 'delivered', label: i18next.t('account.statusCompleted') };
             return { cls: 'other', label: i18next.t('account.statusOther') };
         }
 

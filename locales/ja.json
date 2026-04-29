@@ -149,7 +149,8 @@
         "fieldsRequired": "すべての項目を入力してください",
         "userNotFound": "ユーザーが見つかりません",
         "loginFailed": "ログインに失敗しました。IDまたはパスワードを確認してください",
-        "registerFailed": "登録に失敗しました。しばらくしてから再試行してください"
+        "registerFailed": "登録に失敗しました。しばらくしてから再試行してください",
+        "accountBanned": "このアカウントは利用停止中です。詳細は運営にお問い合わせください。"
     },
     "restaurant": {
         "title": "魚一覧",
@@ -163,6 +164,8 @@
         "filter": "絞り込み",
         "filterAll": "すべて",
         "filterFavorites": "お気に入り",
+        "filterProvince": "地域",
+        "loadMore": "もっと見る",
         "favorite": "お気に入りに追加",
         "unfavorite": "お気に入りから外す",
         "stock": "在庫 {{kg}}kg",
@@ -191,6 +194,8 @@
         "viewLocation": "地図を見る",
         "pendingBanner": "承認お待ちください",
         "pendingBannerDesc": "農家が注文を承認するとメッセージを送れるようになります",
+        "completedBannerTitle": "配送が完了しました",
+        "completedBannerCta": "お支払い画面へ進む",
         "chatDisabledHint": "農家の承認後に送信できます",
         "send": "送信",
         "imageSent": "画像が送信されました",
@@ -266,6 +271,11 @@
         "approve": "承認する",
         "decline": "辞退する",
         "submit": "送信する",
+        "confirmApproveTitle": "以下の内容で承認します。よろしいですか？",
+        "confirmApproveAsk": "承認すると、レストランに通知が届きます。",
+        "fishLabel": "魚",
+        "restaurantLabel": "レストラン",
+        "otherItemsAddon": "他{{n}}点",
         "declineTitle": "辞退理由を選択",
         "declineReason1": "在庫が足りない",
         "declineReason2": "希望サイズに合わない",
@@ -283,8 +293,15 @@
         "approved": "承認済み",
         "declined": "辞退済み",
         "activeSection": "対応中（{{count}}件）",
+        "todaySection": "本日の対応（{{count}}件）",
+        "futureSection": "明日以降の対応（{{count}}件）",
         "waitingRemittanceSection": "送金待ち（{{count}}件）",
+        "waitingRemittanceClosed": "▶ 送金待ち（{{count}}件）",
+        "waitingRemittanceOpen": "▼ 送金待ち（{{count}}件）",
         "awaitingPaymentSection": "お支払い待ち（{{count}}件）",
+        "payNow": "お支払いをお願いします",
+        "payByTime": "{{time}} までにお支払い",
+        "deadlinePassedShort": "支払期限を過ぎています",
         "pendingSection": "新規注文（{{count}}件）",
         "approvedSectionClosed": "▶ 完了済み（{{count}}件）",
         "approvedSectionOpen": "▼ 完了済み（{{count}}件）",
@@ -305,6 +322,9 @@
         "total": "合計",
         "subtotal": "小計（魚代）",
         "discountApplied": "（割引適用済み）",
+        "deadlineBy": "{{time}} までにお支払いください",
+        "deadlinePassed": "支払期限を過ぎています。お早めにお支払いください",
+        "payOnReceipt": "受け取り時にお支払いください",
         "qrTitle": "QRコードでお支払い（KHQR）",
         "qrHint": "※ スマホでスキャンできない場合は「リンクを開く」から支払い、またはQR画像を保存してください",
         "openLink": "リンクを開く",
@@ -519,6 +539,18 @@
         "adminReport": {
             "title": "新しいトラブル報告",
             "body": "{{fromRole}} → {{type}}\n{{reporter}}"
+        },
+        "paymentDeadlineSet": {
+            "title": "{{farmer}} 配送完了。お支払いをお願いします",
+            "body": "{{deadline}}までにお支払いください"
+        },
+        "paymentDeadlineExpired": {
+            "title": "支払期限が過ぎました",
+            "body": "{{farmer}} {{fish}} {{qty}}kg ({{orderNo}})\nお支払いをお願いします"
+        },
+        "remitDone": {
+            "title": "ご入金がありました",
+            "body": "{{restaurant}} の注文 {{fish}} {{qty}}kg"
         }
     },
     "comments": {
@@ -645,15 +677,62 @@
         "menuHintSales": "売上金額・取引履歴",
         "menuHintPurchase": "購入金額・取引履歴",
         "menuHintProfileFarmer": "生産者の一言・養殖環境写真",
-        "menuHintProfileRestaurant": "レストラン写真"
+        "menuHintProfileRestaurant": "レストラン写真",
+        "adminChat": "運営からのメッセージ",
+        "adminChatHint": "FishLink運営とのチャット"
+    },
+    "adminChat": {
+        "title": "運営チャット",
+        "subtitle": "FishLink 運営にメッセージを送れます",
+        "loading": "読み込み中...",
+        "empty": "まだメッセージはありません。お気軽にどうぞ。",
+        "placeholder": "メッセージを入力..."
     },
     "admin": {
         "brand": "FISHLINK 管理画面",
         "navTransactions": "取引一覧",
+        "navUsers": "ユーザー",
         "navSettings": "料金設定",
         "navCaa": "CAA参考価格",
         "navReports": "トラブル報告",
         "navLogout": "ログアウト",
+        "users": {
+            "title": "ユーザー管理",
+            "subtitle": "ロール・州・BAN状態で絞り込み、詳細パネルからBAN／解除・運営チャットを行う",
+            "searchPlaceholder": "ID・名前・電話・州で検索",
+            "roleAll": "すべて",
+            "roleFarmer": "農家",
+            "roleRestaurant": "レストラン",
+            "roleAdmin": "管理者",
+            "roleBanned": "BAN中",
+            "banned": "BAN",
+            "noResult": "該当ユーザーがいません",
+            "selectHint": "左の一覧からユーザーを選択してください",
+            "detail": {
+                "uid": "UID",
+                "phone": "電話",
+                "location": "拠点",
+                "viewMap": "地図を見る",
+                "lang": "言語",
+                "rating": "評価",
+                "createdAt": "登録日"
+            },
+            "notBanned": "アクティブ（BAN無し）",
+            "bannedSince": "BAN中: {{time}}",
+            "bannedReason": "BAN理由",
+            "cannotBanAdmin": "管理者はBANできません",
+            "banBtn": "BANする",
+            "unbanBtn": "BANを解除",
+            "banReasonPlaceholder": "BAN理由（任意・運営メモ）",
+            "confirmBan": "このユーザーをBANしますか？\n即時ログアウトされ、再ログインも拒否されます。\n農家の場合は出品中商品も自動で停止します。",
+            "confirmUnban": "このユーザーのBANを解除しますか？",
+            "bannedAlsoDeactivated": "BANを実行しました。出品中の商品 {{count}}件 を停止しました。",
+            "chatTitle": "運営チャット",
+            "chatLoading": "読み込み中...",
+            "chatEmpty": "まだメッセージはありません",
+            "chatPlaceholder": "メッセージを入力（Enter送信／Shift+Enter改行）",
+            "send": "送信"
+        },
         "tx": {
             "title": "取引一覧",
             "subtitle": "各注文をステータスごとに一覧管理し、詳細画面から入金確認・農家送金・取引完了を行う",
@@ -671,6 +750,7 @@
             "tabPaymentConfirmed": "レストラン入金済",
             "tabRemitted": "農家送金済",
             "tabDone": "取引完了",
+            "colOrderNo": "取引番号",
             "colStatus": "ステータス",
             "colDate": "注文日時",
             "colRestaurant": "レストラン",

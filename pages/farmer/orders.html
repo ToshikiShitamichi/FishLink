@@ -23,17 +23,17 @@
             box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
         }
 
-        /* コンパクトヘッダー（常時表示） */
+        /* コンパクトヘッダー（常時表示・対応中向けに情報充実版） */
         .order-row {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px 14px;
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 14px;
             cursor: pointer;
             user-select: none;
             background: var(--color-surface);
         }
         .order-row:hover { background: #f8fafc; }
         .order-row__img {
-            width: 56px; height: 56px; border-radius: 10px;
+            width: 76px; height: 76px; border-radius: 12px;
             background: #e2e8f0; flex-shrink: 0;
             overflow: hidden;
             display: flex; align-items: center; justify-content: center;
@@ -42,9 +42,16 @@
             width: 100%; height: 100%; object-fit: cover;
         }
         .order-row__body { flex: 1; min-width: 0; }
-        .order-row__date { font-size: 11px; color: var(--color-text-sub); }
-        .order-row__fish { font-size: 14px; font-weight: 700; color: var(--color-text); margin-top: 2px; }
-        .order-row__rest { font-size: 12px; color: var(--color-text-sub); margin-top: 1px; }
+        .order-row__deliv {
+            font-size: 13px; font-weight: 700; color: #b45309;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .order-row__deliv .material-symbols-outlined { font-size: 15px; }
+        .order-row__fish { font-size: 15px; font-weight: 700; color: var(--color-text); margin-top: 4px; }
+        .order-row__rest { font-size: 12px; color: var(--color-text-sub); margin-top: 2px;
+            display: flex; align-items: center; gap: 3px; }
+        .order-row__rest .material-symbols-outlined { font-size: 13px; }
+        .order-row__meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
         .order-row__status {
             font-size: 11px; font-weight: 700;
             padding: 3px 8px; border-radius: 10px;
@@ -421,6 +428,12 @@
         <!-- 注文一覧 -->
         <div id="orders-list"></div>
 
+        <div id="load-more-wrap" style="display:none; padding:12px 16px 24px; text-align:center;">
+            <button type="button" id="load-more-btn"
+                style="padding:10px 24px; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); border-radius:999px; font-size:13px; font-weight:600; cursor:pointer;"
+                data-i18n="restaurant.loadMore"></button>
+        </div>
+
     </div>
 
     <!-- 下部ナビ -->
@@ -447,8 +460,9 @@
         import { subscribeTodos } from '/js/todos.js';
         import { subscribeNotifications } from '/js/notifications.js';
         import {
-            collection, query, where, orderBy, getDocs, doc, getDoc, updateDoc
+            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { getOrderNumber } from '/js/order-utils.js';
 
         const loading = document.getElementById('loading');
 
@@ -482,39 +496,51 @@
             return Date.now() > createdMs + 60 * 60 * 1000;
         }
 
-        // ── データ取得 & 描画 ──
-        waitForUserData(async () => {
-            // 確認時刻を記録（バッジ消去用）
-            localStorage.setItem('fishlink_orders_seen', String(Date.now()));
+        const ORDERS_PAGE_SIZE = 200;
+        let ordersLastDoc = null;
+        let ordersHasMore = false;
+        let ordersLoadingMore = false;
+        let allOrders = [];
 
-            loading.classList.add('show');
+        async function loadOrdersPage({ append = false } = {}) {
+            if (!append) {
+                loading.classList.add('show');
+                ordersLastDoc = null;
+                allOrders = [];
+            }
             try {
                 const uid = window.currentUser?.uid;
                 if (!uid) return;
-                subscribeTodos(uid, 'farmer');
-                subscribeNotifications(uid);
+                if (!append) {
+                    subscribeTodos(uid, 'farmer');
+                    subscribeNotifications(uid);
+                }
 
                 const myLoc = window.currentUserData?.location;
 
-                // 自分宛ての注文を取得（pending を先に、それ以外も表示）
-                const q = query(
+                const baseConds = [
                     collection(db, 'orders'),
                     where('farmerId', '==', uid),
-                    orderBy('createdAt', 'desc')
-                );
+                    orderBy('createdAt', 'desc'),
+                ];
+                if (append && ordersLastDoc) baseConds.push(startAfter(ordersLastDoc));
+                baseConds.push(limit(ORDERS_PAGE_SIZE));
+                const q = query(...baseConds);
                 const snap = await getDocs(q);
+                ordersLastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : ordersLastDoc;
+                ordersHasMore = snap.docs.length === ORDERS_PAGE_SIZE;
 
-                if (snap.empty) {
+                if (!append && snap.empty) {
                     document.getElementById('orders-list').innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">inbox</span></div>
                             <div class="empty-state__text">${i18next.t('orders.empty')}</div>
                         </div>
                     `;
+                    document.getElementById('load-more-wrap').style.display = 'none';
                     return;
                 }
 
-                // ── 注文データを整理（並列・重複排除で高速化） ──
                 // 1) レストラン一覧を重複排除して並列取得
                 const restIds = [...new Set(
                     snap.docs.map(d => d.data().restaurantId).filter(Boolean)
@@ -541,8 +567,8 @@
                     } catch (e) { listingCache[lid] = {}; }
                 }));
 
-                // 3) 組み立て（同期ループ）
-                const orders = snap.docs.map(d => {
+                // 3) 組み立て
+                const newOrders = snap.docs.map(d => {
                     const data = d.data();
                     const listingData = listingCache[data.listingId] || {};
                     const restData = restCache[data.restaurantId] || {};
@@ -553,23 +579,46 @@
                     return { id: d.id, ...data, listingData, restData, distKm };
                 });
 
+                // 既存と結合（重複除去）
+                const seen = new Set(allOrders.map(o => o.id));
+                newOrders.forEach(o => { if (!seen.has(o.id)) allOrders.push(o); });
+
                 // pendingを先頭にソート
-                orders.sort((a, b) => {
+                allOrders.sort((a, b) => {
                     if (a.status === 'pending' && b.status !== 'pending') return -1;
                     if (a.status !== 'pending' && b.status === 'pending') return 1;
                     return 0;
                 });
 
-                allOrders = orders;
                 renderOrders();
+                document.getElementById('load-more-wrap').style.display = ordersHasMore ? 'block' : 'none';
             } catch (err) {
                 console.error(err);
             } finally {
                 loading.classList.remove('show');
+                ordersLoadingMore = false;
             }
+        }
+
+        // ── データ取得 & 描画 ──
+        waitForUserData(async () => {
+            localStorage.setItem('fishlink_orders_seen', String(Date.now()));
+            await loadOrdersPage();
         });
 
-        let allOrders = [];
+        document.getElementById('load-more-btn').addEventListener('click', async () => {
+            if (ordersLoadingMore || !ordersHasMore) return;
+            ordersLoadingMore = true;
+            const btn = document.getElementById('load-more-btn');
+            btn.disabled = true;
+            btn.textContent = '...';
+            try {
+                await loadOrdersPage({ append: true });
+            } finally {
+                btn.disabled = false;
+                btn.textContent = i18next.t('restaurant.loadMore');
+            }
+        });
 
         function renderOrderCard(order) {
             // 注文時点のスナップショット優先（編集後も注文表示は不変）
@@ -643,11 +692,6 @@
                 : '';
 
             // コンパクト行用の表示値
-            const createdMs = order.createdAt?.toMillis?.() || 0;
-            const createdDate = createdMs ? new Date(createdMs) : null;
-            const dateShort = createdDate
-                ? `${createdDate.getFullYear()}/${String(createdDate.getMonth()+1).padStart(2,'0')}/${String(createdDate.getDate()).padStart(2,'0')}`
-                : '';
             let statusKey = order.status || 'pending';
             if (isExpiredPending) statusKey = 'declined';
             const statusText = i18next.exists(`delivery.${statusKey}`) ? i18next.t(`delivery.${statusKey}`) : statusKey;
@@ -656,16 +700,27 @@
             const expandedClass = isPendingAction ? ' expanded' : '';
             const rowThumb = photoUrl
                 ? `<img src="${photoUrl}" alt="" loading="lazy">`
-                : `<span class="material-symbols-outlined" style="font-size:28px; color:#94a3b8;">set_meal</span>`;
+                : `<span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span>`;
+
+            // 配送先（レストラン名 + 場所）
+            const restPlaceShort = (order.restData.province || '');
+            const restWithPlace = restPlaceShort ? `${restName} (${restPlaceShort})` : restName;
 
             let html = `
                 <div class="order-card${expandedClass}" id="order-${order.id}">
                     <div class="order-row" data-toggle="${order.id}">
                         <div class="order-row__img">${rowThumb}</div>
                         <div class="order-row__body">
-                            <div class="order-row__date">${dateShort}</div>
-                            <div class="order-row__fish">${fishName}${multiItemBadge}</div>
-                            <div class="order-row__rest">${restName}</div>
+                            <div class="order-row__deliv">
+                                <span class="material-symbols-outlined">event</span>
+                                ${order.deliveryDate || ''} ${order.deliveryTime || ''}
+                            </div>
+                            <div class="order-row__fish">${fishName} ${order.quantity || 0}kg${multiItemBadge}</div>
+                            <div class="order-row__rest">
+                                <span class="material-symbols-outlined">storefront</span>
+                                ${restWithPlace}
+                            </div>
+                            <div class="order-row__meta">${getOrderNumber(order)}</div>
                         </div>
                         <span class="order-row__status ${statusKey}">${statusText}</span>
                         <span class="material-symbols-outlined order-row__chev">chevron_right</span>
@@ -673,6 +728,7 @@
                     <div class="order-card__details">
                     <div class="order-card__img">${imgHtml}</div>
                     <div class="order-card__fish-label">${fishName}（${size} head/kg）${multiItemBadge}</div>
+                    <div style="text-align:center; font-size:12px; color:#94a3b8; padding:0 16px 8px; font-family:monospace;">${getOrderNumber(order)}</div>
                     <div class="order-card__section">
                         ${statusBadge}
                         ${deadlineHtml}
@@ -754,23 +810,54 @@
             return html;
         }
 
-        function renderOrders() {
-            // 期限切れpendingは辞退扱いに振り分け
-            // adminStatus が remitted/done になるまで（運営からの送金完了まで）は上部に残す
-            const isRemitted = (o) => ['remitted', 'done'].includes(o.adminStatus);
+        // カンボジア時間（UTC+7）の YYYY-MM-DD
+        function todayIsoKHM() {
+            const now = new Date();
+            const khm = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+            const yy = khm.getUTCFullYear();
+            const mm = String(khm.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(khm.getUTCDate()).padStart(2, '0');
+            return `${yy}-${mm}-${dd}`;
+        }
 
-            const activeOrders = allOrders.filter(o => ['approved', 'preparing', 'delivering'].includes(o.status));
-            const pendingOrders = allOrders.filter(o => o.status === 'pending' && !isOrderExpired(o));
+        // 納品日 → 時間帯の昇順ソート
+        function sortByDelivery(a, b) {
+            const da = a.deliveryDateIso || '';
+            const dbb = b.deliveryDateIso || '';
+            if (da !== dbb) return da.localeCompare(dbb);
+            return (a.deliveryTime || '').localeCompare(b.deliveryTime || '');
+        }
+
+        function renderOrders() {
+            const isRemitted = (o) => ['remitted', 'done'].includes(o.adminStatus);
+            const today = todayIsoKHM();
+
+            // 4/28: 対応中（pending未期限切れ + approved/preparing/delivering）を本日／明日以降で分割
+            const inProgress = allOrders.filter(o =>
+                ['pending', 'approved', 'preparing', 'delivering'].includes(o.status)
+                && !(o.status === 'pending' && isOrderExpired(o))
+            );
+            const todayActive = inProgress
+                .filter(o => (o.deliveryDateIso || '') && (o.deliveryDateIso || '') <= today)
+                .sort(sortByDelivery);
+            const futureActive = inProgress
+                .filter(o => (o.deliveryDateIso || '') > today || !o.deliveryDateIso)
+                .sort(sortByDelivery);
+
+            // 期限切れpendingは辞退扱いへ
             const expiredOrders = allOrders.filter(o => o.status === 'pending' && isOrderExpired(o));
-            // 受取完了したが運営からの送金がまだ
+
+            // トグル群（送金待ち / 完了済み / 辞退済み）
             const waitingRemittanceOrders = allOrders.filter(o =>
                 ['delivered', 'completed'].includes(o.status) && !isRemitted(o)
-            );
-            // 運営からの送金が完了済み
+            ).sort(sortByDelivery);
             const completedOrders = allOrders.filter(o =>
                 ['delivered', 'completed'].includes(o.status) && isRemitted(o)
-            );
-            const declinedOrders = [...allOrders.filter(o => o.status === 'declined'), ...expiredOrders];
+            ).sort(sortByDelivery);
+            const declinedOrders = [
+                ...allOrders.filter(o => o.status === 'declined'),
+                ...expiredOrders,
+            ];
 
             const listEl = document.getElementById('orders-list');
             listEl.innerHTML = '';
@@ -785,33 +872,32 @@
                 return;
             }
 
-            // ① 対応中（上部に強調表示）
-            if (activeOrders.length > 0) {
-                listEl.innerHTML += `<div class="section-label">${i18next.t('orders.activeSection', { count: activeOrders.length })}</div>`;
-                activeOrders.forEach(order => {
-                    listEl.innerHTML += renderOrderCard(order);
-                });
+            // 大グループ① 本日の対応
+            if (todayActive.length > 0) {
+                listEl.innerHTML += `<div class="section-label">${i18next.t('orders.todaySection', { count: todayActive.length })}</div>`;
+                todayActive.forEach(o => { listEl.innerHTML += renderOrderCard(o); });
             }
 
-            // ② 送金待ち（受取完了 / 運営からの送金が未了）
+            // 大グループ② 明日以降の対応
+            if (futureActive.length > 0) {
+                listEl.innerHTML += `<div class="section-label">${i18next.t('orders.futureSection', { count: futureActive.length })}</div>`;
+                futureActive.forEach(o => { listEl.innerHTML += renderOrderCard(o); });
+            }
+
+            // トグル① 送金待ち
             if (waitingRemittanceOrders.length > 0) {
-                listEl.innerHTML += `<div class="section-label waiting-label">${i18next.t('orders.waitingRemittanceSection', { count: waitingRemittanceOrders.length })}</div>`;
-                waitingRemittanceOrders.forEach(order => {
-                    listEl.innerHTML += renderOrderCard(order);
-                });
+                const html = waitingRemittanceOrders.map(o => renderOrderCard(o)).join('');
+                listEl.innerHTML += `
+                    <div class="accordion-header" id="acc-waiting-remit">
+                        ${i18next.t('orders.waitingRemittanceClosed', { count: waitingRemittanceOrders.length })}
+                    </div>
+                    <div class="accordion-body" id="acc-waiting-remit-body">${html}</div>
+                `;
             }
 
-            // ③ 新規注文（pending）
-            if (pendingOrders.length > 0) {
-                listEl.innerHTML += `<div class="section-label pending-label">${i18next.t('orders.pendingSection', { count: pendingOrders.length })}</div>`;
-                pendingOrders.forEach(order => {
-                    listEl.innerHTML += renderOrderCard(order);
-                });
-            }
-
-            // ③ 完了済みアコーディオン
+            // トグル② 完了済み（送金完了）
             if (completedOrders.length > 0) {
-                let html = completedOrders.map(o => renderOrderCard(o)).join('');
+                const html = completedOrders.map(o => renderOrderCard(o)).join('');
                 listEl.innerHTML += `
                     <div class="accordion-header" id="acc-completed">
                         ${i18next.t('orders.approvedSectionClosed', { count: completedOrders.length })}
@@ -820,9 +906,9 @@
                 `;
             }
 
-            // ④ 辞退済みアコーディオン
+            // トグル③ 辞退済み
             if (declinedOrders.length > 0) {
-                let html = declinedOrders.map(o => renderOrderCard(o)).join('');
+                const html = declinedOrders.map(o => renderOrderCard(o)).join('');
                 listEl.innerHTML += `
                     <div class="accordion-header" id="acc-declined">
                         ${i18next.t('orders.declinedSectionClosed', { count: declinedOrders.length })}
@@ -831,24 +917,25 @@
                 `;
             }
 
-            // 全HTML追加後にイベント登録
+            // イベント登録
+            const pendingOrders = inProgress.filter(o => o.status === 'pending');
             bindEvents(pendingOrders);
 
-            // アコーディオンクリックイベント
-            document.getElementById('acc-completed')?.addEventListener('click', function () {
-                const body = document.getElementById('acc-completed-body');
-                body.classList.toggle('open');
-                this.textContent = body.classList.contains('open')
-                    ? i18next.t('orders.approvedSectionOpen', { count: completedOrders.length })
-                    : i18next.t('orders.approvedSectionClosed', { count: completedOrders.length });
-            });
-            document.getElementById('acc-declined')?.addEventListener('click', function () {
-                const body = document.getElementById('acc-declined-body');
-                body.classList.toggle('open');
-                this.textContent = body.classList.contains('open')
-                    ? i18next.t('orders.declinedSectionOpen', { count: declinedOrders.length })
-                    : i18next.t('orders.declinedSectionClosed', { count: declinedOrders.length });
-            });
+            const bindAcc = (id, bodyId, openKey, closedKey, count) => {
+                document.getElementById(id)?.addEventListener('click', function () {
+                    const body = document.getElementById(bodyId);
+                    body.classList.toggle('open');
+                    this.textContent = body.classList.contains('open')
+                        ? i18next.t(openKey, { count })
+                        : i18next.t(closedKey, { count });
+                });
+            };
+            bindAcc('acc-waiting-remit', 'acc-waiting-remit-body',
+                'orders.waitingRemittanceOpen', 'orders.waitingRemittanceClosed', waitingRemittanceOrders.length);
+            bindAcc('acc-completed', 'acc-completed-body',
+                'orders.approvedSectionOpen', 'orders.approvedSectionClosed', completedOrders.length);
+            bindAcc('acc-declined', 'acc-declined-body',
+                'orders.declinedSectionOpen', 'orders.declinedSectionClosed', declinedOrders.length);
 
             scrollToHashTarget();
         }
@@ -930,7 +1017,7 @@
                 });
             });
 
-            // 承認ボタン
+            // 承認ボタン（注文内容を再チェックする確認ダイアログ付き）
             document.querySelectorAll('.submit-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const orderId = btn.dataset.order;
@@ -938,6 +1025,36 @@
                     const action = orderStates[orderId] || 'approve';
 
                     if (action === 'decline') return; // decline-panelのボタンで処理
+
+                    // 確認ダイアログ：注文内容（魚種・数量・配送日時・金額・レストラン名）を表示
+                    const order = allOrders.find(o => o.id === orderId);
+                    if (order) {
+                        const fishTypeKey = order.snapFishType || order.listingData?.fishType || '';
+                        const fishName = fishTypeKey
+                            ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey)
+                            : '';
+                        const shortName = fishName.split('/')[0].trim();
+                        const itemCount = Array.isArray(order.items) ? order.items.length : 1;
+                        const itemSuffix = itemCount > 1 ? ` ${i18next.t('orders.otherItemsAddon', { n: itemCount - 1 })}` : '';
+                        const restName = order.restData?.displayName || '';
+                        const fishTotal = order.fishPrice || 0;
+                        const receiveAmount = order.farmerReceiveAmount != null
+                            ? order.farmerReceiveAmount
+                            : (fishTotal - (order.farmerCommission || 0) + (order.deliveryFee || 0));
+
+                        const lines = [
+                            i18next.t('orders.confirmApproveTitle'),
+                            '',
+                            `${i18next.t('orders.fishLabel')}: ${shortName}${itemSuffix}`,
+                            `${i18next.t('orders.quantity')} ${order.quantity || 0} kg${order.gutProcessing ? ` (${i18next.t('orders.gutYes')})` : ''}`,
+                            `${i18next.t('orders.deliveryDate')} ${order.deliveryDate || ''} ${order.deliveryTime || ''}`,
+                            `${i18next.t('orders.restaurantLabel')}: ${restName}`,
+                            `${i18next.t('orders.receiveAmount')} ${receiveAmount.toLocaleString()} KHR`,
+                            '',
+                            i18next.t('orders.confirmApproveAsk'),
+                        ];
+                        if (!confirm(lines.join('\n'))) return;
+                    }
 
                     btn.disabled = true;
                     loading.classList.add('show');

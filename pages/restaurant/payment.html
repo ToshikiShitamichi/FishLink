@@ -198,6 +198,17 @@
 
         <div id="paid-banner" class="paid-banner" style="display:none;" data-i18n="payment.paidBanner"></div>
 
+        <!-- 支払期限バナー（status=completed 未払いのときのみ） -->
+        <div id="payment-deadline-banner" style="display:none; margin:0 16px 12px; padding:12px 14px; border-radius:14px; background:#fff7ed; border:1px solid #fdba74; color:#9a3412;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="material-symbols-outlined" style="font-size:20px; flex-shrink:0;">schedule</span>
+                <div>
+                    <div id="deadline-line" style="font-size:14px; font-weight:700;"></div>
+                    <div style="font-size:12px; margin-top:2px;" data-i18n="payment.payOnReceipt"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- 注文概要 -->
         <div class="pay-card" id="order-info"></div>
 
@@ -292,6 +303,28 @@
             const farmer = farmerSnap.data() || {};
             const farmerName = farmer.displayName || '';
             const place = (farmer.province || '') + (farmer.district ? ', ' + farmer.district : '');
+
+            // 支払期限バナー（completed && 未払い のときだけ）
+            const isCompletedUnpaid = (orderData.status === 'completed' || orderData.status === 'delivered')
+                && orderData.paymentStatus !== 'paid';
+            const deadlineMs = orderData.paymentDeadline?.toMillis?.() || null;
+            if (isCompletedUnpaid && deadlineMs) {
+                const banner = document.getElementById('payment-deadline-banner');
+                const line = document.getElementById('deadline-line');
+                const d = new Date(deadlineMs);
+                const hh = String(d.getHours()).padStart(2, '0');
+                const mm = String(d.getMinutes()).padStart(2, '0');
+                const isOverdue = Date.now() > deadlineMs;
+                if (isOverdue) {
+                    banner.style.background = '#fef2f2';
+                    banner.style.borderColor = '#f87171';
+                    banner.style.color = '#991b1b';
+                    line.textContent = i18next.t('payment.deadlinePassed');
+                } else {
+                    line.textContent = i18next.t('payment.deadlineBy', { time: `${hh}:${mm}` });
+                }
+                banner.style.display = 'block';
+            }
 
             document.getElementById('order-info').innerHTML = `
                 <div style="font-size:14px; color:var(--color-text-sub); margin-bottom:4px;">${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}</div>

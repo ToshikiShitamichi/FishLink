@@ -60,20 +60,25 @@ function redirectByRole(role) {
 function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRedirectIf = null } = {}) {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            if (redirectIfLoggedIn && !(skipRedirectIf && skipRedirectIf())) {
-                const snap = await getDoc(doc(db, 'users', user.uid));
-                if (snap.exists()) redirectByRole(snap.data().role);
-            }
+            // 後続コードが window.currentUser に依存するため即セット
             window.currentUser = user;
             window.currentUserData = null;
+
             const snap = await getDoc(doc(db, 'users', user.uid));
             if (snap.exists()) {
-                window.currentUserData = snap.data();
-                // Firestoreの言語設定をlocalStorageに同期
-                // ※画面上部パネルで切り替えた場合はlocalStorageが優先されるが、
-                //   次回ログイン時にFirestoreの値で再上書きされる
-                // FCMトークン取得・保存（管理者は通知不要のためスキップ）
-                if (window.currentUserData.role !== 'admin') {
+                const data = snap.data();
+                // BAN チェック: isBanned===true の場合は強制ログアウト
+                if (data.isBanned === true) {
+                    sessionStorage.setItem('fishlink_banned', '1');
+                    await signOut(auth);
+                    window.location.href = '/index.html';
+                    return;
+                }
+                if (redirectIfLoggedIn && !(skipRedirectIf && skipRedirectIf())) {
+                    redirectByRole(data.role);
+                }
+                window.currentUserData = data;
+                if (data.role !== 'admin') {
                     requestFcmToken(user.uid);
                 }
             }
@@ -141,6 +146,10 @@ async function login(loginId, password) {
     if (!snap.exists()) throw new Error('error.userNotFound');
 
     const userData = snap.data();
+    if (userData.isBanned === true) {
+        await signOut(auth);
+        throw new Error('error.accountBanned');
+    }
     if (userData.lang) {
         localStorage.setItem('fishlink_lang', userData.lang);
     }

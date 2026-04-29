@@ -149,7 +149,8 @@
         "fieldsRequired": "សូមបំពេញគ្រប់ប្រអប់",
         "userNotFound": "រកមិនឃើញអ្នកប្រើ",
         "loginFailed": "ចូលបរាជ័យ។ សូមពិនិត្យ ID និងពាក្យសម្ងាត់",
-        "registerFailed": "ចុះឈ្មោះបរាជ័យ។ សូមព្យាយាមម្តងទៀត"
+        "registerFailed": "ចុះឈ្មោះបរាជ័យ។ សូមព្យាយាមម្តងទៀត",
+        "accountBanned": "គណនីនេះត្រូវបានបិទ។ សូមទាក់ទងរដ្ឋបាលសម្រាប់ព័ត៌មានបន្ថែម។"
     },
     "restaurant": {
         "title": "បញ្ជីត្រី",
@@ -163,6 +164,8 @@
         "filter": "ត្រង",
         "filterAll": "ទាំងអស់",
         "filterFavorites": "ចូលចិត្ត",
+        "filterProvince": "ខេត្ត",
+        "loadMore": "មើលបន្ថែម",
         "favorite": "បន្ថែមទៅចូលចិត្ត",
         "unfavorite": "យកចេញពីចូលចិត្ត",
         "stock": "ស្តុក {{kg}}kg",
@@ -191,6 +194,8 @@
         "viewLocation": "មើលនៅលើផែនទី",
         "pendingBanner": "កំពុងរង់ចាំការយល់ព្រម",
         "pendingBannerDesc": "អ្នកអាចផ្ញើសារបន្ទាប់ពីកសិករយល់ព្រមការបញ្ជាទិញ",
+        "completedBannerTitle": "ការដឹកជញ្ជូនបានបញ្ចប់",
+        "completedBannerCta": "ទៅកាន់ការបង់ប្រាក់",
         "chatDisabledHint": "អាចប្រើបានបន្ទាប់ពីកសិករយល់ព្រម",
         "send": "ផ្ញើ",
         "imageSent": "រូបថតត្រូវបានផ្ញើ",
@@ -266,6 +271,11 @@
         "approve": "យល់ព្រម",
         "decline": "បដិសេធ",
         "submit": "ផ្ញើ",
+        "confirmApproveTitle": "យល់ព្រមការបញ្ជាទិញនេះ?",
+        "confirmApproveAsk": "ភោជនីយដ្ឋាននឹងទទួលការជូនដំណឹងបន្ទាប់ពីយល់ព្រម។",
+        "fishLabel": "ត្រី",
+        "restaurantLabel": "ភោជនីយដ្ឋាន",
+        "otherItemsAddon": "+{{n}} ផ្សេងទៀត",
         "declineTitle": "ជ្រើសរើសហេតុផល",
         "declineReason1": "ស្តុកមិនគ្រប់គ្រាន់",
         "declineReason2": "ទំហំមិនត្រូវ",
@@ -283,8 +293,15 @@
         "approved": "បានយល់ព្រម",
         "declined": "បានបដិសេធ",
         "activeSection": "កំពុងដំណើរការ ({{count}})",
+        "todaySection": "ថ្ងៃនេះ ({{count}})",
+        "futureSection": "ថ្ងៃស្អែកឡើងទៅ ({{count}})",
         "waitingRemittanceSection": "កំពុងរង់ចាំការផ្ទេរ ({{count}})",
+        "waitingRemittanceClosed": "▶ កំពុងរង់ចាំការផ្ទេរ ({{count}})",
+        "waitingRemittanceOpen": "▼ កំពុងរង់ចាំការផ្ទេរ ({{count}})",
         "awaitingPaymentSection": "កំពុងរង់ចាំការបង់ប្រាក់ ({{count}})",
+        "payNow": "សូមបង់ប្រាក់",
+        "payByTime": "បង់មុន {{time}}",
+        "deadlinePassedShort": "ហួសកំណត់ពេលបង់ប្រាក់",
         "pendingSection": "ការបញ្ជាទិញថ្មី ({{count}})",
         "approvedSectionClosed": "▶ បានបញ្ចប់ ({{count}})",
         "approvedSectionOpen": "▼ បានបញ្ចប់ ({{count}})",
@@ -305,6 +322,9 @@
         "total": "សរុប",
         "subtotal": "សរុបរង (តម្លៃត្រី)",
         "discountApplied": "(បានអនុវត្តការបញ្ចុះតម្លៃ)",
+        "deadlineBy": "សូមបង់ប្រាក់មុន {{time}}",
+        "deadlinePassed": "ហួសកំណត់ពេលបង់ប្រាក់ហើយ។ សូមបង់ប្រាក់ឲ្យលឿន។",
+        "payOnReceipt": "បង់ប្រាក់នៅពេលទទួល",
         "qrTitle": "បង់ប្រាក់តាម QR (KHQR)",
         "qrHint": "※ បើមិនអាចស្កេនលើទូរស័ព្ទនេះ សូមចុច «បើកតំណ» ដើម្បីបង់ប្រាក់ ឬរក្សាទុករូប QR",
         "openLink": "បើកតំណ",
@@ -519,6 +539,18 @@
         "adminReport": {
             "title": "របាយការណ៍បញ្ហាថ្មី",
             "body": "{{fromRole}} → {{type}}\n{{reporter}}"
+        },
+        "paymentDeadlineSet": {
+            "title": "{{farmer}} ដឹកជញ្ជូនរួចរាល់។ សូមបង់ប្រាក់",
+            "body": "សូមបង់ប្រាក់មុន {{deadline}}"
+        },
+        "paymentDeadlineExpired": {
+            "title": "ហួសកំណត់ពេលបង់ប្រាក់",
+            "body": "{{farmer}} {{fish}} {{qty}}kg ({{orderNo}})\nសូមបញ្ចប់ការបង់ប្រាក់"
+        },
+        "remitDone": {
+            "title": "បានទទួលប្រាក់",
+            "body": "ការបញ្ជាទិញពី {{restaurant}}: {{fish}} {{qty}}kg"
         }
     },
     "comments": {
@@ -645,15 +677,62 @@
         "menuHintSales": "ចំនួនលក់, ប្រតិបត្តិការ",
         "menuHintPurchase": "ចំនួនទិញ, ប្រតិបត្តិការ",
         "menuHintProfileFarmer": "សារ, រូបភាពស្រែ",
-        "menuHintProfileRestaurant": "រូបភាពភោជនីយដ្ឋាន"
+        "menuHintProfileRestaurant": "រូបភាពភោជនីយដ្ឋាន",
+        "adminChat": "សារពីរដ្ឋបាល",
+        "adminChatHint": "ជជែកជាមួយរដ្ឋបាល FishLink"
+    },
+    "adminChat": {
+        "title": "ជជែកជាមួយរដ្ឋបាល",
+        "subtitle": "ផ្ញើសារទៅរដ្ឋបាល FishLink",
+        "loading": "កំពុងផ្ទុក...",
+        "empty": "មិនទាន់មានសារ។ ផ្ញើសារដោយសេរី។",
+        "placeholder": "វាយសារ..."
     },
     "admin": {
         "brand": "FISHLINK អ្នកគ្រប់គ្រង",
         "navTransactions": "បញ្ជីប្រតិបត្តិការ",
+        "navUsers": "អ្នកប្រើ",
         "navSettings": "ការកំណត់ថ្លៃ",
         "navCaa": "តម្លៃយោង CAA",
         "navReports": "របាយការណ៍បញ្ហា",
         "navLogout": "ចាកចេញ",
+        "users": {
+            "title": "គ្រប់គ្រងអ្នកប្រើ",
+            "subtitle": "ត្រងតាមតួនាទី/ខេត្ត/BAN រួចហើយ BAN/ដោះ ឬជជែកពីបន្ទះព័ត៌មានលម្អិត",
+            "searchPlaceholder": "ស្វែងរកតាម ID, ឈ្មោះ, លេខទូរស័ព្ទ, ខេត្ត",
+            "roleAll": "ទាំងអស់",
+            "roleFarmer": "កសិករ",
+            "roleRestaurant": "ភោជនីយដ្ឋាន",
+            "roleAdmin": "រដ្ឋបាល",
+            "roleBanned": "បានបិទ",
+            "banned": "បានបិទ",
+            "noResult": "រកមិនឃើញអ្នកប្រើ",
+            "selectHint": "ជ្រើសរើសអ្នកប្រើពីបញ្ជី",
+            "detail": {
+                "uid": "UID",
+                "phone": "លេខទូរស័ព្ទ",
+                "location": "ទីតាំង",
+                "viewMap": "បើកផែនទី",
+                "lang": "ភាសា",
+                "rating": "ការវាយតម្លៃ",
+                "createdAt": "បានចុះឈ្មោះ"
+            },
+            "notBanned": "សកម្ម (មិនត្រូវបានបិទ)",
+            "bannedSince": "បានបិទតាំងពី: {{time}}",
+            "bannedReason": "មូលហេតុ",
+            "cannotBanAdmin": "មិនអាចបិទរដ្ឋបាល",
+            "banBtn": "បិទគណនី",
+            "unbanBtn": "ដោះការបិទ",
+            "banReasonPlaceholder": "មូលហេតុ (មិនចាំបាច់)",
+            "confirmBan": "បិទគណនីនេះ?\nនឹងត្រូវចេញភ្លាមៗ និងបដិសេធការចូលបន្ត។\nចំពោះកសិករ ការដាក់លក់នឹងបិទដោយស្វ័យប្រវត្តិ។",
+            "confirmUnban": "ដោះការបិទគណនីនេះ?",
+            "bannedAlsoDeactivated": "បានបិទគណនី។ ការដាក់លក់ {{count}}មុខ ត្រូវបានបិទ។",
+            "chatTitle": "ជជែកជាមួយរដ្ឋបាល",
+            "chatLoading": "កំពុងផ្ទុក...",
+            "chatEmpty": "មិនទាន់មានសារ",
+            "chatPlaceholder": "វាយសារ (Enter ផ្ញើ / Shift+Enter ចុះបន្ទាត់)",
+            "send": "ផ្ញើ"
+        },
         "tx": {
             "title": "បញ្ជីប្រតិបត្តិការ",
             "subtitle": "តាមដានការបញ្ជាទិញតាមស្ថានភាព និងគ្រប់គ្រងការបង់ប្រាក់/ការផ្ទេរ/ការបញ្ចប់ពីទំព័រលម្អិត",
@@ -671,6 +750,7 @@
             "tabPaymentConfirmed": "ភោជនីយដ្ឋានបានបង់",
             "tabRemitted": "ផ្ទេរទៅកសិករ",
             "tabDone": "បញ្ចប់",
+            "colOrderNo": "លេខបញ្ជាទិញ",
             "colStatus": "ស្ថានភាព",
             "colDate": "ថ្ងៃបញ្ជាទិញ",
             "colRestaurant": "ភោជនីយដ្ឋាន",

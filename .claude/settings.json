@@ -8,7 +8,9 @@
       "Bash(node -c c:/work/FishLink/js/order-utils.js)",
       "Bash(grep -iE \"textarea\\\\s*\\\\{|textarea,|input\\\\s*\\\\{|input,|input\\\\[\")",
       "Bash(sed -i '655,729d' c:/work/FishLink/CLAUDE.md)",
-      "Bash(sed -n '645,660p' c:/work/FishLink/CLAUDE.md)"
+      "Bash(sed -n '645,660p' c:/work/FishLink/CLAUDE.md)",
+      "Bash(node --check functions/index.js)",
+      "Bash(node -e ' *)"
     ]
   }
 }

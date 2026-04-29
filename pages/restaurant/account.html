@@ -137,6 +137,16 @@
                     </div>
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
+
+                <a class="acc-menu-item" href="/pages/admin-chat.html" style="position:relative;">
+                    <div class="acc-menu-item__icon" style="background:#ddd6fe; color:#5b21b6;"><span class="material-symbols-outlined">support_agent</span></div>
+                    <div class="acc-menu-item__body">
+                        <div class="acc-menu-item__title" data-i18n="account.adminChat"></div>
+                        <div class="acc-menu-item__meta" data-i18n="account.adminChatHint"></div>
+                    </div>
+                    <span class="nav-badge" id="admin-chat-badge" style="display:none; top:14px; right:50px; transform:none;"></span>
+                    <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
+                </a>
             </div>
 
             <button class="logout-btn-full" id="logout-btn">
@@ -206,6 +216,20 @@
             });
         }
 
+        function watchAdminChatBadge() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            const q = query(
+                collection(db, `adminChats/${uid}/messages`),
+                where('senderRole', '==', 'admin'),
+                where('isRead', '==', false)
+            );
+            onSnapshot(q, (snap) => {
+                const badge = document.getElementById('admin-chat-badge');
+                if (badge) badge.style.display = snap.empty ? 'none' : 'block';
+            });
+        }
+
         document.getElementById('logout-btn').addEventListener('click', async (e) => {
             e.preventDefault();
             await logout();
@@ -214,6 +238,7 @@
         waitForUserData(() => {
             renderHead();
             watchOrderBadge();
+            watchAdminChatBadge();
             if (window.currentUser?.uid) {
                 subscribeTodos(window.currentUser.uid, 'restaurant');
                 subscribeNotifications(window.currentUser.uid);

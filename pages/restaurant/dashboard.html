@@ -326,8 +326,20 @@
                 <div class="chip-row" id="filter-chips"></div>
             </div>
 
+            <!-- 州フィルタチップ -->
+            <div class="chip-section">
+                <div class="chip-label" data-i18n="restaurant.filterProvince"></div>
+                <div class="chip-row" id="province-chips"></div>
+            </div>
+
             <!-- 魚一覧グリッド -->
             <div class="fish-grid" id="fish-grid"></div>
+
+            <div id="load-more-wrap" style="display:none; padding:16px 0; text-align:center;">
+                <button type="button" id="load-more-btn"
+                    style="padding:10px 20px; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); border-radius:999px; font-size:13px; font-weight:600; cursor:pointer;"
+                    data-i18n="restaurant.loadMore"></button>
+            </div>
         </div>
 
     </div>
@@ -364,7 +376,7 @@
         import { subscribeTodos } from '/js/todos.js';
         import { subscribeNotifications } from '/js/notifications.js';
         import {
-            collection, query, where, orderBy, getDocs, doc, getDoc, onSnapshot
+            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { subscribeCart, addToCart } from '/js/cart.js';
         import { subscribeFavorites, toggleFavorite } from '/js/favorites.js';
@@ -384,6 +396,7 @@
         // 並び替え・絞り込みの現在値
         let currentSort = 'distance';
         let currentFilter = '';
+        let currentProvince = '';
 
         const FISH_FILTER_KEYS = [
             'striped_snakehead', 'walking_catfish', 'red_tilapia', 'nile_tilapia',
@@ -428,6 +441,36 @@
         }
         populateFilterChips();
 
+        // 州チップを生成（allItems から現存する州を抽出）
+        function populateProvinceChips() {
+            const row = document.getElementById('province-chips');
+            row.innerHTML = '';
+
+            const allBtn = document.createElement('button');
+            allBtn.type = 'button';
+            allBtn.className = 'chip chip--filter' + (currentProvince === '' ? ' active' : '');
+            allBtn.dataset.value = '';
+            allBtn.textContent = i18next.t('restaurant.filterAll');
+            row.appendChild(allBtn);
+
+            // 自分の州を最優先で表示
+            const myProvince = window.currentUserData?.province || '';
+            const provinces = [...new Set(allItems.map(it => it.farmerProvince).filter(Boolean))]
+                .sort((a, b) => {
+                    if (a === myProvince) return -1;
+                    if (b === myProvince) return 1;
+                    return a.localeCompare(b);
+                });
+            provinces.forEach(prov => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'chip chip--filter' + (currentProvince === prov ? ' active' : '');
+                btn.dataset.value = prov;
+                btn.textContent = prov;
+                row.appendChild(btn);
+            });
+        }
+
         // チップクリック：並び替え
         document.getElementById('sort-chips').addEventListener('click', (e) => {
             const btn = e.target.closest('button.chip');
@@ -444,6 +487,30 @@
             currentFilter = btn.dataset.value;
             document.querySelectorAll('#filter-chips .chip').forEach(c => c.classList.toggle('active', c === btn));
             renderList();
+        });
+
+        // チップクリック：州フィルタ
+        document.getElementById('province-chips').addEventListener('click', (e) => {
+            const btn = e.target.closest('button.chip');
+            if (!btn) return;
+            currentProvince = btn.dataset.value;
+            document.querySelectorAll('#province-chips .chip').forEach(c => c.classList.toggle('active', c === btn));
+            renderList();
+        });
+
+        // 「もっと見る」ボタン
+        document.getElementById('load-more-btn').addEventListener('click', async () => {
+            if (isLoadingMore || !hasMoreListings) return;
+            isLoadingMore = true;
+            const btn = document.getElementById('load-more-btn');
+            btn.disabled = true;
+            btn.textContent = '...';
+            try {
+                await loadFishListings({ append: true });
+            } finally {
+                btn.disabled = false;
+                btn.textContent = i18next.t('restaurant.loadMore');
+            }
         });
 
         // ── 距離計算（Google Maps Distance Matrix） ──────────────
@@ -491,9 +558,13 @@
         // ── データ取得＆表示 ──────────────────────────────────────
         let allItems = [];
         let serviceRate = 0.05;
+        const PAGE_SIZE = 100;
+        let lastListingDoc = null;
+        let hasMoreListings = false;
+        let isLoadingMore = false;
 
-        async function loadFishListings() {
-            loading.classList.add('show');
+        async function loadFishListings({ append = false } = {}) {
+            if (!append) loading.classList.add('show');
 
             try {
                 const uid = window.currentUser?.uid;
@@ -501,34 +572,44 @@
 
                 const myLoc = window.currentUserData?.location;
 
-                // サービス料率＋キャンペーンバナー表示
-                try {
-                    const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
-                    if (campSnap.exists()) {
-                        const c = campSnap.data();
-                        serviceRate = c.serviceRate ?? 0.05;
-                        // 管理者の bannerActive フラグでバナー表示制御
-                        if (c.bannerActive === true) {
-                            const banner = document.getElementById('campaign-banner');
-                            if (banner) banner.style.display = 'block';
+                // サービス料率＋キャンペーンバナー表示（初回のみ）
+                if (!append) {
+                    try {
+                        const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
+                        if (campSnap.exists()) {
+                            const c = campSnap.data();
+                            serviceRate = c.serviceRate ?? 0.05;
+                            // 管理者の bannerActive フラグでバナー表示制御
+                            if (c.bannerActive === true) {
+                                const banner = document.getElementById('campaign-banner');
+                                if (banner) banner.style.display = 'block';
+                            }
                         }
-                    }
-                } catch (e) { }
-
-                // 全アクティブ投稿を取得
-                const q = query(
-                    collection(db, 'fishListings'),
-                    where('isActive', '==', true)
-                );
-                const snap = await getDocs(q);
-
-                // 農家情報をまとめて取得（UID → location）
-                const farmerIds = [...new Set(snap.docs.map(d => d.data().farmerId))];
-                const farmerMap = {};
-                for (const fid of farmerIds) {
-                    const fSnap = await getDoc(doc(db, 'users', fid));
-                    if (fSnap.exists()) farmerMap[fid] = fSnap.data();
+                    } catch (e) { }
                 }
+
+                // 並び替え用に createdAt DESC + limit でページング取得
+                const baseConds = [
+                    collection(db, 'fishListings'),
+                    where('isActive', '==', true),
+                    orderBy('createdAt', 'desc'),
+                ];
+                if (append && lastListingDoc) baseConds.push(startAfter(lastListingDoc));
+                baseConds.push(limit(PAGE_SIZE));
+                const q = query(...baseConds);
+                const snap = await getDocs(q);
+                lastListingDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : lastListingDoc;
+                hasMoreListings = snap.docs.length === PAGE_SIZE;
+
+                // 農家情報をまとめて取得（UID → location）。既知 UID はキャッシュ流用
+                window._farmerCache = window._farmerCache || {};
+                const farmerCache = window._farmerCache;
+                const farmerIds = [...new Set(snap.docs.map(d => d.data().farmerId).filter(fid => !farmerCache[fid]))];
+                await Promise.all(farmerIds.map(async (fid) => {
+                    const fSnap = await getDoc(doc(db, 'users', fid));
+                    farmerCache[fid] = fSnap.exists() ? fSnap.data() : {};
+                }));
+                const farmerMap = farmerCache;
 
                 // 道路距離を一括計算
                 const itemsRaw = snap.docs.map(d => {
@@ -582,7 +663,7 @@
                     }
                 }
 
-                allItems = itemsRaw.map((it, i) => {
+                const newItems = itemsRaw.map((it, i) => {
                     const data = it.data;
                     const farmer = it.farmer;
                     const distanceKm = distanceMap[i] ?? null;
@@ -602,11 +683,19 @@
                     };
                 });
 
+                if (append) {
+                    // 追加分を結合して重複除去
+                    const seen = new Set(allItems.map(it => it.id));
+                    newItems.forEach(it => { if (!seen.has(it.id)) allItems.push(it); });
+                } else {
+                    allItems = newItems;
+                }
                 renderList();
             } catch (err) {
                 console.error(err);
             } finally {
                 loading.classList.remove('show');
+                isLoadingMore = false;
             }
         }
 
@@ -623,6 +712,11 @@
                 if (it.maxDistance && it.distanceKm > it.maxDistance) return false;
                 return true;
             });
+
+            // 州フィルタ
+            if (currentProvince) {
+                items = items.filter(it => it.farmerProvince === currentProvince);
+            }
 
             // お気に入りフィルタ
             if (filterVal === '__favorites') {
@@ -648,6 +742,13 @@
 
             const grid = document.getElementById('fish-grid');
             const footer = document.getElementById('market-footer');
+            const loadMoreWrap = document.getElementById('load-more-wrap');
+
+            // 州チップを更新（読み込み済み農家から動的生成）
+            populateProvinceChips();
+
+            // もっと見るボタンの表示制御
+            if (loadMoreWrap) loadMoreWrap.style.display = hasMoreListings ? 'block' : 'none';
 
             if (items.length === 0) {
                 grid.innerHTML = `
@@ -725,6 +826,8 @@
         // 言語変更時
         onLanguageChange(() => {
             populateFilterChips();
+            const moreBtn = document.getElementById('load-more-btn');
+            if (moreBtn) moreBtn.textContent = i18next.t('restaurant.loadMore');
             renderList();
         });
 
