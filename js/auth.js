@@ -16,7 +16,9 @@ import {
     where,
     limit,
     getDocs,
-    serverTimestamp
+    serverTimestamp,
+    arrayUnion,
+    arrayRemove
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
 import { auth, db, toInternalEmail } from './firebase-config.js';
@@ -158,6 +160,19 @@ async function login(loginId, password) {
 
 // ── ログアウト ────────────────────────────────────────────────
 async function logout() {
+    // 5/2: ログアウト前にこの端末のFCMトークンを users/{uid}.fcmTokens から除去
+    // 別アカウントが同じ端末でログインした際に元アカウント宛通知を受け取らないようにするため
+    try {
+        const uid = auth.currentUser?.uid;
+        const token = localStorage.getItem('fishlink_fcm_token');
+        if (uid && token) {
+            await updateDoc(doc(db, 'users', uid), {
+                fcmTokens: arrayRemove(token),
+            });
+        }
+        localStorage.removeItem('fishlink_fcm_token');
+    } catch (e) { /* ignore — ログアウト自体は止めない */ }
+
     await signOut(auth);
     window.location.href = '/index.html';
 }
@@ -186,8 +201,14 @@ async function requestFcmToken(uid) {
             serviceWorkerRegistration: registration
         });
         if (token) {
-            await updateDoc(doc(db, 'users', uid), { fcmToken: token });
-            console.log('FCM token saved');
+            // 5/2: 複数端末対応 — 配列に追加（同じトークンの重複は arrayUnion が排除）
+            // レガシー fcmToken（単一）も Cloud Functions 側で互換読み込みされる
+            await updateDoc(doc(db, 'users', uid), {
+                fcmTokens: arrayUnion(token),
+            });
+            // ログアウト時にこの端末分だけ arrayRemove するため、ローカルにも保持
+            try { localStorage.setItem('fishlink_fcm_token', token); } catch (e) { /* ignore */ }
+            console.log('FCM token registered (multi-device)');
         }
 
         // フォアグラウンド通知（data-onlyペイロード対応）

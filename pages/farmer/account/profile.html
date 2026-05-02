@@ -230,7 +230,7 @@
                 let pondPhotoUrl = editState.pondPhotoUrl;
                 if (editState.pondFile) {
                     const storageRef = ref(storage, `profile/${uid}/pond_${Date.now()}_${editState.pondFile.name}`);
-                    await uploadBytes(storageRef, editState.pondFile);
+                    await uploadBytes(storageRef, editState.pondFile, { cacheControl: 'public, max-age=31536000' });
                     pondPhotoUrl = await getDownloadURL(storageRef);
                 } else if (editState.pondRemoved) {
                     pondPhotoUrl = null;
@@ -238,7 +238,7 @@
                 let avatarUrl = editState.avatarUrl;
                 if (editState.avatarFile) {
                     const storageRef = ref(storage, `profile/${uid}/avatar_${Date.now()}_${editState.avatarFile.name}`);
-                    await uploadBytes(storageRef, editState.avatarFile);
+                    await uploadBytes(storageRef, editState.avatarFile, { cacheControl: 'public, max-age=31536000' });
                     avatarUrl = await getDownloadURL(storageRef);
                 } else if (editState.avatarRemoved) {
                     avatarUrl = null;

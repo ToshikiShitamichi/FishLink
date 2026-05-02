@@ -111,6 +111,13 @@
         "freeDeliveryDistance": "ចម្ងាយដឹកជញ្ជូនឥតគិតថ្លៃ",
         "sectionTerms": "លក្ខខណ្ឌពាណិជ្ជកម្ម",
         "sectionDescription": "ការពិពណ៌នាផលិតផល",
+        "descriptionHintIntro": "ពិពណ៌នាលម្អិតជួយឱ្យភោជនីយដ្ឋានជឿជាក់។ អ្នកអាចដាក់៖",
+        "descriptionHintQuality": "គុណភាពត្រី (ភាពស្រស់ ទំហំ)",
+        "descriptionHintSafety": "សុវត្ថិភាព (ការប្រើថ្នាំ ឬសារធាតុបន្ថែម)",
+        "descriptionHintFeed": "ចំណី (ប្រភេទ, ផ្ទាល់ខ្លួនឬអត់)",
+        "descriptionHintPond": "ស្ថានភាពស្រះ (គុណភាពទឹក បរិស្ថាន)",
+        "descriptionHintAppeal": "ចំណុចពិសេស / ភាពពិសេស",
+        "descriptionPlaceholder": "ឧទាហរណ៍៖\n- មិនប្រើថ្នាំ។ យើងផ្ដល់ចំណីផលិតផ្ទាល់ខ្លួន។\n- យើងថែទាំគុណភាពទឹកស្រះយ៉ាងហ្មត់ចត់។\n- ត្រីស្រស់ដែលនេសាទនៅព្រឹក។",
         "minOrder": "បរិមាណបញ្ជាទិញអប្បបរមា",
         "maxDistance": "ចម្ងាយដឹកជញ្ជូនអតិបរមា",
         "submit": "បង្ហោះ",
@@ -221,6 +228,10 @@
     "order": {
         "title": "បញ្ជាក់ការបញ្ជាទិញ",
         "section": "ព័ត៌មានការបញ្ជាទិញ",
+        "farmerLabel": "កសិករ",
+        "totalLabel": "សរុបទាំងអស់",
+        "confirmSubmitTitle": "បញ្ជាទិញតាមព័ត៌មានខាងក្រោម?",
+        "confirmSubmitAsk": "ពេលបញ្ជាក់ កសិករនឹងទទួលបានការជូនដំណឹង។",
         "quantity": "បរិមាណ",
         "gutProcessing": "កាត់ពោះ",
         "gutYes": "យក",
@@ -247,12 +258,18 @@
         "minOrderHint": "បរិមាណអប្បបរមា: {{min}}kg",
         "errorMinOrder": "បរិមាណបញ្ជាទិញអប្បបរមាគឺ {{min}}kg",
         "errorSubmit": "ការបញ្ជាទិញបរាជ័យ។ សូមព្យាយាមម្តងទៀត។",
-        "successRedirect": "ការបញ្ជាទិញបានជោគជ័យ"
+        "successRedirect": "ការបញ្ជាទិញបានជោគជ័យ",
+        "moreFromFarmerTitle": "ត្រីផ្សេងទៀតពីកសិករនេះ",
+        "moreFromFarmerDesc": "បញ្ជាទិញរួមគ្នាពីកសិករដូចគ្នាជួយសន្សំថ្លៃដឹកជញ្ជូន"
     },
     "orders": {
         "title": "បញ្ជាក់ការបញ្ជាទិញ",
         "unitPrice": "តម្លៃឯកតា",
         "otherItems": "ធាតុ",
+        "totalItems": "សរុប {{count}} មុខ",
+        "itemsList": "បញ្ជីបញ្ជាទិញ ({{count}}មុខ)",
+        "declinedNotice": "កសិករបានបដិសេធ។ សូមជ្រើសរើសត្រីផ្សេងទៀតដើម្បីបញ្ជាទិញម្ដងទៀត។",
+        "reorderCta": "បញ្ជាទិញឡើងវិញពីបញ្ជីត្រី",
         "quantity": "បរិមាណបញ្ជាទិញ",
         "gutProcessing": "កាត់ពោះ",
         "gutYes": "យក",
@@ -472,6 +489,9 @@
         "viewCart": "មើលកន្ត្រក",
         "remove": "លុប",
         "confirmRemove": "លុបទំនិញនេះពីកន្ត្រក?",
+        "confirmSubmitTitle": "បញ្ជាទិញតាមព័ត៌មានខាងក្រោម?",
+        "confirmSubmitDetail": "{{items}} មុខទំនិញនៅ {{farmers}} កសិករ។",
+        "confirmSubmitAsk": "ពេលបញ្ជាក់ កសិករនីមួយៗនឹងទទួលបានការជូនដំណឹង។",
         "gutToggle": "សម្អាតក្រពះ (+{{price}}/kg)",
         "deliveryDate": "ថ្ងៃដឹកជញ្ជូន",
         "deliveryTime": "ពេលវេលា",
@@ -513,16 +533,16 @@
             "body": "{{fish}} {{qty}}kg\nដឹកជញ្ជូន: {{date}} {{time}}"
         },
         "declined": {
-            "title": "{{farmer}} បានបដិសេធបញ្ជាទិញ",
-            "body": "{{fish}} {{qty}}kg"
+            "title": "ការបញ្ជាទិញត្រូវបានបដិសេធ",
+            "body": "{{farmer}} {{fish}} {{qty}}kg\nសូមជ្រើសរើសត្រីផ្សេងទៀតដើម្បីបញ្ជាទិញម្ដងទៀត"
         },
         "expiredDeclinedFarmer": {
             "title": "បញ្ជាទិញពី {{restaurant}} ហួសកំណត់ពេល",
             "body": "{{fish}} {{qty}}kg"
         },
         "expiredDeclinedRestaurant": {
-            "title": "{{farmer}} បដិសេធដោយហួសកំណត់ពេល",
-            "body": "{{fish}} {{qty}}kg"
+            "title": "ការបញ្ជាទិញត្រូវបានបដិសេធដោយស្វ័យប្រវត្តិ (ហួសកំណត់ពេល)",
+            "body": "{{farmer}} {{fish}} {{qty}}kg\nសូមជ្រើសរើសត្រីផ្សេងទៀតដើម្បីបញ្ជាទិញម្ដងទៀត"
         },
         "statusUpdate": {
             "title": "{{farmer}} ស្ថានភាពបញ្ជាទិញបានផ្លាស់ប្ដូរ",
@@ -590,7 +610,10 @@
         "reportIssue": "រាយការណ៍បញ្ហា",
         "submitted": "បានផ្ញើការវាយតម្លៃ",
         "alreadySubmitted": "អ្នកបានវាយតម្លៃរួចហើយ",
+        "reviewed": "បានវាយតម្លៃ",
         "errorRating": "សូមវាយតម្លៃទាំងអស់",
+        "verdictGood": "ល្អ",
+        "verdictBad": "មិនល្អ",
         "errorSubmit": "ផ្ញើបរាជ័យ",
         "thanks": "អរគុណ!",
         "backToOrders": "ត្រឡប់ទៅការបញ្ជាទិញ"
@@ -731,7 +754,11 @@
             "chatLoading": "កំពុងផ្ទុក...",
             "chatEmpty": "មិនទាន់មានសារ",
             "chatPlaceholder": "វាយសារ (Enter ផ្ញើ / Shift+Enter ចុះបន្ទាត់)",
-            "send": "ផ្ញើ"
+            "send": "ផ្ញើ",
+            "reportsAgainst": "របាយការណ៍បញ្ហាប្រឆាំងនឹងអ្នកប្រើប្រាស់នេះ",
+            "reportsNone": "មិនមានរបាយការណ៍",
+            "reportsCount": "សរុប {{count}}",
+            "reportsOpenCount": "កំពុងដំណើរការ {{count}}"
         },
         "tx": {
             "title": "បញ្ជីប្រតិបត្តិការ",
@@ -892,6 +919,8 @@
             "ocrAutofillDone": "បានបំពេញ {{count}} ក្រឡា សូមពិនិត្យមើលហើយរក្សាទុក",
             "ocrAutofillMissing": "ខេត្តខាងក្រោមមិនអាចបំពេញស្វ័យប្រវត្តិ (សូមបញ្ចូលដោយដៃ)",
             "historyBtn": "ប្រវត្តិ",
+            "clearBtn": "សម្អាត",
+            "clearConfirm": "សម្អាតតម្លៃដែលបានបញ្ចូលទាំងអស់ ({{count}}ចូល)? សម្អាតតែក្នុងមុខងារ - មិនបានរក្សាទុកក្នុង Firestore រហូតដល់អ្នកចុចរក្សាទុក។",
             "historyTitle": "ប្រវត្តិរក្សាទុក",
             "historyLoading": "កំពុងផ្ទុក...",
             "historyEmpty": "មិនទាន់មានប្រវត្តិ",
@@ -916,6 +945,8 @@
             "colStatus": "ស្ថានភាព",
             "colAction": "សកម្មភាព",
             "viewDetail": "មើល",
+            "chatReporter": "ជជែកជាមួយអ្នករាយការណ៍",
+            "newBadge": "ថ្មី",
             "markResolved": "សម្គាល់បានដោះស្រាយ",
             "markOpen": "បើកឡើងវិញ",
             "statusOpen": "កំពុងដំណើរការ",

@@ -41,6 +41,13 @@
         }
         .report-card.open { border-left: 4px solid #f59e0b; }
         .report-card.resolved { border-left: 4px solid #16a34a; opacity: 0.85; }
+        /* 5/2: 未読カードを強調（左ボーダーを赤系で太く） */
+        .report-card.unread { border-left-width: 6px; border-left-color: #dc2626; box-shadow: 0 1px 8px rgba(220, 38, 38, 0.12); }
+        .badge-new {
+            display: inline-block; font-size: 11px; font-weight: 700;
+            padding: 2px 8px; border-radius: 999px; margin-left: 6px;
+            background: #dc2626; color: #fff;
+        }
         .report-card__head {
             display: flex; justify-content: space-between; align-items: center;
             gap: 10px; margin-bottom: 10px; flex-wrap: wrap;
@@ -107,6 +114,16 @@
             padding: 8px 14px; font-size: 13px; font-weight: 600;
             cursor: pointer; font-family: inherit; text-decoration: none;
         }
+        /* 5/1: 報告者へのチャット導線 */
+        .btn-chat-reporter {
+            background: #ecfdf5; color: #047857;
+            border: 1px solid #a7f3d0; border-radius: 10px;
+            padding: 8px 14px; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .btn-chat-reporter:hover { background: #d1fae5; }
+        .btn-chat-reporter .material-symbols-outlined { font-size: 16px; }
 
         .empty-box { background: #fff; border: 1px dashed #cbd5e1; border-radius: 14px; padding: 48px 16px; text-align: center; color: #94a3b8; }
 
@@ -157,14 +174,16 @@
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState, logout } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
+        import { initAdminReportBadge } from '/js/admin-report-badge.js';
         import {
-            collection, query, orderBy, onSnapshot, doc, updateDoc, getDoc
+            collection, query, where, orderBy, onSnapshot, doc, updateDoc, getDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
         await initI18n();
         initLangSelector();
+        initAdminReportBadge();
 
         document.getElementById('logout-btn').addEventListener('click', async (e) => {
             e.preventDefault();
@@ -180,6 +199,8 @@
         let currentTab = 'open';
         let allReports = [];
         let userCache = {};
+        // 5/2: 管理者ごとの未読管理用に現在 admin の uid を保持
+        let currentAdminUid = null;
 
         function buildTabs() {
             const row = document.getElementById('tab-row');
@@ -245,17 +266,20 @@
                 const isOpen = r.status !== 'resolved';
                 const statusKey = isOpen ? 'open' : 'resolved';
                 const photos = Array.isArray(r.photos) ? r.photos : [];
+                // 5/2: 管理者ごとの未読判定（readByAdmins[currentUid] が真なら既読）
+                const isUnread = !!currentAdminUid && !(r.readByAdmins && r.readByAdmins[currentAdminUid]);
 
                 const phoneChip = (p) => p
                     ? `<a class="phone-chip" href="tel:${escapeHtml(p)}"><span class="material-symbols-outlined">call</span>${escapeHtml(p)}</a>`
                     : `<span class="phone-chip phone-chip--empty">${i18next.t('admin.reports.noPhone')}</span>`;
 
                 return `
-                    <div class="report-card ${statusKey}" id="report-${r.id}">
+                    <div class="report-card ${statusKey}${isUnread ? ' unread' : ''}" id="report-${r.id}" data-unread="${isUnread ? '1' : '0'}">
                         <div class="report-card__head">
                             <div class="report-card__type">
                                 ${escapeHtml(typeLabel(r.type || 'other'))}
                                 <span class="badge">${escapeHtml(roleLabel(fromRole))}</span>
+                                ${isUnread ? `<span class="badge-new">${i18next.t('admin.reports.newBadge')}</span>` : ''}
                             </div>
                             <span class="report-card__status ${statusKey}">${i18next.t('admin.reports.status' + (isOpen ? 'Open' : 'Resolved'))}</span>
                         </div>
@@ -282,6 +306,11 @@
                             : ''
                         }
                         <div class="report-card__actions">
+                            ${r.fromUid ? `
+                                <a class="btn-chat-reporter" href="/pages/admin/users.html?uid=${escapeHtml(r.fromUid)}">
+                                    <span class="material-symbols-outlined">chat</span>
+                                    ${i18next.t('admin.reports.chatReporter')}
+                                </a>` : ''}
                             ${r.orderId ? `<a class="btn-view-order" href="/pages/admin/order.html?id=${r.orderId}">${i18next.t('admin.reports.viewDetail')}</a>` : ''}
                             ${isOpen
                                 ? `<button class="btn-resolve" data-id="${r.id}">${i18next.t('admin.reports.markResolved')}</button>`
@@ -328,6 +357,19 @@
                 const el = document.querySelector(location.hash);
                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
+
+            // 5/2: 表示された未読カードを自動既読化（バックグラウンドで非同期実行）
+            // 既読化対象は今 render している filtered の中で data-unread="1" のもの
+            if (currentAdminUid) {
+                const unreadIds = Array.from(container.querySelectorAll('.report-card[data-unread="1"]'))
+                    .map(el => el.id.replace(/^report-/, ''))
+                    .filter(Boolean);
+                unreadIds.forEach(id => {
+                    updateDoc(doc(db, 'reports', id), {
+                        [`readByAdmins.${currentAdminUid}`]: true,
+                    }).catch(e => console.warn('mark report read failed:', id, e.message));
+                });
+            }
         }
 
         waitForUserData(() => {
@@ -336,6 +378,7 @@
                 location.href = '/index.html';
                 return;
             }
+            currentAdminUid = window.currentUser?.uid || null;
             loading.classList.add('show');
             const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
             onSnapshot(q, async (snap) => {

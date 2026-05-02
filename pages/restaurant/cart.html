@@ -689,9 +689,15 @@
                     const origIndex = cartItems.indexOf(c.raw);
                     const fishType = c.raw.snapFishType || c.listing.fishType || '';
                     const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
-                    const shortName = fishName.split('/')[0].trim();
+                    const shortName = fishName.trim();
                     const photoUrl = c.listing.photoUrl || (c.listing.photos?.[0]);
-                    const unitPrice = (c.listing.price || 0) + (c.raw.gutProcessing ? (c.listing.gutPrice || 0) : 0);
+                    // レストラン側UIは「サービス料込み」単価を表示（CLAUDE.md仕様：(price+gutPrice)×(1+serviceRate)）
+                    const baseUnit = (c.listing.price || 0) + (c.raw.gutProcessing ? (c.listing.gutPrice || 0) : 0);
+                    const unitPrice = Math.round(baseUnit * (1 + serviceRate));
+                    // gut追加分もサービス料込み表示
+                    const gutDisplayPrice = Math.round((c.listing.gutPrice || 0) * (1 + serviceRate));
+                    // 小計もサービス料込み（c.prices.fishPrice + c.prices.serviceFee）
+                    const lineTotal = (c.prices.fishPrice || 0) + (c.prices.serviceFee || 0);
                     const minOrder = c.listing.minOrder || 1;
 
                     html += `<div class="cart-item">
@@ -709,14 +715,14 @@
                                     <button type="button" data-act="qty-plus" data-idx="${origIndex}">＋</button>
                                 </div>
                                 <button class="gut-chip ${c.raw.gutProcessing ? 'active' : ''}" type="button" data-act="toggle-gut" data-idx="${origIndex}">
-                                    ${i18next.t('cart.gutToggle', { price: (c.listing.gutPrice || 0).toLocaleString() })}
+                                    ${i18next.t('cart.gutToggle', { price: gutDisplayPrice.toLocaleString() })}
                                 </button>
                                 <button class="remove-btn" type="button" data-act="remove" data-idx="${origIndex}">
                                     <span class="material-symbols-outlined">delete</span>
                                     <span>${i18next.t('cart.remove')}</span>
                                 </button>
                             </div>
-                            <div class="cart-item__subtotal">${fmtKhr(c.prices.fishPrice)}</div>
+                            <div class="cart-item__subtotal">${fmtKhr(lineTotal)}</div>
                         </div>
                     </div>`;
                 });
@@ -907,10 +913,11 @@
             container.innerHTML = suggestions.map((s, sIdx) => {
                 const curFishType = s.currentListing.fishType;
                 const curName = i18next.exists(`fish.${curFishType}`) ? i18next.t(`fish.${curFishType}`) : curFishType;
-                const curShort = curName.split('/')[0].trim();
+                const curShort = curName.trim();
                 const altName = curShort; // 同じ fishType なので同じ名前
-                const curPrice = (s.currentListing.price || 0) + (s.currentListing.gutPrice || 0);
-                const altPrice = (s.altListing.price || 0) + (s.altListing.gutPrice || 0);
+                // サービス料込み単価で比較表示
+                const curPrice = Math.round(((s.currentListing.price || 0) + (s.currentListing.gutPrice || 0)) * (1 + serviceRate));
+                const altPrice = Math.round(((s.altListing.price || 0) + (s.altListing.gutPrice || 0)) * (1 + serviceRate));
                 const priceDiff = altPrice - curPrice;
 
                 const curPhoto = s.currentListing.photoUrl || (s.currentListing.photos?.[0]);
@@ -1015,7 +1022,8 @@
                 ? `<div class="lm-gallery">${photos.map(u => `<img src="${u}" alt="" loading="lazy">`).join('')}</div>`
                 : `<div class="lm-gallery__placeholder"><span class="material-symbols-outlined" style="font-size:64px;">set_meal</span></div>`;
 
-            const unitPrice = (listing.price || 0) + (listing.gutPrice || 0);
+            // サービス料込み単価（CLAUDE.md: 表示単価 = (price+gutPrice)×(1+serviceRate)）
+            const unitPrice = Math.round(((listing.price || 0) + (listing.gutPrice || 0)) * (1 + serviceRate));
             const province = farmer.province || '';
             const district = farmer.district || '';
             const place = [province, district].filter(Boolean).join(', ');
@@ -1050,8 +1058,6 @@
                 <div class="lm-info-grid">
                     <div><div class="k">${i18next.t('order.stock').replace(/[:：]\s*$/, '')}</div><div class="v">${listing.stock || 0} kg</div></div>
                     <div><div class="k">${i18next.t('order.minOrder')}</div><div class="v">${listing.minOrder || 0} kg</div></div>
-                    <div><div class="k">${i18next.t('post.priceUnit')}</div><div class="v">${(listing.price || 0).toLocaleString()} KHR/kg</div></div>
-                    <div><div class="k">${i18next.t('post.gutPrice')}</div><div class="v">+${(listing.gutPrice || 0).toLocaleString()} KHR/kg</div></div>
                     <div><div class="k">${i18next.t('post.deliveryRate')}</div><div class="v">${(listing.deliveryRate || 0).toLocaleString()} KHR/km</div></div>
                     <div><div class="k">${i18next.t('post.freeDeliveryDistance')}</div><div class="v">${listing.freeDeliveryDistance || 0} km</div></div>
                 </div>
@@ -1113,7 +1119,7 @@
                 const rows = calcItems.map(c => {
                     const fishType = c.listing.fishType || '';
                     const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
-                    const shortName = fishName.split('/')[0].trim();
+                    const shortName = fishName.trim();
                     const gutMark = c.item.gutProcessing ? ` (${i18next.t('order.gutYes')})` : '';
                     return `<div class="confirm-group__row"><span>${escapeHtml(shortName)} ${c.item.quantity}kg${gutMark}</span><span class="v">${fmtKhr(c.prices.fishPrice + c.prices.serviceFee)}</span></div>`;
                 }).join('');
@@ -1273,6 +1279,16 @@
                     await renderConfirm();
                     setStage('confirm');
                 } else if (stage === 'confirm') {
+                    // 5/1: 確定前の最終確認ダイアログ（誤操作防止）
+                    const farmerCount = new Set(cartItems.map(it => it.farmerId)).size;
+                    const lines = [
+                        i18next.t('cart.confirmSubmitTitle'),
+                        '',
+                        i18next.t('cart.confirmSubmitDetail', { farmers: farmerCount, items: cartItems.length }),
+                        '',
+                        i18next.t('cart.confirmSubmitAsk'),
+                    ];
+                    if (!confirm(lines.join('\n'))) return;
                     await placeOrders();
                 }
             } catch (err) {

@@ -410,6 +410,28 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        /* 5/2: 注文ボタン横にカート追加ボタン */
+        .order-footer__actions {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+        .order-footer__btn--cart {
+            flex: 0 0 auto;
+            width: auto;
+            background: #fff;
+            color: #f43f5e;
+            border: 2px solid #f43f5e;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 14px;
+        }
+        .order-footer__btn--cart .material-symbols-outlined { font-size: 20px; }
+        .order-footer__btn--order { flex: 1; }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer></script>
 </head>
@@ -488,6 +510,16 @@
         <!-- 料金内訳 -->
         <div class="order-section" id="price-breakdown"></div>
 
+        <!-- 同一農家の他の魚（配送料節約のヒント） -->
+        <div id="more-from-farmer" style="display:none; margin:0 16px 16px; padding:12px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px;">
+            <div style="font-size:13px; font-weight:700; color:#065f46; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:16px;">local_shipping</span>
+                <span data-i18n="order.moreFromFarmerTitle"></span>
+            </div>
+            <div style="font-size:12px; color:#065f46; line-height:1.5; margin-bottom:10px;" data-i18n="order.moreFromFarmerDesc"></div>
+            <div id="more-from-farmer-list" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none;"></div>
+        </div>
+
     </div>
 
     <!-- 固定フッター -->
@@ -499,7 +531,13 @@
             </div>
             <div class="order-footer__note" data-i18n="order.autoCalcNote"></div>
         </div>
-        <button class="order-footer__btn" id="submit-btn" data-i18n="order.submit"></button>
+        <div class="order-footer__actions">
+            <button class="order-footer__btn order-footer__btn--cart" id="add-cart-btn" type="button" aria-label="add to cart">
+                <span class="material-symbols-outlined">add_shopping_cart</span>
+                <span data-i18n="cart.addToCart"></span>
+            </button>
+            <button class="order-footer__btn order-footer__btn--order" id="submit-btn" data-i18n="order.submit"></button>
+        </div>
     </div>
 
     <!-- エラーメッセージ -->
@@ -509,8 +547,9 @@
         import { initI18n } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
+        import { addToCart } from '/js/cart.js';
         import {
-            doc, getDoc, addDoc, collection, serverTimestamp
+            doc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
 
@@ -646,12 +685,90 @@
                 renderGutButtons();
                 updateQuantityDisplay();
                 recalculate();
+                // 同一農家の他商品（配送料節約のヒント）
+                loadMoreFromFarmer();
             } catch (err) {
                 console.error(err);
             } finally {
                 loading.classList.remove('show');
             }
         });
+
+        // ── 同一農家の他商品 ──
+        // 5/2: 単体注文ページへの遷移ではなく、カート追加アクションに変更
+        // （配送料節約のため、まとめて発注を促す）
+        async function loadMoreFromFarmer() {
+            try {
+                const q = query(
+                    collection(db, 'fishListings'),
+                    where('farmerId', '==', listingData.farmerId),
+                    where('isActive', '==', true)
+                );
+                const snap = await getDocs(q);
+                const others = snap.docs.filter(d => d.id !== listingId).slice(0, 5);
+                if (others.length === 0) return;
+
+                const wrap = document.getElementById('more-from-farmer');
+                const list = document.getElementById('more-from-farmer-list');
+                list.innerHTML = others.map(d => {
+                    const x = d.data();
+                    const fName = i18next.exists(`fish.${x.fishType}`) ? i18next.t(`fish.${x.fishType}`) : x.fishType;
+                    const shortName = String(fName).trim();
+                    const unit = Math.round(((x.price || 0) + (x.gutPrice || 0)) * (1 + serviceRate));
+                    const minOrder = Number(x.minOrder) || 1;
+                    const img = x.photoUrl
+                        ? `<img src="${x.photoUrl}" alt="" loading="lazy" style="width:100%; height:80px; object-fit:cover; border-radius:8px;">`
+                        : `<div style="width:100%; height:80px; background:#f1f5f9; border-radius:8px; display:flex; align-items:center; justify-content:center;"><span class="material-symbols-outlined" style="font-size:32px; color:#94a3b8;">set_meal</span></div>`;
+                    return `
+                        <div style="flex-shrink:0; width:120px;">
+                            ${img}
+                            <div style="font-size:12px; font-weight:700; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(shortName)}</div>
+                            <div style="font-size:11px; color:#065f46; font-weight:600; margin-bottom:6px;">${unit.toLocaleString()} KHR/kg</div>
+                            <button type="button" class="more-from-farmer__add" data-id="${d.id}" data-min="${minOrder}"
+                                style="width:100%; padding:6px 8px; border:1px solid #0d6e4c; background:#fff; color:#0d6e4c; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:4px; font-family:inherit;">
+                                <span class="material-symbols-outlined" style="font-size:14px;">add_shopping_cart</span>
+                                ${i18next.t('cart.addToCart')}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                wrap.style.display = 'block';
+
+                // ボタン押下 → カート追加（minOrder + 内臓処理あり、ダッシュボードと同じ既定値）
+                list.querySelectorAll('.more-from-farmer__add').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const targetListingId = btn.dataset.id;
+                        const minOrder = Number(btn.dataset.min) || 1;
+                        const uid = window.currentUser?.uid;
+                        if (!uid) return;
+                        btn.disabled = true;
+                        try {
+                            await addToCart(uid, {
+                                listingId: targetListingId,
+                                farmerId: listingData.farmerId,
+                                quantity: minOrder,
+                                gutProcessing: true,
+                            });
+                            // フィードバック：ボタン表示を一時的に「追加済み」に切替
+                            const original = btn.innerHTML;
+                            btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px;">check</span>${i18next.t('cart.addedTitle')}`;
+                            btn.style.background = '#ecfdf5';
+                            setTimeout(() => {
+                                btn.innerHTML = original;
+                                btn.style.background = '#fff';
+                                btn.disabled = false;
+                            }, 1500);
+                        } catch (err) {
+                            console.error('addToCart failed:', err);
+                            alert(err.message || 'Failed');
+                            btn.disabled = false;
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('loadMoreFromFarmer failed:', e.message);
+            }
+        }
 
         // ── 魚情報カード描画 ──
         function escapeHtml(s) {
@@ -748,7 +865,8 @@
 
         // ── 内臓処理ボタン ──
         function renderGutButtons() {
-            const gutPrice = listingData.gutPrice || 0;
+            // サービス料込み単価で表示（一覧・詳細表示と整合）
+            const gutPrice = Math.round((listingData.gutPrice || 0) * (1 + serviceRate));
             document.getElementById('gut-no').textContent =
                 i18next.t('order.gutNo', { price: gutPrice.toLocaleString() });
         }
@@ -866,6 +984,41 @@
             };
         }
 
+        // ── 5/2: カートに追加（注文確定とは別アクション） ──
+        document.getElementById('add-cart-btn').addEventListener('click', async () => {
+            errorMsg.classList.remove('show');
+            if (quantity <= 0) {
+                errorMsg.textContent = i18next.t('order.errorQuantity');
+                errorMsg.classList.add('show');
+                return;
+            }
+            if (listingData.minOrder && quantity < listingData.minOrder) {
+                errorMsg.textContent = i18next.t('order.errorMinOrder', { min: listingData.minOrder });
+                errorMsg.classList.add('show');
+                return;
+            }
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            const cartBtn = document.getElementById('add-cart-btn');
+            cartBtn.disabled = true;
+            try {
+                await addToCart(uid, {
+                    listingId,
+                    farmerId: listingData.farmerId,
+                    quantity,
+                    gutProcessing,
+                });
+                // フィードバック：トーストの代わりに alert（既存パターン踏襲）
+                alert(i18next.t('cart.addedTitle'));
+            } catch (err) {
+                console.error('addToCart failed:', err);
+                errorMsg.textContent = err.message || i18next.t('cart.errorSubmit');
+                errorMsg.classList.add('show');
+            } finally {
+                cartBtn.disabled = false;
+            }
+        });
+
         // ── 注文確定 ──
         document.getElementById('submit-btn').addEventListener('click', async () => {
             errorMsg.classList.remove('show');
@@ -888,6 +1041,33 @@
                 errorMsg.textContent = i18next.t('order.errorStock', { stock: freshStock }) || `Stock insufficient (${freshStock}kg available)`;
                 errorMsg.classList.add('show');
                 return;
+            }
+
+            // 5/1: 注文内容の確認ダイアログ（農家の承認ダイアログと同じ思想）
+            {
+                const calc = window._orderCalc;
+                const fishTypeKey = listingData.fishType || '';
+                const fishName = fishTypeKey
+                    ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey).trim()
+                    : '';
+                const sizePart = listingData.size ? ` (${listingData.size} head/kg)` : '';
+                const gutLabel = gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo');
+                const dateIso = document.getElementById('delivery-date').value;
+                const timeStr = document.getElementById('delivery-time').value;
+                const farmerName = farmerData?.displayName || '';
+
+                const lines = [
+                    i18next.t('order.confirmSubmitTitle'),
+                    '',
+                    `${i18next.t('orders.fishLabel')}: ${fishName}${sizePart}`,
+                    `${i18next.t('orders.quantity')} ${quantity} kg ・${gutLabel}`,
+                    `${i18next.t('orders.deliveryDate')} ${dateIso || ''} ${timeStr || ''}`,
+                    `${i18next.t('order.farmerLabel')}: ${farmerName}`,
+                    `${i18next.t('order.totalLabel')}: ${(calc?.total || 0).toLocaleString()} KHR`,
+                    '',
+                    i18next.t('order.confirmSubmitAsk'),
+                ];
+                if (!confirm(lines.join('\n'))) return;
             }
 
             const submitBtn = document.getElementById('submit-btn');

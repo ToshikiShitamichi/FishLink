@@ -196,7 +196,7 @@
                 let qrImageUrl = editState.qrImageUrl;
                 if (editState.qrFile) {
                     const storageRef = ref(storage, `qr/${uid}/${Date.now()}_${editState.qrFile.name}`);
-                    await uploadBytes(storageRef, editState.qrFile);
+                    await uploadBytes(storageRef, editState.qrFile, { cacheControl: 'public, max-age=31536000' });
                     qrImageUrl = await getDownloadURL(storageRef);
                 } else if (editState.qrRemoved) {
                     qrImageUrl = null;

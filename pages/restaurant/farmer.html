@@ -253,11 +253,23 @@
             return `${y}/${m}/${da}`;
         }
 
-        function starLine(n) {
-            const rounded = Math.round(Number(n) || 0);
-            return Array.from({ length: 5 }, (_, i) =>
-                `<span class="material-symbols-outlined">${i < rounded ? 'star' : 'star_outline'}</span>`
-            ).join('');
+        // 「よい / 残念だった」のバッジ表示（2段階評価）
+        function verdictBadge(verdict) {
+            if (verdict === 'good') {
+                return `<span style="display:inline-flex; align-items:center; gap:4px; background:#ecfdf5; color:#047857; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700;">
+                    <span class="material-symbols-outlined" style="font-size:14px;">thumb_up</span>${i18next.t('review.verdictGood')}</span>`;
+            }
+            if (verdict === 'bad') {
+                return `<span style="display:inline-flex; align-items:center; gap:4px; background:#fef2f2; color:#b91c1c; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700;">
+                    <span class="material-symbols-outlined" style="font-size:14px;">thumb_down</span>${i18next.t('review.verdictBad')}</span>`;
+            }
+            return '';
+        }
+        // 旧データ（rating 1-5）の互換: 4以上なら good 扱い
+        function legacyToVerdict(r) {
+            if (r.verdict) return r.verdict;
+            const avg = Number(r.avgRating || r.overall || 0);
+            return avg >= 4 ? 'good' : avg > 0 ? 'bad' : null;
         }
 
         function fmtKhr(n) { return `${Number(n || 0).toLocaleString()} KHR`; }
@@ -277,15 +289,22 @@
                     document.getElementById('avatar').innerHTML = `<img src="${user.avatarUrl}" alt="avatar">`;
                 }
 
-                const avg = Number(user.avgRating || 0);
+                // 「よい率」表示（0-100%）
+                const goodRate = Number(user.avgRating || 0);
                 const count = Number(user.reviewCount || 0);
-                document.getElementById('rating-value').textContent = avg.toFixed(1);
+                document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
                 document.getElementById('rating-count').textContent = `（${count}${i18next.t('order.reviews')}）`;
 
                 const sub = user.subRatings || {};
-                document.getElementById('sub-overall').textContent = Number(sub.overall || 0).toFixed(1);
-                document.getElementById('sub-quality').textContent = Number(sub.quality || 0).toFixed(1);
-                document.getElementById('sub-time').textContent = Number(sub.time || 0).toFixed(1);
+                const fmtSubRate = (s) => {
+                    if (s && typeof s === 'object' && 'good' in s && 'total' in s && s.total > 0) {
+                        return `${Math.round((s.good / s.total) * 100)}%`;
+                    }
+                    return '—';
+                };
+                document.getElementById('sub-overall').textContent = fmtSubRate(sub.overall);
+                document.getElementById('sub-quality').textContent = fmtSubRate(sub.quality);
+                document.getElementById('sub-time').textContent = fmtSubRate(sub.time);
 
                 // 農家の一言
                 if (user.farmerMessage) {
@@ -312,7 +331,7 @@
                     container.innerHTML = `<div class="listings-grid">${listSnap.docs.map(d => {
                         const data = d.data();
                         const name = i18next.exists(`fish.${data.fishType}`) ? i18next.t(`fish.${data.fishType}`) : (data.fishType || '');
-                        const shortName = name.split('/')[0].trim();
+                        const shortName = name.trim();
                         const img = data.photoUrl
                             ? `<img src="${data.photoUrl}" alt="${shortName}">`
                             : `<div style="display:flex; align-items:center; justify-content:center; height:100%;"><span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span></div>`;
@@ -355,14 +374,13 @@
                         userMap[fid] = s.exists() ? s.data() : {};
                     }));
                     listEl.innerHTML = reviews.map(r => {
-                        const from = userMap[r.fromUid] || {};
+                        const v = legacyToVerdict(r);
                         return `
                             <div class="review-card">
                                 <div class="review-card__head">
-                                    <div class="review-card__name">${from.displayName || ''}</div>
+                                    ${verdictBadge(v)}
                                     <div class="review-card__date">${fmtDate(r.createdAt)}</div>
                                 </div>
-                                <div class="review-card__stars">${starLine(r.avgRating)}</div>
                                 ${r.comment ? `<div class="review-card__comment">${r.comment}</div>` : ''}
                             </div>
                         `;

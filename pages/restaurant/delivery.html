@@ -224,11 +224,11 @@
             const farmer = farmerSnap.data() || {};
             const farmerName = farmer.displayName || '';
 
-            // 電話ボタン：相手の電話番号があれば表示
+            // 電話ボタン：相手の電話番号を保持（表示判定は updatePendingUi 側で status に応じて）
+            const callBtn = document.getElementById('call-btn');
             if (farmer.phone) {
-                const callBtn = document.getElementById('call-btn');
                 callBtn.href = `tel:${farmer.phone}`;
-                callBtn.style.display = 'inline-flex';
+                callBtn.dataset.phone = farmer.phone;
             }
 
             const statusKey = `delivery.${orderData.status}`;
@@ -301,18 +301,29 @@
             loading.classList.remove('show');
         });
 
-        // status に応じて pending バナー／完了バナー／チャット入力の表示を切替
+        // status に応じて pending バナー／完了バナー／チャット入力／電話アイコンの表示を切替
+        // 取引成立前（pending）または不成立（declined）では電話・チャットとも不可。
+        // declined はチャット画面に留まる意味がないため注文一覧へリダイレクト。
         function updatePendingUi(status) {
             const isPending = status === 'pending';
+            const isDeclined = status === 'declined';
             const isCompleted = status === 'completed' || status === 'delivered';
+
+            // 辞退された注文：取引不成立のためチャット画面から退出
+            if (isDeclined) {
+                location.href = '/pages/restaurant/orders.html';
+                return;
+            }
+
             document.getElementById('pending-banner').style.display = isPending ? 'block' : 'none';
             document.getElementById('completed-banner').style.display = isCompleted ? 'block' : 'none';
             document.getElementById('chat-input-wrap').style.display = (isPending || isCompleted) ? 'none' : 'flex';
             document.getElementById('chat-disabled-hint').style.display = isPending ? 'block' : 'none';
-            // 辞退された場合は UI を無効化
-            if (status === 'declined') {
-                document.getElementById('chat-input-wrap').style.display = 'none';
-            }
+
+            // 電話アイコン：承認済み以降のみ表示（pending では非表示）
+            const callBtn = document.getElementById('call-btn');
+            const canCall = !isPending && callBtn.dataset.phone;
+            callBtn.style.display = canCall ? 'inline-flex' : 'none';
         }
 
         // ── 写真プレビュー管理 ──
@@ -357,7 +368,7 @@
             const imageUrls = [];
             for (const file of pendingFiles) {
                 const storageRef = ref(storage, `chat/${orderId}/${Date.now()}_${file.name}`);
-                await uploadBytes(storageRef, file);
+                await uploadBytes(storageRef, file, { cacheControl: 'public, max-age=31536000' });
                 imageUrls.push(await getDownloadURL(storageRef));
             }
 

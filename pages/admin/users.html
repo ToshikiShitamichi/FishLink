@@ -88,6 +88,10 @@
         }
         .user-row:hover { background: #f8fafc; }
         .user-row.active { background: #ecfdf5; }
+        /* チャット未読あり：背景強調 + 左ボーダー */
+        .user-row.has-unread { background: #fef3c7; border-left: 3px solid #f59e0b; }
+        .user-row.has-unread:hover { background: #fde68a; }
+        .user-row.has-unread.active { background: #fed7aa; }
 
         .user-row__role {
             width: 28px; height: 28px; border-radius: 50%;
@@ -102,11 +106,26 @@
         .user-row__main { flex: 1; min-width: 0; }
         .user-row__name { font-size: 14px; font-weight: 600; color: #0f172a; }
         .user-row__sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .user-row__last-msg {
+            font-size: 11px; color: #475569; margin-top: 3px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        .user-row__last-msg.unread { color: #b45309; font-weight: 600; }
+
+        .user-row__right {
+            display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+            flex-shrink: 0;
+        }
 
         .user-row__badge {
             font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 700;
         }
         .user-row__badge.banned { background: #fee2e2; color: #b91c1c; }
+        .user-row__badge.unread {
+            background: #dc2626; color: #fff; min-width: 18px; text-align: center;
+            box-shadow: 0 1px 3px rgba(220,38,38,0.4);
+        }
 
         .users-list-wrap {
             max-height: 65vh; overflow-y: auto;
@@ -253,6 +272,7 @@
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState, logout } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
+        import { initAdminReportBadge } from '/js/admin-report-badge.js';
         import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-functions.js';
         import {
             collection, query, where, orderBy, onSnapshot, getDocs, doc, getDoc,
@@ -266,6 +286,7 @@
         watchAuthState({ requireAuth: true });
         await initI18n();
         initLangSelector();
+        initAdminReportBadge();
 
         document.getElementById('logout-btn').addEventListener('click', (e) => {
             e.preventDefault();
@@ -290,6 +311,21 @@
         let currentSearch = '';
         let selectedUid = null;
         let chatUnsub = null;
+        // 5/1: 各ユーザーの最終チャット情報（uid → { lastMessage, lastMessageAt, hasUnreadFromUser, lastSenderRole }）
+        let chatSummaries = {};
+        let chatSummariesUnsub = null;
+
+        function subscribeChatSummaries() {
+            if (chatSummariesUnsub) chatSummariesUnsub();
+            // adminChats コレクション全体を購読（管理者専用、件数=ユーザー数のため軽量）
+            chatSummariesUnsub = onSnapshot(collection(db, 'adminChats'), (snap) => {
+                chatSummaries = {};
+                snap.forEach(d => { chatSummaries[d.id] = d.data() || {}; });
+                renderUserList();
+            }, (err) => {
+                console.warn('adminChats subscribe failed:', err);
+            });
+        }
 
         async function loadUsers() {
             loading.classList.add('show');
@@ -328,6 +364,18 @@
                 return true;
             });
 
+            // ソート：未読あり → 最終チャット日時（新しい順）→ createdAt（既存）
+            filtered.sort((a, b) => {
+                const sa = chatSummaries[a.uid] || {};
+                const sb = chatSummaries[b.uid] || {};
+                const ua = sa.hasUnreadFromUser ? 1 : 0;
+                const ub = sb.hasUnreadFromUser ? 1 : 0;
+                if (ua !== ub) return ub - ua;  // 未読を上に
+                const ta = sa.lastMessageAt?.toMillis?.() || 0;
+                const tb = sb.lastMessageAt?.toMillis?.() || 0;
+                return tb - ta;  // チャット履歴がある人を上に（新しい順）
+            });
+
             if (filtered.length === 0) {
                 list.innerHTML = `<div class="detail-empty">${i18next.t('admin.users.noResult')}</div>`;
                 return;
@@ -342,16 +390,29 @@
                 const banBadge = u.isBanned
                     ? `<span class="user-row__badge banned">${i18next.t('admin.users.banned')}</span>`
                     : '';
+                const summary = chatSummaries[u.uid] || {};
+                const hasUnread = summary.hasUnreadFromUser === true;
+                const unreadBadge = hasUnread
+                    ? `<span class="user-row__badge unread">!</span>`
+                    : '';
+                // 最終メッセージプレビュー（送信者名でプレフィックス）
+                const lastMsg = summary.lastMessage
+                    ? `<div class="user-row__last-msg${hasUnread ? ' unread' : ''}">${summary.lastSenderRole === 'admin' ? '↑ ' : '↓ '}${escapeHtml(summary.lastMessage.slice(0, 50))}</div>`
+                    : '';
                 return `
-                    <div class="user-row${selectedUid === u.uid ? ' active' : ''}" data-uid="${u.uid}">
+                    <div class="user-row${selectedUid === u.uid ? ' active' : ''}${hasUnread ? ' has-unread' : ''}" data-uid="${u.uid}">
                         <div class="user-row__role ${role}">
                             <span class="material-symbols-outlined" style="font-size:18px;">${roleIcon}</span>
                         </div>
                         <div class="user-row__main">
                             <div class="user-row__name">${escapeHtml(u.displayName || u.loginId || u.uid)}</div>
                             <div class="user-row__sub">@${escapeHtml(u.loginId || '')} ${placeText ? '· ' + escapeHtml(placeText) : ''}</div>
+                            ${lastMsg}
                         </div>
-                        ${banBadge}
+                        <div class="user-row__right">
+                            ${unreadBadge}
+                            ${banBadge}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -437,6 +498,17 @@
                             `}
                 </div>
 
+                <!-- 5/2: このユーザーへのトラブル報告サマリ -->
+                <div id="reports-summary" style="margin-top:16px; padding:12px; border:1px solid #e2e8f0; border-radius:8px; background:#fafafa;">
+                    <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                        <span class="material-symbols-outlined" style="font-size:16px; color:#dc2626;">flag</span>
+                        ${i18next.t('admin.users.reportsAgainst')}
+                    </div>
+                    <div id="reports-summary-body" style="font-size:13px; color:#64748b;">
+                        ${i18next.t('admin.users.chatLoading')}
+                    </div>
+                </div>
+
                 <div class="chat-section">
                     <h3>${i18next.t('admin.users.chatTitle')}</h3>
                     <div class="chat-thread" id="chat-thread">
@@ -453,6 +525,9 @@
             // BAN/解除ボタン
             document.getElementById('ban-btn')?.addEventListener('click', () => doBan(uid, true));
             document.getElementById('unban-btn')?.addEventListener('click', () => doBan(uid, false));
+
+            // 5/2: 報告サマリ（このユーザーが reportedUid の reports）
+            loadReportsSummary(uid);
 
             // チャット購読
             subscribeChat(uid);
@@ -552,6 +627,55 @@
             });
         }
 
+        // 5/2: 対象ユーザーへの報告（reportedUid==uid）件数を表示
+        async function loadReportsSummary(uid) {
+            const body = document.getElementById('reports-summary-body');
+            if (!body) return;
+            try {
+                const snap = await getDocs(query(
+                    collection(db, 'reports'),
+                    where('reportedUid', '==', uid)
+                ));
+                const total = snap.size;
+                const open = snap.docs.filter(d => d.data().status !== 'resolved').length;
+
+                if (total === 0) {
+                    body.textContent = i18next.t('admin.users.reportsNone');
+                    return;
+                }
+
+                // 直近3件をプレビュー（新しい順）
+                const sorted = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0))
+                    .slice(0, 3);
+
+                const list = sorted.map(r => {
+                    const date = r.createdAt?.toDate?.();
+                    const dateStr = date ? `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}` : '';
+                    const statusLabel = r.status === 'resolved' ? i18next.t('admin.reports.statusResolved') : i18next.t('admin.reports.statusOpen');
+                    const statusColor = r.status === 'resolved' ? '#065f46' : '#92400e';
+                    const typeLabel = i18next.t(`admin.reports.type${(r.type || 'other').charAt(0).toUpperCase() + (r.type || 'other').slice(1)}`) || (r.type || '');
+                    return `<a href="/pages/admin/reports.html#report-${r.id}" style="display:block; padding:6px 0; border-top:1px solid #e2e8f0; text-decoration:none; color:#334155;">
+                        <span style="color:${statusColor}; font-weight:700; font-size:11px;">[${statusLabel}]</span>
+                        <span style="margin-left:6px;">${escapeHtml(typeLabel)}</span>
+                        <span style="float:right; color:#94a3b8; font-size:11px;">${dateStr}</span>
+                    </a>`;
+                }).join('');
+
+                body.innerHTML = `
+                    <div style="margin-bottom:6px;">
+                        <strong style="color:#dc2626;">${i18next.t('admin.users.reportsCount', { count: total })}</strong>
+                        ${open > 0 ? `<span style="color:#92400e; margin-left:8px;">(${i18next.t('admin.users.reportsOpenCount', { count: open })})</span>` : ''}
+                    </div>
+                    ${list}
+                `;
+            } catch (e) {
+                console.warn('reports summary failed:', e.message);
+                body.textContent = '';
+            }
+        }
+
         async function markUserMessagesRead(uid) {
             try {
                 const snap = await getDocs(query(
@@ -560,6 +684,10 @@
                     where('isRead', '==', false)
                 ));
                 await Promise.all(snap.docs.map(d => updateDoc(d.ref, { isRead: true })));
+                // 5/1: 親ドキュメントの未読フラグも下ろす（一覧の未読バッジを即時消す）
+                if (chatSummaries[uid]?.hasUnreadFromUser) {
+                    await updateDoc(doc(db, 'adminChats', uid), { hasUnreadFromUser: false });
+                }
             } catch (e) { /* ignore */ }
         }
 
@@ -582,7 +710,10 @@
             if (selectedUid) selectUser(selectedUid);
         });
 
-        waitAdmin(() => loadUsers());
+        waitAdmin(() => {
+            loadUsers();
+            subscribeChatSummaries();
+        });
     </script>
 </body>
 

@@ -136,19 +136,53 @@ async function notifyUser(uid, { type, title, body, url, orderId, lang, msgKey, 
   });
 
   // FCM 送信
+  // 5/2: 複数端末対応 — fcmTokens（配列）+ レガシー fcmToken（単一）両方読んで重複排除
   try {
     const userSnap = await db.doc(`users/${uid}`).get();
-    const token = userSnap.data()?.fcmToken;
-    if (token) {
-      await getMessaging().send({
-        token,
-        data: {
-          title, body: body || '',
-          type: type || 'general',
-          orderId: orderId || '',
-          url: url || '',
-        },
-      });
+    const data = userSnap.data() || {};
+    const tokenSet = new Set();
+    if (Array.isArray(data.fcmTokens)) {
+      for (const t of data.fcmTokens) if (t) tokenSet.add(t);
+    }
+    if (data.fcmToken) tokenSet.add(data.fcmToken);
+    const tokens = Array.from(tokenSet);
+    if (tokens.length === 0) return;
+
+    const messaging = getMessaging();
+    const response = await messaging.sendEachForMulticast({
+      tokens,
+      data: {
+        title, body: body || '',
+        type: type || 'general',
+        orderId: orderId || '',
+        url: url || '',
+      },
+    });
+
+    // 無効トークンを自動クリーンアップ（端末アンインストール・トークンローテーション後など）
+    const invalidTokens = [];
+    response.responses.forEach((r, i) => {
+      if (!r.success && r.error) {
+        const code = r.error.code || '';
+        if (code === 'messaging/registration-token-not-registered'
+          || code === 'messaging/invalid-registration-token'
+          || code === 'messaging/invalid-argument') {
+          invalidTokens.push(tokens[i]);
+        }
+      }
+    });
+    if (invalidTokens.length > 0) {
+      const updates = {
+        fcmTokens: admin.FieldValue.arrayRemove(...invalidTokens),
+      };
+      // レガシー単一フィールドが無効化されていればクリア
+      if (data.fcmToken && invalidTokens.includes(data.fcmToken)) {
+        updates.fcmToken = null;
+      }
+      try {
+        await db.doc(`users/${uid}`).update(updates);
+        console.log('Removed invalid FCM tokens:', uid, invalidTokens.length);
+      } catch (e) { /* ignore — クリーンアップ失敗は致命的でない */ }
     }
   } catch (e) {
     console.error('notifyUser FCM failed:', uid, type, e);
@@ -169,9 +203,9 @@ const MESSAGES = {
     km: { title: "{{farmer}} យល់ព្រមបញ្ជាទិញ", body: "{{fish}} {{qty}}kg\nដឹកជញ្ជូន: {{date}} {{time}}" },
   },
   declined: {
-    ja: { title: "{{farmer}} が注文を辞退", body: "{{fish}} {{qty}}kg" },
-    en: { title: "{{farmer}} declined your order", body: "{{fish}} {{qty}}kg" },
-    km: { title: "{{farmer}} បានបដិសេធបញ្ជាទិញ", body: "{{fish}} {{qty}}kg" },
+    ja: { title: "注文が辞退されました", body: "{{farmer}} {{fish}} {{qty}}kg\n別の魚を選んで再注文してください" },
+    en: { title: "Your order was declined", body: "{{farmer}} {{fish}} {{qty}}kg\nPlease choose another fish and order again" },
+    km: { title: "ការបញ្ជាទិញត្រូវបានបដិសេធ", body: "{{farmer}} {{fish}} {{qty}}kg\nសូមជ្រើសរើសត្រីផ្សេងទៀតដើម្បីបញ្ជាទិញម្ដងទៀត" },
   },
   expiredDeclinedFarmer: {
     ja: { title: "{{restaurant}} の注文が期限切れ辞退", body: "{{fish}} {{qty}}kg" },
@@ -179,9 +213,9 @@ const MESSAGES = {
     km: { title: "បញ្ជាទិញពី {{restaurant}} ហួសកំណត់ពេល", body: "{{fish}} {{qty}}kg" },
   },
   expiredDeclinedRestaurant: {
-    ja: { title: "{{farmer}} が期限切れで自動辞退", body: "{{fish}} {{qty}}kg" },
-    en: { title: "{{farmer}} auto-declined (expired)", body: "{{fish}} {{qty}}kg" },
-    km: { title: "{{farmer}} បដិសេធដោយហួសកំណត់ពេល", body: "{{fish}} {{qty}}kg" },
+    ja: { title: "承認期限切れで注文が辞退されました", body: "{{farmer}} {{fish}} {{qty}}kg\n別の魚を選んで再注文してください" },
+    en: { title: "Your order was auto-declined (expired)", body: "{{farmer}} {{fish}} {{qty}}kg\nPlease choose another fish and order again" },
+    km: { title: "ការបញ្ជាទិញត្រូវបានបដិសេធដោយស្វ័យប្រវត្តិ (ហួសកំណត់ពេល)", body: "{{farmer}} {{fish}} {{qty}}kg\nសូមជ្រើសរើសត្រីផ្សេងទៀតដើម្បីបញ្ជាទិញម្ដងទៀត" },
   },
   statusUpdate: {
     ja: { title: "{{farmer}} 注文ステータス更新", body: "ステータス: {{status}}" },
@@ -399,6 +433,10 @@ exports.onOrderUpdated = onDocumentUpdated(
       //          ②paymentDeadlineExpired（期限超過後・「期限が過ぎました」）
       if (after.status === "completed") {
         await clearTodo(after.farmerId, 'farmer_complete_delivery', orderId);
+        // 5/2: 配送完了後はチャット入力が UI 上隠れるため、
+        // 「メッセージが届いています」reply todo は両者ともクリア（残り続けるバグ修正）
+        await clearTodo(after.farmerId, 'farmer_reply', orderId);
+        await clearTodo(after.restaurantId, 'rest_reply', orderId);
         await createTodo(after.restaurantId, 'rest_pay', orderId);
 
         // paymentDeadline = 配送完了時刻 + 10分（既にセット済みならスキップ）
@@ -452,9 +490,16 @@ exports.onOrderUpdated = onDocumentUpdated(
           await clearTodo(auid, 'admin_remit', orderId);
           await createTodo(auid, 'admin_done', orderId);
         }
-        // 送金完了時に両者にレビューtodo作成
-        await createTodo(after.farmerId, 'farmer_review', orderId);
-        await createTodo(after.restaurantId, 'rest_review', orderId);
+        // 送金完了時に両者にレビューtodo作成（既にレビュー済みの場合はスキップ）
+        // 5/1: 取引完了前にレビュー投稿済みのケースで todo が残らないよう対応
+        const farmerReviewSnap = await db.doc(`orders/${orderId}/reviews/farmer`).get();
+        if (!farmerReviewSnap.exists) {
+          await createTodo(after.farmerId, 'farmer_review', orderId);
+        }
+        const restReviewSnap = await db.doc(`orders/${orderId}/reviews/restaurant`).get();
+        if (!restReviewSnap.exists) {
+          await createTodo(after.restaurantId, 'rest_review', orderId);
+        }
 
         // 4/28: 農家へ「ご入金がありました」FCM通知（既存ロジックでは抜けていた）
         try {
@@ -588,6 +633,12 @@ exports.onMessageCreated = onDocumentCreated(
   async (event) => {
     const msg = event.data.data();
     const orderId = event.params.orderId;
+
+    // 5/2: システム自動メッセージ（type: 'status'）は通知・todo化対象外
+    // 例：配送完了時の "配送完了しました"。チャット履歴上の表示のみ。
+    // status 変更による FCM は別経路（onOrderUpdated → notifyUser）で送られる
+    if (msg.type === 'status') return;
+
     const orderSnap = await db.doc(`orders/${orderId}`).get();
     if (!orderSnap.exists) return;
     const order = orderSnap.data();
@@ -749,6 +800,23 @@ exports.sweepOrphanTodosHourly = onSchedule(
   }
 );
 
+// 5/2: 即時クリーンアップ用（管理者専用 callable）
+// 1時間スケジュールを待たずに今すぐ古い todo を掃除したい時に呼ぶ
+exports.runSweepOrphanTodos = onCall(
+  { region: "asia-southeast1", invoker: "public", cors: true },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required");
+    }
+    const userSnap = await db.doc(`users/${request.auth.uid}`).get();
+    if (userSnap.data()?.role !== "admin") {
+      throw new HttpsError("permission-denied", "Admin role required");
+    }
+    await sweepOrphanTodos();
+    return { ok: true };
+  }
+);
+
 // todoのtype → 対象orderが取りうるべき order.status のセット
 // （下記以外の status の場合、その todo は孤立として扱って閉じる）
 // 4/28: delivered ステータスは廃止し completed に統合済み
@@ -760,8 +828,9 @@ const TODO_VALID_STATUSES = {
   rest_pay: ['completed'],
   farmer_review: ['completed'],
   rest_review: ['completed'],
-  farmer_reply: ['pending', 'approved', 'preparing', 'delivering', 'completed'],
-  rest_reply: ['pending', 'approved', 'preparing', 'delivering', 'completed'],
+  // 5/2: completed ではチャット入力が UI 上隠れるため reply todo は無効
+  farmer_reply: ['pending', 'approved', 'preparing', 'delivering'],
+  rest_reply: ['pending', 'approved', 'preparing', 'delivering'],
 };
 
 async function sweepOrphanTodos() {
@@ -800,11 +869,13 @@ async function sweepOrphanTodos() {
       const todo = todoDoc.data();
       if (!todo.type) continue;
       const validStatuses = TODO_VALID_STATUSES[todo.type];
-      if (!validStatuses) continue;
 
       let shouldClear = false;
 
-      if (!todo.orderId) {
+      // 5/2: TODO_VALID_STATUSES に無い type（廃止された rest_receive など）は孤立扱いで削除
+      if (!validStatuses) {
+        shouldClear = true;
+      } else if (!todo.orderId) {
         shouldClear = true;
       } else {
         const orderSnap = await db.doc(`orders/${todo.orderId}`).get();
@@ -836,7 +907,10 @@ async function sweepOrphanTodos() {
   if (count > 0) console.log('Orphan todos swept:', count);
 }
 
-// ── レビュー作成時：対象ユーザーの avgRating / reviewCount / サブ評価 を更新 ──
+// ── レビュー作成時：対象ユーザーの「よい率」(0-100) / reviewCount / サブ評価 を更新 ──
+// 4/29: 5段階評価から2段階評価（good/bad）に変更。
+//   avgRating: そのまま流用するが「よい率（0-100）」の意味に変更
+//   subRatings: 各項目の good 数 / total 数を保持
 exports.onReviewCreated = onDocumentCreated(
   {
     document: "orders/{orderId}/reviews/{reviewId}",
@@ -847,8 +921,7 @@ exports.onReviewCreated = onDocumentCreated(
     const review = event.data.data();
     const toUid = review.toUid;
     const fromRole = review.fromRole; // 'restaurant' → 農家を評価 / 'farmer' → レストランを評価
-    const newRating = Number(review.avgRating || 0);
-    if (!toUid || !newRating) return;
+    if (!toUid || !review.verdict) return;
 
     const userRef = db.doc(`users/${toUid}`);
 
@@ -856,42 +929,43 @@ exports.onReviewCreated = onDocumentCreated(
       const snap = await tx.get(userRef);
       const prev = snap.data() || {};
       const prevCount = Number(prev.reviewCount || 0);
-      const prevAvg = Number(prev.avgRating || 0);
-      const newCount = prevCount + 1;
-      const newAvg = (prevAvg * prevCount + newRating) / newCount;
+      // 既存の avgRating は new 集計では「good 数」として再計算（既存値は捨て、count から逆算）
+      // ※ 新スキーマ前提: subRatings.overall = { good: n, total: n }
+      const prevSubRatings = prev.subRatings || {};
+      const prevOverallGood = Number(prevSubRatings?.overall?.good || 0);
 
-      // サブ評価の累積平均
-      const update = { reviewCount: newCount, avgRating: newAvg };
-      if (fromRole === "restaurant") {
-        // レストランが農家を評価 → 農家の subRatings
-        const sub = prev.subRatings || { overall: 0, quality: 0, time: 0, count: 0 };
-        const c = sub.count || 0;
-        update.subRatings = {
-          overall: ((sub.overall || 0) * c + Number(review.overall || 0)) / (c + 1),
-          quality: ((sub.quality || 0) * c + Number(review.quality || 0)) / (c + 1),
-          time: ((sub.time || 0) * c + Number(review.time || 0)) / (c + 1),
-          count: c + 1,
-        };
-      } else if (fromRole === "farmer") {
-        // 農家がレストランを評価 → レストランの subRatings
-        const sub = prev.subRatings || { overall: 0, communication: 0, reception: 0, count: 0 };
-        const c = sub.count || 0;
-        update.subRatings = {
-          overall: ((sub.overall || 0) * c + Number(review.overall || 0)) / (c + 1),
-          communication: ((sub.communication || 0) * c + Number(review.communication || 0)) / (c + 1),
-          reception: ((sub.reception || 0) * c + Number(review.reception || 0)) / (c + 1),
-          count: c + 1,
+      const isGoodOverall = review.verdict === 'good';
+      const newOverallGood = prevOverallGood + (isGoodOverall ? 1 : 0);
+      const newCount = prevCount + 1;
+      const newGoodRate = Math.round((newOverallGood / newCount) * 100);
+
+      // 各サブ項目の集計
+      const subKeys = fromRole === "restaurant"
+        ? ["quality", "time"]
+        : ["communication", "reception"];
+      const newSub = { overall: { good: newOverallGood, total: newCount } };
+      for (const key of subKeys) {
+        const prevGood = Number(prevSubRatings?.[key]?.good || 0);
+        const prevTotal = Number(prevSubRatings?.[key]?.total || 0);
+        const v = review.subVerdicts?.[key];
+        newSub[key] = {
+          good: prevGood + (v === 'good' ? 1 : 0),
+          total: prevTotal + 1,
         };
       }
 
-      tx.update(userRef, update);
+      tx.update(userRef, {
+        reviewCount: newCount,
+        avgRating: newGoodRate, // 0-100 の「よい率」
+        subRatings: newSub,
+      });
     });
 
     // レビュー投稿者のレビューtodo解消
     const reviewerTodoType = fromRole === 'farmer' ? 'farmer_review' : 'rest_review';
     await clearTodo(review.fromUid, reviewerTodoType, event.params.orderId);
 
-    console.log("Review aggregated for user:", toUid, "avg:", newRating);
+    console.log("Review aggregated for user:", toUid, "verdict:", review.verdict);
   }
 );
 
@@ -1178,6 +1252,174 @@ exports.ocrImage = onCall(
   }
 );
 
+// ── CAA価格表抽出（Gemini 2.5 Flash・管理者専用 callable） ─────────────
+// 画像から表構造を理解してJSONで返す。空セル(†)は entries に含めない。
+// 入力: { images: [{ mimeType: string, data: base64string }, ...] }
+// 出力: { entries: [{ province, fishType, rangeMin, rangeMax, sizeMin, sizeMax }, ...] }
+exports.extractCaaPrices = onCall(
+  {
+    region: "asia-southeast1",
+    memory: "512MiB",
+    timeoutSeconds: 180,
+    invoker: "public",
+    cors: true,
+    secrets: ["GEMINI_API_KEY"],
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required");
+    }
+    const userSnap = await db.doc(`users/${request.auth.uid}`).get();
+    if (userSnap.data()?.role !== "admin") {
+      throw new HttpsError("permission-denied", "Admin role required");
+    }
+
+    const { images } = request.data || {};
+    if (!Array.isArray(images) || images.length === 0) {
+      throw new HttpsError("invalid-argument", "images array is required");
+    }
+
+    const PROVINCES = [
+      "Kandal", "Takeo", "Prey Veng", "Kg. Cham", "Kg. Thom",
+      "Siemreap", "Battambang", "Pursat", "Kg. Chhnang", "BMC",
+    ];
+    const FISH_TYPES = [
+      "striped_snakehead", "walking_catfish", "red_tilapia", "nile_tilapia",
+      "silver_barb", "spot_pangasius", "pangasius", "giant_snakehead",
+      "climbing_perch", "frog",
+    ];
+
+    try {
+      const { GoogleGenAI, Type } = await import("@google/genai");
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new HttpsError("failed-precondition", "GEMINI_API_KEY secret is not configured");
+      }
+      const ai = new GoogleGenAI({ apiKey });
+
+      const schema = {
+        type: Type.OBJECT,
+        properties: {
+          entries: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                province: { type: Type.STRING, enum: PROVINCES },
+                fishType: { type: Type.STRING, enum: FISH_TYPES },
+                rangeMin: { type: Type.NUMBER },
+                rangeMax: { type: Type.NUMBER },
+                sizeMin: { type: Type.NUMBER },
+                sizeMax: { type: Type.NUMBER },
+              },
+              required: ["province", "fishType", "rangeMin", "rangeMax", "sizeMin", "sizeMax"],
+              propertyOrdering: ["province", "fishType", "rangeMin", "rangeMax", "sizeMin", "sizeMax"],
+            },
+          },
+        },
+        required: ["entries"],
+      };
+
+      const prompt = [
+        "Extract the CAA wholesale fish price table from the provided image(s).",
+        "",
+        "TABLE STRUCTURE:",
+        "- Each row is a Cambodian province; each column is a fish species.",
+        "- The table has EXACTLY 10 fish-type columns per province row, in fixed left-to-right order.",
+        "- Each non-empty cell contains a price range (upper line, KHR/kg) and a size range (lower line, kg).",
+        "",
+        "CELL INDEPENDENCE (critical — most common error to avoid):",
+        "- Each (province, fishType) cell is independent. Read the digits actually shown inside that exact cell.",
+        "- Even if two ADJACENT cells contain identical values (e.g., red_tilapia and nile_tilapia both showing '6000-6500/0.45-0.8'), you MUST report BOTH cells separately. Do NOT skip or merge cells based on content similarity.",
+        "- Do NOT shift values between columns. Process each fish-type column position independently.",
+        "",
+        "EMPTY CELL HANDLING (critical):",
+        "- A cell is EMPTY if it contains only †, ✝, 'f', a dagger-like mark, or any single placeholder character with NO visible digits.",
+        "- When a cell is empty, DO NOT generate an entry for it. Omit it from the output entirely.",
+        "- NEVER copy values from adjacent cells into an empty cell.",
+        "",
+        "Province name mapping (use exactly these canonical English names):",
+        "- កណ្តាល → 'Kandal'",
+        "- តាកែវ → 'Takeo'",
+        "- ព្រៃវែង → 'Prey Veng'",
+        "- កំពង់ចាម → 'Kg. Cham'",
+        "- កំពង់ធំ → 'Kg. Thom'",
+        "- សៀមរាប → 'Siemreap'",
+        "- បាត់ដំបង → 'Battambang'",
+        "- ពោធិ៍សាត់ → 'Pursat'",
+        "- កំពង់ឆ្នាំង → 'Kg. Chhnang'",
+        "- បន្ទាយមានជ័យ → 'BMC'",
+        "",
+        "Fish type mapping (columns left-to-right):",
+        "1. ត្រីរ៉ស់ Striped snakehead → 'striped_snakehead'",
+        "2. អណ្ដែង Walking catfish → 'walking_catfish'",
+        "3. ទីឡាព្យាក្រហម Red tilapia → 'red_tilapia'",
+        "4. ទីឡាព្យាខៀវ Nile tilapia → 'nile_tilapia'",
+        "5. ឆ្ពិន Silver barb → 'silver_barb'",
+        "6. ត្រីពោ Spot pangasius → 'spot_pangasius'",
+        "7. ត្រីប្រា Pangasius → 'pangasius'",
+        "8. ត្រីឆ្តោ Giant snakehead → 'giant_snakehead'",
+        "9. ត្រីក្រាញ់ Climbing perch → 'climbing_perch'",
+        "10. កង្កែប Frog → 'frog'",
+        "",
+        "NUMERIC PRECISION (critical):",
+        "- Parse numeric values EXACTLY as written. Preserve every digit, including trailing decimal digits.",
+        "- '0.45' is 0.45 — NOT 0.5 or 0.4. Two-decimal values must keep both decimals.",
+        "- '0.17' is 0.17 — NOT 0.2.   '0.25' is 0.25 — NOT 0.3.   '0.15' is 0.15 — NOT 0.2.",
+        "- Common two-decimal values in this table: 0.15, 0.17, 0.20, 0.25, 0.30, 0.45.",
+        "- Multi-digit integers: preserve all digits exactly. '4300' stays 4300 (NOT 4100). '90000' stays 90000 (NOT 9000).",
+        "- Do not introduce commas, currency symbols, or thousand separators.",
+        "",
+        "TYPO PRESERVATION (critical):",
+        "- Do NOT 'fix' or normalize values that look like typos. Return what is printed.",
+        "- Example: if a cell shows '8500-90000' (5-digit second number), return rangeMax=90000. Do NOT 'correct' it to 9000.",
+        "- Example: if a unit is printed as 'g' instead of 'kg', still parse the size number as-is (the size context is kg).",
+        "",
+        "OUTPUT:",
+        "- Output every (province, fishType) intersection where all four numeric values are clearly visible. Aim for completeness — do not skip cells that are filled.",
+        "- Multiple images may show different province rows of the same table — extract rows from all images.",
+      ].join("\n");
+
+      const parts = [];
+      for (const image of images) {
+        if (!image || typeof image.data !== "string") continue;
+        parts.push({
+          inlineData: {
+            mimeType: image.mimeType || "image/jpeg",
+            data: image.data,
+          },
+        });
+      }
+      parts.push({ text: prompt });
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-pro",
+        contents: [{ role: "user", parts }],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+          temperature: 0,
+        },
+      });
+
+      const text = response.text || "";
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch (e) {
+        console.error("Gemini returned non-JSON:", text);
+        throw new HttpsError("internal", "Gemini returned invalid JSON");
+      }
+
+      return { entries: Array.isArray(parsed.entries) ? parsed.entries : [] };
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      console.error("Gemini extract failed:", err);
+      throw new HttpsError("internal", err.message || "Gemini extraction failed");
+    }
+  }
+);
+
 // ── ユーザー BAN / 解除（管理者専用 callable） ───────────────────
 // クライアントから {uid, banned, reason} を受け取り
 //   1) users/{uid} に isBanned/bannedAt/bannedReason を書き込み
@@ -1265,6 +1507,22 @@ exports.onAdminChatMessage = onDocumentCreated(
     const { uid } = event.params;
     const senderRole = data.senderRole;
     const text = data.text || "";
+
+    // 親ドキュメントに最新メッセージのサマリを保存
+    // 5/1: 管理者ユーザー一覧で未読バッジ・最終メッセージを表示するため
+    const admin = require("firebase-admin/firestore");
+    try {
+      await db.doc(`adminChats/${uid}`).set({
+        lastMessage: text.slice(0, 200),
+        lastMessageAt: admin.FieldValue.serverTimestamp(),
+        lastSenderRole: senderRole,
+        // ユーザー発言時のみ未読フラグを立てる。管理者が返信した時点で false に
+        hasUnreadFromUser: senderRole === "user",
+        updatedAt: admin.FieldValue.serverTimestamp(),
+      }, { merge: true });
+    } catch (e) {
+      console.error("Failed to update adminChats parent doc:", uid, e);
+    }
 
     if (senderRole === "admin") {
       const userSnap = await db.doc(`users/${uid}`).get();

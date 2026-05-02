@@ -727,14 +727,25 @@
                     </div>
                     <div class="order-card__details">
                     <div class="order-card__img">${imgHtml}</div>
-                    <div class="order-card__fish-label">${fishName}（${size} head/kg）${multiItemBadge}</div>
+                    <div class="order-card__fish-label">${fishName}（${size} head/kg）${itemCount > 1 ? `<span style="display:inline-block; margin-left:8px; padding:2px 10px; background:#fef3c7; color:#92400e; border-radius:10px; font-size:11px; font-weight:700;">${i18next.t('orders.totalItems', { count: itemCount })}</span>` : ''}</div>
                     <div style="text-align:center; font-size:12px; color:#94a3b8; padding:0 16px 8px; font-family:monospace;">${getOrderNumber(order)}</div>
                     <div class="order-card__section">
                         ${statusBadge}
                         ${deadlineHtml}
-                        <div class="order-card__row">${i18next.t('orders.unitPrice')} ${price.toLocaleString()} KHR/kg</div>
-                        <div class="order-card__row">${i18next.t('orders.quantity')} ${order.quantity} kg</div>
-                        <div class="order-card__row">${i18next.t('orders.gutProcessing')} ${order.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')}</div>
+                        ${(Array.isArray(order.items) && order.items.length > 1) ? `
+                            <div class="order-card__row" style="font-weight:700; margin-bottom:4px;">${i18next.t('orders.itemsList', { count: order.items.length })}</div>
+                            ${order.items.map((it, i) => {
+                                const itType = it.snapFishType || '';
+                                const itName = itType ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType) : '';
+                                const itShort = itName.trim();
+                                const gutLabel = it.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo');
+                                return `<div class="order-card__row" style="padding-left:10px; line-height:1.6;">・${itShort} ${it.snapSize ? '(' + it.snapSize + ' head/kg)' : ''} ${it.quantity}kg ・${gutLabel}</div>`;
+                            }).join('')}
+                        ` : `
+                            <div class="order-card__row">${i18next.t('orders.unitPrice')} ${price.toLocaleString()} KHR/kg</div>
+                            <div class="order-card__row">${i18next.t('orders.quantity')} ${order.quantity} kg</div>
+                            <div class="order-card__row">${i18next.t('orders.gutProcessing')} ${order.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')}</div>
+                        `}
                         <div class="order-card__row">${i18next.t('orders.deliveryDate')} ${order.deliveryDate}</div>
                         <div class="order-card__row">${i18next.t('orders.deliveryTime')} ${order.deliveryTime}</div>
                         <div class="order-card__divider"></div>
@@ -1027,26 +1038,41 @@
                     if (action === 'decline') return; // decline-panelのボタンで処理
 
                     // 確認ダイアログ：注文内容（魚種・数量・配送日時・金額・レストラン名）を表示
+                    // 複数アイテム注文の場合は各アイテムの明細（魚種・サイズ・数量・内臓処理）を全件表示
                     const order = allOrders.find(o => o.id === orderId);
                     if (order) {
-                        const fishTypeKey = order.snapFishType || order.listingData?.fishType || '';
-                        const fishName = fishTypeKey
-                            ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey)
-                            : '';
-                        const shortName = fishName.split('/')[0].trim();
-                        const itemCount = Array.isArray(order.items) ? order.items.length : 1;
-                        const itemSuffix = itemCount > 1 ? ` ${i18next.t('orders.otherItemsAddon', { n: itemCount - 1 })}` : '';
                         const restName = order.restData?.displayName || '';
                         const fishTotal = order.fishPrice || 0;
                         const receiveAmount = order.farmerReceiveAmount != null
                             ? order.farmerReceiveAmount
                             : (fishTotal - (order.farmerCommission || 0) + (order.deliveryFee || 0));
 
+                        const isMulti = Array.isArray(order.items) && order.items.length > 1;
+                        const fishLines = [];
+                        if (isMulti) {
+                            fishLines.push(`${i18next.t('orders.itemsList', { count: order.items.length })}:`);
+                            order.items.forEach(it => {
+                                const itType = it.snapFishType || '';
+                                const itName = itType
+                                    ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim()
+                                    : '';
+                                const sizePart = it.snapSize ? ` (${it.snapSize} head/kg)` : '';
+                                const gutLabel = it.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo');
+                                fishLines.push(`  ・${itName}${sizePart} ${it.quantity}kg ・${gutLabel}`);
+                            });
+                        } else {
+                            const fishTypeKey = order.snapFishType || order.listingData?.fishType || '';
+                            const fishName = fishTypeKey
+                                ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey).trim()
+                                : '';
+                            fishLines.push(`${i18next.t('orders.fishLabel')}: ${fishName}`);
+                            fishLines.push(`${i18next.t('orders.quantity')} ${order.quantity || 0} kg${order.gutProcessing ? ` (${i18next.t('orders.gutYes')})` : ''}`);
+                        }
+
                         const lines = [
                             i18next.t('orders.confirmApproveTitle'),
                             '',
-                            `${i18next.t('orders.fishLabel')}: ${shortName}${itemSuffix}`,
-                            `${i18next.t('orders.quantity')} ${order.quantity || 0} kg${order.gutProcessing ? ` (${i18next.t('orders.gutYes')})` : ''}`,
+                            ...fishLines,
                             `${i18next.t('orders.deliveryDate')} ${order.deliveryDate || ''} ${order.deliveryTime || ''}`,
                             `${i18next.t('orders.restaurantLabel')}: ${restName}`,
                             `${i18next.t('orders.receiveAmount')} ${receiveAmount.toLocaleString()} KHR`,

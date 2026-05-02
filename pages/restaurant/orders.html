@@ -129,6 +129,12 @@
             background: #fef2f2; color: #b91c1c;
             border: 1px solid #fecaca;
         }
+        /* 5/1: レビュー済み状態（無効化表示） */
+        .order-action--reviewed {
+            background: #f1f5f9; color: #64748b;
+            border: 1px solid #e2e8f0;
+            cursor: default; pointer-events: none;
+        }
         .order-action .material-symbols-outlined { font-size: 14px; }
 
         /* カード内のメイン CTA（配送状況／支払いへ） */
@@ -236,6 +242,16 @@
             else setTimeout(() => waitForUserData(cb), 300);
         }
 
+        // 5/1: カンボジア時間（UTC+7）の YYYY-MM-DD を返す
+        function todayIsoKHM() {
+            const now = new Date();
+            const khm = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+            const yy = khm.getUTCFullYear();
+            const mm = String(khm.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(khm.getUTCDate()).padStart(2, '0');
+            return `${yy}-${mm}-${dd}`;
+        }
+
         // お支払い待ちカード（強調版）：金額・支払期限を目立たせる
         function renderPayNowItem(d, order, fishName) {
             const orderNo = getOrderNumber({ id: d.id, ...order });
@@ -279,7 +295,7 @@
             `;
         }
 
-        function renderOrderItem(d, order, fishName) {
+        function renderOrderItem(d, order, fishName, hasReview = false) {
             // 4/28: delivered ステータス廃止。旧データ保護のため delivered は completed として表示
             const effectiveStatus = order.status === 'delivered' ? 'completed' : order.status;
             const statusKey = `delivery.${effectiveStatus}`;
@@ -308,12 +324,19 @@
                 ? ` <span style="display:inline-block; margin-left:4px; padding:1px 8px; background:#fef3c7; color:#92400e; border-radius:10px; font-size:10px; font-weight:700;">+${itemCount - 1} ${i18next.t('orders.otherItems')}</span>`
                 : '';
 
-            const reviewActionsHtml = showReviewLink ? `
-                <div class="order-actions">
-                    <a class="order-action order-action--review" href="/pages/restaurant/review.html?id=${d.id}">
+            // 5/1: レビュー済みなら無効化表示
+            const reviewBtn = hasReview
+                ? `<span class="order-action order-action--reviewed">
+                        <span class="material-symbols-outlined" style="font-size:14px;">check</span>
+                        ${i18next.t('review.reviewed')}
+                    </span>`
+                : `<a class="order-action order-action--review" href="/pages/restaurant/review.html?id=${d.id}">
                         <span class="material-symbols-outlined" style="font-size:14px;">star</span>
                         ${i18next.t('review.submit')}
-                    </a>
+                    </a>`;
+            const reviewActionsHtml = showReviewLink ? `
+                <div class="order-actions">
+                    ${reviewBtn}
                     <a class="order-action order-action--report" href="/pages/restaurant/report.html?id=${d.id}">
                         <span class="material-symbols-outlined" style="font-size:14px;">flag</span>
                         ${i18next.t('review.reportIssue')}
@@ -321,8 +344,9 @@
                 </div>
             ` : '';
 
-            // カード内のメイン CTA（配送状況へ／支払いへ）
+            // カード内のメイン CTA（配送状況へ／支払いへ／辞退時は再注文へ）
             let ctaHtml = '';
+            const isDeclined = order.status === 'declined';
             if (canTrack || isPending) {
                 const ctaIcon = isPending ? 'hourglass_top' : 'local_shipping';
                 ctaHtml = `
@@ -336,6 +360,16 @@
                     <a class="order-cta ${isPaid ? 'order-cta--paid' : ''}" href="/pages/restaurant/payment.html?id=${d.id}">
                         <span class="material-symbols-outlined">${isPaid ? 'receipt_long' : 'payments'}</span>
                         ${actionLabel}
+                    </a>`;
+            } else if (isDeclined) {
+                // 辞退時：再注文へ誘導
+                ctaHtml = `
+                    <div style="margin-top:10px; padding:10px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:10px; color:#991b1b; font-size:13px; line-height:1.5;">
+                        ${i18next.t('orders.declinedNotice')}
+                    </div>
+                    <a class="order-cta" style="background:#0d6e4c;" href="/pages/restaurant/dashboard.html">
+                        <span class="material-symbols-outlined">refresh</span>
+                        ${i18next.t('orders.reorderCta')}
                     </a>`;
             }
 
@@ -416,8 +450,19 @@
                     let fishName = fishTypeKey
                         ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey)
                         : '';
-                    return { d, order, fishName };
+                    return { d, order, fishName, hasReview: false };
                 });
+
+                // 5/1: レビュー有無を一括取得（approved以降の注文のみ・並列）
+                const reviewableNew = newOrders.filter(o =>
+                    ['approved', 'preparing', 'delivering', 'completed', 'delivered'].includes(o.order.status)
+                );
+                await Promise.all(reviewableNew.map(async o => {
+                    try {
+                        const rs = await getDoc(doc(db, 'orders', o.d.id, 'reviews', 'restaurant'));
+                        o.hasReview = rs.exists();
+                    } catch (e) { /* ignore */ }
+                }));
 
                 // 既存と結合（重複除去）
                 const seen = new Set(allOrdersCache.map(o => o.d.id));
@@ -447,6 +492,12 @@
                 const inProgress = allOrders
                     .filter(o => isInProgress(o.order.status))
                     .sort(sortByDelivery);
+                // 5/1: 対応中を「本日の納品」「明日以降の納品」に分割（農家側と同じ仕様）
+                const today = todayIsoKHM();
+                const inProgressToday = inProgress
+                    .filter(o => (o.order.deliveryDateIso || '') && (o.order.deliveryDateIso || '') <= today);
+                const inProgressFuture = inProgress
+                    .filter(o => (o.order.deliveryDateIso || '') > today || !o.order.deliveryDateIso);
                 const completed = allOrders.filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus === 'paid');
                 const declined = allOrders.filter(o => o.order.status === 'declined');
 
@@ -460,10 +511,16 @@
                     });
                 }
 
-                // 中グループ：対応中（pending + approved + preparing + delivering、納品日昇順）
-                if (inProgress.length > 0) {
-                    listEl.innerHTML += `<div class="section-label">${i18next.t('orders.activeSection', { count: inProgress.length })}</div>`;
-                    inProgress.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName); });
+                // 中グループ①：対応中・本日の納品（納品日時の昇順）
+                if (inProgressToday.length > 0) {
+                    listEl.innerHTML += `<div class="section-label">${i18next.t('orders.todaySection', { count: inProgressToday.length })}</div>`;
+                    inProgressToday.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName, o.hasReview); });
+                }
+
+                // 中グループ②：対応中・明日以降の納品
+                if (inProgressFuture.length > 0) {
+                    listEl.innerHTML += `<div class="section-label">${i18next.t('orders.futureSection', { count: inProgressFuture.length })}</div>`;
+                    inProgressFuture.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName, o.hasReview); });
                 }
 
                 // トグル：完了済み
@@ -471,7 +528,7 @@
                     listEl.innerHTML += `
                         <div class="accordion-header" id="acc-completed">${i18next.t('orders.approvedSectionClosed', { count: completed.length })}</div>
                         <div class="accordion-body" id="acc-completed-body">
-                            ${completed.map(o => renderOrderItem(o.d, o.order, o.fishName)).join('')}
+                            ${completed.map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('')}
                         </div>`;
                 }
 
@@ -480,7 +537,7 @@
                     listEl.innerHTML += `
                         <div class="accordion-header" id="acc-declined">${i18next.t('orders.declinedSectionClosed', { count: declined.length })}</div>
                         <div class="accordion-body" id="acc-declined-body">
-                            ${declined.map(o => renderOrderItem(o.d, o.order, o.fishName)).join('')}
+                            ${declined.map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('')}
                         </div>`;
                 }
 

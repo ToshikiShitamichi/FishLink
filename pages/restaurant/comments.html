@@ -215,7 +215,7 @@
 
                 const fishKey = listing.fishType || '';
                 const fishName = i18next.exists(`fish.${fishKey}`) ? i18next.t(`fish.${fishKey}`) : fishKey;
-                const shortName = fishName ? fishName.split('/')[0].trim() : '';
+                const shortName = fishName ? fishName.trim() : '';
                 document.getElementById('fish-name').textContent = `${shortName}${listing.size ? `（${listing.size} head/kg）` : ''}`;
 
                 const farmerSnap = await getDoc(doc(db, 'users', listing.farmerId));

@@ -10,7 +10,8 @@
       "Bash(sed -i '655,729d' c:/work/FishLink/CLAUDE.md)",
       "Bash(sed -n '645,660p' c:/work/FishLink/CLAUDE.md)",
       "Bash(node --check functions/index.js)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node -e \"['ja','en','km'].forEach\\(l => { try { JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/'+l+'.json','utf8'\\)\\); console.log\\(l, 'OK'\\); } catch\\(e\\) { console.log\\(l, 'FAIL', e.message\\); } }\\);\")"
     ]
   }
 }

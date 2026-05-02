@@ -111,6 +111,13 @@
         "freeDeliveryDistance": "Free Delivery Distance",
         "sectionTerms": "Trade Conditions",
         "sectionDescription": "Product description",
+        "descriptionHintIntro": "More detail builds restaurant trust. Consider including:",
+        "descriptionHintQuality": "Fish quality (freshness, size)",
+        "descriptionHintSafety": "Safety (use of medicines or additives)",
+        "descriptionHintFeed": "Feed (type, homemade or not)",
+        "descriptionHintPond": "Pond condition (water quality, environment)",
+        "descriptionHintAppeal": "Recommended points / what makes it special",
+        "descriptionPlaceholder": "Example:\n- No medicines used. We feed home-made feed.\n- We carefully manage pond water quality.\n- Caught fresh in the morning.",
         "minOrder": "Minimum Order",
         "maxDistance": "Max Delivery Distance",
         "submit": "Post Listing",
@@ -221,6 +228,10 @@
     "order": {
         "title": "Confirm Order",
         "section": "Order Details",
+        "farmerLabel": "Producer",
+        "totalLabel": "Total",
+        "confirmSubmitTitle": "Submit order with the following details?",
+        "confirmSubmitAsk": "The producer will be notified upon confirmation.",
         "quantity": "Quantity",
         "gutProcessing": "Gutting",
         "gutYes": "Yes",
@@ -247,12 +258,18 @@
         "minOrderHint": "Min. order: {{min}}kg",
         "errorMinOrder": "Minimum order is {{min}}kg",
         "errorSubmit": "Order failed. Please try again.",
-        "successRedirect": "Order placed successfully"
+        "successRedirect": "Order placed successfully",
+        "moreFromFarmerTitle": "More from this farmer",
+        "moreFromFarmerDesc": "Ordering together from the same farmer saves on delivery fee"
     },
     "orders": {
         "title": "Confirm Order",
         "unitPrice": "Unit Price",
         "otherItems": "items",
+        "totalItems": "{{count}} items total",
+        "itemsList": "Order items ({{count}})",
+        "declinedNotice": "The farmer declined this order. Please choose another fish to order again.",
+        "reorderCta": "Re-order from fish list",
         "quantity": "Order Quantity",
         "gutProcessing": "Gutting",
         "gutYes": "Yes",
@@ -472,6 +489,9 @@
         "viewCart": "View cart",
         "remove": "Remove",
         "confirmRemove": "Remove this item from the cart?",
+        "confirmSubmitTitle": "Submit the order with the following details?",
+        "confirmSubmitDetail": "{{items}} item(s) across {{farmers}} producer(s).",
+        "confirmSubmitAsk": "Each producer will be notified upon confirmation.",
         "gutToggle": "Gut processing (+{{price}}/kg)",
         "deliveryDate": "Delivery date",
         "deliveryTime": "Time slot",
@@ -513,16 +533,16 @@
             "body": "{{fish}} {{qty}}kg\nDelivery: {{date}} {{time}}"
         },
         "declined": {
-            "title": "{{farmer}} declined your order",
-            "body": "{{fish}} {{qty}}kg"
+            "title": "Your order was declined",
+            "body": "{{farmer}} {{fish}} {{qty}}kg\nPlease choose another fish and order again"
         },
         "expiredDeclinedFarmer": {
             "title": "Order from {{restaurant}} auto-declined (expired)",
             "body": "{{fish}} {{qty}}kg"
         },
         "expiredDeclinedRestaurant": {
-            "title": "{{farmer}} auto-declined (expired)",
-            "body": "{{fish}} {{qty}}kg"
+            "title": "Your order was auto-declined (expired)",
+            "body": "{{farmer}} {{fish}} {{qty}}kg\nPlease choose another fish and order again"
         },
         "statusUpdate": {
             "title": "{{farmer}} order status updated",
@@ -590,7 +610,10 @@
         "reportIssue": "Report an issue",
         "submitted": "Review submitted",
         "alreadySubmitted": "You have already submitted a review",
+        "reviewed": "Reviewed",
         "errorRating": "Please enter all ratings",
+        "verdictGood": "Good",
+        "verdictBad": "Not great",
         "errorSubmit": "Failed to submit",
         "thanks": "Thank you!",
         "backToOrders": "Back to orders"
@@ -731,7 +754,11 @@
             "chatLoading": "Loading...",
             "chatEmpty": "No messages yet",
             "chatPlaceholder": "Type a message (Enter to send, Shift+Enter for newline)",
-            "send": "Send"
+            "send": "Send",
+            "reportsAgainst": "Trouble reports against this user",
+            "reportsNone": "No reports",
+            "reportsCount": "{{count}} total",
+            "reportsOpenCount": "{{count}} open"
         },
         "tx": {
             "title": "Transactions",
@@ -892,6 +919,8 @@
             "ocrAutofillDone": "Filled {{count}} cells. Please review and save.",
             "ocrAutofillMissing": "The following provinces could not be auto-filled (please enter manually)",
             "historyBtn": "History",
+            "clearBtn": "Clear",
+            "clearConfirm": "Clear all entered values ({{count}} cells)? This is local only — nothing is written to Firestore until you press Save.",
             "historyTitle": "Save history",
             "historyLoading": "Loading...",
             "historyEmpty": "No saved history yet",
@@ -916,6 +945,8 @@
             "colStatus": "Status",
             "colAction": "Action",
             "viewDetail": "View",
+            "chatReporter": "Chat with reporter",
+            "newBadge": "NEW",
             "markResolved": "Mark resolved",
             "markOpen": "Reopen",
             "statusOpen": "Open",

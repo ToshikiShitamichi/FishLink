@@ -193,11 +193,21 @@
             return `${y}/${m}/${da}`;
         }
 
-        function starLine(n) {
-            const rounded = Math.round(Number(n) || 0);
-            return Array.from({ length: 5 }, (_, i) =>
-                `<span class="material-symbols-outlined">${i < rounded ? 'star' : 'star_outline'}</span>`
-            ).join('');
+        function verdictBadge(verdict) {
+            if (verdict === 'good') {
+                return `<span style="display:inline-flex; align-items:center; gap:4px; background:#ecfdf5; color:#047857; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700;">
+                    <span class="material-symbols-outlined" style="font-size:14px;">thumb_up</span>${i18next.t('review.verdictGood')}</span>`;
+            }
+            if (verdict === 'bad') {
+                return `<span style="display:inline-flex; align-items:center; gap:4px; background:#fef2f2; color:#b91c1c; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700;">
+                    <span class="material-symbols-outlined" style="font-size:14px;">thumb_down</span>${i18next.t('review.verdictBad')}</span>`;
+            }
+            return '';
+        }
+        function legacyToVerdict(r) {
+            if (r.verdict) return r.verdict;
+            const avg = Number(r.avgRating || r.overall || 0);
+            return avg >= 4 ? 'good' : avg > 0 ? 'bad' : null;
         }
 
         async function load() {
@@ -216,18 +226,24 @@
                 const loc = [user.province, user.district].filter(Boolean).join(', ') || '-';
                 document.getElementById('location').textContent = loc;
 
-                // 評価
-                const avg = Number(user.avgRating || 0);
+                // 評価（よい率 0-100%）
+                const goodRate = Number(user.avgRating || 0);
                 const count = Number(user.reviewCount || 0);
-                document.getElementById('rating-value').textContent = avg.toFixed(1);
-                document.getElementById('rating-count').textContent = `${count}${i18next.t('order.reviews')}${i18next.t('profile.reviews').length > 0 ? 'のレビュー' : ''}`;
+                document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
+                document.getElementById('rating-count').textContent = `${count}${i18next.t('order.reviews')}`;
                 document.getElementById('review-count-label').textContent = i18next.t('profile.reviewsCount', { count });
 
-                // サブ評価
+                // サブ評価（よい率 0-100%）
                 const sub = user.subRatings || {};
-                document.getElementById('sub-overall').textContent = Number(sub.overall || 0).toFixed(1);
-                document.getElementById('sub-communication').textContent = Number(sub.communication || 0).toFixed(1);
-                document.getElementById('sub-reception').textContent = Number(sub.reception || 0).toFixed(1);
+                const fmtSubRate = (s) => {
+                    if (s && typeof s === 'object' && 'good' in s && 'total' in s && s.total > 0) {
+                        return `${Math.round((s.good / s.total) * 100)}%`;
+                    }
+                    return '—';
+                };
+                document.getElementById('sub-overall').textContent = fmtSubRate(sub.overall);
+                document.getElementById('sub-communication').textContent = fmtSubRate(sub.communication);
+                document.getElementById('sub-reception').textContent = fmtSubRate(sub.reception);
 
                 // 地図
                 if (user.location?.lat && user.location?.lng) {
@@ -261,14 +277,13 @@
                         userMap[fid] = s.exists() ? s.data() : {};
                     }));
                     listEl.innerHTML = reviews.map(r => {
-                        const from = userMap[r.fromUid] || {};
+                        const v = legacyToVerdict(r);
                         return `
                             <div class="review-card">
                                 <div class="review-card__head">
-                                    <div class="review-card__name">${from.displayName || ''}</div>
+                                    ${verdictBadge(v)}
                                     <div class="review-card__date">${fmtDate(r.createdAt)}</div>
                                 </div>
-                                <div class="review-card__stars">${starLine(r.avgRating)}</div>
                                 ${r.comment ? `<div class="review-card__comment">${r.comment}</div>` : ''}
                             </div>
                         `;

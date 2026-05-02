@@ -420,6 +420,7 @@
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState, logout } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
+        import { initAdminReportBadge } from '/js/admin-report-badge.js';
         import {
             collection, query, orderBy, getDocs, doc, getDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -428,6 +429,7 @@
         watchAuthState({ requireAuth: true });
         await initI18n();
         initLangSelector();
+        initAdminReportBadge();
 
         document.getElementById('logout-btn').addEventListener('click', async (e) => {
             e.preventDefault();

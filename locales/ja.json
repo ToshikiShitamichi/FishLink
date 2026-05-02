@@ -111,6 +111,13 @@
         "freeDeliveryDistance": "送料無料距離",
         "sectionTerms": "取引条件",
         "sectionDescription": "商品の説明",
+        "descriptionHintIntro": "詳しく書くほどレストランの安心・信頼につながります。以下の内容を参考にどうぞ。",
+        "descriptionHintQuality": "魚の品質（鮮度・サイズ感など）",
+        "descriptionHintSafety": "安全性（薬や添加物の使用有無）",
+        "descriptionHintFeed": "餌（種類・自家製かどうか）",
+        "descriptionHintPond": "池の状態（水質管理・環境）",
+        "descriptionHintAppeal": "おすすめポイント・こだわり",
+        "descriptionPlaceholder": "例：\n・薬は使っていません。餌は自家製の餌を与えています。\n・池の水質管理に気をつけて育てています。\n・朝に水揚げする新鮮な魚です。",
         "minOrder": "最低注文量",
         "maxDistance": "配送可能距離",
         "submit": "投稿する",
@@ -221,6 +228,10 @@
     "order": {
         "title": "注文内容を確認",
         "section": "注文内容",
+        "farmerLabel": "生産者",
+        "totalLabel": "支払額合計",
+        "confirmSubmitTitle": "以下の内容で注文します。よろしいですか？",
+        "confirmSubmitAsk": "確定すると、生産者に通知が届きます。",
         "quantity": "数量",
         "gutProcessing": "内臓処理",
         "gutYes": "あり",
@@ -247,12 +258,18 @@
         "minOrderHint": "最低注文量: {{min}}kg",
         "errorMinOrder": "最低注文量は{{min}}kgです",
         "errorSubmit": "注文に失敗しました。もう一度お試しください。",
-        "successRedirect": "注文が完了しました"
+        "successRedirect": "注文が完了しました",
+        "moreFromFarmerTitle": "この農家の他の魚",
+        "moreFromFarmerDesc": "同じ農家からまとめて注文すると、配送料を節約できます"
     },
     "orders": {
         "title": "注文内容を確認",
         "unitPrice": "魚単価",
         "otherItems": "点",
+        "totalItems": "全{{count}}点",
+        "itemsList": "注文内容（{{count}}点）",
+        "declinedNotice": "農家に辞退されました。別の魚を選んで再注文してください。",
+        "reorderCta": "魚一覧から再注文する",
         "quantity": "注文数量",
         "gutProcessing": "内臓処理",
         "gutYes": "あり",
@@ -472,6 +489,9 @@
         "viewCart": "カートを見る",
         "remove": "削除",
         "confirmRemove": "この商品をカートから削除しますか？",
+        "confirmSubmitTitle": "以下の内容で注文します。よろしいですか？",
+        "confirmSubmitDetail": "{{farmers}}件の生産者・{{items}}点を発注します。",
+        "confirmSubmitAsk": "確定すると、各生産者に通知が届きます。",
         "gutToggle": "内臓処理（+{{price}}/kg）",
         "deliveryDate": "納品日",
         "deliveryTime": "時間帯",
@@ -513,16 +533,16 @@
             "body": "{{fish}} {{qty}}kg\n納品：{{date}} {{time}}"
         },
         "declined": {
-            "title": "{{farmer}} が注文を辞退",
-            "body": "{{fish}} {{qty}}kg"
+            "title": "注文が辞退されました",
+            "body": "{{farmer}} {{fish}} {{qty}}kg\n別の魚を選んで再注文してください"
         },
         "expiredDeclinedFarmer": {
             "title": "{{restaurant}} の注文が期限切れ辞退",
             "body": "{{fish}} {{qty}}kg"
         },
         "expiredDeclinedRestaurant": {
-            "title": "{{farmer}} が期限切れで自動辞退",
-            "body": "{{fish}} {{qty}}kg"
+            "title": "承認期限切れで注文が辞退されました",
+            "body": "{{farmer}} {{fish}} {{qty}}kg\n別の魚を選んで再注文してください"
         },
         "statusUpdate": {
             "title": "{{farmer}} 注文ステータス更新",
@@ -590,7 +610,10 @@
         "reportIssue": "問題を報告",
         "submitted": "レビューを送信しました",
         "alreadySubmitted": "すでにレビュー済みです",
+        "reviewed": "レビュー済み",
         "errorRating": "評価を入力してください",
+        "verdictGood": "良かった",
+        "verdictBad": "残念だった",
         "errorSubmit": "送信に失敗しました",
         "thanks": "ありがとうございました",
         "backToOrders": "注文一覧へ戻る"
@@ -731,7 +754,11 @@
             "chatLoading": "読み込み中...",
             "chatEmpty": "まだメッセージはありません",
             "chatPlaceholder": "メッセージを入力（Enter送信／Shift+Enter改行）",
-            "send": "送信"
+            "send": "送信",
+            "reportsAgainst": "このユーザーへのトラブル報告",
+            "reportsNone": "報告はありません",
+            "reportsCount": "全{{count}}件",
+            "reportsOpenCount": "未対応 {{count}}件"
         },
         "tx": {
             "title": "取引一覧",
@@ -892,6 +919,8 @@
             "ocrAutofillDone": "{{count}}件のセルに値を入れました。内容を確認してから保存してください。",
             "ocrAutofillMissing": "以下の州は自動取り込みできませんでした（手動入力してください）",
             "historyBtn": "履歴",
+            "clearBtn": "クリア",
+            "clearConfirm": "入力中の値（{{count}}セル）をすべてクリアします。よろしいですか？\n※「保存する」を押すまで Firestore には反映されません。",
             "historyTitle": "保存履歴",
             "historyLoading": "読み込み中...",
             "historyEmpty": "保存履歴はまだありません",
@@ -916,6 +945,8 @@
             "colStatus": "状態",
             "colAction": "操作",
             "viewDetail": "詳細を見る",
+            "chatReporter": "報告者とチャット",
+            "newBadge": "未読",
             "markResolved": "対応済にする",
             "markOpen": "対応中に戻す",
             "statusOpen": "対応中",

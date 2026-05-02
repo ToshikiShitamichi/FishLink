@@ -39,39 +39,31 @@
             margin-bottom: 12px;
         }
         .rating-section__label { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--color-text); }
-        .stars {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            justify-content: flex-start;
-            padding: 4px 0;
+        .verdict-row {
+            display: flex; gap: 10px;
         }
-        .star-btn {
-            border: none;
-            background: transparent;
+        .verdict-btn {
+            flex: 1;
+            border: 2px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text);
+            border-radius: 14px;
+            padding: 14px 8px;
+            font-size: 14px;
+            font-weight: 700;
             cursor: pointer;
-            padding: 2px;
             font-family: inherit;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            width: 44px; height: 44px;
-            flex-shrink: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 6px;
+            transition: background .12s, color .12s, border-color .12s;
         }
-        .star-btn .material-symbols-outlined {
-            font-size: 36px;
-            color: #d1d5db;
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'opsz' 24;
-            transition: color .1s;
-            line-height: 1;
-            display: block;
-            width: 36px; height: 36px;
-            overflow: visible;
+        .verdict-btn .material-symbols-outlined { font-size: 28px; }
+        .verdict-btn.selected.good {
+            background: #ecfdf5; color: #047857; border-color: #16a34a;
         }
-        .star-btn.filled .material-symbols-outlined {
-            color: #f59e0b;
-            font-variation-settings: 'FILL' 1, 'wght' 400, 'opsz' 24;
+        .verdict-btn.selected.bad {
+            background: #fef2f2; color: #b91c1c; border-color: #dc2626;
         }
 
         .comment-section textarea {
@@ -177,17 +169,17 @@
 
             <div class="rating-section">
                 <div class="rating-section__label" data-i18n="review.restSide_overall"></div>
-                <div class="stars" data-group="overall"></div>
+                <div class="verdict-row" data-group="overall"></div>
             </div>
 
             <div class="rating-section">
                 <div class="rating-section__label" data-i18n="review.restSide_quality"></div>
-                <div class="stars" data-group="quality"></div>
+                <div class="verdict-row" data-group="quality"></div>
             </div>
 
             <div class="rating-section">
                 <div class="rating-section__label" data-i18n="review.restSide_time"></div>
-                <div class="stars" data-group="time"></div>
+                <div class="verdict-row" data-group="time"></div>
             </div>
 
             <div class="rating-section comment-section">
@@ -234,26 +226,28 @@
 
         document.getElementById('report-link').href = `/pages/restaurant/report.html?id=${orderId}`;
 
-        // 5段階スターボタン生成
-        function initStars(group) {
-            const row = document.querySelector(`.stars[data-group="${group}"]`);
-            row.innerHTML = '';
-            for (let i = 1; i <= 5; i++) {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'star-btn';
-                btn.dataset.value = i;
-                btn.innerHTML = `<span class="material-symbols-outlined">star</span>`;
+        // 2段階評価（よい / 残念だった）ボタン生成
+        function initVerdict(group) {
+            const row = document.querySelector(`.verdict-row[data-group="${group}"]`);
+            // 動的挿入のため i18next.t() で直接展開（data-i18n は applyTranslations 済みの後では解釈されない）
+            row.innerHTML = `
+                <button type="button" class="verdict-btn good" data-value="good">
+                    <span class="material-symbols-outlined">thumb_up</span>
+                    <span>${i18next.t('review.verdictGood')}</span>
+                </button>
+                <button type="button" class="verdict-btn bad" data-value="bad">
+                    <span class="material-symbols-outlined">thumb_down</span>
+                    <span>${i18next.t('review.verdictBad')}</span>
+                </button>`;
+            row.querySelectorAll('.verdict-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    row.querySelectorAll('.star-btn').forEach(b => {
-                        b.classList.toggle('filled', Number(b.dataset.value) <= i);
-                    });
-                    row.dataset.value = i;
+                    row.querySelectorAll('.verdict-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    row.dataset.value = btn.dataset.value;
                 });
-                row.appendChild(btn);
-            }
+            });
         }
-        ['overall', 'quality', 'time'].forEach(initStars);
+        ['overall', 'quality', 'time'].forEach(initVerdict);
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
@@ -293,7 +287,7 @@
                 document.getElementById('target-name').textContent = farmer.displayName || '-';
                 const fishTypeKey = orderData.snapFishType || '';
                 const fishName = i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey;
-                const shortName = fishName ? fishName.split('/')[0].trim() : '';
+                const shortName = fishName ? fishName.trim() : '';
                 document.getElementById('target-fish').textContent = `${shortName} ${orderData.quantity || 0}kg`;
                 document.getElementById('target-date').textContent = i18next.t('review.orderOn', { date: orderData.deliveryDate || '' });
             } catch (err) {
@@ -306,9 +300,9 @@
         // 送信
         document.getElementById('submit-btn').addEventListener('click', async () => {
             errorMsg.style.display = 'none';
-            const overall = Number(document.querySelector('.stars[data-group="overall"]').dataset.value || 0);
-            const quality = Number(document.querySelector('.stars[data-group="quality"]').dataset.value || 0);
-            const time = Number(document.querySelector('.stars[data-group="time"]').dataset.value || 0);
+            const overall = document.querySelector('.verdict-row[data-group="overall"]').dataset.value;
+            const quality = document.querySelector('.verdict-row[data-group="quality"]').dataset.value;
+            const time = document.querySelector('.verdict-row[data-group="time"]').dataset.value;
 
             if (!overall || !quality || !time) {
                 errorMsg.textContent = i18next.t('review.errorRating');
@@ -317,7 +311,6 @@
             }
 
             const comment = document.getElementById('comment-input').value.trim();
-            const avg = (overall + quality + time) / 3;
 
             const btn = document.getElementById('submit-btn');
             btn.disabled = true;
@@ -328,10 +321,8 @@
                     fromRole: 'restaurant',
                     toUid: orderData.farmerId,
                     orderId,
-                    overall,
-                    quality,
-                    time,
-                    avgRating: avg,
+                    verdict: overall,                  // 'good' | 'bad'
+                    subVerdicts: { quality, time },    // 各サブ評価
                     comment: comment || null,
                     createdAt: serverTimestamp(),
                 });

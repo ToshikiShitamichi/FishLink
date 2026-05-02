@@ -385,7 +385,7 @@
             const imageUrls = [];
             for (const file of pendingFiles) {
                 const storageRef = ref(storage, `chat/${orderId}/${Date.now()}_${file.name}`);
-                await uploadBytes(storageRef, file);
+                await uploadBytes(storageRef, file, { cacheControl: 'public, max-age=31536000' });
                 imageUrls.push(await getDownloadURL(storageRef));
             }
 
@@ -428,10 +428,13 @@
 
             // 4/28: delivered ステータス廃止。直接 completed に遷移
             await updateDoc(doc(db, 'orders', orderId), { status: 'completed' });
+            // 5/2: システム自動メッセージは type: 'status' で送る
+            // → onMessageCreated は reply todo を作らず、FCM も送らない
+            // （status='completed' で UI上チャットが閉じるため、返信todo は無意味）
             await addDoc(collection(db, 'orders', orderId, 'messages'), {
                 senderId: myUid,
                 text: i18next.t('delivery.statusDeliveredMsg'),
-                type: 'chat',
+                type: 'status',
                 isRead: false,
                 createdAt: serverTimestamp(),
             });
