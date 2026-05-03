@@ -126,7 +126,8 @@
         "errorFishStock": "Please enter stock quantity",
         "errorPrice": "Please enter unit price",
         "errorLogin": "Login required",
-        "errorSubmit": "Failed to post. Please try again."
+        "errorSubmit": "Failed to post. Please try again.",
+        "uploadProgress": "Uploading photos... ({{current}}/{{total}})"
     },
     "fish": {
         "striped_snakehead": "Striped Snakehead",

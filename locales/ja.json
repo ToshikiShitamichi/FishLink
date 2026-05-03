@@ -126,7 +126,8 @@
         "errorFishStock": "在庫数量を入力してください",
         "errorPrice": "魚単価を入力してください",
         "errorLogin": "ログインが必要です",
-        "errorSubmit": "投稿に失敗しました。もう一度お試しください。"
+        "errorSubmit": "投稿に失敗しました。もう一度お試しください。",
+        "uploadProgress": "写真をアップロード中... ({{current}}/{{total}})"
     },
     "fish": {
         "striped_snakehead": "ライギョ",

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
     <title>FishLink</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
@@ -190,16 +191,40 @@
         .photo-preview {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 12px;
             margin-top: 10px;
         }
-
-        .photo-preview img {
+        /* 5/3: ×マーク付き写真サムネイル */
+        .photo-preview__item {
+            position: relative;
+            display: inline-block;
+        }
+        .photo-preview__item img {
             width: 80px;
             height: 80px;
             object-fit: cover;
             border-radius: 12px;
+            display: block;
         }
+        .photo-preview__remove {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            background: #dc2626;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            font-family: inherit;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        .photo-preview__remove:hover { background: #b91c1c; }
 
         .delivery-note {
             font-size: 13px;
@@ -447,10 +472,8 @@
             document.getElementById('page-title').textContent = i18next.t('post.editTitle');
             document.getElementById('submit-btn').textContent = i18next.t('post.editSubmit');
             document.getElementById('edit-notice').style.display = 'block';
-            // 編集モードでは写真変更は不可（既存写真のまま）
-            const photoArea = document.getElementById('photo-area');
-            const photoLabel = photoArea?.parentElement;
-            if (photoLabel) photoLabel.style.display = 'none';
+            // 5/3: 編集モードでも写真の入れ替え（追加・削除）を可能に
+            // 既存写真は loadExistingForEdit で selectedItems に流し込む
         }
 
         async function loadExistingForEdit() {
@@ -490,6 +513,13 @@
             document.getElementById('description').value = d.description || '';
             window.updateTotalPrice();
             updateCaaDisplay(fishTypeSel.value);
+
+            // 5/3: 既存の写真を selectedItems に流し込む（編集時の入れ替え対応）
+            const existingPhotos = Array.isArray(d.photos) && d.photos.length > 0
+                ? d.photos
+                : (d.photoUrl ? [d.photoUrl] : []);
+            selectedItems = existingPhotos.map(url => ({ url }));
+            renderPhotoPreview();
         }
 
         // ── CAA参考価格データ（管理者ページ pages/admin/caa.html で設定した値を Firestore から読み込む） ──
@@ -658,17 +688,38 @@
         };
 
         // ── 写真プレビュー ──────────────────────────────────────────
-        let selectedFiles = [];
+        // 5/3: ×マーク付き個別削除と編集モード時の入れ替えに対応
+        // 各 item は { file?: File, url?: string }（既存写真は url、新規追加は file）
+        let selectedItems = [];
 
-        document.getElementById('photo-input').addEventListener('change', function () {
-            selectedFiles = Array.from(this.files);
+        function renderPhotoPreview() {
             const preview = document.getElementById('photo-preview');
             preview.innerHTML = '';
-            selectedFiles.forEach(file => {
+            selectedItems.forEach((item, idx) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'photo-preview__item';
                 const img = document.createElement('img');
-                img.src = URL.createObjectURL(file);
-                preview.appendChild(img);
+                img.src = item.url || URL.createObjectURL(item.file);
+                wrap.appendChild(img);
+                const x = document.createElement('button');
+                x.type = 'button';
+                x.className = 'photo-preview__remove';
+                x.textContent = '×';
+                x.setAttribute('aria-label', 'remove');
+                x.addEventListener('click', () => {
+                    selectedItems.splice(idx, 1);
+                    renderPhotoPreview();
+                });
+                wrap.appendChild(x);
+                preview.appendChild(wrap);
             });
+        }
+
+        document.getElementById('photo-input').addEventListener('change', function () {
+            const newFiles = Array.from(this.files);
+            selectedItems = [...selectedItems, ...newFiles.map(f => ({ file: f }))];
+            this.value = '';  // 同じファイルを再選択できるように
+            renderPhotoPreview();
         });
 
         // ── 編集前の値を既存注文にスナップショット保存 ──
@@ -765,11 +816,47 @@
                 const uid = window.currentUser?.uid;
                 if (!uid) throw new Error(i18next.t('post.errorLogin'));
 
-                // 写真アップロード
+                // 5/3: Android 一部端末で投稿が無限ローディングになる問題対策
+                // 各非同期処理にタイムアウトを設けて、失敗時はエラーを表示する
+                // （Storage / Firestore がネットワーク条件次第で永遠にハングするケースを防ぐ）
+                const withTimeout = (promise, ms, label) =>
+                    Promise.race([
+                        promise,
+                        new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error(`Timeout: ${label} (${ms}ms)`)), ms)
+                        ),
+                    ]);
+
+                // 5/3: 写真アップロード（新規・編集どちらでも selectedItems を処理）
+                // 既存URLはそのまま使い、新規Fileのみアップロード
                 const photoUrls = [];
+                let progressIdx = 0;
+                const totalNew = selectedItems.filter(it => it.file).length;
+                for (const item of selectedItems) {
+                    if (item.url) {
+                        photoUrls.push(item.url);
+                    } else if (item.file) {
+                        progressIdx++;
+                        // 進捗を画面表示（無限ローディング感の軽減）
+                        errorMsg.textContent = i18next.t('post.uploadProgress', { current: progressIdx, total: totalNew });
+                        errorMsg.classList.remove('show');  // エラー扱いではないので赤くしない（進捗表示のみ）
+
+                        const storageRef = ref(storage, `fishListings/${uid}/${Date.now()}_${item.file.name}`);
+                        // 1ファイルあたり最大 60秒
+                        await withTimeout(
+                            uploadBytes(storageRef, item.file, { cacheControl: 'public, max-age=31536000' }),
+                            60000,
+                            `uploadBytes ${item.file.name}`
+                        );
+                        const url = await withTimeout(getDownloadURL(storageRef), 30000, 'getDownloadURL');
+                        photoUrls.push(url);
+                    }
+                }
+                // 進捗表示をクリア
+                errorMsg.textContent = '';
+
                 if (isEditMode) {
                     // ── 編集モード：既存の出品を更新 ──
-                    // 写真は変更しない（編集モードでは photo セクション非表示）
                     // 既存の進行中・完了済みの注文に対しては編集前の値をスナップショット保存
                     await snapshotOrdersForListing(editId, originalListing);
 
@@ -784,17 +871,12 @@
                         minOrder: minOrder || null,
                         maxDistance: maxDistance || null,
                         description: description || null,
+                        photos: photoUrls,
+                        photoUrl: photoUrls[0] || null,
                         updatedAt: serverTimestamp(),
                     });
                 } else {
-                    // ── 新規モード：写真アップロード＋addDoc ──
-                    for (const file of selectedFiles) {
-                        const storageRef = ref(storage, `fishListings/${uid}/${Date.now()}_${file.name}`);
-                        await uploadBytes(storageRef, file, { cacheControl: 'public, max-age=31536000' });
-                        const url = await getDownloadURL(storageRef);
-                        photoUrls.push(url);
-                    }
-
+                    // ── 新規モード ──
                     await addDoc(collection(db, 'fishListings'), {
                         farmerId: uid,
                         fishType,
@@ -819,8 +901,10 @@
                 window.location.href = '/pages/farmer/dashboard.html';
 
             } catch (err) {
-                console.error(err);
-                errorMsg.textContent = i18next.t('post.errorSubmit');
+                console.error('post submit failed:', err);
+                // 5/3: silent fail を防ぐ。エラー詳細をユーザーに見せて、報告できるようにする
+                const detail = err?.message || String(err) || 'unknown';
+                errorMsg.textContent = `${i18next.t('post.errorSubmit')} [${detail.slice(0, 120)}]`;
                 errorMsg.classList.add('show');
             } finally {
                 submitBtn.disabled = false;

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
     <title>FishLink</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
@@ -72,6 +73,62 @@
 
         .order-card__details { display: none; }
         .order-card.expanded .order-card__details { display: block; }
+
+        /* 5/3-5/4: 注文カードに常時表示されるアクション（配送管理 / 送金 / レビュー / 報告） */
+        /* 展開前から見られるよう quick-actions に集約。展開時は body 側の重複を削除済み */
+        .order-card__quick-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 14px 12px;
+            background: var(--color-surface);
+            border-top: 1px dashed var(--color-border);
+        }
+        /* メインCTA：配送管理／送金状況（フル幅） */
+        .order-card__quick-cta {
+            display: block;
+            text-align: center;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            color: #fff;
+        }
+        .order-card__quick-cta--delivery { background: #f97316; }
+        .order-card__quick-cta--delivery:hover { background: #ea580c; }
+        .order-card__quick-cta--payment { background: #0ea5e9; }
+        .order-card__quick-cta--payment:hover { background: #0284c7; }
+        /* レビュー／報告：50/50 並び */
+        .order-card__quick-action-row {
+            display: flex;
+            gap: 8px;
+        }
+        .order-card__quick-action {
+            flex: 1;
+            text-align: center;
+            padding: 8px 6px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .order-card__quick-action--review {
+            background: #f97316;
+            color: #fff;
+        }
+        .order-card__quick-action--review:hover { background: #ea580c; }
+        .order-card__quick-action--report {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+        .order-card__quick-action--report:hover { background: #fee2e2; }
+        .order-card__quick-action .material-symbols-outlined { font-size: 14px; }
 
         .order-card__img {
             aspect-ratio: 4/3;
@@ -762,27 +819,7 @@
                             <div class="receive-label">${i18next.t('orders.receiveAmount')}</div>
                             <div class="receive-amount">${receiveAmount.toLocaleString()} KHR</div>
                         </div>
-                        ${(['approved', 'preparing', 'delivering'].includes(order.status))
-                            ? `<a href="/pages/farmer/delivery.html?id=${order.id}" style="display:block; margin-top:12px; text-align:center; padding:10px; background:#f97316; color:#fff; border-radius:12px; font-weight:600; text-decoration:none;">${i18next.t('delivery.goDelivery')}</a>`
-                            : ''
-                        }
-                        ${(['delivered', 'completed'].includes(order.status))
-                            ? `<a href="/pages/farmer/payment.html?id=${order.id}" style="display:block; margin-top:12px; text-align:center; padding:10px; background:#0ea5e9; color:#fff; border-radius:12px; font-weight:600; text-decoration:none;">${i18next.t('payment.goToRemittance')}</a>`
-                            : ''
-                        }
-                        ${(['approved', 'preparing', 'delivering', 'delivered', 'completed'].includes(order.status))
-                            ? `<div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
-                                <a href="/pages/farmer/review.html?id=${order.id}" style="flex:1; text-align:center; padding:10px; background:#f97316; color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:13px;">
-                                    <span class="material-symbols-outlined" style="font-size:16px;">star</span>
-                                    ${i18next.t('review.submit')}
-                                </a>
-                                <a href="/pages/farmer/report.html?id=${order.id}" style="flex:1; text-align:center; padding:10px; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:12px; font-weight:700; text-decoration:none; font-size:13px;">
-                                    <span class="material-symbols-outlined" style="font-size:16px;">flag</span>
-                                    ${i18next.t('review.reportIssue')}
-                                </a>
-                            </div>`
-                            : ''
-                        }
+                        <!-- 5/4: 配送管理／送金状況／レビュー／報告 ボタンは外側の order-card__quick-actions に移動済み -->
                     </div>`;
 
             if (order.status === 'pending' && !isExpiredPending) {
@@ -816,8 +853,42 @@
                     </div>`;
             }
 
-            // close .order-card__details, then .order-card
-            html += '</div></div>';
+            // close .order-card__details
+            html += '</div>';
+
+            // 5/4: 常時表示の操作ボタン群（配送管理／送金状況／レビュー／報告）
+            // pending は別途 response-section で承認/辞退ラジオが出る、declined は何も表示しない
+            const isActiveDelivery = ['approved', 'preparing', 'delivering'].includes(order.status);
+            const isPostDelivery = ['delivered', 'completed'].includes(order.status);
+            const showReviewReport = isActiveDelivery || isPostDelivery;
+
+            if (isActiveDelivery || isPostDelivery || showReviewReport) {
+                let actionsHtml = '<div class="order-card__quick-actions">';
+                if (isActiveDelivery) {
+                    actionsHtml += `<a class="order-card__quick-cta order-card__quick-cta--delivery" href="/pages/farmer/delivery.html?id=${order.id}">${i18next.t('delivery.goDelivery')}</a>`;
+                }
+                if (isPostDelivery) {
+                    actionsHtml += `<a class="order-card__quick-cta order-card__quick-cta--payment" href="/pages/farmer/payment.html?id=${order.id}">${i18next.t('payment.goToRemittance')}</a>`;
+                }
+                if (showReviewReport) {
+                    actionsHtml += `
+                        <div class="order-card__quick-action-row">
+                            <a class="order-card__quick-action order-card__quick-action--review" href="/pages/farmer/review.html?id=${order.id}">
+                                <span class="material-symbols-outlined">star</span>
+                                ${i18next.t('review.submit')}
+                            </a>
+                            <a class="order-card__quick-action order-card__quick-action--report" href="/pages/farmer/report.html?id=${order.id}">
+                                <span class="material-symbols-outlined">flag</span>
+                                ${i18next.t('review.reportIssue')}
+                            </a>
+                        </div>`;
+                }
+                actionsHtml += '</div>';
+                html += actionsHtml;
+            }
+
+            // close .order-card
+            html += '</div>';
             return html;
         }
 

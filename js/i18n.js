@@ -13,6 +13,13 @@ function saveLang(lang) {
     localStorage.setItem('fishlink_lang', lang);
 }
 
+// 5/3: <html lang> 属性を i18n の言語に同期させる
+// 目的: ブラウザの自動翻訳（Google Translate）が「クメール語ページ」と誤判定するのを防ぐ
+//      日本語ページ（lang="ja"）と認識させて勝手に翻訳されない状態にする
+function syncHtmlLang(lang) {
+    document.documentElement.setAttribute('lang', lang || 'ja');
+}
+
 // i18next 初期化
 async function initI18n() {
     const lang = getSavedLang();
@@ -28,6 +35,8 @@ async function initI18n() {
 
     // クメール語フォント切り替え用
     document.body.setAttribute('data-lang', lang);
+    // <html lang> 同期（自動翻訳抑止）
+    syncHtmlLang(lang);
 
     applyTranslations();
 }
@@ -72,6 +81,7 @@ async function changeLanguage(lang) {
     await i18next.changeLanguage(lang);
     saveLang(lang);
     document.body.setAttribute('data-lang', lang);
+    syncHtmlLang(lang);
     applyTranslations();
 
     // ページ固有の再描画コールバックを実行

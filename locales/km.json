@@ -126,7 +126,8 @@
         "errorFishStock": "សូមបញ្ចូលបរិមាណស្តុក",
         "errorPrice": "សូមបញ្ចូលតម្លៃឯកតា",
         "errorLogin": "ត្រូវការចូលគណនី",
-        "errorSubmit": "បង្ហោះបរាជ័យ។ សូមព្យាយាមម្តងទៀត។"
+        "errorSubmit": "បង្ហោះបរាជ័យ។ សូមព្យាយាមម្តងទៀត។",
+        "uploadProgress": "កំពុងបញ្ចូលរូបភាព... ({{current}}/{{total}})"
     },
     "fish": {
         "striped_snakehead": "ត្រីរ៉ស់",

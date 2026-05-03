@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
     <title>FishLink</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
@@ -191,29 +192,49 @@
             btn.disabled = true;
             loading.classList.add('show');
             try {
+                // 5/3: Android 一部端末で QR 登録が無限ローディングする問題対策
+                // ネットワーク次第でハングする処理にタイムアウトを設定
+                const withTimeout = (promise, ms, label) =>
+                    Promise.race([
+                        promise,
+                        new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error(`Timeout: ${label} (${ms}ms)`)), ms)
+                        ),
+                    ]);
+
                 const accountName = document.getElementById('in-accountName').value.trim();
                 const qrLink = document.getElementById('in-qrLink').value.trim();
                 let qrImageUrl = editState.qrImageUrl;
                 if (editState.qrFile) {
                     const storageRef = ref(storage, `qr/${uid}/${Date.now()}_${editState.qrFile.name}`);
-                    await uploadBytes(storageRef, editState.qrFile, { cacheControl: 'public, max-age=31536000' });
-                    qrImageUrl = await getDownloadURL(storageRef);
+                    await withTimeout(
+                        uploadBytes(storageRef, editState.qrFile, { cacheControl: 'public, max-age=31536000' }),
+                        60000,
+                        'QR uploadBytes'
+                    );
+                    qrImageUrl = await withTimeout(getDownloadURL(storageRef), 30000, 'QR getDownloadURL');
                 } else if (editState.qrRemoved) {
                     qrImageUrl = null;
                 }
-                await updateDoc(doc(db, 'users', uid), {
-                    accountName: accountName || null,
-                    qrLink: qrLink || null,
-                    qrImageUrl: qrImageUrl || null,
-                });
+                await withTimeout(
+                    updateDoc(doc(db, 'users', uid), {
+                        accountName: accountName || null,
+                        qrLink: qrLink || null,
+                        qrImageUrl: qrImageUrl || null,
+                    }),
+                    20000,
+                    'updateDoc users'
+                );
                 userData.accountName = accountName || null;
                 userData.qrLink = qrLink || null;
                 userData.qrImageUrl = qrImageUrl || null;
                 renderView();
                 document.getElementById('btn-cancel').click();
             } catch (err) {
-                console.error(err);
-                alert(i18next.t('account.saveFailed'));
+                console.error('QR save failed:', err);
+                // 5/3: silent fail防止 — エラー詳細をユーザーに見せる
+                const detail = err?.message || String(err) || 'unknown';
+                alert(`${i18next.t('account.saveFailed')}\n[${detail.slice(0, 120)}]`);
             } finally {
                 btn.disabled = false;
                 loading.classList.remove('show');

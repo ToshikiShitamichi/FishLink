@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
     <title>FishLink</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
@@ -193,7 +194,7 @@
     </div>
 
     <script type="module">
-        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import {
@@ -217,6 +218,9 @@
             else setTimeout(() => waitForUserData(cb), 300);
         }
 
+        // 5/3: 言語切替時に再描画できるよう必要な情報を保持
+        let pageState = { fishTypeKey: '', size: '', restName: '', place: '' };
+
         waitForUserData(async () => {
             loading.classList.add('show');
             myUid = window.currentUser.uid;
@@ -228,25 +232,46 @@
             if (orderData.farmerId !== myUid) { location.href = '/pages/farmer/orders.html'; return; }
 
             // listing情報（注文時点のスナップショット優先）
-            let fishName = '', size = '';
             let fishTypeKey = orderData.snapFishType;
-            size = orderData.snapSize || '';
+            let size = orderData.snapSize || '';
             if ((!fishTypeKey || !size) && orderData.listingId) {
                 const lSnap = await getDoc(doc(db, 'fishListings', orderData.listingId));
                 const lt = lSnap.data() || {};
                 if (!fishTypeKey) fishTypeKey = lt.fishType;
                 if (!size) size = lt.size || '';
             }
-            if (fishTypeKey) {
-                fishName = i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey;
-            }
 
             // レストラン情報
             const restSnap = await getDoc(doc(db, 'users', orderData.restaurantId));
             const rest = restSnap.data() || {};
-            const restName = rest.displayName || '';
-            const place = (rest.province || '') + (rest.district ? ', ' + rest.district : '');
+            pageState = {
+                fishTypeKey: fishTypeKey || '',
+                size,
+                restName: rest.displayName || '',
+                place: (rest.province || '') + (rest.district ? ', ' + rest.district : ''),
+            };
 
+            renderOrderInfo();
+            renderBreakdown();
+
+            // ステータスをリアルタイム購読
+            onSnapshot(doc(db, 'orders', orderId), (snap) => {
+                if (!snap.exists()) return;
+                const d = snap.data();
+                orderData = d;
+                renderStatus(d.adminStatus ?? null, d.paymentStatus || 'pending');
+            });
+
+            loading.classList.remove('show');
+        });
+
+        // 5/3: innerHTML で組み立てた部分を関数化し、言語切替時に再描画できるように
+        function renderOrderInfo() {
+            if (!orderData) return;
+            const { fishTypeKey, size, restName, place } = pageState;
+            const fishName = fishTypeKey
+                ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey)
+                : '';
             document.getElementById('order-info').innerHTML = `
                 <div style="font-size:13px; color:var(--color-text-sub); margin-bottom:4px;">${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}</div>
                 <div style="font-size:16px; font-weight:700;">${fishName}${size ? `（${size} head/kg）` : ''}</div>
@@ -256,11 +281,12 @@
                     ${restName}${place ? ` · ${place}` : ''}
                 </div>
             `;
+        }
 
-            // 金額内訳
+        function renderBreakdown() {
+            if (!orderData) return;
             const fishTotal = orderData.fishPrice || 0;
             const deliveryFee = orderData.deliveryFee || 0;
-            // 注文時点の手数料を優先（旧注文は5%でフォールバック）
             const commission = (orderData.farmerCommission != null)
                 ? orderData.farmerCommission
                 : Math.round(fishTotal * 0.05);
@@ -277,16 +303,13 @@
                 <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.commission', { rate: commissionRate })}</span><span class="amount-line__value minus">-${commission.toLocaleString()} KHR</span></div>
                 <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.deliveryFee')}</span><span class="amount-line__value plus">+${deliveryFee.toLocaleString()} KHR</span></div>
             `;
+        }
 
-            // ステータスをリアルタイム購読
-            onSnapshot(doc(db, 'orders', orderId), (snap) => {
-                if (!snap.exists()) return;
-                const d = snap.data();
-                orderData = d;
-                renderStatus(d.adminStatus ?? null, d.paymentStatus || 'pending');
-            });
-
-            loading.classList.remove('show');
+        // 言語切替時：data-i18n 要素は applyTranslations 自動更新、innerHTML 部分は手動再描画
+        onLanguageChange(() => {
+            renderOrderInfo();
+            renderBreakdown();
+            if (orderData) renderStatus(orderData.adminStatus ?? null, orderData.paymentStatus || 'pending');
         });
 
         function renderStatus(adminStatus, paymentStatus) {
