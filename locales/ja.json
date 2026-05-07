@@ -261,7 +261,9 @@
         "errorSubmit": "注文に失敗しました。もう一度お試しください。",
         "successRedirect": "注文が完了しました",
         "moreFromFarmerTitle": "この農家の他の魚",
-        "moreFromFarmerDesc": "同じ農家からまとめて注文すると、配送料を節約できます"
+        "moreFromFarmerDesc": "この農家は他の魚も出品しています",
+        "viewCartCta": "カートを見る（まとめて注文する）",
+        "farmerLabel": "生産者"
     },
     "orders": {
         "title": "注文内容を確認",
@@ -313,6 +315,7 @@
         "activeSection": "対応中（{{count}}件）",
         "todaySection": "本日の対応（{{count}}件）",
         "futureSection": "明日以降の対応（{{count}}件）",
+        "showMore": "もっと見る（あと{{count}}件）",
         "waitingRemittanceSection": "送金待ち（{{count}}件）",
         "waitingRemittanceClosed": "▶ 送金待ち（{{count}}件）",
         "waitingRemittanceOpen": "▼ 送金待ち（{{count}}件）",
@@ -351,6 +354,8 @@
         "confirmDialog": "支払いを完了しましたか？",
         "alreadyPaid": "支払い確認済み",
         "paidBanner": "お支払いを確認しました。",
+        "partnerLabel": "取引相手",
+        "statusLabel": "支払いステータス",
         "paidMessage": "レストランが支払いを完了しました",
         "errorSubmit": "処理に失敗しました。もう一度お試しください。",
         "goToPayment": "お支払いへ進む",
@@ -476,6 +481,7 @@
         "ratingSatisfaction": "取引の満足度",
         "ratingCommunication": "やり取り",
         "ratingReception": "受取対応",
+        "goodRate": "良かった率",
         "editProfile": "プロフィール編集",
         "messagePlaceholder": "お客様への一言を書いてください",
         "uploadPhoto": "写真を選択",
@@ -488,12 +494,18 @@
         "addedTitle": "カートに追加しました",
         "addToCart": "カートに追加",
         "viewCart": "カートを見る",
+        "viewCartShort": "カートを見る",
+        "viewCartWithCount": "カートを見る（{{count}}）",
+        "inCart": "カートに追加済み",
+        "bannerText": "カートに{{count}}点入っています",
+        "singleOrderWarning": "カートに別の魚が入っています。\nこのまま「注文を確定」を押すとこの魚だけが単品注文されます。\n\nまとめて注文する場合は「キャンセル」を押してカート画面へ移動してください。\n\n単品注文を続けるには「OK」を押してください。",
+        "alreadyInCartWarning": "この魚はカートに追加済みです。\nこのまま単品注文するとカートとは別に新しい注文が作成されます。\n\nカート内のものとまとめて注文する場合は「キャンセル」を押してカート画面へ移動してください。\n\n単品注文を続けるには「OK」を押してください。",
         "remove": "削除",
         "confirmRemove": "この商品をカートから削除しますか？",
         "confirmSubmitTitle": "以下の内容で注文します。よろしいですか？",
         "confirmSubmitDetail": "{{farmers}}件の生産者・{{items}}点を発注します。",
         "confirmSubmitAsk": "確定すると、各生産者に通知が届きます。",
-        "gutToggle": "内臓処理（+{{price}}/kg）",
+        "gutToggle": "内臓処理（+{{price}} KHR/kg）",
         "deliveryDate": "納品日",
         "deliveryTime": "時間帯",
         "fishTotal": "魚代（サービス料込み）",
@@ -572,6 +584,14 @@
         "remitDone": {
             "title": "ご入金がありました",
             "body": "{{restaurant}} の注文 {{fish}} {{qty}}kg"
+        },
+        "adminChat": {
+            "title": "運営からのメッセージ",
+            "body": "{{text}}"
+        },
+        "adminChatFromUser": {
+            "title": "{{name}} からの問い合わせ",
+            "body": "{{text}}"
         }
     },
     "comments": {
@@ -710,7 +730,11 @@
         "subtitle": "FishLink 運営にメッセージを送れます",
         "loading": "読み込み中...",
         "empty": "まだメッセージはありません。お気軽にどうぞ。",
-        "placeholder": "メッセージを入力..."
+        "placeholder": "メッセージを入力...",
+        "guidanceTitle": "ご利用にあたって",
+        "guidance1": "返信には1〜2日かかる場合があります",
+        "guidance2": "要点を簡潔に記入してください",
+        "guidance3": "緊急の問題は「問題を報告」から連絡してください"
     },
     "admin": {
         "brand": "FISHLINK 管理画面",

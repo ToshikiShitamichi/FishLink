@@ -622,3 +622,17 @@ select:focus {
 #lang-selector option {
     text-align: center;
 }
+
+/* 5/5 #7: 言語切替ボタンに地球アイコンを追加して直感的に分かるように
+   背景に SVG の地球アイコンを表示し、ボタン感を強める。
+   各ページの inline style より優先するため !important を使用。 */
+#lang-selector {
+    padding-left: 28px !important;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230d6e4c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><line x1='2' y1='12' x2='22' y2='12'/><path d='M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'/></svg>") !important;
+    background-repeat: no-repeat !important;
+    background-position: 8px center !important;
+    background-size: 14px 14px !important;
+    border-color: #0d6e4c !important;
+    color: #0d6e4c !important;
+    font-weight: 600 !important;
+}

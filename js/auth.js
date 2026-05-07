@@ -80,9 +80,10 @@ function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRe
                     redirectByRole(data.role);
                 }
                 window.currentUserData = data;
-                if (data.role !== 'admin') {
-                    requestFcmToken(user.uid);
-                }
+                // 5/4: admin にも FCM トークンを発行（運営チャット・トラブル報告通知のため）
+                // 旧仕様では admin を除外していたが、5/1 で運営チャット／トラブル報告の通知系が
+                // 実装されてからは admin も通知を受ける必要がある
+                requestFcmToken(user.uid);
             }
         } else {
             if (requireAuth) window.location.href = '/index.html';
@@ -196,6 +197,20 @@ async function requestFcmToken(uid) {
         });
 
         const messaging = getMessaging();
+        // 5/4: 通知許可状態を診断ログ
+        if ('Notification' in window) {
+            console.log('FCM permission state (before):', Notification.permission);
+            // 5/5 #6: トラブル報告通知不達対策。default のときに明示的に権限要求
+            // （PWA再追加直後・初回ログイン時など、getToken が暗黙要求しないケース対応）
+            if (Notification.permission === 'default') {
+                try {
+                    const result = await Notification.requestPermission();
+                    console.log('FCM permission requested explicitly:', result);
+                } catch (e) {
+                    console.warn('Notification.requestPermission failed:', e);
+                }
+            }
+        }
         const token = await getToken(messaging, {
             vapidKey: VAPID_KEY,
             serviceWorkerRegistration: registration
@@ -208,7 +223,15 @@ async function requestFcmToken(uid) {
             });
             // ログアウト時にこの端末分だけ arrayRemove するため、ローカルにも保持
             try { localStorage.setItem('fishlink_fcm_token', token); } catch (e) { /* ignore */ }
-            console.log('FCM token registered (multi-device)');
+            console.log('FCM token registered (multi-device):', uid, token.slice(0, 20) + '...');
+            // 5/5 #6: 書き込み後に検証 — Firestore に実際反映されたかログ
+            try {
+                const verifySnap = await getDoc(doc(db, 'users', uid));
+                const arr = verifySnap.data()?.fcmTokens || [];
+                console.log('FCM tokens in Firestore after register:', arr.length);
+            } catch (e) { /* ignore */ }
+        } else {
+            console.warn('FCM getToken returned empty (permission not granted or SW issue). Permission:', Notification?.permission);
         }
 
         // フォアグラウンド通知（data-onlyペイロード対応）

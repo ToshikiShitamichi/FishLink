@@ -250,7 +250,7 @@
     </div>
 
     <script type="module">
-        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import {
@@ -274,6 +274,9 @@
             else setTimeout(() => waitForUserData(cb), 300);
         }
 
+        // 5/4: 言語切替で再描画できるよう状態を保持
+        let pageState = { fishTypeKey: '', size: '', farmerName: '', place: '' };
+
         waitForUserData(async () => {
             loading.classList.add('show');
             myUid = window.currentUser.uid;
@@ -286,26 +289,38 @@
             if (orderData.restaurantId !== myUid) { location.href = '/pages/restaurant/orders.html'; return; }
 
             // listing情報（注文時点のスナップショット優先）
-            let fishName = '', size = '';
             let fishTypeKey = orderData.snapFishType;
-            size = orderData.snapSize || '';
+            let size = orderData.snapSize || '';
             if ((!fishTypeKey || !size) && orderData.listingId) {
                 const lSnap = await getDoc(doc(db, 'fishListings', orderData.listingId));
                 const lt = lSnap.data() || {};
                 if (!fishTypeKey) fishTypeKey = lt.fishType;
                 if (!size) size = lt.size || '';
             }
-            if (fishTypeKey) {
-                fishName = i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey;
-            }
 
             // 農家情報
             const farmerSnap = await getDoc(doc(db, 'users', orderData.farmerId));
             const farmer = farmerSnap.data() || {};
-            const farmerName = farmer.displayName || '';
-            const place = (farmer.province || '') + (farmer.district ? ', ' + farmer.district : '');
+            pageState = {
+                fishTypeKey: fishTypeKey || '',
+                size,
+                farmerName: farmer.displayName || '',
+                place: (farmer.province || '') + (farmer.district ? ', ' + farmer.district : ''),
+            };
 
-            // 支払期限バナー（completed && 未払い のときだけ）
+            renderDeadlineBanner();
+            renderOrderInfo();
+            renderBreakdown();
+
+            // 支払い済みの場合
+            updatePaidState(orderData.paymentStatus);
+
+            loading.classList.remove('show');
+        });
+
+        // 5/4: innerHTML 部分を関数化し、言語切替時に再描画できるように
+        function renderDeadlineBanner() {
+            if (!orderData) return;
             const isCompletedUnpaid = (orderData.status === 'completed' || orderData.status === 'delivered')
                 && orderData.paymentStatus !== 'paid';
             const deadlineMs = orderData.paymentDeadline?.toMillis?.() || null;
@@ -326,18 +341,79 @@
                 }
                 banner.style.display = 'block';
             }
+        }
+
+        function renderOrderInfo() {
+            if (!orderData) return;
+            const { fishTypeKey, size, farmerName, place } = pageState;
+            const fishName = fishTypeKey
+                ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey)
+                : '';
+
+            // 5/5 #4: 注文状況画面と同じ粒度で情報表示。複数アイテムは各行を明細表示。
+            const items = Array.isArray(orderData.items) ? orderData.items : null;
+            const isMulti = items && items.length > 1;
+            let itemsHtml;
+            if (isMulti) {
+                itemsHtml = items.map(it => {
+                    const itType = it.snapFishType || '';
+                    const itName = itType
+                        ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim()
+                        : '';
+                    const sizePart = it.snapSize ? `（${it.snapSize} head/kg）` : '';
+                    const gutLabel = it.gutProcessing
+                        ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
+                        : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
+                    return `<div style="font-size:14px; color:var(--color-text); padding:2px 0;">・${itName}${sizePart} ${it.quantity}kg・${gutLabel}</div>`;
+                }).join('');
+            } else {
+                const gutLabel = orderData.gutProcessing
+                    ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
+                    : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
+                itemsHtml = `
+                    <div style="font-size:16px; font-weight:700; color:var(--color-text);">${fishName}${size ? `（${size} head/kg）` : ''}</div>
+                    <div style="font-size:14px; color:var(--color-text); margin-top:4px;">${orderData.quantity} kg・${gutLabel}</div>
+                `;
+            }
+
+            // 5/5 #4: 支払いステータス（payment + admin の状態を統合表示）
+            const payStatusInfo = computePaymentStatusInfo();
 
             document.getElementById('order-info').innerHTML = `
-                <div style="font-size:14px; color:var(--color-text-sub); margin-bottom:4px;">${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}</div>
-                <div style="font-size:16px; font-weight:700; color:var(--color-text);">${fishName}${size ? `（${size} head/kg）` : ''}</div>
-                <div style="font-size:14px; color:var(--color-text); margin-top:4px;">${i18next.t('orders.quantity')} ${orderData.quantity} kg</div>
-                <div style="font-size:13px; color:var(--color-text-sub); margin-top:6px;">
+                <div style="font-size:14px; color:var(--color-text-sub); margin-bottom:6px;">${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}</div>
+                <div style="font-size:13px; color:var(--color-text-sub); margin-bottom:8px;">
                     <span class="material-symbols-outlined" style="font-size:14px;">storefront</span>
-                    ${farmerName}${place ? ` · ${place}` : ''}
+                    ${i18next.t('payment.partnerLabel')}: ${farmerName}${place ? ` · ${place}` : ''}
+                </div>
+                ${itemsHtml}
+                <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:13px; color:var(--color-text-sub);">${i18next.t('payment.statusLabel')}</span>
+                    <span style="font-size:13px; font-weight:700; padding:3px 10px; border-radius:10px; background:${payStatusInfo.bg}; color:${payStatusInfo.color};">${payStatusInfo.text}</span>
                 </div>
             `;
+        }
 
-            // 金額内訳
+        // 5/5 #4: payment + admin の状態を統合した支払いステータスラベル
+        function computePaymentStatusInfo() {
+            const adminStatus = orderData.adminStatus;
+            const paymentStatus = orderData.paymentStatus;
+            if (adminStatus === 'done') {
+                return { text: i18next.t('payment.statusDone'), bg: '#0f172a', color: '#fff' };
+            }
+            if (adminStatus === 'remitted') {
+                return { text: i18next.t('payment.statusRemitted'), bg: '#ccfbf1', color: '#115e59' };
+            }
+            if (adminStatus === 'payment_confirmed') {
+                return { text: i18next.t('payment.statusConfirmed'), bg: '#dcfce7', color: '#166534' };
+            }
+            if (paymentStatus === 'paid') {
+                return { text: i18next.t('payment.statusPaidByRestaurant'), bg: '#ecfdf5', color: '#047857' };
+            }
+            return { text: i18next.t('payment.statusWaitingPayment'), bg: '#fef3c7', color: '#92400e' };
+        }
+
+        function renderBreakdown() {
+            if (!orderData) return;
             const fishTotal = orderData.fishPrice || 0;
             const deliveryFee = orderData.deliveryFee || 0;
             const serviceFee = orderData.serviceFee || 0;
@@ -346,7 +422,6 @@
 
             document.getElementById('total-amount').textContent = `${total.toLocaleString()} KHR`;
 
-            // レストラン表示：サービス料を魚代に合算
             const displayFishTotal = fishTotal + serviceFee;
             let html = `
                 <div class="pay-line"><span class="pay-line__label">${i18next.t('payment.subtotal')}</span><span class="pay-line__value">${displayFishTotal.toLocaleString()} KHR</span></div>
@@ -357,11 +432,14 @@
                 document.getElementById('discount-note').style.display = 'block';
             }
             document.getElementById('breakdown').innerHTML = html;
+        }
 
-            // 支払い済みの場合
-            updatePaidState(orderData.paymentStatus);
-
-            loading.classList.remove('show');
+        // 言語切替時：data-i18n は applyTranslations 自動更新、innerHTML 部分は手動再描画
+        onLanguageChange(() => {
+            renderDeadlineBanner();
+            renderOrderInfo();
+            renderBreakdown();
+            if (orderData) updatePaidState(orderData.paymentStatus);
         });
 
         function updatePaidState(paymentStatus) {

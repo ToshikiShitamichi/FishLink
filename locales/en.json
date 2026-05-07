@@ -261,7 +261,9 @@
         "errorSubmit": "Order failed. Please try again.",
         "successRedirect": "Order placed successfully",
         "moreFromFarmerTitle": "More from this farmer",
-        "moreFromFarmerDesc": "Ordering together from the same farmer saves on delivery fee"
+        "moreFromFarmerDesc": "This farmer has other fish available",
+        "viewCartCta": "View cart (order together)",
+        "farmerLabel": "Farmer"
     },
     "orders": {
         "title": "Confirm Order",
@@ -313,6 +315,7 @@
         "activeSection": "Active ({{count}})",
         "todaySection": "Today ({{count}})",
         "futureSection": "Tomorrow & later ({{count}})",
+        "showMore": "Show more ({{count}} remaining)",
         "waitingRemittanceSection": "Awaiting Remittance ({{count}})",
         "waitingRemittanceClosed": "▶ Awaiting Remittance ({{count}})",
         "waitingRemittanceOpen": "▼ Awaiting Remittance ({{count}})",
@@ -351,6 +354,8 @@
         "confirmDialog": "Have you completed the payment?",
         "alreadyPaid": "Payment Confirmed",
         "paidBanner": "Payment confirmed.",
+        "partnerLabel": "Partner",
+        "statusLabel": "Payment Status",
         "paidMessage": "Restaurant has completed payment",
         "errorSubmit": "Something went wrong. Please try again.",
         "goToPayment": "Go to Payment",
@@ -476,6 +481,7 @@
         "ratingSatisfaction": "Satisfaction",
         "ratingCommunication": "Communication",
         "ratingReception": "Reception",
+        "goodRate": "Good rate",
         "editProfile": "Edit profile",
         "messagePlaceholder": "Leave a message for customers",
         "uploadPhoto": "Choose photo",
@@ -488,12 +494,18 @@
         "addedTitle": "Added to cart",
         "addToCart": "Add to cart",
         "viewCart": "View cart",
+        "viewCartShort": "View cart",
+        "viewCartWithCount": "View cart ({{count}})",
+        "inCart": "In cart",
+        "bannerText": "{{count}} item(s) in cart",
+        "singleOrderWarning": "You have other fish in your cart.\nPressing 'Place Order' here will only order this single fish — cart contents will not be included.\n\nTo order everything together, press 'Cancel' and go to the cart.\n\nPress 'OK' to continue with the single-item order.",
+        "alreadyInCartWarning": "This fish is already in your cart.\nProceeding will create a separate order, distinct from your cart.\n\nTo order together with cart items, press 'Cancel' and go to the cart.\n\nPress 'OK' to continue with the single-item order.",
         "remove": "Remove",
         "confirmRemove": "Remove this item from the cart?",
         "confirmSubmitTitle": "Submit the order with the following details?",
         "confirmSubmitDetail": "{{items}} item(s) across {{farmers}} producer(s).",
         "confirmSubmitAsk": "Each producer will be notified upon confirmation.",
-        "gutToggle": "Gut processing (+{{price}}/kg)",
+        "gutToggle": "Gut processing (+{{price}} KHR/kg)",
         "deliveryDate": "Delivery date",
         "deliveryTime": "Time slot",
         "fishTotal": "Fish (service fee incl.)",
@@ -572,6 +584,14 @@
         "remitDone": {
             "title": "Payment received",
             "body": "Order from {{restaurant}}: {{fish}} {{qty}}kg"
+        },
+        "adminChat": {
+            "title": "Message from admin",
+            "body": "{{text}}"
+        },
+        "adminChatFromUser": {
+            "title": "Inquiry from {{name}}",
+            "body": "{{text}}"
         }
     },
     "comments": {
@@ -710,7 +730,11 @@
         "subtitle": "Send a message to the FishLink admin",
         "loading": "Loading...",
         "empty": "No messages yet. Feel free to start.",
-        "placeholder": "Type a message..."
+        "placeholder": "Type a message...",
+        "guidanceTitle": "Before you write",
+        "guidance1": "Replies may take 1-2 days",
+        "guidance2": "Please keep your message concise",
+        "guidance3": "For urgent issues, use \"Report a problem\" instead"
     },
     "admin": {
         "brand": "FISHLINK Admin",

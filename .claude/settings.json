@@ -12,7 +12,8 @@
       "Bash(node --check functions/index.js)",
       "Bash(node -e ' *)",
       "Bash(node -e \"['ja','en','km'].forEach\\(l => { try { JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/'+l+'.json','utf8'\\)\\); console.log\\(l, 'OK'\\); } catch\\(e\\) { console.log\\(l, 'FAIL', e.message\\); } }\\);\")",
-      "Bash(grep -n \"html += '\\\\|html += \\\\`\\\\|return html;\\\\|^                \\\\`;\\\\|order-card-end\\\\|</div>\\\\`;$\" c:/work/FishLink/pages/farmer/orders.html)"
+      "Bash(grep -n \"html += '\\\\|html += \\\\`\\\\|return html;\\\\|^                \\\\`;\\\\|order-card-end\\\\|</div>\\\\`;$\" c:/work/FishLink/pages/farmer/orders.html)",
+      "Bash(python3 -c ' *)"
     ]
   }
 }

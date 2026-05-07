@@ -99,6 +99,7 @@
         }
         .subrating-card { background: #f8fafc; border-radius: 12px; padding: 10px; text-align: center; }
         .subrating-card__label { font-size: 11px; color: var(--color-text-sub); }
+        .subrating-card__sub { font-size: 10px; color: var(--color-text-sub); margin-top: 2px; }
         .subrating-card__value { font-size: 20px; font-weight: 700; margin-top: 4px; color: var(--color-text); }
 
         .review-card {
@@ -206,14 +207,17 @@
             <div class="subrating-grid">
                 <div class="subrating-card">
                     <div class="subrating-card__label" data-i18n="profile.ratingSatisfaction"></div>
+                    <div class="subrating-card__sub" data-i18n="profile.goodRate"></div>
                     <div class="subrating-card__value" id="sub-overall">0.0</div>
                 </div>
                 <div class="subrating-card">
                     <div class="subrating-card__label" data-i18n="profile.ratingQuality"></div>
+                    <div class="subrating-card__sub" data-i18n="profile.goodRate"></div>
                     <div class="subrating-card__value" id="sub-quality">0.0</div>
                 </div>
                 <div class="subrating-card">
                     <div class="subrating-card__label" data-i18n="profile.ratingTime"></div>
+                    <div class="subrating-card__sub" data-i18n="profile.goodRate"></div>
                     <div class="subrating-card__value" id="sub-time">0.0</div>
                 </div>
             </div>

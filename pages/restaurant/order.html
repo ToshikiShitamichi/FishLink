@@ -412,19 +412,18 @@
             cursor: not-allowed;
         }
 
-        /* 5/2: 注文ボタン横にカート追加ボタン */
+        /* 5/5: フッターを「カートに追加」+「カートを見る」の2ボタン構成に一本化 */
         .order-footer__actions {
             display: flex;
             gap: 8px;
             align-items: stretch;
         }
         .order-footer__btn--cart {
-            flex: 0 0 auto;
-            width: auto;
+            flex: 1;
             background: #fff;
-            color: #f43f5e;
-            border: 2px solid #f43f5e;
-            padding: 12px 16px;
+            color: #047857;
+            border: 2px solid #10b981;
+            padding: 12px 12px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -432,7 +431,30 @@
             font-size: 14px;
         }
         .order-footer__btn--cart .material-symbols-outlined { font-size: 20px; }
-        .order-footer__btn--order { flex: 1; }
+        /* カート追加済み状態 */
+        .order-footer__btn--cart.added {
+            background: #ecfdf5;
+            color: #047857;
+            border-color: #10b981;
+        }
+        /* メインCTA：カートを見る（注文確定への入口） */
+        .order-footer__btn--view-cart {
+            flex: 1;
+            background: #10b981;
+            color: #fff;
+            border: 2px solid #10b981;
+            text-decoration: none;
+            padding: 12px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 16px;
+        }
+        .order-footer__btn--view-cart:hover { background: #059669; border-color: #059669; }
+        .order-footer__btn--view-cart .material-symbols-outlined { font-size: 20px; }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer></script>
 </head>
@@ -511,19 +533,22 @@
         <!-- 料金内訳 -->
         <div class="order-section" id="price-breakdown"></div>
 
-        <!-- 同一農家の他の魚（配送料節約のヒント） -->
+        <!-- 同一農家の他の魚 -->
         <div id="more-from-farmer" style="display:none; margin:0 16px 16px; padding:12px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px;">
             <div style="font-size:13px; font-weight:700; color:#065f46; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                <span class="material-symbols-outlined" style="font-size:16px;">local_shipping</span>
+                <span class="material-symbols-outlined" style="font-size:16px;">set_meal</span>
                 <span data-i18n="order.moreFromFarmerTitle"></span>
             </div>
             <div style="font-size:12px; color:#065f46; line-height:1.5; margin-bottom:10px;" data-i18n="order.moreFromFarmerDesc"></div>
             <div id="more-from-farmer-list" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none;"></div>
+            <!-- 5/5: 「カートを見る」CTA はフッターに統合済み（重複導線を撤去） -->
         </div>
 
     </div>
 
     <!-- 固定フッター -->
+    <!-- 5/5: 「注文を確定する」ボタンを廃止し、「カートに追加」+「カートを見る」に一本化。
+         全ての注文はカート経由で確定する -->
     <div class="order-footer">
         <div class="order-footer__info">
             <div>
@@ -534,10 +559,13 @@
         </div>
         <div class="order-footer__actions">
             <button class="order-footer__btn order-footer__btn--cart" id="add-cart-btn" type="button" aria-label="add to cart">
-                <span class="material-symbols-outlined">add_shopping_cart</span>
-                <span data-i18n="cart.addToCart"></span>
+                <span class="material-symbols-outlined" id="add-cart-btn-icon">add_shopping_cart</span>
+                <span id="add-cart-btn-label" data-i18n="cart.addToCart"></span>
             </button>
-            <button class="order-footer__btn order-footer__btn--order" id="submit-btn" data-i18n="order.submit"></button>
+            <a class="order-footer__btn order-footer__btn--view-cart" id="view-cart-btn" href="/pages/restaurant/cart.html">
+                <span class="material-symbols-outlined">shopping_cart</span>
+                <span id="view-cart-btn-label" data-i18n="cart.viewCart"></span>
+            </a>
         </div>
     </div>
 
@@ -545,10 +573,10 @@
     <div class="error-msg" id="error-msg" style="position:fixed; top:60px; left:16px; right:16px; max-width:448px; margin:0 auto; z-index:20;"></div>
 
     <script type="module">
-        import { initI18n } from '/js/i18n.js';
+        import { initI18n, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
-        import { addToCart } from '/js/cart.js';
+        import { addToCart, subscribeCart } from '/js/cart.js';
         import {
             doc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -628,6 +656,56 @@
             else { setTimeout(() => waitForUserData(callback), 300); }
         }
 
+        // 5/5: カート状態の購読 — フッターのボタン状態と「他の魚」セクションの追加済み表示を維持
+        let cartItemsCount = 0;
+        let cartListingIds = new Set();
+        let isThisInCart = false;
+        function startCartWatch() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            subscribeCart(uid, (items) => {
+                cartItemsCount = items.length;
+                cartListingIds = new Set(items.map(it => it.listingId));
+                isThisInCart = cartListingIds.has(listingId);
+                refreshCartUI();
+            });
+        }
+
+        function refreshCartUI() {
+            // フッター：「カートに追加 / カートに追加済み」のトグル
+            const btn = document.getElementById('add-cart-btn');
+            const icon = document.getElementById('add-cart-btn-icon');
+            const label = document.getElementById('add-cart-btn-label');
+            if (btn && icon && label) {
+                if (isThisInCart) {
+                    btn.classList.add('added');
+                    icon.textContent = 'check';
+                    label.textContent = i18next.t('cart.inCart');
+                } else {
+                    btn.classList.remove('added');
+                    icon.textContent = 'add_shopping_cart';
+                    label.textContent = i18next.t('cart.addToCart');
+                }
+            }
+
+            // フッター：「カートを見る（N点）」 — カートに入っているとき件数を表示
+            const viewCartLabel = document.getElementById('view-cart-btn-label');
+            if (viewCartLabel) {
+                viewCartLabel.textContent = cartItemsCount > 0
+                    ? i18next.t('cart.viewCartWithCount', { count: cartItemsCount })
+                    : i18next.t('cart.viewCart');
+            }
+
+            // 「他の魚」セクション：カートに入っているものは「追加済み」状態を持続表示
+            document.querySelectorAll('.more-from-farmer__add').forEach(b => {
+                const inCart = cartListingIds.has(b.dataset.id);
+                b.classList.toggle('added', inCart);
+                b.innerHTML = inCart
+                    ? `<span class="material-symbols-outlined" style="font-size:14px;">check</span>${i18next.t('cart.inCart')}`
+                    : `<span class="material-symbols-outlined" style="font-size:14px;">add_shopping_cart</span>${i18next.t('cart.addToCart')}`;
+            });
+        }
+
         waitForUserData(async () => {
             loading.classList.add('show');
             try {
@@ -688,12 +766,17 @@
                 recalculate();
                 // 同一農家の他商品（配送料節約のヒント）
                 loadMoreFromFarmer();
+                // 5/5 #3: カート状態の購読
+                startCartWatch();
             } catch (err) {
                 console.error(err);
             } finally {
                 loading.classList.remove('show');
             }
         });
+
+        // 言語切替時にカートUIテキストを再描画
+        onLanguageChange(() => refreshCartUI());
 
         // ── 同一農家の他商品 ──
         // 5/2: 単体注文ページへの遷移ではなく、カート追加アクションに変更
@@ -735,13 +818,16 @@
                 }).join('');
                 wrap.style.display = 'block';
 
-                // ボタン押下 → カート追加（minOrder + 内臓処理あり、ダッシュボードと同じ既定値）
+                // 5/5: カート追加 → subscribeCart の onChange で「追加済み」状態が持続表示される
+                //   （setTimeout で消えていた問題の対処）
                 list.querySelectorAll('.more-from-farmer__add').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         const targetListingId = btn.dataset.id;
                         const minOrder = Number(btn.dataset.min) || 1;
                         const uid = window.currentUser?.uid;
                         if (!uid) return;
+                        // 既にカート内なら何もしない
+                        if (cartListingIds.has(targetListingId)) return;
                         btn.disabled = true;
                         try {
                             await addToCart(uid, {
@@ -750,22 +836,17 @@
                                 quantity: minOrder,
                                 gutProcessing: true,
                             });
-                            // フィードバック：ボタン表示を一時的に「追加済み」に切替
-                            const original = btn.innerHTML;
-                            btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px;">check</span>${i18next.t('cart.addedTitle')}`;
-                            btn.style.background = '#ecfdf5';
-                            setTimeout(() => {
-                                btn.innerHTML = original;
-                                btn.style.background = '#fff';
-                                btn.disabled = false;
-                            }, 1500);
+                            // ボタンの「追加済み」表示は refreshCartUI が subscribeCart の更新で自動反映
                         } catch (err) {
                             console.error('addToCart failed:', err);
                             alert(err.message || 'Failed');
+                        } finally {
                             btn.disabled = false;
                         }
                     });
                 });
+                // 初回描画時の状態反映（既にカートに入っているものは「追加済み」で出す）
+                refreshCartUI();
             } catch (e) {
                 console.warn('loadMoreFromFarmer failed:', e.message);
             }
@@ -1009,8 +1090,8 @@
                     quantity,
                     gutProcessing,
                 });
-                // フィードバック：トーストの代わりに alert（既存パターン踏襲）
-                alert(i18next.t('cart.addedTitle'));
+                // 5/5 #3: alert は廃止 — subscribeCart の onChange で
+                // ボタンが「追加済み」状態に変化＋下部バナーで「カートを見る」が常時表示される
             } catch (err) {
                 console.error('addToCart failed:', err);
                 errorMsg.textContent = err.message || i18next.t('cart.errorSubmit');
@@ -1020,141 +1101,10 @@
             }
         });
 
-        // ── 注文確定 ──
-        document.getElementById('submit-btn').addEventListener('click', async () => {
-            errorMsg.classList.remove('show');
-
-            if (quantity <= 0) {
-                errorMsg.textContent = i18next.t('order.errorQuantity');
-                errorMsg.classList.add('show');
-                return;
-            }
-            if (listingData.minOrder && quantity < listingData.minOrder) {
-                errorMsg.textContent = i18next.t('order.errorMinOrder', { min: listingData.minOrder });
-                errorMsg.classList.add('show');
-                return;
-            }
-
-            // 在庫チェック（最新データを再取得）
-            const freshSnap = await getDoc(doc(db, 'fishListings', listingId));
-            const freshStock = freshSnap.data()?.stock || 0;
-            if (freshStock < quantity) {
-                errorMsg.textContent = i18next.t('order.errorStock', { stock: freshStock }) || `Stock insufficient (${freshStock}kg available)`;
-                errorMsg.classList.add('show');
-                return;
-            }
-
-            // 5/1: 注文内容の確認ダイアログ（農家の承認ダイアログと同じ思想）
-            {
-                const calc = window._orderCalc;
-                const fishTypeKey = listingData.fishType || '';
-                const fishName = fishTypeKey
-                    ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey).trim()
-                    : '';
-                const sizePart = listingData.size ? ` (${listingData.size} head/kg)` : '';
-                const gutLabel = gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo');
-                const dateIso = document.getElementById('delivery-date').value;
-                const timeStr = document.getElementById('delivery-time').value;
-                const farmerName = farmerData?.displayName || '';
-
-                const lines = [
-                    i18next.t('order.confirmSubmitTitle'),
-                    '',
-                    `${i18next.t('orders.fishLabel')}: ${fishName}${sizePart}`,
-                    `${i18next.t('orders.quantity')} ${quantity} kg ・${gutLabel}`,
-                    `${i18next.t('orders.deliveryDate')} ${dateIso || ''} ${timeStr || ''}`,
-                    `${i18next.t('order.farmerLabel')}: ${farmerName}`,
-                    `${i18next.t('order.totalLabel')}: ${(calc?.total || 0).toLocaleString()} KHR`,
-                    '',
-                    i18next.t('order.confirmSubmitAsk'),
-                ];
-                if (!confirm(lines.join('\n'))) return;
-            }
-
-            const submitBtn = document.getElementById('submit-btn');
-            submitBtn.disabled = true;
-            loading.classList.add('show');
-
-            try {
-                const uid = window.currentUser?.uid;
-                if (!uid) throw new Error('Login required');
-
-                const calc = window._orderCalc;
-                const deliveryDateIso = document.getElementById('delivery-date').value; // YYYY-MM-DD
-                const deliveryTime = document.getElementById('delivery-time').value;
-                // 既存表示互換：M/D 形式も保存
-                const [y, m, d] = deliveryDateIso.split('-').map(Number);
-                const deliveryDate = `${m}/${d}`;
-
-                // 単一item だが items[] 形式でも保存（カート経路と統一）
-                const itemDoc = {
-                    listingId,
-                    quantity,
-                    gutProcessing,
-                    fishPrice: calc.fishTotal,
-                    serviceFee: calc.serviceFee,
-                    campaignDiscount: calc.campaignDiscount,
-                    farmerCommission: calc.farmerCommissionNet,
-                    farmerCommissionGross: calc.farmerCommission,
-                    farmerCampaignDiscount: calc.farmerCampaignDiscount,
-                    farmerReceiveAmount: calc.fishTotal - calc.farmerCommissionNet,
-                    snapFishType: listingData.fishType || null,
-                    snapSize: listingData.size || null,
-                    snapPhotoUrl: listingData.photoUrl || null,
-                    snapPrice: listingData.price ?? null,
-                    snapGutPrice: listingData.gutPrice ?? null,
-                };
-
-                const orderRef = await addDoc(collection(db, 'orders'), {
-                    restaurantId: uid,
-                    farmerId: listingData.farmerId,
-                    // order-level
-                    deliveryDate,
-                    deliveryDateIso,
-                    deliveryTime,
-                    deliveryFee: calc.deliveryFee,
-                    // items[] 新方式
-                    items: [itemDoc],
-                    // 合計値（items合計）
-                    fishPrice: calc.fishTotal,
-                    serviceFee: calc.serviceFee,
-                    campaignDiscount: calc.campaignDiscount,
-                    totalAmount: calc.total,
-                    serviceRateUsed: calc.serviceRateUsed,
-                    farmerCommission: calc.farmerCommissionNet,
-                    farmerCommissionGross: calc.farmerCommission,
-                    farmerCampaignDiscount: calc.farmerCampaignDiscount,
-                    farmerRateUsed: calc.farmerRateUsed,
-                    farmerReceiveAmount: calc.farmerReceiveAmount,
-                    // legacy: 先頭item（= この場合のみ）由来
-                    listingId,
-                    quantity,
-                    gutProcessing,
-                    snapFishType: listingData.fishType || null,
-                    snapSize: listingData.size || null,
-                    snapPhotoUrl: listingData.photoUrl || null,
-                    snapPrice: listingData.price ?? null,
-                    snapGutPrice: listingData.gutPrice ?? null,
-                    // ステータス
-                    status: 'pending',
-                    declineReason: null,
-                    paymentStatus: 'pending',
-                    createdAt: serverTimestamp(),
-                });
-
-                // 注文完了 → チャット画面へ（承認待ちバナー表示）
-                // ※ 在庫減算・FCM通知はCloud Functionsが自動処理
-                location.href = `/pages/restaurant/delivery.html?id=${orderRef.id}`;
-
-            } catch (err) {
-                console.error(err);
-                errorMsg.textContent = i18next.t('order.errorSubmit');
-                errorMsg.classList.add('show');
-            } finally {
-                submitBtn.disabled = false;
-                loading.classList.remove('show');
-            }
-        });
+        // ── 注文確定経路は廃止 ──
+        // 5/5: 「注文を確定する」ボタンは削除し、すべてカート経由で確定する仕様に統一。
+        //   フッターは「カートに追加」+「カートを見る」のみ。
+        //   addDoc / getDocs などの import は cart.html 側で利用するため残してある。
     </script>
 
 </body>

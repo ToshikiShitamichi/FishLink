@@ -122,6 +122,12 @@
             color: #fff;
         }
         .order-card__quick-action--review:hover { background: #ea580c; }
+        /* 5/4: レビュー済み（無効化表示） */
+        .order-card__quick-action--reviewed {
+            background: #f1f5f9; color: #64748b;
+            border: 1px solid #e2e8f0;
+            cursor: default; pointer-events: none;
+        }
         .order-card__quick-action--report {
             background: #fef2f2;
             color: #b91c1c;
@@ -130,12 +136,10 @@
         .order-card__quick-action--report:hover { background: #fee2e2; }
         .order-card__quick-action .material-symbols-outlined { font-size: 14px; }
 
+        /* 5/5 #2: 承認画面の縦長写真がスクロールを邪魔していたため小型サムネイルに変更
+           ヘッダー行の76pxサムネイルで主役は十分、ここは複数商品時の枚数バッジ用 */
         .order-card__img {
-            aspect-ratio: 4/3;
-            background: linear-gradient(135deg, #ded7ba, #f2ecd5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: none;
         }
 
         .order-card__img img {
@@ -633,8 +637,19 @@
                     if (myLoc && restData.location) {
                         distKm = calcDistanceKm(myLoc.lat, myLoc.lng, restData.location.lat, restData.location.lng);
                     }
-                    return { id: d.id, ...data, listingData, restData, distKm };
+                    return { id: d.id, ...data, listingData, restData, distKm, hasReview: false };
                 });
+
+                // 5/4: 農家レビューの有無を一括取得（approved以降の注文のみ・並列）
+                const reviewableNew = newOrders.filter(o =>
+                    ['approved', 'preparing', 'delivering', 'delivered', 'completed'].includes(o.status)
+                );
+                await Promise.all(reviewableNew.map(async o => {
+                    try {
+                        const rs = await getDoc(doc(db, 'orders', o.id, 'reviews', 'farmer'));
+                        o.hasReview = rs.exists();
+                    } catch (e) { /* ignore */ }
+                }));
 
                 // 既存と結合（重複除去）
                 const seen = new Set(allOrders.map(o => o.id));
@@ -703,9 +718,15 @@
             const restDistrict = order.restData.district || '';
             const restPlace = restProvince + (restDistrict ? ', ' + restDistrict : '');
 
-            const imgHtml = photoUrl
+            // 5/4: 複数魚種注文の場合、写真の右上に「全N点」バッジを表示
+            const itemCountForBadge = Array.isArray(order.items) ? order.items.length : 1;
+            const photoCountBadge = itemCountForBadge > 1
+                ? `<span style="position:absolute; top:8px; right:8px; background:rgba(220,38,38,0.92); color:#fff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; box-shadow:0 1px 4px rgba(0,0,0,0.2);">${i18next.t('orders.totalItems', { count: itemCountForBadge })}</span>`
+                : '';
+            const imgInner = photoUrl
                 ? `<img src="${photoUrl}" alt="${fishName}">`
                 : `<span class="order-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">set_meal</span></span>`;
+            const imgHtml = `<div style="position:relative;">${imgInner}${photoCountBadge}</div>`;
 
             // 承認期限（注文時刻 + 1時間）
             let deadlineHtml = '';
@@ -748,6 +769,20 @@
                 ? `<div style="display:inline-block; margin-left:8px; padding:2px 10px; background:#fef3c7; color:#92400e; border-radius:10px; font-size:11px; font-weight:700;">+${itemCount - 1} ${i18next.t('orders.otherItems')}</div>`
                 : '';
 
+            // 5/5 #5: 「+N点」の中身が分かるよう、行内に各アイテムをインライン明細表示
+            const multiItemsInline = (itemCount > 1 && Array.isArray(order.items))
+                ? order.items.map(it => {
+                    const itType = it.snapFishType || '';
+                    const itName = itType
+                        ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim()
+                        : '';
+                    const gutText = it.gutProcessing
+                        ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
+                        : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
+                    return `<div style="font-size:12px; color:#475569; padding-left:4px; line-height:1.5;">・${itName} ${it.quantity}kg・${gutText}</div>`;
+                }).join('')
+                : '';
+
             // コンパクト行用の表示値
             let statusKey = order.status || 'pending';
             if (isExpiredPending) statusKey = 'declined';
@@ -773,6 +808,7 @@
                                 ${order.deliveryDate || ''} ${order.deliveryTime || ''}
                             </div>
                             <div class="order-row__fish">${fishName} ${order.quantity || 0}kg${multiItemBadge}</div>
+                            ${multiItemsInline ? `<div style="margin-top:4px;">${multiItemsInline}</div>` : ''}
                             <div class="order-row__rest">
                                 <span class="material-symbols-outlined">storefront</span>
                                 ${restWithPlace}
@@ -795,7 +831,10 @@
                                 const itType = it.snapFishType || '';
                                 const itName = itType ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType) : '';
                                 const itShort = itName.trim();
-                                const gutLabel = it.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo');
+                                // 5/4: 「あり」だけだと意味不明 →「内臓処理あり/内臓処理なし」を全文表示
+                                const gutLabel = it.gutProcessing
+                                    ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
+                                    : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
                                 return `<div class="order-card__row" style="padding-left:10px; line-height:1.6;">・${itShort} ${it.snapSize ? '(' + it.snapSize + ' head/kg)' : ''} ${it.quantity}kg ・${gutLabel}</div>`;
                             }).join('')}
                         ` : `
@@ -871,12 +910,19 @@
                     actionsHtml += `<a class="order-card__quick-cta order-card__quick-cta--payment" href="/pages/farmer/payment.html?id=${order.id}">${i18next.t('payment.goToRemittance')}</a>`;
                 }
                 if (showReviewReport) {
-                    actionsHtml += `
-                        <div class="order-card__quick-action-row">
-                            <a class="order-card__quick-action order-card__quick-action--review" href="/pages/farmer/review.html?id=${order.id}">
+                    // 5/4: レビュー済みなら無効化バッジ表示（レストラン側と同じパターン）
+                    const reviewBtn = order.hasReview
+                        ? `<span class="order-card__quick-action order-card__quick-action--reviewed">
+                                <span class="material-symbols-outlined">check</span>
+                                ${i18next.t('review.reviewed')}
+                            </span>`
+                        : `<a class="order-card__quick-action order-card__quick-action--review" href="/pages/farmer/review.html?id=${order.id}">
                                 <span class="material-symbols-outlined">star</span>
                                 ${i18next.t('review.submit')}
-                            </a>
+                            </a>`;
+                    actionsHtml += `
+                        <div class="order-card__quick-action-row">
+                            ${reviewBtn}
                             <a class="order-card__quick-action order-card__quick-action--report" href="/pages/farmer/report.html?id=${order.id}">
                                 <span class="material-symbols-outlined">flag</span>
                                 ${i18next.t('review.reportIssue')}
@@ -929,17 +975,21 @@
             // 期限切れpendingは辞退扱いへ
             const expiredOrders = allOrders.filter(o => o.status === 'pending' && isOrderExpired(o));
 
+            // 5/4: 履歴系（完了済み・辞退済み）は新しい順、対応必要系はそのまま納品日順
+            const sortByCreatedDesc = (a, b) =>
+                (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
+
             // トグル群（送金待ち / 完了済み / 辞退済み）
             const waitingRemittanceOrders = allOrders.filter(o =>
                 ['delivered', 'completed'].includes(o.status) && !isRemitted(o)
             ).sort(sortByDelivery);
             const completedOrders = allOrders.filter(o =>
                 ['delivered', 'completed'].includes(o.status) && isRemitted(o)
-            ).sort(sortByDelivery);
+            ).sort(sortByCreatedDesc);
             const declinedOrders = [
                 ...allOrders.filter(o => o.status === 'declined'),
                 ...expiredOrders,
-            ];
+            ].sort(sortByCreatedDesc);
 
             const listEl = document.getElementById('orders-list');
             listEl.innerHTML = '';
@@ -977,9 +1027,28 @@
                 `;
             }
 
+            // 5/4: 履歴系は最新N件のみ初期表示し、「もっと見る」で全件展開
+            const TRUNCATE_INITIAL = 3;
+            function renderTruncated(items, restId) {
+                if (items.length <= TRUNCATE_INITIAL) {
+                    return items.map(o => renderOrderCard(o)).join('');
+                }
+                const initial = items.slice(0, TRUNCATE_INITIAL).map(o => renderOrderCard(o)).join('');
+                const rest = items.slice(TRUNCATE_INITIAL).map(o => renderOrderCard(o)).join('');
+                const remainCount = items.length - TRUNCATE_INITIAL;
+                return `
+                    ${initial}
+                    <div id="${restId}" style="display:none;">${rest}</div>
+                    <button type="button" class="show-more-btn" data-target="${restId}"
+                        style="display:block; width:100%; padding:10px; margin-top:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; color:#475569; font-weight:600; font-size:13px; cursor:pointer; font-family:inherit;">
+                        ${i18next.t('orders.showMore', { count: remainCount })}
+                    </button>
+                `;
+            }
+
             // トグル② 完了済み（送金完了）
             if (completedOrders.length > 0) {
-                const html = completedOrders.map(o => renderOrderCard(o)).join('');
+                const html = renderTruncated(completedOrders, 'completed-rest');
                 listEl.innerHTML += `
                     <div class="accordion-header" id="acc-completed">
                         ${i18next.t('orders.approvedSectionClosed', { count: completedOrders.length })}
@@ -990,7 +1059,7 @@
 
             // トグル③ 辞退済み
             if (declinedOrders.length > 0) {
-                const html = declinedOrders.map(o => renderOrderCard(o)).join('');
+                const html = renderTruncated(declinedOrders, 'declined-rest');
                 listEl.innerHTML += `
                     <div class="accordion-header" id="acc-declined">
                         ${i18next.t('orders.declinedSectionClosed', { count: declinedOrders.length })}
@@ -1018,6 +1087,16 @@
                 'orders.approvedSectionOpen', 'orders.approvedSectionClosed', completedOrders.length);
             bindAcc('acc-declined', 'acc-declined-body',
                 'orders.declinedSectionOpen', 'orders.declinedSectionClosed', declinedOrders.length);
+
+            // 5/4: 「もっと見る」ボタン
+            document.querySelectorAll('.show-more-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.dataset.target;
+                    const target = document.getElementById(targetId);
+                    if (target) target.style.display = 'block';
+                    btn.style.display = 'none';
+                });
+            });
 
             scrollToHashTarget();
         }
@@ -1128,7 +1207,10 @@
                                     ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim()
                                     : '';
                                 const sizePart = it.snapSize ? ` (${it.snapSize} head/kg)` : '';
-                                const gutLabel = it.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo');
+                                // 5/4: 内臓処理の表記を明示化
+                                const gutLabel = it.gutProcessing
+                                    ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
+                                    : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
                                 fishLines.push(`  ・${itName}${sizePart} ${it.quantity}kg ・${gutLabel}`);
                             });
                         } else {

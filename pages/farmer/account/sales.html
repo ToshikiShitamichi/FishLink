@@ -192,6 +192,31 @@
             const shown = filtered.slice(0, displayCount);
             listEl.innerHTML = shown.map(t => {
                 const b = statusBadge(t);
+                // 5/5 #5: 売上の品目（魚種・数量・内臓処理）が分かるよう明細表示
+                const items = Array.isArray(t.items) ? t.items : null;
+                const isMulti = items && items.length > 1;
+                let itemsHtml;
+                if (isMulti) {
+                    itemsHtml = items.map(it => {
+                        const itType = it.snapFishType || '';
+                        const itName = itType
+                            ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim()
+                            : '';
+                        const gutText = it.gutProcessing
+                            ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
+                            : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
+                        return `<div style="font-size:12px; color:#475569; padding:1px 0;">・${itName} ${it.quantity}kg・${gutText}</div>`;
+                    }).join('');
+                } else {
+                    const itType = t.snapFishType || '';
+                    const itName = itType
+                        ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim()
+                        : '';
+                    const gutText = t.gutProcessing
+                        ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
+                        : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
+                    itemsHtml = `<div style="font-size:13px; color:var(--color-text); padding:1px 0;">${itName} ${t.quantity || 0}kg・${gutText}</div>`;
+                }
                 return `
                     <div class="trade-item">
                         <div class="trade-item__head">
@@ -201,7 +226,7 @@
                             </div>
                             <span class="trade-badge ${b.cls}">${b.label}</span>
                         </div>
-                        <div class="trade-item__row"><span class="k">${i18next.t('order.quantity')}</span><span>${t.quantity || 0}kg</span></div>
+                        <div style="margin:4px 0 6px;">${itemsHtml}</div>
                         <div class="trade-item__row"><span class="k">${i18next.t('account.amountSales')}</span><span style="font-weight:600;">${fmtKhr(t.farmerReceiveAmount)}</span></div>
                     </div>
                 `;

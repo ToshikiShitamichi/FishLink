@@ -231,6 +231,70 @@
             margin-top: 2px;
         }
 
+        /* 5/5 #1: 生産者情報（顔写真・名前・レビュー） */
+        .fish-grid-card__farmer {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            margin-top: 6px;
+            margin-right: 42px; /* 右下のカートボタンとの干渉を回避 */
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .fish-grid-card__farmer-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fish-grid-card__farmer-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .fish-grid-card__farmer-avatar .material-symbols-outlined {
+            font-size: 18px;
+            color: #94a3b8;
+        }
+
+        .fish-grid-card__farmer-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .fish-grid-card__farmer-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .fish-grid-card__farmer-rating {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 10px;
+            color: var(--color-text-sub);
+        }
+
+        .fish-grid-card__farmer-rating .material-symbols-outlined {
+            font-size: 12px;
+            color: #f59e0b;
+            font-variation-settings: 'FILL' 1;
+        }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -677,6 +741,9 @@
                         farmerName: farmer.displayName || '',
                         farmerProvince: farmer.province || '',
                         farmerDistrict: farmer.district || '',
+                        farmerAvatarUrl: farmer.avatarUrl || null,
+                        farmerAvgRating: Number(farmer.avgRating || 0),
+                        farmerReviewCount: Number(farmer.reviewCount || 0),
                         distanceKm,
                         maxDistance: data.maxDistance || null,
                         displayPrice,
@@ -812,6 +879,22 @@
                             <div class="fish-grid-card__size">（${item.size} head/kg）</div>
                             ${item.farmerProvince ? `<div class="fish-grid-card__place"><span class="material-symbols-outlined" style="font-size:14px;">location_on</span> ${item.farmerProvince}${item.farmerDistrict ? ', ' + item.farmerDistrict : ''}</div>` : ''}
                             ${distText ? `<div class="fish-grid-card__distance">${distText}</div>` : ''}
+                            ${item.farmerName ? `
+                                <div class="fish-grid-card__farmer">
+                                    <div class="fish-grid-card__farmer-avatar">
+                                        ${item.farmerAvatarUrl
+                                            ? `<img src="${item.farmerAvatarUrl}" alt="" loading="lazy">`
+                                            : `<span class="material-symbols-outlined">person</span>`}
+                                    </div>
+                                    <div class="fish-grid-card__farmer-info">
+                                        <div class="fish-grid-card__farmer-name">${item.farmerName}</div>
+                                        <div class="fish-grid-card__farmer-rating">
+                                            <span class="material-symbols-outlined">star</span>
+                                            ${Math.round(item.farmerAvgRating)}%（${item.farmerReviewCount}）
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
                         </div>
                     </a>
                     ${cartBtnHtml}

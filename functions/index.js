@@ -79,6 +79,8 @@ async function clearAllTodosForOrder(uid, orderId) {
 // 管理者UID取得（全管理者）
 // 4/29: コスト削減のため `settings/adminUids.uids[]` をキャッシュとして使用
 //       キャッシュが存在しない場合のみ users をスキャンしてキャッシュを生成
+// 5/5 #6: 「新しい admin が登録されたが通知が届かない」問題対策で、
+//   onUserWritten トリガで admin role になった際に自動でキャッシュを再生成
 let _adminUidsCache = null;
 let _adminUidsCacheAt = 0;
 const ADMIN_CACHE_TTL_MS = 10 * 60 * 1000; // 10分
@@ -110,7 +112,19 @@ async function getAdminUids() {
   } catch (e) { /* ignore */ }
   _adminUidsCache = uids;
   _adminUidsCacheAt = Date.now();
+  console.log('Admin UIDs refreshed (user scan):', uids.length, uids);
   return uids;
+}
+
+// 5/5 #6: users コレクションのキャッシュ無効化ヘルパー
+//   onUserWritten から呼ばれ、`settings/adminUids` を再生成する。
+async function invalidateAdminUidsCache(reason) {
+  _adminUidsCache = null;
+  _adminUidsCacheAt = 0;
+  try {
+    await db.doc('settings/adminUids').delete();
+    console.log('settings/adminUids cache invalidated:', reason);
+  } catch (e) { /* ignore — 既に無ければスキップ */ }
 }
 
 // ── 通知履歴 ヘルパー ─────────────────────────────────────────
@@ -146,7 +160,11 @@ async function notifyUser(uid, { type, title, body, url, orderId, lang, msgKey, 
     }
     if (data.fcmToken) tokenSet.add(data.fcmToken);
     const tokens = Array.from(tokenSet);
-    if (tokens.length === 0) return;
+    if (tokens.length === 0) {
+      // 5/4: トークン未登録でも silent return せず、後で原因切り分けできるようログ
+      console.log('notifyUser skipped: no FCM tokens registered', { uid, type });
+      return;
+    }
 
     const messaging = getMessaging();
     const response = await messaging.sendEachForMulticast({
@@ -157,6 +175,14 @@ async function notifyUser(uid, { type, title, body, url, orderId, lang, msgKey, 
         orderId: orderId || '',
         url: url || '',
       },
+    });
+
+    // 5/4: 送信結果を診断用にログ
+    console.log('notifyUser FCM result:', {
+      uid, type,
+      tokens: tokens.length,
+      success: response.successCount,
+      failure: response.failureCount,
     });
 
     // 無効トークンを自動クリーンアップ（端末アンインストール・トークンローテーション後など）
@@ -1183,6 +1209,41 @@ exports.onReportUpdated = onDocumentUpdated(
   }
 );
 
+// 5/5 #6: users コレクション変更時に adminUids キャッシュを自動再生成
+//   問題: 新しい admin が登録された際 settings/adminUids にUIDが追加されず、
+//          トラブル報告通知が新admin に届かない（CLAUDE.mdの既知の運用課題）
+//   対策: 作成・更新で role が 'admin' になった瞬間にキャッシュを破棄。
+//          次回 getAdminUids() 呼び出しで users をスキャンし直して再生成される。
+exports.onUserCreated = onDocumentCreated(
+  {
+    document: "users/{uid}",
+    region: "asia-southeast1",
+    database: "(default)",
+  },
+  async (event) => {
+    const data = event.data?.data() || {};
+    if (data.role === 'admin') {
+      await invalidateAdminUidsCache(`new admin created: ${event.params.uid}`);
+    }
+  }
+);
+
+exports.onUserUpdated = onDocumentUpdated(
+  {
+    document: "users/{uid}",
+    region: "asia-southeast1",
+    database: "(default)",
+  },
+  async (event) => {
+    const before = event.data.before.data() || {};
+    const after = event.data.after.data() || {};
+    // role 変化（admin になる/admin から外れる）または既存 admin の有効/無効切替
+    if (before.role !== after.role && (before.role === 'admin' || after.role === 'admin')) {
+      await invalidateAdminUidsCache(`admin role changed: ${event.params.uid} ${before.role}→${after.role}`);
+    }
+  }
+);
+
 // ── 一時マイグレーション: 既存の delivered → completed に変換（管理者のみ） ──
 // 4/28 の status フロー変更に伴う一回限りの移行用。実行後は本関数は削除可
 exports.migrateDeliveredToCompleted = onCall(
@@ -1538,6 +1599,7 @@ exports.onAdminChatMessage = onDocumentCreated(
       });
     } else if (senderRole === "user") {
       const adminUids = await getAdminUids();
+      console.log("onAdminChatMessage: notifying admins", { fromUid: uid, adminCount: adminUids.length });
       const senderSnap = await db.doc(`users/${uid}`).get();
       const senderName = senderSnap.data()?.displayName || senderSnap.data()?.loginId || "user";
       const vars = { name: senderName, text: text.slice(0, 80) };
@@ -1553,6 +1615,8 @@ exports.onAdminChatMessage = onDocumentCreated(
           vars,
         });
       }));
+    } else {
+      console.log("onAdminChatMessage: senderRole not handled", { senderRole, uid });
     }
   }
 );

@@ -374,6 +374,27 @@
                     </a>`;
             }
 
+            // 5/4: 複数魚種注文の場合、各アイテムの明細を表示（魚種・数量・内臓処理）
+            const isMulti = Array.isArray(order.items) && order.items.length > 1;
+            let metaHtml;
+            if (isMulti) {
+                const itemRows = order.items.map(it => {
+                    const itType = it.snapFishType || '';
+                    const itName = itType
+                        ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim()
+                        : '';
+                    const gutText = it.gutProcessing
+                        ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
+                        : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
+                    return `<div style="font-size:12px; color:#475569; padding-left:4px;">・${itName} ${it.quantity}kg・${gutText}</div>`;
+                }).join('');
+                metaHtml = `
+                    <div class="order-item__meta">${order.deliveryDate || ''} ${order.deliveryTime || ''}</div>
+                    <div style="margin-top:4px;">${itemRows}</div>`;
+            } else {
+                metaHtml = `<div class="order-item__meta">${order.quantity}kg · ${order.deliveryDate || ''} ${order.deliveryTime || ''}</div>`;
+            }
+
             return `
                 <div class="order-block${showReviewLink ? ' has-actions' : ''}">
                     <div class="order-item" id="order-${d.id}">
@@ -382,9 +403,7 @@
                             <div class="order-item__status ${stClass}">${statusText}</div>
                         </div>
                         <div style="font-size:11px; color:#94a3b8; font-family:monospace; margin-top:2px;">${getOrderNumber({ id: d.id, ...order })}</div>
-                        <div class="order-item__meta">
-                            ${order.quantity}kg · ${order.deliveryDate || ''} ${order.deliveryTime || ''}
-                        </div>
+                        ${metaHtml}
                         ${ctaHtml}
                     </div>
                     ${reviewActionsHtml}
@@ -499,8 +518,15 @@
                     .filter(o => (o.order.deliveryDateIso || '') && (o.order.deliveryDateIso || '') <= today);
                 const inProgressFuture = inProgress
                     .filter(o => (o.order.deliveryDateIso || '') > today || !o.order.deliveryDateIso);
-                const completed = allOrders.filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus === 'paid');
-                const declined = allOrders.filter(o => o.order.status === 'declined');
+                // 5/4: 履歴系（完了済み・辞退済み）は新しい順（createdAt DESC）
+                const sortByCreatedDesc = (a, b) =>
+                    (b.order.createdAt?.toMillis?.() || 0) - (a.order.createdAt?.toMillis?.() || 0);
+                const completed = allOrders
+                    .filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus === 'paid')
+                    .sort(sortByCreatedDesc);
+                const declined = allOrders
+                    .filter(o => o.order.status === 'declined')
+                    .sort(sortByCreatedDesc);
 
                 listEl.innerHTML = '';
 
@@ -524,22 +550,37 @@
                     inProgressFuture.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName, o.hasReview); });
                 }
 
+                // 5/4: 履歴系は最新N件のみ初期表示し「もっと見る」で展開
+                const TRUNCATE_INITIAL = 3;
+                function renderTruncated(items, restId) {
+                    if (items.length <= TRUNCATE_INITIAL) {
+                        return items.map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
+                    }
+                    const initial = items.slice(0, TRUNCATE_INITIAL).map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
+                    const rest = items.slice(TRUNCATE_INITIAL).map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
+                    const remainCount = items.length - TRUNCATE_INITIAL;
+                    return `
+                        ${initial}
+                        <div id="${restId}" style="display:none;">${rest}</div>
+                        <button type="button" class="show-more-btn" data-target="${restId}"
+                            style="display:block; width:100%; padding:10px; margin-top:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; color:#475569; font-weight:600; font-size:13px; cursor:pointer; font-family:inherit;">
+                            ${i18next.t('orders.showMore', { count: remainCount })}
+                        </button>
+                    `;
+                }
+
                 // トグル：完了済み
                 if (completed.length > 0) {
                     listEl.innerHTML += `
                         <div class="accordion-header" id="acc-completed">${i18next.t('orders.approvedSectionClosed', { count: completed.length })}</div>
-                        <div class="accordion-body" id="acc-completed-body">
-                            ${completed.map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('')}
-                        </div>`;
+                        <div class="accordion-body" id="acc-completed-body">${renderTruncated(completed, 'completed-rest')}</div>`;
                 }
 
                 // トグル：辞退済み
                 if (declined.length > 0) {
                     listEl.innerHTML += `
                         <div class="accordion-header" id="acc-declined">${i18next.t('orders.declinedSectionClosed', { count: declined.length })}</div>
-                        <div class="accordion-body" id="acc-declined-body">
-                            ${declined.map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('')}
-                        </div>`;
+                        <div class="accordion-body" id="acc-declined-body">${renderTruncated(declined, 'declined-rest')}</div>`;
                 }
 
                 // アコーディオンイベント
@@ -556,6 +597,16 @@
                     this.textContent = body.classList.contains('open')
                         ? i18next.t('orders.declinedSectionOpen', { count: declined.length })
                         : i18next.t('orders.declinedSectionClosed', { count: declined.length });
+                });
+
+                // 5/4: 「もっと見る」ボタン
+                document.querySelectorAll('.show-more-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const targetId = btn.dataset.target;
+                        const target = document.getElementById(targetId);
+                        if (target) target.style.display = 'block';
+                        btn.style.display = 'none';
+                    });
                 });
 
                 // 通知からの遷移時に該当注文までスクロール

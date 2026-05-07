@@ -78,7 +78,8 @@
         .subrating-card--blue { background: #eff6ff; }
         .subrating-card--green { background: #f0fdf4; }
         .subrating-card__label { font-size: 11px; color: var(--color-text-sub); }
-        .subrating-card__value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+        .subrating-card__sub { font-size: 10px; color: var(--color-text-sub); margin-top: 2px; }
+        .subrating-card__value { font-size: 20px; font-weight: 700; margin-top: 2px; }
         .subrating-card--orange .subrating-card__value { color: #ea580c; }
         .subrating-card--blue .subrating-card__value { color: #2563eb; }
         .subrating-card--green .subrating-card__value { color: #16a34a; }
@@ -148,14 +149,17 @@
             <div class="subrating-grid">
                 <div class="subrating-card subrating-card--orange">
                     <div class="subrating-card__label" data-i18n="profile.ratingOverall"></div>
+                    <div class="subrating-card__sub" data-i18n="profile.goodRate"></div>
                     <div class="subrating-card__value" id="sub-overall">0.0</div>
                 </div>
                 <div class="subrating-card subrating-card--blue">
                     <div class="subrating-card__label" data-i18n="profile.ratingCommunication"></div>
+                    <div class="subrating-card__sub" data-i18n="profile.goodRate"></div>
                     <div class="subrating-card__value" id="sub-communication">0.0</div>
                 </div>
                 <div class="subrating-card subrating-card--green">
                     <div class="subrating-card__label" data-i18n="profile.ratingReception"></div>
+                    <div class="subrating-card__sub" data-i18n="profile.goodRate"></div>
                     <div class="subrating-card__value" id="sub-reception">0.0</div>
                 </div>
             </div>
