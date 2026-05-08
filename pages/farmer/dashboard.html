@@ -179,6 +179,79 @@
             margin-top: 8px;
             flex-wrap: wrap;
         }
+
+        /* 5/7 #53: カード右上のケバブメニュー（削除メニュー用） */
+        .fish-card { position: relative; }
+        .card-menu-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            color: var(--color-text-sub);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        .card-menu-btn:hover { background: #f3f4f6; }
+        .card-menu-btn .material-symbols-outlined { font-size: 20px; }
+        .card-menu {
+            position: absolute;
+            top: 40px;
+            right: 8px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.1);
+            min-width: 160px;
+            z-index: 5;
+            overflow: hidden;
+            display: none;
+        }
+        .card-menu.show { display: block; }
+        .card-menu__item {
+            padding: 10px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #b91c1c;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+        }
+        .card-menu__item:hover { background: #fef2f2; }
+        .card-menu__item.disabled {
+            color: var(--color-text-sub);
+            cursor: default;
+        }
+        .card-menu__item.disabled:hover { background: transparent; }
+        .card-menu__item .material-symbols-outlined { font-size: 16px; }
+
+        /* 5/7 #54: 「もっと見る」ボタン */
+        #load-more-wrap {
+            display: none;
+            text-align: center;
+            padding: 16px 0;
+        }
+        #load-more-btn {
+            padding: 10px 24px;
+            border-radius: 20px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        #load-more-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 
@@ -229,6 +302,9 @@
 
         <!-- 魚の投稿一覧 -->
         <div id="fish-list"></div>
+        <div id="load-more-wrap">
+            <button type="button" id="load-more-btn" data-i18n="restaurant.loadMore"></button>
+        </div>
 
     </div>
 
@@ -257,7 +333,8 @@
         import { subscribeTodos } from '/js/todos.js';
         import { subscribeNotifications } from '/js/notifications.js';
         import {
-            collection, query, where, orderBy, getDocs, doc, updateDoc, onSnapshot
+            collection, query, where, orderBy, getDocs, doc, updateDoc, onSnapshot,
+            limit, startAfter, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
         const loading = document.getElementById('loading');
@@ -273,112 +350,233 @@
         // ログアウト
         // ログアウトはアカウントページ内に移動
 
-        // ── 自分の投稿一覧を取得 ────────────────────────────────────
-        async function loadMyFishListings() {
-            loading.classList.add('show');
+        // 5/7 #54: ページネーション（10件ずつ）
+        const PAGE_SIZE = 10;
+        let lastListingDoc = null;
+        let hasMoreListings = false;
+        let isLoadingMore = false;
+        const renderedListings = []; // {id, data}
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function buildCardHtml(id, d) {
+            const fishName = i18next.exists(`fish.${d.fishType}`)
+                ? i18next.t(`fish.${d.fishType}`)
+                : escapeHtml(d.fishType);
+
+            const imgHtml = d.photoUrl
+                ? `<img class="fish-card__img" src="${d.photoUrl}" alt="${escapeHtml(fishName)}">`
+                : `<div class="fish-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:28px;">set_meal</span></div>`;
+
+            const badgeHtml = d.isActive
+                ? `<span class="fish-card__badge badge-active">${i18next.t('dashboard.active')}</span>`
+                : `<span class="fish-card__badge badge-inactive">${i18next.t('dashboard.inactive')}</span>`;
+
+            const stockText = d.stock <= 0
+                ? i18next.t('dashboard.outOfStock')
+                : `${i18next.t('dashboard.stock')}${d.stock} kg`;
+
+            const toggleBtn = d.isActive
+                ? `<button class="toggle-btn toggle-pause" data-id="${id}">${i18next.t('dashboard.pause')}</button>`
+                : `<button class="toggle-btn toggle-resume" data-id="${id}">${i18next.t('dashboard.resume')}</button>`;
+
+            // 5/7 #53: ケバブメニュー（停止中の商品のみ削除可能）
+            const menuItem = d.isActive
+                ? `<button type="button" class="card-menu__item disabled">
+                       <span class="material-symbols-outlined">info</span>
+                       ${i18next.t('dashboard.deleteAfterPause')}
+                   </button>`
+                : `<button type="button" class="card-menu__item" data-action="delete" data-id="${id}">
+                       <span class="material-symbols-outlined">delete</span>
+                       ${i18next.t('dashboard.delete')}
+                   </button>`;
+
+            return `
+                <div class="fish-card">
+                    <button type="button" class="card-menu-btn" data-menu-toggle="${id}" aria-label="menu">
+                        <span class="material-symbols-outlined">more_vert</span>
+                    </button>
+                    <div class="card-menu" data-menu-id="${id}">
+                        ${menuItem}
+                    </div>
+                    ${imgHtml}
+                    <div class="fish-card__body">
+                        <div class="fish-card__name">
+                            ${fishName} ${badgeHtml}
+                        </div>
+                        <div class="fish-card__meta">
+                            ${i18next.t('dashboard.size')}${escapeHtml(d.size)} head/kg　${stockText}
+                        </div>
+                        <div class="fish-card__price">
+                            ${Number(d.price).toLocaleString()} KHR/kg
+                            ${d.gutPrice ? `<span style="font-size:12px; font-weight:500; color:var(--color-text-sub);"> ${i18next.t('post.gutPrice')} ${Number(d.gutPrice).toLocaleString()} KHR/kg</span>` : ''}
+                        </div>
+                        <div class="card-actions">
+                            <a href="/pages/farmer/post.html?id=${id}" class="toggle-btn edit-btn">
+                                <span class="material-symbols-outlined">edit</span>
+                                ${i18next.t('dashboard.edit')}
+                            </a>
+                            <a href="/pages/restaurant/comments.html?id=${id}" class="comment-link">
+                                <span class="material-symbols-outlined">chat_bubble_outline</span>
+                                ${i18next.t('comments.title')}
+                            </a>
+                            ${toggleBtn}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderEmpty() {
+            const listEl = document.getElementById('fish-list');
+            listEl.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">set_meal</span></div>
+                    <div class="empty-state__text">${i18next.t('dashboard.empty')}</div>
+                    <a href="/pages/farmer/post.html" class="btn btn-primary" style="display:inline-block; width:auto; padding:12px 24px;">
+                        <span class="material-symbols-outlined" style="font-size:18px; margin-right:4px;">add_circle</span>
+                        ${i18next.t('dashboard.newPost')}
+                    </a>
+                </div>
+            `;
+        }
+
+        function renderAll() {
+            const listEl = document.getElementById('fish-list');
+            if (renderedListings.length === 0) {
+                renderEmpty();
+            } else {
+                listEl.innerHTML = renderedListings.map(it => buildCardHtml(it.id, it.data)).join('');
+            }
+            const moreWrap = document.getElementById('load-more-wrap');
+            moreWrap.style.display = hasMoreListings ? 'block' : 'none';
+        }
+
+        // ── 自分の投稿一覧を取得（5/7 #54 ページネーション対応） ─────────────
+        async function loadMyFishListings({ append = false } = {}) {
+            if (!append) loading.classList.add('show');
 
             try {
                 const uid = window.currentUser?.uid;
                 if (!uid) return;
 
-                // Firestoreから自分の投稿を取得
-                const q = query(
-                    collection(db, 'fishListings'),
-                    where('farmerId', '==', uid),
-                    orderBy('createdAt', 'desc')
-                );
-                const snap = await getDocs(q);
-
-                const listEl = document.getElementById('fish-list');
-
-                if (snap.empty) {
-                    listEl.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">set_meal</span></div>
-                            <div class="empty-state__text">${i18next.t('dashboard.empty')}</div>
-                            <a href="/pages/farmer/post.html" class="btn btn-primary" style="display:inline-block; width:auto; padding:12px 24px;">
-                                <span class="material-symbols-outlined" style="font-size:18px; margin-right:4px;">add_circle</span>
-                                ${i18next.t('dashboard.newPost')}
-                            </a>
-                        </div>
-                    `;
-                    return;
+                if (!append) {
+                    lastListingDoc = null;
+                    renderedListings.length = 0;
                 }
 
-                // 投稿カードを生成
-                listEl.innerHTML = '';
-                snap.forEach((doc) => {
-                    const d = doc.data();
-                    // fishTypeがコード（例: clarias_catfish）ならi18n翻訳、そうでなければそのまま表示
-                    const fishName = i18next.exists(`fish.${d.fishType}`)
-                        ? i18next.t(`fish.${d.fishType}`)
-                        : d.fishType;
+                const conds = [
+                    collection(db, 'fishListings'),
+                    where('farmerId', '==', uid),
+                    orderBy('createdAt', 'desc'),
+                ];
+                if (append && lastListingDoc) conds.push(startAfter(lastListingDoc));
+                conds.push(limit(PAGE_SIZE));
+                const snap = await getDocs(query(...conds));
 
-                    const imgHtml = d.photoUrl
-                        ? `<img class="fish-card__img" src="${d.photoUrl}" alt="${fishName}">`
-                        : `<div class="fish-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:28px;">set_meal</span></div>`;
+                lastListingDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : lastListingDoc;
+                hasMoreListings = snap.docs.length === PAGE_SIZE;
 
-                    const badgeHtml = d.isActive
-                        ? `<span class="fish-card__badge badge-active">${i18next.t('dashboard.active')}</span>`
-                        : `<span class="fish-card__badge badge-inactive">${i18next.t('dashboard.inactive')}</span>`;
-
-                    const stockText = d.stock <= 0
-                        ? i18next.t('dashboard.outOfStock')
-                        : `${i18next.t('dashboard.stock')}${d.stock} kg`;
-
-                    const toggleBtn = d.isActive
-                        ? `<button class="toggle-btn toggle-pause" data-id="${doc.id}">${i18next.t('dashboard.pause')}</button>`
-                        : `<button class="toggle-btn toggle-resume" data-id="${doc.id}">${i18next.t('dashboard.resume')}</button>`;
-
-                    listEl.innerHTML += `
-                        <div class="fish-card">
-                            ${imgHtml}
-                            <div class="fish-card__body">
-                                <div class="fish-card__name">
-                                    ${fishName} ${badgeHtml}
-                                </div>
-                                <div class="fish-card__meta">
-                                    ${i18next.t('dashboard.size')}${d.size} head/kg　${stockText}
-                                </div>
-                                <div class="fish-card__price">
-                                    ${Number(d.price).toLocaleString()} KHR/kg
-                                    ${d.gutPrice ? `<span style="font-size:12px; font-weight:500; color:var(--color-text-sub);"> ${i18next.t('post.gutPrice')} ${Number(d.gutPrice).toLocaleString()} KHR/kg</span>` : ''}
-                                </div>
-                                <div class="card-actions">
-                                    <a href="/pages/farmer/post.html?id=${doc.id}" class="toggle-btn edit-btn">
-                                        <span class="material-symbols-outlined">edit</span>
-                                        ${i18next.t('dashboard.edit')}
-                                    </a>
-                                    <a href="/pages/restaurant/comments.html?id=${doc.id}" class="comment-link">
-                                        <span class="material-symbols-outlined">chat_bubble_outline</span>
-                                        ${i18next.t('comments.title')}
-                                    </a>
-                                    ${toggleBtn}
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                // 5/7 #53: ソフトデリート済み（deletedAt あり）はクライアント側で除外。
+                // 旧データには deletedAt フィールドがないため where では絞れない。
+                snap.docs.forEach(d => {
+                    const data = d.data();
+                    if (data.deletedAt) return;
+                    renderedListings.push({ id: d.id, data });
                 });
 
-                // 停止/再開ボタンのイベント登録
-                document.querySelectorAll('.toggle-btn').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        const listingId = btn.dataset.id;
-                        const isPause = btn.classList.contains('toggle-pause');
-                        btn.disabled = true;
-                        await updateDoc(doc(db, 'fishListings', listingId), {
-                            isActive: !isPause
-                        });
-                        loadMyFishListings();
-                    });
-                });
-
+                renderAll();
             } catch (err) {
                 console.error(err);
             } finally {
                 loading.classList.remove('show');
             }
         }
+
+        // 「もっと見る」
+        document.getElementById('load-more-btn').addEventListener('click', async () => {
+            if (isLoadingMore || !hasMoreListings) return;
+            isLoadingMore = true;
+            const btn = document.getElementById('load-more-btn');
+            btn.disabled = true;
+            try {
+                await loadMyFishListings({ append: true });
+            } finally {
+                btn.disabled = false;
+                btn.textContent = i18next.t('restaurant.loadMore');
+                isLoadingMore = false;
+            }
+        });
+
+        // 5/7 #53: ケバブメニュー＆削除のイベント委譲
+        document.addEventListener('click', async (e) => {
+            // 既存メニューを閉じる（メニュー外クリック）
+            const insideMenu = e.target.closest('.card-menu') || e.target.closest('.card-menu-btn');
+            if (!insideMenu) {
+                document.querySelectorAll('.card-menu.show').forEach(m => m.classList.remove('show'));
+            }
+
+            // メニュートグル
+            const toggleBtn = e.target.closest('[data-menu-toggle]');
+            if (toggleBtn) {
+                e.stopPropagation();
+                const id = toggleBtn.dataset.menuToggle;
+                const menu = document.querySelector(`.card-menu[data-menu-id="${CSS.escape(id)}"]`);
+                if (!menu) return;
+                const willShow = !menu.classList.contains('show');
+                document.querySelectorAll('.card-menu.show').forEach(m => m.classList.remove('show'));
+                if (willShow) menu.classList.add('show');
+                return;
+            }
+
+            // 削除アクション
+            const delBtn = e.target.closest('[data-action="delete"]');
+            if (delBtn) {
+                e.stopPropagation();
+                const listingId = delBtn.dataset.id;
+                if (!confirm(i18next.t('dashboard.confirmDelete'))) return;
+                document.querySelectorAll('.card-menu.show').forEach(m => m.classList.remove('show'));
+                loading.classList.add('show');
+                try {
+                    await updateDoc(doc(db, 'fishListings', listingId), {
+                        deletedAt: serverTimestamp(),
+                        isActive: false,
+                    });
+                    // 削除後はリストから除外して再描画
+                    const idx = renderedListings.findIndex(it => it.id === listingId);
+                    if (idx >= 0) renderedListings.splice(idx, 1);
+                    renderAll();
+                } catch (err) {
+                    console.error(err);
+                    alert(i18next.t('dashboard.errorDelete'));
+                } finally {
+                    loading.classList.remove('show');
+                }
+                return;
+            }
+
+            // 停止/再開ボタン（既存挙動）
+            const toggleListingBtn = e.target.closest('.toggle-btn');
+            if (toggleListingBtn && (toggleListingBtn.classList.contains('toggle-pause') || toggleListingBtn.classList.contains('toggle-resume'))) {
+                const listingId = toggleListingBtn.dataset.id;
+                const isPause = toggleListingBtn.classList.contains('toggle-pause');
+                toggleListingBtn.disabled = true;
+                try {
+                    await updateDoc(doc(db, 'fishListings', listingId), { isActive: !isPause });
+                    // 再読み込みより、該当アイテムだけ更新する方が軽量
+                    const item = renderedListings.find(it => it.id === listingId);
+                    if (item) item.data = { ...item.data, isActive: !isPause };
+                    renderAll();
+                } catch (err) {
+                    console.error(err);
+                    toggleListingBtn.disabled = false;
+                }
+            }
+        });
 
         // 注文バッジ（リアルタイム監視）
         function watchOrderBadge() {

@@ -388,7 +388,11 @@
         "pause": "出品停止",
         "resume": "再開",
         "edit": "編集",
-        "outOfStock": "在庫切れ"
+        "outOfStock": "在庫切れ",
+        "delete": "削除",
+        "deleteAfterPause": "出品停止後に削除できます",
+        "confirmDelete": "本当に削除しますか？\n削除後は投稿一覧に表示されなくなります。\n（過去の取引履歴からは引き続き確認できます）",
+        "errorDelete": "削除に失敗しました。もう一度お試しください。"
     },
     "nav": {
         "logout": "ログアウト",
@@ -466,6 +470,7 @@
         "farmerTitle": "生産者ページ",
         "summary": "評価サマリー",
         "reviews": "レビュー",
+        "reviewComments": "レビューコメント",
         "reviewsCount": "全{{count}}件",
         "noReviews": "まだレビューはありません",
         "openMap": "Google Mapsで開く",

@@ -191,6 +191,7 @@
             <span class="material-symbols-outlined" style="font-size:18px; line-height:1;">star</span>
             <span data-i18n="review.submit" style="line-height:1;"></span>
         </a>
+        <div id="reviewed-label" style="display:none; margin:14px 16px 0; padding:12px; background:#f3f4f6; color:#6b7280; border-radius:12px; font-weight:700; font-size:14px; text-align:center; line-height:1;" data-i18n="review.reviewed"></div>
     </div>
 
     <script type="module">
@@ -262,8 +263,26 @@
                 renderStatus(d.adminStatus ?? null, d.paymentStatus || 'pending');
             });
 
+            // 5/7 #55: レビュー済みかリアルタイム監視
+            onSnapshot(doc(db, 'orders', orderId, 'reviews', 'farmer'), (snap) => {
+                applyReviewedState(snap.exists());
+            });
+
             loading.classList.remove('show');
         });
+
+        // 5/7 #55: レビュー済みなら詳細画面のレビューボタンを「レビュー済み」表示に
+        function applyReviewedState(reviewed) {
+            const reviewBtn = document.getElementById('review-btn');
+            const reviewedLabel = document.getElementById('reviewed-label');
+            if (reviewed) {
+                reviewBtn.style.display = 'none';
+                reviewedLabel.style.display = 'block';
+            } else {
+                reviewedLabel.style.display = 'none';
+                // review-btn の表示制御は renderStatus 側に任せる
+            }
+        }
 
         // 5/3: innerHTML で組み立てた部分を関数化し、言語切替時に再描画できるように
         function renderOrderInfo() {
@@ -334,9 +353,13 @@
             `;
 
             // レビューボタンは常時表示（送金状況ページに来ている時点で delivered/completed）
+            // 5/7 #55: レビュー済みの場合は applyReviewedState 側で「レビュー済み」表示に切替
             const reviewBtn = document.getElementById('review-btn');
+            const reviewedLabel = document.getElementById('reviewed-label');
             reviewBtn.href = `/pages/farmer/review.html?id=${orderId}`;
-            reviewBtn.style.display = 'flex';
+            if (reviewedLabel.style.display !== 'block') {
+                reviewBtn.style.display = 'flex';
+            }
         }
     </script>
 </body>

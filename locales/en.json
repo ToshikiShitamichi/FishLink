@@ -388,7 +388,11 @@
         "pause": "Pause",
         "resume": "Resume",
         "edit": "Edit",
-        "outOfStock": "Out of Stock"
+        "outOfStock": "Out of Stock",
+        "delete": "Delete",
+        "deleteAfterPause": "Pause first to enable deletion",
+        "confirmDelete": "Delete this listing?\nIt will no longer appear in the list.\n(Past order history will still be viewable.)",
+        "errorDelete": "Failed to delete. Please try again."
     },
     "nav": {
         "logout": "Logout",
@@ -466,6 +470,7 @@
         "farmerTitle": "Farmer Profile",
         "summary": "Rating Summary",
         "reviews": "Reviews",
+        "reviewComments": "Review Comments",
         "reviewsCount": "{{count}} total",
         "noReviews": "No reviews yet",
         "openMap": "Open in Google Maps",

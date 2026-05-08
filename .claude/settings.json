@@ -13,7 +13,11 @@
       "Bash(node -e ' *)",
       "Bash(node -e \"['ja','en','km'].forEach\\(l => { try { JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/'+l+'.json','utf8'\\)\\); console.log\\(l, 'OK'\\); } catch\\(e\\) { console.log\\(l, 'FAIL', e.message\\); } }\\);\")",
       "Bash(grep -n \"html += '\\\\|html += \\\\`\\\\|return html;\\\\|^                \\\\`;\\\\|order-card-end\\\\|</div>\\\\`;$\" c:/work/FishLink/pages/farmer/orders.html)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(python -c \"import json; [json.load\\(open\\(f, encoding='utf-8'\\)\\) for f in ['c:/work/FishLink/locales/ja.json', 'c:/work/FishLink/locales/en.json', 'c:/work/FishLink/locales/km.json']]; print\\('OK'\\)\")",
+      "Bash(git update-index *)",
+      "Bash(git config *)",
+      "Bash(git check-attr *)"
     ]
   }
 }

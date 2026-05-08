@@ -1280,16 +1280,7 @@
                     await renderConfirm();
                     setStage('confirm');
                 } else if (stage === 'confirm') {
-                    // 5/1: 確定前の最終確認ダイアログ（誤操作防止）
-                    const farmerCount = new Set(cartItems.map(it => it.farmerId)).size;
-                    const lines = [
-                        i18next.t('cart.confirmSubmitTitle'),
-                        '',
-                        i18next.t('cart.confirmSubmitDetail', { farmers: farmerCount, items: cartItems.length }),
-                        '',
-                        i18next.t('cart.confirmSubmitAsk'),
-                    ];
-                    if (!confirm(lines.join('\n'))) return;
+                    // 5/7 #57: 確認画面で内容を確認できるためダイアログ撤去（カート経由統一に伴い重複確認を解消）
                     await placeOrders();
                 }
             } catch (err) {

@@ -202,7 +202,7 @@
         <div class="subrating-wrap">
             <div class="subrating-head">
                 <div class="subrating-head__title" data-i18n="review.title"></div>
-                <a class="subrating-head__link" id="reviews-link" href="#" data-i18n-target="review-count">レビューを見る</a>
+                <a class="subrating-head__link" id="reviews-link" href="#reviews-section" data-i18n-target="review-count">レビューを見る</a>
             </div>
             <div class="subrating-grid">
                 <div class="subrating-card">
@@ -228,8 +228,8 @@
             <div id="listings-container"></div>
         </div>
 
-        <div class="section">
-            <div class="section__title" data-i18n="profile.reviews"></div>
+        <div class="section" id="reviews-section">
+            <div class="section__title" data-i18n="profile.reviewComments"></div>
             <div id="reviews-list"></div>
         </div>
     </div>
@@ -278,6 +278,21 @@
         }
 
         function fmtKhr(n) { return `${Number(n || 0).toLocaleString()} KHR`; }
+
+        // 5/7 #56: コメントを innerHTML に流し込むので XSS 防止のためエスケープ
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        // 5/7 #56: 「レビューを見る」をタップしたらレビューコメント欄までスムーズスクロール
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('#reviews-link');
+            if (!link) return;
+            e.preventDefault();
+            document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
 
         async function load() {
             loading.classList.add('show');
@@ -357,7 +372,7 @@
                     }).join('')}</div>`;
                 }
 
-                // レビュー
+                // レビュー（5/7 #56: コメントがあるレビューのみ表示。コメントがない場合のみ空表示）
                 try {
                     const rq = query(
                         collectionGroup(db, 'reviews'),
@@ -366,19 +381,14 @@
                     );
                     const reviewSnap = await getDocs(rq);
                     const listEl = document.getElementById('reviews-list');
-                    if (reviewSnap.empty) {
+                    const reviews = [];
+                    reviewSnap.forEach(d => { reviews.push({ id: d.id, ...d.data() }); });
+                    const reviewsWithComment = reviews.filter(r => r.comment && String(r.comment).trim() !== '');
+                    if (reviewsWithComment.length === 0) {
                         listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
                         return;
                     }
-                    const reviews = [];
-                    const fromUids = new Set();
-                    reviewSnap.forEach(d => { reviews.push({ id: d.id, ...d.data() }); fromUids.add(d.data().fromUid); });
-                    const userMap = {};
-                    await Promise.all([...fromUids].map(async fid => {
-                        const s = await getDoc(doc(db, 'users', fid));
-                        userMap[fid] = s.exists() ? s.data() : {};
-                    }));
-                    listEl.innerHTML = reviews.map(r => {
+                    listEl.innerHTML = reviewsWithComment.map(r => {
                         const v = legacyToVerdict(r);
                         return `
                             <div class="review-card">
@@ -386,7 +396,7 @@
                                     ${verdictBadge(v)}
                                     <div class="review-card__date">${fmtDate(r.createdAt)}</div>
                                 </div>
-                                ${r.comment ? `<div class="review-card__comment">${r.comment}</div>` : ''}
+                                <div class="review-card__comment">${escapeHtml(r.comment)}</div>
                             </div>
                         `;
                     }).join('');

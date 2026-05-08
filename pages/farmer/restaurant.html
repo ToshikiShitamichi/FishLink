@@ -165,9 +165,9 @@
             </div>
         </div>
 
-        <div class="section">
+        <div class="section" id="reviews-section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <div class="section__title" style="margin:0;" data-i18n="profile.reviews"></div>
+                <div class="section__title" style="margin:0;" data-i18n="profile.reviewComments"></div>
                 <div id="review-count-label" style="font-size:12px; color:var(--color-text-sub);"></div>
             </div>
             <div id="reviews-list"></div>
@@ -215,6 +215,13 @@
             return avg >= 4 ? 'good' : avg > 0 ? 'bad' : null;
         }
 
+        // 5/7 #56: コメントを innerHTML に流し込むので XSS 防止のためエスケープ
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
         async function load() {
             loading.classList.add('show');
             try {
@@ -259,7 +266,7 @@
                     iframe.style.display = 'block';
                 }
 
-                // レビュー取得（collectionGroup）
+                // レビュー取得（5/7 #56: コメントがあるレビューのみ表示。コメントがない場合のみ空表示）
                 try {
                     const q = query(
                         collectionGroup(db, 'reviews'),
@@ -268,20 +275,14 @@
                     );
                     const reviewSnap = await getDocs(q);
                     const listEl = document.getElementById('reviews-list');
-                    if (reviewSnap.empty) {
+                    const reviews = [];
+                    reviewSnap.forEach(d => { reviews.push({ id: d.id, ...d.data() }); });
+                    const reviewsWithComment = reviews.filter(r => r.comment && String(r.comment).trim() !== '');
+                    if (reviewsWithComment.length === 0) {
                         listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
                         return;
                     }
-                    // 評価者名取得
-                    const reviews = [];
-                    const fromUids = new Set();
-                    reviewSnap.forEach(d => { reviews.push({ id: d.id, ...d.data() }); fromUids.add(d.data().fromUid); });
-                    const userMap = {};
-                    await Promise.all([...fromUids].map(async fid => {
-                        const s = await getDoc(doc(db, 'users', fid));
-                        userMap[fid] = s.exists() ? s.data() : {};
-                    }));
-                    listEl.innerHTML = reviews.map(r => {
+                    listEl.innerHTML = reviewsWithComment.map(r => {
                         const v = legacyToVerdict(r);
                         return `
                             <div class="review-card">
@@ -289,7 +290,7 @@
                                     ${verdictBadge(v)}
                                     <div class="review-card__date">${fmtDate(r.createdAt)}</div>
                                 </div>
-                                ${r.comment ? `<div class="review-card__comment">${r.comment}</div>` : ''}
+                                <div class="review-card__comment">${escapeHtml(r.comment)}</div>
                             </div>
                         `;
                     }).join('');

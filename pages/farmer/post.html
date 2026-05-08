@@ -490,6 +490,11 @@
                 location.href = '/pages/farmer/dashboard.html';
                 return;
             }
+            // 5/7 #53: 削除済みは編集不可
+            if (d.deletedAt) {
+                location.href = '/pages/farmer/dashboard.html';
+                return;
+            }
             originalListing = d;
 
             // フォームに値を流し込み

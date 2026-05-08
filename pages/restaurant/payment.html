@@ -247,6 +247,7 @@
             <span class="material-symbols-outlined" style="font-size:18px; line-height:1;">star</span>
             <span data-i18n="review.submit" style="line-height:1;"></span>
         </a>
+        <div id="reviewed-label" style="display:none; margin-top:8px; padding:12px; background:#f3f4f6; color:#6b7280; border-radius:12px; font-weight:700; font-size:14px; text-align:center; line-height:1;" data-i18n="review.reviewed"></div>
     </div>
 
     <script type="module">
@@ -254,7 +255,7 @@
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import {
-            doc, getDoc, updateDoc
+            doc, getDoc, updateDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
         const loading = document.getElementById('loading');
@@ -315,8 +316,26 @@
             // 支払い済みの場合
             updatePaidState(orderData.paymentStatus);
 
+            // 5/7 #55: レビュー済みかリアルタイム監視（送信されたら即時切り替え）
+            onSnapshot(doc(db, 'orders', orderId, 'reviews', 'restaurant'), (snap) => {
+                applyReviewedState(snap.exists());
+            });
+
             loading.classList.remove('show');
         });
+
+        // 5/7 #55: レビュー済みなら詳細画面のレビューボタンを「レビュー済み」表示に
+        function applyReviewedState(reviewed) {
+            const reviewBtn = document.getElementById('review-btn');
+            const reviewedLabel = document.getElementById('reviewed-label');
+            if (reviewed) {
+                reviewBtn.style.display = 'none';
+                reviewedLabel.style.display = 'block';
+            } else {
+                reviewedLabel.style.display = 'none';
+                // review-btn の表示制御は updatePaidState 側に任せる
+            }
+        }
 
         // 5/4: innerHTML 部分を関数化し、言語切替時に再描画できるように
         function renderDeadlineBanner() {
@@ -453,8 +472,12 @@
                 btn.disabled = true;
             }
             // レビューボタンは常時表示（受取完了後にこの画面に来ているため）
+            // 5/7 #55: レビュー済みの場合は applyReviewedState 側で「レビュー済み」表示に切替
             reviewBtn.href = `/pages/restaurant/review.html?id=${orderId}`;
-            reviewBtn.style.display = 'flex';
+            const reviewedLabel = document.getElementById('reviewed-label');
+            if (reviewedLabel.style.display !== 'block') {
+                reviewBtn.style.display = 'flex';
+            }
         }
 
         // 支払い完了ボタン
