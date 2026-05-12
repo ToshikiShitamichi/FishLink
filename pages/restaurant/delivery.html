@@ -183,6 +183,7 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+        import { uploadImageResized } from '/js/image-resize.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -366,11 +367,13 @@
             const sendBtn = document.getElementById('chat-send');
             sendBtn.disabled = true;
 
+            // 5/11 #67: リサイズ+圧縮+リトライ
             const imageUrls = [];
             for (const file of pendingFiles) {
-                const storageRef = ref(storage, `chat/${orderId}/${Date.now()}_${file.name}`);
-                await uploadBytes(storageRef, file, { cacheControl: 'public, max-age=31536000' });
-                imageUrls.push(await getDownloadURL(storageRef));
+                const baseName = (file.name || 'chat').replace(/\.[^.]+$/, '');
+                const storageRef = ref(storage, `chat/${orderId}/${Date.now()}_${baseName}.jpg`);
+                const url = await uploadImageResized(storageRef, file);
+                imageUrls.push(url);
             }
 
             const msgText = text || (imageUrls.length > 0 ? i18next.t('delivery.imageSent') : '');

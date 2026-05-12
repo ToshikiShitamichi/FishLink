@@ -113,6 +113,7 @@
         import { db, storage } from '/js/firebase-config.js';
         import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+        import { uploadImageResized } from '/js/image-resize.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -206,13 +207,10 @@
                 const qrLink = document.getElementById('in-qrLink').value.trim();
                 let qrImageUrl = editState.qrImageUrl;
                 if (editState.qrFile) {
-                    const storageRef = ref(storage, `qr/${uid}/${Date.now()}_${editState.qrFile.name}`);
-                    await withTimeout(
-                        uploadBytes(storageRef, editState.qrFile, { cacheControl: 'public, max-age=31536000' }),
-                        60000,
-                        'QR uploadBytes'
-                    );
-                    qrImageUrl = await withTimeout(getDownloadURL(storageRef), 30000, 'QR getDownloadURL');
+                    // 5/11 #67: クライアント側でリサイズ+圧縮、180秒タイムアウト、リトライ3回
+                    const baseName = (editState.qrFile.name || 'qr').replace(/\.[^.]+$/, '');
+                    const storageRef = ref(storage, `qr/${uid}/${Date.now()}_${baseName}.jpg`);
+                    qrImageUrl = await uploadImageResized(storageRef, editState.qrFile);
                 } else if (editState.qrRemoved) {
                     qrImageUrl = null;
                 }

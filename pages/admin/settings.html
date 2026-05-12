@@ -273,6 +273,31 @@
                     <button class="save-btn" id="save-btn" data-i18n="admin.settings.save"></button>
                 </div>
             </div>
+
+            <!-- 5/11 #65: メンテナンス（マイグレーション） -->
+            <div class="card">
+                <div class="section-heading">メンテナンス</div>
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label">州データの正規化</div>
+                            <div class="form-row__hint">既存ユーザーの <code>province</code> を内部キー（例: <code>takeo</code>）に統一します。実行は1回でOK。実行後は地域フィルターの重複が解消されます。</div>
+                        </div>
+                        <button class="save-btn" id="migrate-provinces-btn" type="button" style="background:#f59e0b;">実行</button>
+                    </div>
+                    <div id="migrate-provinces-result" style="font-size:12px; color:#475569; margin-top:8px; white-space:pre-wrap;"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label">district のクメール語版を Geocoder で取得</div>
+                            <div class="form-row__hint">既存ユーザーの位置情報から逆ジオコーディングして <code>districtKm</code> を埋めます。Khmer 表示時の市区町村が英語のまま残っている既存ユーザー向け。Geocoder API を呼ぶため、対象ユーザー数 × 約100ms かかります。</div>
+                        </div>
+                        <button class="save-btn" id="migrate-districts-km-btn" type="button" style="background:#f59e0b;">実行</button>
+                    </div>
+                    <div id="migrate-districts-km-result" style="font-size:12px; color:#475569; margin-top:8px; white-space:pre-wrap;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -284,6 +309,7 @@
         import {
             doc, getDoc, setDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-functions.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -373,6 +399,48 @@
             } catch (err) {
                 console.error(err);
                 errEl.classList.add('show');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // 5/11 #65: マイグレーション実行
+        document.getElementById('migrate-provinces-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('migrate-provinces-btn');
+            const resultEl = document.getElementById('migrate-provinces-result');
+            if (!confirm('既存ユーザーの province を正規化キーに統一します。実行しますか？')) return;
+            btn.disabled = true;
+            resultEl.textContent = '実行中...';
+            try {
+                const functions = getFunctions(undefined, 'asia-southeast1');
+                const fn = httpsCallable(functions, 'migrateProvinces');
+                const { data } = await fn();
+                resultEl.textContent = `完了: total=${data.total} / updated=${data.updated} / skipped=${data.skipped} / unknown=${data.unknown}\n`
+                    + (data.unknownSamples?.length ? `未マッチ例: ${JSON.stringify(data.unknownSamples)}` : '');
+            } catch (err) {
+                console.error(err);
+                resultEl.textContent = `エラー: ${err.message || err}`;
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // 5/11 拡張: district のクメール語版 backfill
+        document.getElementById('migrate-districts-km-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('migrate-districts-km-btn');
+            const resultEl = document.getElementById('migrate-districts-km-result');
+            if (!confirm('既存ユーザーの位置情報から逆ジオコーディングして districtKm を埋めます。ユーザー数 × 100ms かかります。実行しますか？')) return;
+            btn.disabled = true;
+            resultEl.textContent = '実行中... (時間がかかる場合があります)';
+            try {
+                const functions = getFunctions(undefined, 'asia-southeast1');
+                const fn = httpsCallable(functions, 'migrateDistrictsKm');
+                const { data } = await fn();
+                resultEl.textContent = `完了: total=${data.total} / updated=${data.updated} / skipped=${data.skipped} / failed=${data.failed}\n`
+                    + (data.failures?.length ? `失敗例: ${JSON.stringify(data.failures)}` : '');
+            } catch (err) {
+                console.error(err);
+                resultEl.textContent = `エラー: ${err.message || err}`;
             } finally {
                 btn.disabled = false;
             }

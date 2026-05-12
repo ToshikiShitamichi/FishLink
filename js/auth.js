@@ -23,6 +23,7 @@ import {
 
 import { auth, db, toInternalEmail } from './firebase-config.js';
 import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js';
+import { normalizeProvince } from './province-utils.js';
 
 // FCM VAPIDキー（Firebaseコンソール → Cloud Messaging → ウェブプッシュ証明書）
 const VAPID_KEY = 'BHPaUqpvuOvpMUtxvVinoXFk0nZBiDMvPXlIBjeLqNesPPmBPt8sOGC2UZdSZLhTiv08ULuw4AMe-OXhIijp-k4'; // TODO: Firebaseコンソールから取得して設定
@@ -92,7 +93,7 @@ function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRe
 }
 
 // ── 新規登録 ──────────────────────────────────────────────────
-async function register({ loginId, displayName, phone, password, role, location, province, district, lang }) {
+async function register({ loginId, displayName, phone, password, role, location, province, district, districtKm, lang }) {
     const id = loginId.toLowerCase().trim();
 
     // バリデーション
@@ -117,6 +118,10 @@ async function register({ loginId, displayName, phone, password, role, location,
     // 表示名をFirebase Authにも設定
     await updateProfile(credential.user, { displayName: displayName.trim() });
 
+    // 5/11 #65: province は内部キー（例: 'takeo'）に正規化して保存
+    // 表示時に i18n の province.{key} で 3言語ラベルに変換
+    const normalizedProvince = normalizeProvince(province) || province || null;
+
     // Firestore に users ドキュメントを作成
     await setDoc(doc(db, 'users', uid), {
         loginId: id,
@@ -124,8 +129,11 @@ async function register({ loginId, displayName, phone, password, role, location,
         phone: String(phone).trim(),
         role,
         location: { lat: location.lat, lng: location.lng },
-        province: province || null,
+        province: normalizedProvince,
         district: district || null,
+        // 5/11 拡張: district のクメール語版（登録時 Geocoder km から取得）
+        // 表示時に UI 言語が km ならこちらを優先する
+        districtKm: districtKm || null,
         lang: lang || 'km',
         fcmToken: null,
         avgRating: 0,

@@ -87,8 +87,24 @@
         import { login, watchAuthState } from '/js/auth.js';
 
         // PWA Service Worker 登録
+        // 5/11: 新バージョンの SW を検出したら自動リロード（未ログインユーザー向け）
+        //   既存ユーザーがログイン画面を開いた瞬間に最新コードを反映するため。
+        //   ログイン後は auth.js requestFcmToken() 側で同様の処理が動く。
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(console.error);
+            navigator.serviceWorker.register('/sw.js')
+                .then((registration) => {
+                    registration.update();
+                    registration.addEventListener('updatefound', () => {
+                        const newSW = registration.installing;
+                        if (!newSW) return;
+                        newSW.addEventListener('statechange', () => {
+                            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                                window.location.reload();
+                            }
+                        });
+                    });
+                })
+                .catch(console.error);
         }
 
         // ログイン済みならダッシュボードへ

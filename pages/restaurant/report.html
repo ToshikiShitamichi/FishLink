@@ -210,6 +210,7 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+        import { uploadImageResized } from '/js/image-resize.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -294,11 +295,12 @@
             try {
                 const uid = window.currentUser.uid;
                 // 写真アップロード
+                // 5/11 #67: リサイズ+圧縮+リトライ
                 const photoUrls = [];
                 for (const file of selectedFiles) {
-                    const storageRef = ref(storage, `reports/${uid}/${Date.now()}_${file.name}`);
-                    await uploadBytes(storageRef, file, { cacheControl: 'public, max-age=31536000' });
-                    const url = await getDownloadURL(storageRef);
+                    const baseName = (file.name || 'report').replace(/\.[^.]+$/, '');
+                    const storageRef = ref(storage, `reports/${uid}/${Date.now()}_${baseName}.jpg`);
+                    const url = await uploadImageResized(storageRef, file);
                     photoUrls.push(url);
                 }
 

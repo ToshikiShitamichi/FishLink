@@ -1553,6 +1553,283 @@ exports.setUserBanned = onCall(
   }
 );
 
+// ── 5/11 #65: users.province を内部キーに正規化するマイグレーション ──
+// Geocoding API が言語別に返した州名（"Takéo Province" / "ខេត្តតាកែវ" / "タケオ州" など）が
+// 混在しているため、内部キー（例: 'takeo'）に統一する。
+// 管理者のみ呼び出し可能。1回実行すれば全 users を一括更新する。
+// クライアント側 js/province-utils.js と完全に同期したエイリアス＋正規化ロジック。
+const PROVINCE_DATA = {
+  phnom_penh: {
+    en: 'Phnom Penh', km: 'ភ្នំពេញ', ja: 'プノンペン',
+    aliases: ['phnom penh', 'phnompenh', 'phnom-penh', 'phnom penh capital', 'phnom penh municipality', 'krong phnom penh', 'រាជធានីភ្នំពេញ', 'プノンペン', 'プノンペン特別市'],
+  },
+  kandal: {
+    en: 'Kandal', km: 'ខេត្តកណ្តាល', ja: 'カンダル州',
+    aliases: ['kandal', 'khaet kandal', 'カンダル', 'カンダル州'],
+  },
+  takeo: {
+    en: 'Takéo', km: 'ខេត្តតាកែវ', ja: 'タケオ州',
+    aliases: ['takeo', 'takéo', 'takev', 'takaev', 'khaet takeo', 'khaet takéo', 'タケオ', 'タケオ州'],
+  },
+  prey_veng: {
+    en: 'Prey Veng', km: 'ខេត្តព្រៃវែង', ja: 'プレイヴェン州',
+    aliases: ['prey veng', 'preyveng', 'khaet prey veng', 'プレイヴェン', 'プレイヴェン州'],
+  },
+  kampong_cham: {
+    en: 'Kampong Cham', km: 'ខេត្តកំពង់ចាម', ja: 'コンポンチャム州',
+    aliases: ['kampong cham', 'kompong cham', 'kg. cham', 'kg cham', 'khaet kampong cham', 'コンポンチャム', 'コンポンチャム州'],
+  },
+  kampong_thom: {
+    en: 'Kampong Thom', km: 'ខេត្តកំពង់ធំ', ja: 'コンポントム州',
+    aliases: ['kampong thom', 'kompong thom', 'kg. thom', 'kg thom', 'khaet kampong thom', 'コンポントム', 'コンポントム州'],
+  },
+  siem_reap: {
+    en: 'Siem Reap', km: 'ខេត្តសៀមរាប', ja: 'シェムリアップ州',
+    aliases: ['siem reap', 'siemreap', 'siem reab', 'siemreab', 'khaet siem reap', 'シェムリアップ', 'シェムリアップ州'],
+  },
+  battambang: {
+    en: 'Battambang', km: 'ខេត្តបាត់ដំបង', ja: 'バッタンバン州',
+    aliases: ['battambang', 'battambong', 'batdambang', 'battam bang', 'khaet battambang', 'バッタンバン', 'バッタンバン州'],
+  },
+  pursat: {
+    en: 'Pursat', km: 'ខេត្តពោធិ៍សាត់', ja: 'ポーサット州',
+    aliases: ['pursat', 'poursat', 'pouthisat', 'pothisat', 'khaet pursat', 'ポーサット', 'ポーサット州'],
+  },
+  kampong_chhnang: {
+    en: 'Kampong Chhnang', km: 'ខេត្តកំពង់ឆ្នាំង', ja: 'コンポンチュナン州',
+    aliases: ['kampong chhnang', 'kompong chhnang', 'kg. chhnang', 'kg chhnang', 'khaet kampong chhnang', 'コンポンチュナン', 'コンポンチュナン州'],
+  },
+  kampong_speu: {
+    en: 'Kampong Speu', km: 'ខេត្តកំពង់ស្ពឺ', ja: 'コンポンスプー州',
+    aliases: ['kampong speu', 'kompong speu', 'kg. speu', 'kg speu', 'khaet kampong speu', 'コンポンスプー', 'コンポンスプー州'],
+  },
+  banteay_meanchey: {
+    en: 'Banteay Meanchey', km: 'ខេត្តបន្ទាយមានជ័យ', ja: 'バンテイメンチェイ州',
+    aliases: ['banteay meanchey', 'banteay mean chey', 'banteay meancheay', 'bmc', 'khaet banteay meanchey', 'バンテイメンチェイ', 'バンテイメンチェイ州'],
+  },
+  svay_rieng: {
+    en: 'Svay Rieng', km: 'ខេត្តស្វាយរៀង', ja: 'スヴァイリエン州',
+    aliases: ['svay rieng', 'svayrieng', 'khaet svay rieng', 'スヴァイリエン', 'スヴァイリエン州'],
+  },
+  kratie: {
+    en: 'Kratié', km: 'ខេត្តក្រចេះ', ja: 'クラチェ州',
+    aliases: ['kratie', 'kratié', 'krocheh', 'kracheh', 'khaet kratie', 'khaet kratié', 'クラチェ', 'クラチェ州'],
+  },
+  stung_treng: {
+    en: 'Stung Treng', km: 'ខេត្តស្ទឹងត្រែង', ja: 'ストゥントレン州',
+    aliases: ['stung treng', 'stoeung treng', 'steung treng', 'stungtreng', 'khaet stung treng', 'ストゥントレン', 'ストゥントレン州'],
+  },
+  ratanakiri: {
+    en: 'Ratanakiri', km: 'ខេត្តរតនគិរី', ja: 'ラタナキリ州',
+    aliases: ['ratanakiri', 'rattanakiri', 'ratanak kiri', 'rotanakiri', 'khaet ratanakiri', 'ラタナキリ', 'ラタナキリ州'],
+  },
+  mondulkiri: {
+    en: 'Mondulkiri', km: 'ខេត្តមណ្ឌលគិរី', ja: 'モンドルキリ州',
+    aliases: ['mondulkiri', 'mondol kiri', 'monduolkiri', 'khaet mondulkiri', 'モンドルキリ', 'モンドルキリ州'],
+  },
+  preah_vihear: {
+    en: 'Preah Vihear', km: 'ខេត្តព្រះវិហារ', ja: 'プレアヴィヒア州',
+    aliases: ['preah vihear', 'preahvihear', 'preah vihea', 'khaet preah vihear', 'プレアヴィヒア', 'プレアヴィヒア州'],
+  },
+  kep: {
+    en: 'Kep', km: 'ខេត្តកែប', ja: 'ケップ州',
+    aliases: ['kep', 'kaeb', 'krong kep', 'khaet kep', 'ケップ', 'ケップ州'],
+  },
+  kampot: {
+    en: 'Kampot', km: 'ខេត្តកំពត', ja: 'カンポット州',
+    aliases: ['kampot', 'khaet kampot', 'カンポット', 'カンポット州'],
+  },
+  koh_kong: {
+    en: 'Koh Kong', km: 'ខេត្តកោះកុង', ja: 'コーコン州',
+    aliases: ['koh kong', 'kohkong', 'kaoh kong', 'kah kong', 'khaet koh kong', 'コーコン', 'コーコン州'],
+  },
+  tboung_khmum: {
+    en: 'Tboung Khmum', km: 'ខេត្តត្បូងឃ្មុំ', ja: 'トボンクムム州',
+    aliases: ['tboung khmum', 'tbong khmum', 'tbaung khmum', 'khaet tboung khmum', 'トボンクムム', 'トボンクムム州'],
+  },
+  oddar_meanchey: {
+    en: 'Oddar Meanchey', km: 'ខេត្តឧត្តរមានជ័យ', ja: 'オッドーミエンチェイ州',
+    aliases: ['oddar meanchey', 'otdar meanchey', 'otdor meanchey', 'oddar mean chey', 'khaet oddar meanchey', 'オッドーミエンチェイ', 'オッドーミエンチェイ州'],
+  },
+  preah_sihanouk: {
+    en: 'Preah Sihanouk', km: 'ខេត្តព្រះសីហនុ', ja: 'シハヌークビル州',
+    aliases: ['preah sihanouk', 'preahsihanouk', 'sihanoukville', 'sihanouk', 'krong preah sihanouk', 'khaet preah sihanouk', 'シハヌークビル', 'シハヌーク州', 'シハヌークビル州'],
+  },
+  pailin: {
+    en: 'Pailin', km: 'ខេត្តប៉ៃលិន', ja: 'パイリン州',
+    aliases: ['pailin', 'krong pailin', 'khaet pailin', 'パイリン', 'パイリン州'],
+  },
+};
+
+function canonicalizeProvince(s) {
+  if (!s) return '';
+  return String(s)
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/　/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\s+province$/i, '')
+    .replace(/^province\s+of\s+/i, '')
+    .replace(/^khaet\s+/i, '')
+    .replace(/^krong\s+/i, '')
+    .replace(/^ខេត្ត/, '')
+    .replace(/^ខែត្រ/, '')
+    .replace(/^ក្រុង/, '')
+    .replace(/^រាជធានី/, '')
+    .trim();
+}
+
+const PROVINCE_ALIAS_INDEX = (() => {
+  const map = new Map();
+  const add = (alias, key) => {
+    const c = canonicalizeProvince(alias);
+    if (c) map.set(c, key);
+  };
+  for (const [key, entry] of Object.entries(PROVINCE_DATA)) {
+    add(entry.en, key);
+    add(entry.km, key);
+    add(entry.ja, key);
+    (entry.aliases || []).forEach(a => add(a, key));
+    add(key, key);
+    add(key.replace(/_/g, ' '), key);
+  }
+  return map;
+})();
+
+function normalizeProvinceServer(raw) {
+  if (!raw) return null;
+  if (PROVINCE_DATA[raw]) return raw; // already a key
+  const c = canonicalizeProvince(raw);
+  if (!c) return null;
+  return PROVINCE_ALIAS_INDEX.get(c) || null;
+}
+
+exports.migrateProvinces = onCall(
+  {
+    region: "asia-southeast1",
+    invoker: "public",
+    cors: true,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required");
+    }
+    const callerSnap = await db.doc(`users/${request.auth.uid}`).get();
+    if (callerSnap.data()?.role !== "admin") {
+      throw new HttpsError("permission-denied", "Admin role required");
+    }
+
+    const usersSnap = await db.collection("users").get();
+    const batches = [];
+    let batch = db.batch();
+    let pending = 0;
+    let updated = 0;
+    let skipped = 0;
+    let unknown = 0;
+    const unknownSamples = [];
+
+    usersSnap.forEach(d => {
+      const data = d.data();
+      const raw = data.province;
+      if (!raw) { skipped++; return; }
+      // 既に内部キーならスキップ
+      if (PROVINCE_DATA[raw]) { skipped++; return; }
+      const key = normalizeProvinceServer(raw);
+      if (!key) {
+        unknown++;
+        if (unknownSamples.length < 20) unknownSamples.push({ uid: d.id, province: raw });
+        return;
+      }
+      batch.update(d.ref, { province: key });
+      pending++;
+      updated++;
+      // Firestore batch は最大 500 操作
+      if (pending >= 400) {
+        batches.push(batch.commit());
+        batch = db.batch();
+        pending = 0;
+      }
+    });
+    if (pending > 0) batches.push(batch.commit());
+    await Promise.all(batches);
+
+    return { total: usersSnap.size, updated, skipped, unknown, unknownSamples };
+  }
+);
+
+// ── 5/11 拡張: district のクメール語版（districtKm）を Geocoding API で backfill ──
+// 既存ユーザーの users.location（lat/lng）を language=km で逆ジオコーディングして
+// administrative_area_level_2 を取得し、users.districtKm に保存する。
+// 管理者のみ呼び出し可能。1回実行すれば対象ユーザーを全件処理する。
+// レート制限と API コスト抑制のため、毎呼び出しに 100ms の遅延を入れる。
+const GEOCODING_API_KEY = "AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0"; // 既存のブラウザキー
+async function reverseGeocodeKm(lat, lng) {
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=km&result_type=administrative_area_level_2&key=${GEOCODING_API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (data.status !== "OK" || !data.results || data.results.length === 0) return null;
+  for (const r of data.results) {
+    const comp = (r.address_components || []).find(c =>
+      Array.isArray(c.types) && c.types.includes("administrative_area_level_2")
+    );
+    if (comp?.long_name) return comp.long_name;
+  }
+  return null;
+}
+
+exports.migrateDistrictsKm = onCall(
+  {
+    region: "asia-southeast1",
+    invoker: "public",
+    cors: true,
+    timeoutSeconds: 540, // 9分（最大）。100ユーザー × 100ms 程度なら余裕
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required");
+    }
+    const callerSnap = await db.doc(`users/${request.auth.uid}`).get();
+    if (callerSnap.data()?.role !== "admin") {
+      throw new HttpsError("permission-denied", "Admin role required");
+    }
+
+    const usersSnap = await db.collection("users").get();
+    let updated = 0;
+    let skipped = 0;
+    let failed = 0;
+    const failures = [];
+
+    for (const d of usersSnap.docs) {
+      const data = d.data();
+      // 既に districtKm があるユーザーはスキップ
+      if (data.districtKm) { skipped++; continue; }
+      // 位置情報がないユーザーはスキップ
+      const lat = data.location?.lat;
+      const lng = data.location?.lng;
+      if (typeof lat !== "number" || typeof lng !== "number") { skipped++; continue; }
+
+      try {
+        const km = await reverseGeocodeKm(lat, lng);
+        if (km) {
+          await d.ref.update({ districtKm: km });
+          updated++;
+        } else {
+          failed++;
+          if (failures.length < 20) failures.push({ uid: d.id, lat, lng, reason: "no_result" });
+        }
+      } catch (e) {
+        failed++;
+        if (failures.length < 20) failures.push({ uid: d.id, lat, lng, reason: e.message?.slice(0, 80) });
+      }
+      // レート制限対策：100ms 待機
+      await new Promise(r => setTimeout(r, 100));
+    }
+
+    return { total: usersSnap.size, updated, skipped, failed, failures };
+  }
+);
+
 // ── 運営チャット: メッセージ作成時の通知 ──────────────────────────
 // adminChats/{uid}/messages/{msgId} 作成 → 受信側に FCM 通知
 //   senderRole==='admin' → ユーザーに通知

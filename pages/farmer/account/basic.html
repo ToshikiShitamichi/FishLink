@@ -57,6 +57,7 @@
     <script type="module">
         import { initI18n, initLangSelector } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
+        import { formatLocation } from '/js/province-utils.js';
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
         await initI18n();
@@ -71,7 +72,7 @@
             const d = window.currentUserData || {};
             document.getElementById('v-loginId').textContent = d.loginId || '-';
             document.getElementById('v-displayName').textContent = d.displayName || '-';
-            const loc = [d.province, d.district].filter(Boolean).join(', ') || i18next.t('account.locationUnset');
+            const loc = formatLocation(d) || i18next.t('account.locationUnset');
             document.getElementById('v-location').textContent = loc;
             loading.classList.remove('show');
         });

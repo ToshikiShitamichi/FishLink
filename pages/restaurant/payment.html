@@ -254,6 +254,7 @@
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
+        import { formatProvince, formatDistrict } from '/js/province-utils.js';
         import {
             doc, getDoc, updateDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -306,7 +307,11 @@
                 fishTypeKey: fishTypeKey || '',
                 size,
                 farmerName: farmer.displayName || '',
-                place: (farmer.province || '') + (farmer.district ? ', ' + farmer.district : ''),
+                place: (() => {
+                    const p = formatProvince(farmer.province || '');
+                    const d = formatDistrict(farmer);
+                    return p + (d ? ', ' + d : '');
+                })(),
             };
 
             renderDeadlineBanner();

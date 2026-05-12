@@ -93,12 +93,16 @@
             border-color: #a7f3d0;
         }
 
+        /* 5/9 #59: 1列・横長リストレイアウト（画像左・情報右） */
         .fish-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 12px;
         }
 
+        .fish-grid > div { min-width: 0; position: relative; }
+
+        /* 5/11 #63: カード高さを固定し、写真は object-fit:cover でトリミング統一 */
         .fish-grid-card {
             border-radius: 16px;
             border: 1px solid var(--color-border);
@@ -109,26 +113,34 @@
             transition: box-shadow .15s;
             text-decoration: none;
             color: inherit;
-            display: block;
+            display: flex;
+            flex-direction: row;
+            min-width: 0;
+            height: 140px;
         }
 
         .fish-grid-card:hover {
             box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
         }
 
+        /* 画像：固定幅 140×140 で正方形にトリミング（縦写真・横写真とも揃う） */
         .fish-grid-card__img {
             position: relative;
-            height: 130px;
+            width: 140px;
+            height: 100%;
+            flex-shrink: 0;
             background: linear-gradient(135deg, #d6d3d1, #f5f5f4);
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
         }
 
         .fish-grid-card__img img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
 
         .fish-grid-card__img-placeholder {
@@ -137,37 +149,49 @@
 
         .fish-grid-card__price {
             position: absolute;
-            left: 8px;
-            top: 8px;
+            left: 6px;
+            top: 6px;
             background: rgba(0, 0, 0, .75);
             color: #fff;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 20px;
         }
 
         .fish-grid-card__stock {
             position: absolute;
-            right: 8px;
-            bottom: 8px;
+            right: 6px;
+            bottom: 6px;
             background: rgba(255, 255, 255, .9);
             color: #16a34a;
             font-size: 10px;
             font-weight: 600;
-            padding: 3px 8px;
+            padding: 2px 7px;
             border-radius: 20px;
         }
 
+        /* 5/11 #66: カードのカートボタン廃止。右余白はお気に入りボタン用のみ */
         .fish-grid-card__body {
-            padding: 10px 12px 12px;
+            flex: 1;
+            min-width: 0;
+            padding: 10px 12px 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            overflow: hidden;
         }
 
         .fish-grid-card__name {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 700;
             color: var(--color-text);
-            margin-bottom: 2px;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.3;
+            padding-right: 32px; /* お気に入りボタン用 */
         }
 
         .fish-grid-card__size {
@@ -178,7 +202,16 @@
         .fish-grid-card__place {
             font-size: 12px;
             color: var(--color-text-sub);
-            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            min-width: 0;
+        }
+        .fish-grid-card__place > span:not(.material-symbols-outlined) {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
         }
 
         .fish-grid-card__cart-btn {
@@ -232,16 +265,23 @@
         }
 
         /* 5/5 #1: 生産者情報（顔写真・名前・レビュー） */
+        /* 5/9 #59: 1列レイアウトでは body padding-right がカートボタンを避けるので margin-right 不要 */
+        /* 5/11 #64: タップで生産者ページへ遷移可能に */
         .fish-grid-card__farmer {
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 8px 10px;
-            margin-top: 6px;
-            margin-right: 42px; /* 右下のカートボタンとの干渉を回避 */
+            padding: 6px 8px;
+            margin-top: auto;
             background: #f8fafc;
             border-radius: 10px;
             border: 1px solid #e2e8f0;
+            min-width: 0;
+            cursor: pointer;
+            transition: background .12s;
+        }
+        .fish-grid-card__farmer:hover {
+            background: #f1f5f9;
         }
 
         .fish-grid-card__farmer-avatar {
@@ -273,7 +313,7 @@
         }
 
         .fish-grid-card__farmer-name {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--color-text);
             white-space: nowrap;
@@ -285,8 +325,9 @@
             display: flex;
             align-items: center;
             gap: 3px;
-            font-size: 10px;
+            font-size: 11px;
             color: var(--color-text-sub);
+            white-space: nowrap;
         }
 
         .fish-grid-card__farmer-rating .material-symbols-outlined {
@@ -443,9 +484,10 @@
         import {
             collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
-        import { subscribeCart, addToCart } from '/js/cart.js';
+        import { subscribeCart } from '/js/cart.js';
         import { subscribeFavorites, toggleFavorite } from '/js/favorites.js';
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
+        import { normalizeProvince, formatProvince, formatDistrict } from '/js/province-utils.js';
 
         const loading = document.getElementById('loading');
         let cartListingIds = new Set();
@@ -507,6 +549,7 @@
         populateFilterChips();
 
         // 州チップを生成（allItems から現存する州を抽出）
+        // 5/11 #65: province を内部キーに正規化してから重複排除。表示時は i18n ラベル
         function populateProvinceChips() {
             const row = document.getElementById('province-chips');
             row.innerHTML = '';
@@ -518,20 +561,24 @@
             allBtn.textContent = i18next.t('restaurant.filterAll');
             row.appendChild(allBtn);
 
-            // 自分の州を最優先で表示
-            const myProvince = window.currentUserData?.province || '';
-            const provinces = [...new Set(allItems.map(it => it.farmerProvince).filter(Boolean))]
-                .sort((a, b) => {
-                    if (a === myProvince) return -1;
-                    if (b === myProvince) return 1;
-                    return a.localeCompare(b);
-                });
-            provinces.forEach(prov => {
+            // 自分の州（正規化済みキー）を最優先で表示
+            const myKey = normalizeProvince(window.currentUserData?.province) || '';
+            // farmerProvince を内部キーに正規化してから重複排除（同じ州の言語違いを統合）
+            // 正規化できない値は raw のまま扱う
+            const keys = [...new Set(
+                allItems.map(it => normalizeProvince(it.farmerProvince) || it.farmerProvince)
+                    .filter(Boolean)
+            )].sort((a, b) => {
+                if (a === myKey) return -1;
+                if (b === myKey) return 1;
+                return formatProvince(a).localeCompare(formatProvince(b));
+            });
+            keys.forEach(key => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'chip chip--filter' + (currentProvince === prov ? ' active' : '');
-                btn.dataset.value = prov;
-                btn.textContent = prov;
+                btn.className = 'chip chip--filter' + (currentProvince === key ? ' active' : '');
+                btn.dataset.value = key;
+                btn.textContent = formatProvince(key);
                 row.appendChild(btn);
             });
         }
@@ -741,6 +788,7 @@
                         farmerName: farmer.displayName || '',
                         farmerProvince: farmer.province || '',
                         farmerDistrict: farmer.district || '',
+                        farmerDistrictKm: farmer.districtKm || '',
                         farmerAvatarUrl: farmer.avatarUrl || null,
                         farmerAvgRating: Number(farmer.avgRating || 0),
                         farmerReviewCount: Number(farmer.reviewCount || 0),
@@ -781,9 +829,12 @@
                 return true;
             });
 
-            // 州フィルタ
+            // 州フィルタ（5/11 #65: 正規化キー or raw で比較）
             if (currentProvince) {
-                items = items.filter(it => it.farmerProvince === currentProvince);
+                items = items.filter(it => {
+                    const itKey = normalizeProvince(it.farmerProvince) || it.farmerProvince;
+                    return itKey === currentProvince;
+                });
             }
 
             // お気に入りフィルタ
@@ -837,20 +888,15 @@
                 const distText = (item.distanceKm !== null && item.distanceKm !== undefined)
                     ? `${(Math.floor(item.distanceKm * 10) / 10)} km`
                     : '';
+                // 5/11: UI 言語が km なら districtKm を優先
+                const districtText = formatDistrict({ district: item.farmerDistrict, districtKm: item.farmerDistrictKm });
 
                 const imgHtml = item.photoUrl
                     ? `<img src="${item.photoUrl}" alt="${fishName}">`
                     : `<span class="fish-grid-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">set_meal</span></span>`;
 
-                const inCart = cartListingIds.has(item.id);
-                const outOfStock = item.stock <= 0;
-                const cartBtnHtml = outOfStock ? '' : `
-                    <button class="fish-grid-card__cart-btn ${inCart ? 'added' : ''}" type="button"
-                        data-act="add-to-cart" data-id="${item.id}" data-farmer="${item.farmerId}"
-                        data-min="${item.minOrder || 1}"
-                        title="${i18next.t('cart.addToCart')}">
-                        <span class="material-symbols-outlined">${inCart ? 'check' : 'add_shopping_cart'}</span>
-                    </button>`;
+                // 5/11 #66: カードのカートボタンを廃止。カート追加は商品説明画面で行う
+                const cartBtnHtml = '';
 
                 const isFav = favoriteIds.has(item.id);
                 const favBtnHtml = `
@@ -877,10 +923,9 @@
                         <div class="fish-grid-card__body">
                             <div class="fish-grid-card__name">${fishName}</div>
                             <div class="fish-grid-card__size">（${item.size} head/kg）</div>
-                            ${item.farmerProvince ? `<div class="fish-grid-card__place"><span class="material-symbols-outlined" style="font-size:14px;">location_on</span> ${item.farmerProvince}${item.farmerDistrict ? ', ' + item.farmerDistrict : ''}</div>` : ''}
-                            ${distText ? `<div class="fish-grid-card__distance">${distText}</div>` : ''}
+                            ${item.farmerProvince ? `<div class="fish-grid-card__place"><span class="material-symbols-outlined" style="font-size:14px;">location_on</span><span>${formatProvince(item.farmerProvince)}${districtText ? ', ' + districtText : ''}${distText ? ' · ' + distText : ''}</span></div>` : (distText ? `<div class="fish-grid-card__place"><span>${distText}</span></div>` : '')}
                             ${item.farmerName ? `
-                                <div class="fish-grid-card__farmer">
+                                <div class="fish-grid-card__farmer" data-act="view-farmer" data-farmer-id="${item.farmerId}" role="button" tabindex="0" title="${i18next.t('restaurant.viewFarmer')}">
                                     <div class="fish-grid-card__farmer-avatar">
                                         ${item.farmerAvatarUrl
                                             ? `<img src="${item.farmerAvatarUrl}" alt="" loading="lazy">`
@@ -937,7 +982,7 @@
             });
         }
 
-        // カートバッジ＋「追加済み」UI 反映
+        // カートバッジ（5/11 #66: カード上のカートボタン廃止に伴いバッジ更新のみに簡略化）
         function watchCartBadge() {
             const uid = window.currentUser?.uid;
             if (!uid) return;
@@ -945,13 +990,6 @@
                 cartListingIds = new Set(items.map(it => it.listingId));
                 const badge = document.getElementById('cart-badge');
                 if (badge) badge.style.display = items.length > 0 ? 'block' : 'none';
-                // 表示されているカードのボタンを更新（再描画せず差分更新）
-                document.querySelectorAll('[data-act="add-to-cart"]').forEach(btn => {
-                    const inCart = cartListingIds.has(btn.dataset.id);
-                    btn.classList.toggle('added', inCart);
-                    const icon = btn.querySelector('.material-symbols-outlined');
-                    if (icon) icon.textContent = inCart ? 'check' : 'add_shopping_cart';
-                });
             });
         }
 
@@ -974,8 +1012,21 @@
             });
         }
 
-        // 「カートに追加」/ お気に入りトグル のクリック処理を集約
+        // お気に入りトグル / 生産者ページ遷移 のクリック処理を集約
+        // 5/11 #66: カード上のカートボタンは廃止。カート追加は商品説明画面で実施
         document.getElementById('fish-grid').addEventListener('click', async (e) => {
+            // 5/11 #64: 農家ブロックタップで生産者ページへ遷移（カード全体の order.html 遷移より優先）
+            const farmerBlock = e.target.closest('[data-act="view-farmer"]');
+            if (farmerBlock) {
+                e.preventDefault();
+                e.stopPropagation();
+                const farmerId = farmerBlock.dataset.farmerId;
+                if (farmerId) {
+                    window.location.href = `/pages/restaurant/farmer.html?id=${farmerId}`;
+                }
+                return;
+            }
+
             const favBtn = e.target.closest('[data-act="toggle-fav"]');
             if (favBtn) {
                 e.preventDefault();
@@ -992,25 +1043,6 @@
                     favBtn.disabled = false;
                 }
                 return;
-            }
-
-            const btn = e.target.closest('[data-act="add-to-cart"]');
-            if (!btn) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const listingId = btn.dataset.id;
-            const farmerId = btn.dataset.farmer;
-            const minOrder = Number(btn.dataset.min) || 1;
-            const uid = window.currentUser?.uid;
-            if (!uid) return;
-            btn.disabled = true;
-            try {
-                await addToCart(uid, { listingId, farmerId, quantity: minOrder, gutProcessing: true });
-            } catch (err) {
-                console.error('addToCart failed:', err);
-                alert(err.message || 'Failed');
-            } finally {
-                btn.disabled = false;
             }
         });
 

@@ -125,34 +125,59 @@
 
                 window.selectedLocation = { lat: latLng.lat(), lng: latLng.lng() };
                 window.selectedProvince = null;
+                window.selectedDistrict = null;
+                window.selectedDistrictKm = null;
 
-                window.provincePromise = new Promise((resolve) => {
-                    const geocoder = new google.maps.Geocoder();
-                    geocoder.geocode({ location: window.selectedLocation, language: 'en' }, (results, status) => {
-                        let formatted = '';
-                        if (status === 'OK' && results[0]) {
-                            const prov = results[0].address_components.find(c =>
-                                c.types.includes('administrative_area_level_1')
-                            );
-                            window.selectedProvince = prov?.long_name || null;
-                            const dist = results[0].address_components.find(c =>
-                                c.types.includes('administrative_area_level_2')
-                            );
-                            window.selectedDistrict = dist?.long_name || null;
-                            formatted = results[0].formatted_address || '';
-                        }
-                        // 住所をステータス欄に表示
-                        const statusEl = document.getElementById('location-status');
-                        statusEl.classList.add('set');
-                        const setTxt = window.i18next?.exists?.('register.locationSet')
-                            ? window.i18next.t('register.locationSet') : '位置情報を設定済み';
-                        const addressTxt = formatted
-                            || [window.selectedProvince, window.selectedDistrict].filter(Boolean).join(', ');
-                        document.getElementById('location-status-text').innerHTML =
-                            `<span style="font-weight:700;">${setTxt}</span>${addressTxt ? `<br><span style="font-size:12px; color:#475569;">${addressTxt}</span>` : ''}`;
-                        resolve(window.selectedProvince);
+                // 5/11 #65 拡張: en + km を並列でジオコーディングして、district はクメール語版も保存する
+                //   - province は js/province-utils.js で内部キー正規化＋i18n（en/km/ja）
+                //   - district は数が多すぎて i18n テーブル化できないので、km の Geocoder 結果をそのまま保存
+                function geocodeWithLang(lang) {
+                    return new Promise((resolve) => {
+                        const geocoder = new google.maps.Geocoder();
+                        geocoder.geocode({ location: window.selectedLocation, language: lang }, (results, status) => {
+                            if (status === 'OK' && results[0]) {
+                                const prov = results[0].address_components.find(c =>
+                                    c.types.includes('administrative_area_level_1')
+                                );
+                                const dist = results[0].address_components.find(c =>
+                                    c.types.includes('administrative_area_level_2')
+                                );
+                                resolve({
+                                    province: prov?.long_name || null,
+                                    district: dist?.long_name || null,
+                                    formatted: results[0].formatted_address || '',
+                                });
+                            } else {
+                                resolve({ province: null, district: null, formatted: '' });
+                            }
+                        });
                     });
-                });
+                }
+
+                window.provincePromise = (async () => {
+                    const [en, km] = await Promise.all([
+                        geocodeWithLang('en'),
+                        geocodeWithLang('km'),
+                    ]);
+                    window.selectedProvince = en.province;
+                    window.selectedDistrict = en.district;
+                    window.selectedDistrictKm = km.district;
+
+                    // 住所をステータス欄に表示（UI言語が km なら km 表記を優先）
+                    const useKm = (window.i18next?.language === 'km');
+                    const placeProvince = useKm ? (km.province || en.province) : en.province;
+                    const placeDistrict = useKm ? (km.district || en.district) : en.district;
+                    const formatted = (useKm ? km.formatted : en.formatted)
+                        || [placeProvince, placeDistrict].filter(Boolean).join(', ');
+
+                    const statusEl = document.getElementById('location-status');
+                    statusEl.classList.add('set');
+                    const setTxt = window.i18next?.exists?.('register.locationSet')
+                        ? window.i18next.t('register.locationSet') : '位置情報を設定済み';
+                    document.getElementById('location-status-text').innerHTML =
+                        `<span style="font-weight:700;">${setTxt}</span>${formatted ? `<br><span style="font-size:12px; color:#475569;">${formatted}</span>` : ''}`;
+                    return window.selectedProvince;
+                })();
 
                 const statusEl = document.getElementById('location-status');
                 statusEl.classList.add('set');
@@ -348,7 +373,7 @@
                         <div class="role-option">
                             <input type="radio" name="role" id="role-farmer" value="farmer">
                             <label class="role-option__label" for="role-farmer">
-                                <span class="role-option__icon"><span class="material-symbols-outlined">agriculture</span></span>
+                                <span class="role-option__icon"><span class="material-symbols-outlined">phishing</span></span>
                                 <span class="role-option__text" data-i18n="register.roleFarmer"></span>
                             </label>
                         </div>
@@ -415,8 +440,23 @@
         import { register, watchAuthState } from '/js/auth.js';
 
         // PWA Service Worker 登録
+        // 5/11: 新バージョンの SW を検出したら自動リロード（未ログインユーザー向け）
+        //   登録画面で旧コード（en のみジオコーディング）が動かないようにするため。
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(console.error);
+            navigator.serviceWorker.register('/sw.js')
+                .then((registration) => {
+                    registration.update();
+                    registration.addEventListener('updatefound', () => {
+                        const newSW = registration.installing;
+                        if (!newSW) return;
+                        newSW.addEventListener('statechange', () => {
+                            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                                window.location.reload();
+                            }
+                        });
+                    });
+                })
+                .catch(console.error);
         }
 
         // ログイン済みならダッシュボードへ（登録処理中はリダイレクトしない）
@@ -478,7 +518,7 @@
                     ]);
                 }
 
-                await register({ loginId, displayName, phone, password, role, location: window.selectedLocation, province: window.selectedProvince, district: window.selectedDistrict, lang: langPref });
+                await register({ loginId, displayName, phone, password, role, location: window.selectedLocation, province: window.selectedProvince, district: window.selectedDistrict, districtKm: window.selectedDistrictKm, lang: langPref });
                 saveLang(langPref);
                 // 登録成功 → ダッシュボードへ遷移
                 const dest = role === 'farmer' ? '/pages/farmer/dashboard.html' : '/pages/restaurant/dashboard.html';

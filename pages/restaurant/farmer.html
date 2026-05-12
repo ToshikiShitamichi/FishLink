@@ -115,6 +115,24 @@
         .review-card__stars { color: #f59e0b; font-size: 14px; font-variation-settings: 'FILL' 1; margin-bottom: 4px; }
         .review-card__stars .material-symbols-outlined { font-size: 16px; }
         .review-card__comment { font-size: 13px; color: var(--color-text); line-height: 1.5; }
+        /* 5/11 #64: レビュー者の名前+アバター */
+        .review-card__reviewer {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 8px;
+        }
+        .review-card__avatar {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: #e2e8f0; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .review-card__avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .review-card__avatar .material-symbols-outlined { font-size: 18px; color: #94a3b8; }
+        .review-card__reviewer-name {
+            font-size: 13px; font-weight: 600; color: var(--color-text);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            flex: 1; min-width: 0;
+        }
 
         .listings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .listing-mini {
@@ -241,6 +259,7 @@
         import {
             doc, getDoc, collection, collectionGroup, query, where, orderBy, getDocs
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { formatProvince, formatLocation } from '/js/province-utils.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -302,7 +321,8 @@
                 const user = userSnap.data();
 
                 document.getElementById('name').textContent = user.displayName || '-';
-                const loc = [user.province, user.district].filter(Boolean).join(', ') || '-';
+                // 5/11 #65 + 拡張: province は i18n ラベル、district は UI 言語に応じて km/en 切替
+                const loc = formatLocation(user) || '-';
                 document.getElementById('location').textContent = loc;
 
                 if (user.avatarUrl) {
@@ -373,6 +393,7 @@
                 }
 
                 // レビュー（5/7 #56: コメントがあるレビューのみ表示。コメントがない場合のみ空表示）
+                // 5/11 #64: レビュー者（レストラン）の displayName と avatarUrl を一括取得して表示
                 try {
                     const rq = query(
                         collectionGroup(db, 'reviews'),
@@ -388,10 +409,30 @@
                         listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
                         return;
                     }
+
+                    // レビュー者プロフィールを一括取得（重複排除）
+                    const reviewerIds = [...new Set(reviewsWithComment.map(r => r.fromUid).filter(Boolean))];
+                    const reviewerMap = {};
+                    await Promise.all(reviewerIds.map(async (uid) => {
+                        try {
+                            const s = await getDoc(doc(db, 'users', uid));
+                            reviewerMap[uid] = s.exists() ? s.data() : {};
+                        } catch (e) { reviewerMap[uid] = {}; }
+                    }));
+
                     listEl.innerHTML = reviewsWithComment.map(r => {
                         const v = legacyToVerdict(r);
+                        const reviewer = reviewerMap[r.fromUid] || {};
+                        const reviewerName = reviewer.displayName || i18next.t('profile.anonymousReviewer');
+                        const avatarHtml = reviewer.avatarUrl
+                            ? `<img src="${reviewer.avatarUrl}" alt="" loading="lazy">`
+                            : `<span class="material-symbols-outlined">storefront</span>`;
                         return `
                             <div class="review-card">
+                                <div class="review-card__reviewer">
+                                    <div class="review-card__avatar">${avatarHtml}</div>
+                                    <div class="review-card__reviewer-name">${escapeHtml(reviewerName)}</div>
+                                </div>
                                 <div class="review-card__head">
                                     ${verdictBadge(v)}
                                     <div class="review-card__date">${fmtDate(r.createdAt)}</div>

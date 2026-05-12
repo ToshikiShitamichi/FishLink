@@ -131,6 +131,7 @@
         import { db, storage } from '/js/firebase-config.js';
         import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+        import { uploadImageResized } from '/js/image-resize.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -230,17 +231,21 @@
                 const farmerMessage = document.getElementById('in-message').value.trim();
                 let pondPhotoUrl = editState.pondPhotoUrl;
                 if (editState.pondFile) {
-                    const storageRef = ref(storage, `profile/${uid}/pond_${Date.now()}_${editState.pondFile.name}`);
-                    await uploadBytes(storageRef, editState.pondFile, { cacheControl: 'public, max-age=31536000' });
-                    pondPhotoUrl = await getDownloadURL(storageRef);
+                    // 5/11 #67: リサイズ+圧縮+リトライ
+                    const baseName = (editState.pondFile.name || 'pond').replace(/\.[^.]+$/, '');
+                    const storageRef = ref(storage, `profile/${uid}/pond_${Date.now()}_${baseName}.jpg`);
+                    pondPhotoUrl = await uploadImageResized(storageRef, editState.pondFile);
                 } else if (editState.pondRemoved) {
                     pondPhotoUrl = null;
                 }
                 let avatarUrl = editState.avatarUrl;
                 if (editState.avatarFile) {
-                    const storageRef = ref(storage, `profile/${uid}/avatar_${Date.now()}_${editState.avatarFile.name}`);
-                    await uploadBytes(storageRef, editState.avatarFile, { cacheControl: 'public, max-age=31536000' });
-                    avatarUrl = await getDownloadURL(storageRef);
+                    // 5/11 #67: リサイズ+圧縮+リトライ（アバターは小さめでもOK）
+                    const baseName = (editState.avatarFile.name || 'avatar').replace(/\.[^.]+$/, '');
+                    const storageRef = ref(storage, `profile/${uid}/avatar_${Date.now()}_${baseName}.jpg`);
+                    avatarUrl = await uploadImageResized(storageRef, editState.avatarFile, {
+                        resize: { maxWidth: 512, maxHeight: 512 },
+                    });
                 } else if (editState.avatarRemoved) {
                     avatarUrl = null;
                 }

@@ -87,6 +87,7 @@
         import { db, storage } from '/js/firebase-config.js';
         import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+        import { uploadImageResized } from '/js/image-resize.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -150,9 +151,10 @@
             try {
                 let restaurantPhotoUrl = editState.photoUrl;
                 if (editState.file) {
-                    const storageRef = ref(storage, `profile/${uid}/rest_${Date.now()}_${editState.file.name}`);
-                    await uploadBytes(storageRef, editState.file, { cacheControl: 'public, max-age=31536000' });
-                    restaurantPhotoUrl = await getDownloadURL(storageRef);
+                    // 5/11 #67: リサイズ+圧縮+リトライ
+                    const baseName = (editState.file.name || 'rest').replace(/\.[^.]+$/, '');
+                    const storageRef = ref(storage, `profile/${uid}/rest_${Date.now()}_${baseName}.jpg`);
+                    restaurantPhotoUrl = await uploadImageResized(storageRef, editState.file);
                 } else if (editState.removed) {
                     restaurantPhotoUrl = null;
                 }

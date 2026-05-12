@@ -378,13 +378,16 @@
             <div class="section-block">
                 <div class="section-title" data-i18n="post.sectionDelivery"></div>
 
+                <!-- 5/9 #60: UIは「10kmあたり」で入力させる。内部保存は引き続き KHR/km
+                     （既存の deliveryRate 既存出品との互換性維持） -->
                 <div class="price-row">
-                    <label for="delivery-rate" data-i18n="post.deliveryRate"></label>
-                    <input type="number" class="price-input" id="delivery-rate" value="500" min="0">
-                    <span class="price-unit">KHR/km</span>
+                    <label for="delivery-rate-per-10km" data-i18n="post.deliveryRate"></label>
+                    <input type="number" class="price-input" id="delivery-rate-per-10km" value="5000" min="0">
+                    <span class="price-unit">KHR/10km</span>
                 </div>
+                <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliveryRateExample"></p>
 
-                <div class="price-row">
+                <div class="price-row" style="margin-top:12px;">
                     <label for="free-delivery-distance" data-i18n="post.freeDeliveryDistance"></label>
                     <input type="number" class="price-input" id="free-delivery-distance" placeholder="5" min="0">
                     <span class="price-unit">km</span>
@@ -456,6 +459,7 @@
         import {
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+        import { uploadImageResized } from '/js/image-resize.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -511,7 +515,9 @@
             document.getElementById('fish-stock').value = d.stock ?? '';
             document.getElementById('price-unit').value = d.price ?? '';
             document.getElementById('gut-price').value = d.gutPrice ?? '';
-            document.getElementById('delivery-rate').value = d.deliveryRate ?? '';
+            // 5/9 #60: 内部保存は KHR/km、表示は KHR/10km（×10）
+            document.getElementById('delivery-rate-per-10km').value =
+                d.deliveryRate != null ? d.deliveryRate * 10 : '';
             document.getElementById('free-delivery-distance').value = d.freeDeliveryDistance ?? '';
             document.getElementById('min-order').value = d.minOrder ?? '';
             document.getElementById('max-distance').value = d.maxDistance ?? '';
@@ -551,7 +557,9 @@
         }
 
         // Google Maps の州名 → CAA_DATA のキーに変換
+        // 5/11 #65: province の内部キー（例: 'takeo'）も受け付ける
         const PROVINCE_MAP = {
+            // 旧データ互換（Geocoder からの英語表記）
             'Kandal': 'Kandal',
             'Takeo': 'Takeo', 'Takéo': 'Takeo', 'Takéo Province': 'Takeo', 'Takeo Province': 'Takeo',
             'Prey Veng': 'Prey Veng', 'Prey Veng Province': 'Prey Veng',
@@ -563,6 +571,18 @@
             'Kampong Chhnang': 'Kg. Chhnang', 'Kampong Chhnang Province': 'Kg. Chhnang',
             'Banteay Meanchey': 'BMC', 'Banteay Meanchey Province': 'BMC',
             'Phnom Penh': 'Kandal',
+            // 新データ（province-utils の内部キー）
+            'kandal': 'Kandal',
+            'takeo': 'Takeo',
+            'prey_veng': 'Prey Veng',
+            'kampong_cham': 'Kg. Cham',
+            'kampong_thom': 'Kg. Thom',
+            'siem_reap': 'Siemreap',
+            'battambang': 'Battambang',
+            'pursat': 'Pursat',
+            'kampong_chhnang': 'Kg. Chhnang',
+            'banteay_meanchey': 'BMC',
+            'phnom_penh': 'Kandal',
         };
 
         // 農家の州名（登録時にFirestoreに保存済み）
@@ -786,7 +806,9 @@
             const fishStock = parseFloat(document.getElementById('fish-stock').value) || 0;
             const priceUnit = parseInt(document.getElementById('price-unit').value) || 0;
             const gutPrice = parseInt(document.getElementById('gut-price').value) || 0;
-            const delivRate = parseInt(document.getElementById('delivery-rate').value) || 500;
+            // 5/9 #60: UI入力は KHR/10km。内部保存は KHR/km なので 10で割る
+            const delivRatePer10Km = parseInt(document.getElementById('delivery-rate-per-10km').value) || 5000;
+            const delivRate = Math.round(delivRatePer10Km / 10);
             const freeDelivDist = parseFloat(document.getElementById('free-delivery-distance').value) || 0;
             const minOrder = parseFloat(document.getElementById('min-order').value) || 0;
             const maxDistance = parseFloat(document.getElementById('max-distance').value) || 0;
@@ -821,18 +843,11 @@
                 const uid = window.currentUser?.uid;
                 if (!uid) throw new Error(i18next.t('post.errorLogin'));
 
-                // 5/3: Android 一部端末で投稿が無限ローディングになる問題対策
-                // 各非同期処理にタイムアウトを設けて、失敗時はエラーを表示する
-                // （Storage / Firestore がネットワーク条件次第で永遠にハングするケースを防ぐ）
-                const withTimeout = (promise, ms, label) =>
-                    Promise.race([
-                        promise,
-                        new Promise((_, reject) =>
-                            setTimeout(() => reject(new Error(`Timeout: ${label} (${ms}ms)`)), ms)
-                        ),
-                    ]);
-
-                // 5/3: 写真アップロード（新規・編集どちらでも selectedItems を処理）
+                // 5/3 / 5/11 #67: Android 一部端末で投稿が無限ローディングになる問題対策。
+                // 5/11 #67 で uploadImageResized に置き換え：クライアント側で
+                //   ・最大幅1280px・JPEG品質0.8 にリサイズ＋圧縮（4MB → 200-400KB 目安）
+                //   ・タイムアウト 60秒 → 180秒
+                //   ・最大3回までリトライ（指数バックオフ）
                 // 既存URLはそのまま使い、新規Fileのみアップロード
                 const photoUrls = [];
                 let progressIdx = 0;
@@ -846,14 +861,9 @@
                         errorMsg.textContent = i18next.t('post.uploadProgress', { current: progressIdx, total: totalNew });
                         errorMsg.classList.remove('show');  // エラー扱いではないので赤くしない（進捗表示のみ）
 
-                        const storageRef = ref(storage, `fishListings/${uid}/${Date.now()}_${item.file.name}`);
-                        // 1ファイルあたり最大 60秒
-                        await withTimeout(
-                            uploadBytes(storageRef, item.file, { cacheControl: 'public, max-age=31536000' }),
-                            60000,
-                            `uploadBytes ${item.file.name}`
-                        );
-                        const url = await withTimeout(getDownloadURL(storageRef), 30000, 'getDownloadURL');
+                        const baseName = (item.file.name || 'photo').replace(/\.[^.]+$/, '');
+                        const storageRef = ref(storage, `fishListings/${uid}/${Date.now()}_${baseName}.jpg`);
+                        const url = await uploadImageResized(storageRef, item.file);
                         photoUrls.push(url);
                     }
                 }

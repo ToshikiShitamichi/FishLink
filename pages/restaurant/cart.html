@@ -74,17 +74,44 @@
             margin-top: 8px; gap: 10px; flex-wrap: wrap;
         }
         .qty-box {
-            display: flex; align-items: center; gap: 6px;
-            background: #f8fafc; border-radius: 20px; padding: 3px 8px;
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #f8fafc; border-radius: 20px; padding: 3px 6px;
+            flex: 0 0 auto;
+            width: max-content;
         }
         .qty-box button {
             width: 24px; height: 24px; border-radius: 50%;
             border: 1px solid var(--color-border); background: #fff;
             font-size: 14px; font-weight: 700; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
+            flex: 0 0 24px;
+            padding: 0;
         }
         .qty-box button:disabled { opacity: 0.4; cursor: not-allowed; }
-        .qty-box__value { font-size: 13px; font-weight: 700; min-width: 30px; text-align: center; }
+        /* 5/9 #61: 直接入力に対応するため input 化 */
+        .qty-box__value {
+            box-sizing: border-box;
+            width: 48px;
+            flex: 0 0 48px;
+            font-size: 13px; font-weight: 700;
+            text-align: center;
+            border: 1px solid var(--color-border);
+            background: #fff;
+            border-radius: 10px;
+            padding: 3px 2px;
+            font-family: inherit;
+            color: var(--color-text);
+            min-width: 0;
+            -moz-appearance: textfield;
+        }
+        .qty-box__value:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+        .qty-box__value::-webkit-outer-spin-button,
+        .qty-box__value::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
 
         .gut-chip {
             display: inline-flex; align-items: center; gap: 4px;
@@ -397,7 +424,7 @@
             </select>
         </div>
 
-        <div class="sub-page__title" data-i18n="cart.title"></div>
+        <div class="sub-page__title" id="page-title" data-i18n="cart.title"></div>
     </div>
 
     <div class="cart-page" id="cart-page">
@@ -471,12 +498,35 @@
             calcItemPrices, calcDeliveryFee, sumItems, calcOrderTotal
         } from '/js/order-utils.js';
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
+        import { formatProvince, formatDistrict } from '/js/province-utils.js';
 
         const loading = document.getElementById('loading');
         const errEl = document.getElementById('err-msg');
         watchAuthState({ requireAuth: true });
         await initI18n();
         initLangSelector();
+
+        // 5/11 #66: buyNow モード — order.html の「今すぐ注文」から渡された単品で
+        //   カート画面をスキップして confirm ステージに直行する。
+        //   永続カート（Firestore: carts/{uid}）には影響しない（読まない・書き換えない・clearCart も呼ばない）。
+        const buyNowParams = (() => {
+            const sp = new URLSearchParams(location.search);
+            if (sp.get('buyNow') !== '1') return null;
+            const id = sp.get('id');
+            const qty = parseFloat(sp.get('qty') || '0');
+            const gut = sp.get('gut') === '1';
+            if (!id || !(qty > 0)) return null;
+            return { listingId: id, quantity: qty, gutProcessing: gut };
+        })();
+        const isBuyNow = !!buyNowParams;
+        // 5/11 #66: buyNow ではページタイトルを「注文確認」に切り替え
+        if (isBuyNow) {
+            const t = document.getElementById('page-title');
+            if (t) {
+                t.removeAttribute('data-i18n');
+                t.textContent = i18next.t('cart.confirmTitle');
+            }
+        }
 
         // 状態
         let cartItems = [];                // [{ listingId, farmerId, quantity, gutProcessing }]
@@ -603,10 +653,41 @@
                     farmerCampaignDiscountRate = c.farmerCampaignDiscount ?? 0;
                 }
 
-                subscribeCart(window.currentUser.uid, async (items) => {
-                    cartItems = items;
-                    await render();
-                });
+                if (isBuyNow) {
+                    // 5/11 #66: buyNow モード — 永続カートを読まずに単品で confirm へ
+                    try {
+                        const listingSnap = await getDoc(doc(db, 'fishListings', buyNowParams.listingId));
+                        if (!listingSnap.exists()) {
+                            location.href = '/pages/restaurant/dashboard.html';
+                            return;
+                        }
+                        const listingData = listingSnap.data();
+                        listingCache.set(buyNowParams.listingId, listingData);
+                        cartItems = [{
+                            listingId: buyNowParams.listingId,
+                            farmerId: listingData.farmerId,
+                            quantity: buyNowParams.quantity,
+                            gutProcessing: buyNowParams.gutProcessing,
+                        }];
+                        // 農家・距離もプリロード
+                        const farmerSnap = await getDoc(doc(db, 'users', listingData.farmerId));
+                        farmerCache.set(listingData.farmerId, farmerSnap.exists() ? farmerSnap.data() : null);
+                        await ensureDistance(listingData.farmerId, farmerCache.get(listingData.farmerId));
+                        // 納品日時のデフォルト（先頭スロット）
+                        deliveryPick.set(listingData.farmerId, { dateIso: todayIso(), time: DELIVERY_TIME_SLOTS[1] });
+                        // 即座に confirm 画面へ
+                        await renderConfirm();
+                        setStage('confirm');
+                    } catch (err) {
+                        console.error('buyNow init failed:', err);
+                        location.href = '/pages/restaurant/dashboard.html';
+                    }
+                } else {
+                    subscribeCart(window.currentUser.uid, async (items) => {
+                        cartItems = items;
+                        await render();
+                    });
+                }
             } catch (err) {
                 console.error(err);
             } finally {
@@ -712,7 +793,7 @@
                             <div class="cart-item__ctrl">
                                 <div class="qty-box">
                                     <button type="button" data-act="qty-minus" data-idx="${origIndex}" ${c.raw.quantity <= minOrder ? 'disabled' : ''}>−</button>
-                                    <div class="qty-box__value">${c.raw.quantity} kg</div>
+                                    <input type="number" class="qty-box__value" data-act="qty-input" data-idx="${origIndex}" data-min="${minOrder}" value="${c.raw.quantity}" min="0" step="0.1" inputmode="decimal">
                                     <button type="button" data-act="qty-plus" data-idx="${origIndex}">＋</button>
                                 </div>
                                 <button class="gut-chip ${c.raw.gutProcessing ? 'active' : ''}" type="button" data-act="toggle-gut" data-idx="${origIndex}">
@@ -777,6 +858,24 @@
                 btn.addEventListener('click', async () => {
                     const idx = Number(btn.dataset.idx);
                     await updateCartItem(uid, idx, { quantity: cartItems[idx].quantity + 1 });
+                });
+            });
+            // 5/9 #61: 数量直接入力（blur で確定。最低注文量未満は最低注文量に補正）
+            document.querySelectorAll('[data-act="qty-input"]').forEach(inp => {
+                inp.addEventListener('blur', async () => {
+                    const idx = Number(inp.dataset.idx);
+                    const minOrder = Number(inp.dataset.min) || 1;
+                    let v = parseFloat(inp.value);
+                    if (!Number.isFinite(v) || v < minOrder) v = minOrder;
+                    if (v !== cartItems[idx].quantity) {
+                        await updateCartItem(uid, idx, { quantity: v });
+                    } else {
+                        inp.value = v;
+                    }
+                });
+                // Enter で blur（モバイルキーボードで確定しやすく）
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
                 });
             });
             document.querySelectorAll('[data-act="toggle-gut"]').forEach(btn => {
@@ -1025,8 +1124,9 @@
 
             // サービス料込み単価（CLAUDE.md: 表示単価 = (price+gutPrice)×(1+serviceRate)）
             const unitPrice = Math.round(((listing.price || 0) + (listing.gutPrice || 0)) * (1 + serviceRate));
-            const province = farmer.province || '';
-            const district = farmer.district || '';
+            // 5/11 #65 + 拡張: province は i18n ラベル、district は UI 言語に応じて km/en 切替
+            const province = formatProvince(farmer.province || '');
+            const district = formatDistrict(farmer);
             const place = [province, district].filter(Boolean).join(', ');
             const rating = Number(farmer.avgRating || 0).toFixed(1);
             const reviews = farmer.reviewCount || 0;
@@ -1059,7 +1159,7 @@
                 <div class="lm-info-grid">
                     <div><div class="k">${i18next.t('order.stock').replace(/[:：]\s*$/, '')}</div><div class="v">${listing.stock || 0} kg</div></div>
                     <div><div class="k">${i18next.t('order.minOrder')}</div><div class="v">${listing.minOrder || 0} kg</div></div>
-                    <div><div class="k">${i18next.t('post.deliveryRate')}</div><div class="v">${(listing.deliveryRate || 0).toLocaleString()} KHR/km</div></div>
+                    <div><div class="k">${i18next.t('post.deliveryRate')}</div><div class="v">${((listing.deliveryRate || 0) * 10).toLocaleString()} KHR/10km</div></div>
                     <div><div class="k">${i18next.t('post.freeDeliveryDistance')}</div><div class="v">${listing.freeDeliveryDistance || 0} km</div></div>
                 </div>
                 ${listing.description ? `
@@ -1125,6 +1225,20 @@
                     return `<div class="confirm-group__row"><span>${escapeHtml(shortName)} ${c.item.quantity}kg${gutMark}</span><span class="v">${fmtKhr(c.prices.fishPrice + c.prices.serviceFee)}</span></div>`;
                 }).join('');
 
+                // 5/11 #66: buyNow モードでは納品日時の入力欄を表示（cart 画面をスキップしているため）
+                const delivPickHtml = isBuyNow ? `
+                    <div class="delivery-pick" style="margin-top:10px;">
+                        <div><label>${i18next.t('cart.deliveryDate')}</label>
+                            <input type="date" data-act="date" data-farmer="${farmerId}" value="${pick.dateIso}" min="${todayIso()}">
+                        </div>
+                        <div><label>${i18next.t('cart.deliveryTime')}</label>
+                            <select data-act="time" data-farmer="${farmerId}">
+                                ${DELIVERY_TIME_SLOTS.map(t => `<option value="${t}" ${t === pick.time ? 'selected' : ''}>${t}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                ` : `<div class="confirm-group__deliv">${i18next.t('cart.deliveryDate')}: ${pick.dateIso || '-'} / ${i18next.t('cart.deliveryTime')}: ${pick.time || '-'}</div>`;
+
                 html += `
                     <div class="confirm-group">
                         <div class="confirm-group__head">
@@ -1135,13 +1249,33 @@
                         ${campaignActive && itemsSum.campaignDiscount > 0 ? `<div class="confirm-group__row" style="color:#dc2626;"><span>${i18next.t('cart.campaignDiscount')}</span><span class="v">-${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
                         <div class="confirm-group__row"><span>${i18next.t('cart.deliveryFee')}</span><span class="v">${fmtKhr(deliveryFee)}</span></div>
                         <div class="confirm-group__row confirm-group__total"><span>${i18next.t('cart.groupTotal')}</span><span class="v">${fmtKhr(groupTotal)}</span></div>
-                        <div class="confirm-group__deliv">${i18next.t('cart.deliveryDate')}: ${pick.dateIso || '-'} / ${i18next.t('cart.deliveryTime')}: ${pick.time || '-'}</div>
+                        ${delivPickHtml}
                     </div>
                 `;
             }
 
             container.innerHTML = html;
             document.getElementById('grand-total').textContent = fmtKhr(grandTotal);
+            // buyNow モード時は confirm 画面で納品日時入力イベントもバインド
+            if (isBuyNow) bindConfirmActions();
+        }
+
+        // 5/11 #66: confirm 画面の納品日時入力ハンドラ（buyNow用）
+        function bindConfirmActions() {
+            document.querySelectorAll('#confirm-container [data-act="date"]').forEach(inp => {
+                inp.addEventListener('change', () => {
+                    const farmerId = inp.dataset.farmer;
+                    const pick = deliveryPick.get(farmerId) || {};
+                    deliveryPick.set(farmerId, { ...pick, dateIso: inp.value });
+                });
+            });
+            document.querySelectorAll('#confirm-container [data-act="time"]').forEach(sel => {
+                sel.addEventListener('change', () => {
+                    const farmerId = sel.dataset.farmer;
+                    const pick = deliveryPick.get(farmerId) || {};
+                    deliveryPick.set(farmerId, { ...pick, time: sel.value });
+                });
+            });
         }
 
         // 注文確定処理（旧インライン実装を関数化）
@@ -1245,7 +1379,10 @@
                 }
 
             await batch.commit();
-            await clearCart(uid);
+            // 5/11 #66: buyNow モードでは永続カートを変更しない（持続カートに干渉させない）
+            if (!isBuyNow) {
+                await clearCart(uid);
+            }
             location.href = '/pages/restaurant/orders.html';
         }
 
@@ -1294,9 +1431,11 @@
         });
 
         // 戻る矢印：ステージを1つ戻す、最前面なら history.back()
+        // 5/11 #66: buyNow モードでは常に history.back()（order.html へ戻す）
         const backLink = document.querySelector('.page-header__back');
         if (backLink) {
             backLink.addEventListener('click', (e) => {
+                if (isBuyNow) return; // default: history.back()
                 if (stage === 'confirm') {
                     e.preventDefault();
                     // 提案があった場合のみ suggest に戻す

@@ -275,6 +275,7 @@
         import { db } from '/js/firebase-config.js';
         import { initAdminReportBadge } from '/js/admin-report-badge.js';
         import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-functions.js';
+        import { formatProvince, formatLocation } from '/js/province-utils.js';
         import {
             collection, query, where, orderBy, onSnapshot, getDocs, doc, getDoc,
             addDoc, serverTimestamp, updateDoc
@@ -387,7 +388,7 @@
                 const roleIcon = role === 'farmer' ? 'agriculture'
                     : role === 'restaurant' ? 'restaurant'
                     : role === 'admin' ? 'admin_panel_settings' : 'person';
-                const placeText = [u.province, u.district].filter(Boolean).join(', ');
+                const placeText = formatLocation(u);
                 const banBadge = u.isBanned
                     ? `<span class="user-row__badge banned">${i18next.t('admin.users.banned')}</span>`
                     : '';
@@ -453,7 +454,7 @@
                 : u.role === 'admin' ? i18next.t('admin.users.roleAdmin')
                 : u.role || '';
 
-            const placeText = [u.province, u.district].filter(Boolean).join(', ');
+            const placeText = [formatProvince(u.province), u.district].filter(Boolean).join(', ');
             const isBanned = u.isBanned === true;
 
             pane.innerHTML = `
