@@ -53,7 +53,10 @@ self.addEventListener('notificationclick', (event) => {
 // 5/12 #70/#72: 役割選択アイコン差し替え（fish.svg） + プロフィール拡張 → v80
 // 5/13 追補：#74 ソート反映バグ修正 + #69 data-cache 導入 + 魚一覧ナビアイコンを fish.svg に → v81
 // 5/13 追補2：#69 Storage 画像も SW キャッシュ対象に追加（動的 API のみスキップに変更） → v82
-const CACHE_NAME = 'fishlink-v82';
+// 5/23 #75/#76: ダッシュボード棚順並び替え + 魚種カテゴリアイコン10種に差し替え → v83
+// 5/23 #77: image-resize.js のエラー診断強化（Event→Error 正規化 + phase/code 付き wrap）→ v84
+// 5/23 #78: 投稿完了/注文確定の location.href → location.replace 化（戻るボタン誤操作対策）— v84 に含む
+const CACHE_NAME = 'fishlink-v84';
 
 const PRECACHE_URLS = [
     '/',
@@ -74,6 +77,17 @@ const PRECACHE_URLS = [
     '/icons/icon-192.png',
     '/icons/icon-512.png',
     '/images/role-fish.svg',
+    // 5/23 #76: 魚種カテゴリアイコン（CAA 10種）
+    '/images/striped_snakehead.png',
+    '/images/walking_catfish.png',
+    '/images/red_tilapia.png',
+    '/images/nile_tilapia.png',
+    '/images/silver_barb.png',
+    '/images/spot_pangasius.png',
+    '/images/pangasius.png',
+    '/images/giant_snakehead.png',
+    '/images/climbing_perch.png',
+    '/images/frog.png',
 ];
 
 self.addEventListener('install', (event) => {

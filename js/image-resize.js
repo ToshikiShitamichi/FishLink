@@ -90,9 +90,15 @@ async function loadImage(file) {
             URL.revokeObjectURL(url);
             resolve(img);
         };
-        img.onerror = (e) => {
+        img.onerror = () => {
+            // 5/23 #77: Event を生 reject すると caller 側で `[object Event]` になり
+            //   原因不明になる問題への対策。decode 不可なファイル種別（HEIC など）の
+            //   切り分けがしやすいよう name/type/size をメッセージに含める。
             URL.revokeObjectURL(url);
-            reject(e);
+            reject(new Error(
+                `Image decode failed (name=${file?.name || 'unknown'}, ` +
+                `type=${file?.type || 'unknown'}, size=${file?.size || 0})`
+            ));
         };
         img.src = url;
     });
@@ -131,9 +137,39 @@ const UPLOAD_TIMEOUT_MS = 180000; // 5/11 #67: 60秒 → 180秒
 const DOWNLOAD_URL_TIMEOUT_MS = 30000;
 
 /**
+ * 5/23 #77: 例外を診断情報付き Error にラップする。
+ * - phase: どのフェーズで失敗したか（resize / uploadBytes / getDownloadURL）
+ * - FirebaseError の code / serverResponse を message に展開
+ * - Event オブジェクトの場合は type を展開
+ * - 元の値は wrapped.cause に保持
+ * caller 側で `err.message` を表示するだけで原因が見える状態にする。
+ */
+function wrapUploadError(err, phase, file) {
+    if (err && err.__uploadWrapped) return err; // 二重ラップ防止
+    const parts = [`phase=${phase}`];
+    if (err?.code) parts.push(`code=${err.code}`);
+    if (err?.name && err.name !== 'Error') parts.push(`name=${err.name}`);
+    if (err?.message) parts.push(`msg=${err.message}`);
+    if (err?.serverResponse) parts.push(`server=${String(err.serverResponse).slice(0, 120)}`);
+    // Event 系（ProgressEvent など）
+    if (!err?.message && err?.type) parts.push(`event=${err.type}`);
+    if (file?.name) parts.push(`file=${file.name}`);
+    if (typeof file?.size === 'number') parts.push(`size=${file.size}`);
+    if (file?.type) parts.push(`type=${file.type}`);
+    const wrapped = new Error(parts.join(' | '));
+    wrapped.__uploadWrapped = true;
+    wrapped.uploadPhase = phase;
+    wrapped.uploadCode = err?.code || null;
+    wrapped.uploadServerResponse = err?.serverResponse || null;
+    wrapped.cause = err;
+    return wrapped;
+}
+
+/**
  * 画像をリサイズしてからアップロードし、URL を返す。
  * - 失敗時は最大3回までリトライ
  * - uploadBytes 自体に 180秒のタイムアウトを掛ける
+ * - 5/23 #77: 全ての throw を診断情報付き Error にラップ
  */
 export async function uploadImageResized(storageRef, file, opts = {}) {
     const resizeOpts = opts.resize || {};
@@ -141,21 +177,35 @@ export async function uploadImageResized(storageRef, file, opts = {}) {
         cacheControl: 'public, max-age=31536000',
         ...(opts.metadata || {}),
     };
-    // リサイズは1回だけ（リトライ毎にやり直すのは無駄）
-    const blob = await resizeImage(file, resizeOpts);
 
-    await retry(async () => {
-        await withTimeout(
-            uploadBytes(storageRef, blob, uploadMeta),
-            UPLOAD_TIMEOUT_MS,
-            `uploadBytes ${file.name || 'blob'}`
+    let blob;
+    try {
+        // リサイズは1回だけ（リトライ毎にやり直すのは無駄）
+        blob = await resizeImage(file, resizeOpts);
+    } catch (err) {
+        throw wrapUploadError(err, 'resize', file);
+    }
+
+    try {
+        await retry(async () => {
+            await withTimeout(
+                uploadBytes(storageRef, blob, uploadMeta),
+                UPLOAD_TIMEOUT_MS,
+                `uploadBytes ${file?.name || 'blob'}`
+            );
+        }, { tries: 3, baseDelayMs: 1000 });
+    } catch (err) {
+        throw wrapUploadError(err, 'uploadBytes', file);
+    }
+
+    try {
+        const url = await withTimeout(
+            getDownloadURL(storageRef),
+            DOWNLOAD_URL_TIMEOUT_MS,
+            'getDownloadURL'
         );
-    }, { tries: 3, baseDelayMs: 1000 });
-
-    const url = await withTimeout(
-        getDownloadURL(storageRef),
-        DOWNLOAD_URL_TIMEOUT_MS,
-        'getDownloadURL'
-    );
-    return url;
+        return url;
+    } catch (err) {
+        throw wrapUploadError(err, 'getDownloadURL', file);
+    }
 }

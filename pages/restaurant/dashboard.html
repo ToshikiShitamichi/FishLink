@@ -49,12 +49,12 @@
         }
         .category-item__icon {
             width: 64px; height: 64px;
-            border-radius: 50%; background: #ecfdf5;
+            border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            border: 1px solid #d1fae5;
             overflow: hidden;
+            background: transparent;
         }
-        .category-item__icon > img { width: 40px; height: 40px; object-fit: contain; }
+        .category-item__icon > img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .category-item__label {
             font-size: 11px; font-weight: 600;
             color: var(--color-text); text-align: center;
@@ -185,18 +185,20 @@
         <div class="category-row" id="category-row"></div>
 
         <!-- テーマ別棚 -->
+        <!-- 5/23 #75: 棚順を「新着 → 評価が高い農家 → 近くの農家」に並び替え。
+             開いた瞬間に新しい出品を見せる / 新しい農家を見つけやすくする目的。 -->
         <div class="shelf">
             <div class="shelf__head">
                 <span class="shelf__title">
-                    <span class="material-symbols-outlined">near_me</span>
-                    <span data-i18n="restaurant.shelfNearest"></span>
+                    <span class="material-symbols-outlined">new_releases</span>
+                    <span data-i18n="restaurant.shelfNewest"></span>
                 </span>
-                <a class="shelf__more" href="/pages/restaurant/fish-list.html?sort=distance">
+                <a class="shelf__more" href="/pages/restaurant/fish-list.html?sort=newest">
                     <span data-i18n="restaurant.loadMore"></span>
                     <span class="material-symbols-outlined">chevron_right</span>
                 </a>
             </div>
-            <div class="shelf__row" id="shelf-nearest"></div>
+            <div class="shelf__row" id="shelf-newest"></div>
         </div>
 
         <div class="shelf">
@@ -216,15 +218,15 @@
         <div class="shelf">
             <div class="shelf__head">
                 <span class="shelf__title">
-                    <span class="material-symbols-outlined">new_releases</span>
-                    <span data-i18n="restaurant.shelfNewest"></span>
+                    <span class="material-symbols-outlined">near_me</span>
+                    <span data-i18n="restaurant.shelfNearest"></span>
                 </span>
-                <a class="shelf__more" href="/pages/restaurant/fish-list.html?sort=newest">
+                <a class="shelf__more" href="/pages/restaurant/fish-list.html?sort=distance">
                     <span data-i18n="restaurant.loadMore"></span>
                     <span class="material-symbols-outlined">chevron_right</span>
                 </a>
             </div>
-            <div class="shelf__row" id="shelf-newest"></div>
+            <div class="shelf__row" id="shelf-nearest"></div>
         </div>
 
         <div class="shelf">
@@ -326,6 +328,8 @@
         }
 
         // 魚種カテゴリ描画
+        // 5/23 #76: クライアント提供の魚種画像（images/{fishType}.png）に差し替え。
+        // 画像自体が円形背景を持つため、CSS 側の背景円は撤去済み。
         function renderCategories() {
             const row = document.getElementById('category-row');
             row.innerHTML = FISH_CATEGORIES.map(key => {
@@ -333,7 +337,7 @@
                 return `
                     <a class="category-item" href="/pages/restaurant/fish-list.html?fishType=${encodeURIComponent(key)}">
                         <div class="category-item__icon">
-                            <img src="/images/role-fish.svg" alt="">
+                            <img src="/images/${encodeURIComponent(key)}.png" alt="" loading="lazy">
                         </div>
                         <div class="category-item__label">${escapeHtml(label)}</div>
                     </a>

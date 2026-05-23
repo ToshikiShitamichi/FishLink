@@ -1295,7 +1295,9 @@
 
             await batch.commit();
             await clearCart(uid);
-            location.href = '/pages/restaurant/orders.html';
+            // 5/23 #78: 注文確定後は location.replace で履歴を置換。戻るボタンで
+            //   空のカート画面に戻れないようにし、ユーザーの混乱を防ぐ。
+            location.replace('/pages/restaurant/orders.html');
         }
 
         // ── チェックアウトボタン：ステージ遷移を制御 ──

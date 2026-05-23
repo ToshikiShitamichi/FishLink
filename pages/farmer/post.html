@@ -484,19 +484,22 @@
             const snap = await getDoc(doc(db, 'fishListings', editId));
             if (!snap.exists()) {
                 alert(i18next.t('post.errorSubmit'));
-                location.href = '/pages/farmer/dashboard.html';
+                // 5/23 #78: ガード redirect は location.replace でバックスタック汚染を防ぐ
+                location.replace('/pages/farmer/dashboard.html');
                 return;
             }
             const d = snap.data();
             // 自分の出品でなければ拒否
             if (d.farmerId !== window.currentUser?.uid) {
                 alert('Not allowed');
-                location.href = '/pages/farmer/dashboard.html';
+                // 5/23 #78: ガード redirect は location.replace でバックスタック汚染を防ぐ
+                location.replace('/pages/farmer/dashboard.html');
                 return;
             }
             // 5/7 #53: 削除済みは編集不可
             if (d.deletedAt) {
-                location.href = '/pages/farmer/dashboard.html';
+                // 5/23 #78: 同上
+                location.replace('/pages/farmer/dashboard.html');
                 return;
             }
             originalListing = d;
@@ -913,7 +916,9 @@
                 }
 
                 // 成功 → ダッシュボードへ
-                window.location.href = '/pages/farmer/dashboard.html';
+                // 5/23 #78: location.replace で履歴を置換。戻るボタンで投稿フォームに
+                //   戻れないようにし、二重投稿のリスクを防ぐ（Android で誤操作多発）。
+                window.location.replace('/pages/farmer/dashboard.html');
 
             } catch (err) {
                 console.error('post submit failed:', err);
