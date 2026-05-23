@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" fill="currentColor" aria-hidden="true">
+  <!-- Body + tail -->
+  <path d="M 5 50
+           C 10 18, 55 8, 100 12
+           C 130 14, 150 22, 162 34
+           L 195 8
+           L 195 92
+           L 162 66
+           C 150 78, 130 86, 100 88
+           C 55 92, 10 82, 5 50 Z" />
+  <!-- Bottom fins -->
+  <path d="M 70 86 L 80 99 L 92 87 Z" />
+  <path d="M 108 87 L 120 99 L 132 85 Z" />
+  <!-- Gill (cut-out via white stroke) -->
+  <path d="M 58 26 Q 64 50, 58 74" stroke="#ffffff" stroke-width="4" fill="none" stroke-linecap="round" />
+  <!-- Eye -->
+  <circle cx="32" cy="42" r="7" fill="#ffffff" />
+  <circle cx="34" cy="40" r="3.5" fill="currentColor" />
+</svg>

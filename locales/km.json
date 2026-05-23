@@ -197,6 +197,7 @@
         "sortDistance": "នៅជិតបំផុត",
         "sortPrice": "តម្លៃទាបបំផុត",
         "sortNewest": "ថ្មីបំផុត",
+        "sortRating": "ពិន្ទុខ្ពស់",
         "filter": "ត្រង",
         "filterAll": "ទាំងអស់",
         "filterFavorites": "ចូលចិត្ត",
@@ -212,7 +213,16 @@
         "empty": "រកមិនឃើញត្រីសម្រាប់ការត្រងនេះ",
         "priceWithFee": "(រួមថ្លៃសេវា)",
         "map": "ផែនទី",
-        "viewFarmer": "មើលទម្រង់កសិករ"
+        "viewFarmer": "មើលទម្រង់កសិករ",
+        "navHome": "ដើម",
+        "searchPlaceholder": "ស្វែងរកត្រី ឬកសិករ",
+        "shelfNearest": "កសិករនៅជិត",
+        "shelfTopRated": "កសិករពិន្ទុខ្ពស់",
+        "shelfNewest": "ត្រីថ្មី",
+        "shelfCheapest": "តម្លៃថោក",
+        "shelfHistory": "ផលិតផលដែលបញ្ជាទិញពីមុន",
+        "shelfHistoryEmpty": "មិនទាន់មានប្រវត្តិបញ្ជាទិញ",
+        "noResults": "រកមិនឃើញ"
     },
     "delivery": {
         "statusNow": "ស្ថានភាព: {{status}}",
@@ -509,6 +519,7 @@
         "avatar": "រូបថតប្រវត្តិរូប",
         "pondPhoto": "បរិស្ថានចិញ្ចឹម",
         "restaurantPhoto": "រូបភាពភោជនីយដ្ឋាន",
+        "restaurantInfoTitle": "ព័ត៌មានភោជនីយដ្ឋាន",
         "activeListings": "បញ្ជីដែលកំពុងលក់",
         "viewAllReviews": "មើលការវាយតម្លៃ ({{count}})",
         "ratingOverall": "ទូទៅ",
@@ -574,7 +585,8 @@
         "errorStock": "ស្តុកមិនគ្រប់គ្រាន់សម្រាប់ {{name}} (នៅសល់ {{stock}}kg)",
         "errorDelivery": "សូមជ្រើសកាលបរិច្ឆេទ និងពេលវេលា",
         "errorSubmit": "បញ្ជាទិញបរាជ័យ។ សូមព្យាយាមម្តងទៀត",
-        "navCart": "កន្ត្រក"
+        "navCart": "កន្ត្រក",
+        "distance": "ចម្ងាយដឹក {{km}} គីឡូម៉ែត្រ"
     },
     "notifMessages": {
         "newOrder": {
@@ -762,6 +774,9 @@
         "menuHintPurchase": "ចំនួនទិញ, ប្រតិបត្តិការ",
         "menuHintProfileFarmer": "សារ, រូបភាពស្រែ",
         "menuHintProfileRestaurant": "រូបភាពភោជនីយដ្ឋាន",
+        "publicPage": "មើលទំព័រសាធារណៈ",
+        "publicPageHint": "ទំព័រដែលអ្នកប្រើផ្សេងទៀតមើលឃើញ",
+        "editProfile": "កែប្រែប្រវត្តិរូប",
         "adminChat": "សារពីរដ្ឋបាល",
         "adminChatHint": "ជជែកជាមួយរដ្ឋបាល FishLink"
     },

@@ -197,6 +197,7 @@
         "sortDistance": "Nearest",
         "sortPrice": "Lowest price",
         "sortNewest": "Newest",
+        "sortRating": "Top rated",
         "filter": "Filter",
         "filterAll": "All",
         "filterFavorites": "Favorites",
@@ -212,7 +213,16 @@
         "empty": "No fish found for this filter",
         "priceWithFee": "(incl. fee)",
         "map": "Map",
-        "viewFarmer": "View farmer profile"
+        "viewFarmer": "View farmer profile",
+        "navHome": "Home",
+        "searchPlaceholder": "Search fish or farmers",
+        "shelfNearest": "Nearby farmers",
+        "shelfTopRated": "Top rated farmers",
+        "shelfNewest": "Newest fish",
+        "shelfCheapest": "Best price",
+        "shelfHistory": "Recently ordered",
+        "shelfHistoryEmpty": "No order history yet",
+        "noResults": "No results"
     },
     "delivery": {
         "statusNow": "Status: {{status}}",
@@ -509,6 +519,7 @@
         "avatar": "Profile photo",
         "pondPhoto": "Farm environment",
         "restaurantPhoto": "Restaurant photo",
+        "restaurantInfoTitle": "Restaurant info",
         "activeListings": "Active listings",
         "viewAllReviews": "View reviews ({{count}})",
         "ratingOverall": "Overall",
@@ -574,7 +585,8 @@
         "errorStock": "Not enough stock for {{name}} ({{stock}}kg left)",
         "errorDelivery": "Please pick a delivery date & time",
         "errorSubmit": "Order failed. Please try again",
-        "navCart": "Cart"
+        "navCart": "Cart",
+        "distance": "Distance {{km}} km"
     },
     "notifMessages": {
         "newOrder": {
@@ -762,6 +774,9 @@
         "menuHintPurchase": "Purchase amount, transaction history",
         "menuHintProfileFarmer": "Farmer message, farm photo",
         "menuHintProfileRestaurant": "Restaurant photo",
+        "publicPage": "View public page",
+        "publicPageHint": "How other users see your page",
+        "editProfile": "Edit profile",
         "adminChat": "Admin chat",
         "adminChatHint": "Chat with FishLink admin"
     },

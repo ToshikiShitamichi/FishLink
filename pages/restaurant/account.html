@@ -130,10 +130,12 @@
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
 
-                <a class="acc-menu-item" href="/pages/restaurant/account/profile.html">
+                <!-- 5/12 #72: 「レストラン情報」のメニュー項目自体を公開ページへの導線に。
+                     編集は公開ページ内の「プロフィールを編集」ボタンから入る。 -->
+                <a class="acc-menu-item" id="public-page-link" href="#">
                     <div class="acc-menu-item__icon" style="background:#ede9fe; color:#5b21b6;"><span class="material-symbols-outlined">storefront</span></div>
                     <div class="acc-menu-item__body">
-                        <div class="acc-menu-item__title" data-i18n="profile.restaurantPhoto"></div>
+                        <div class="acc-menu-item__title" data-i18n="profile.restaurantInfoTitle"></div>
                         <div class="acc-menu-item__meta" data-i18n="account.menuHintProfileRestaurant"></div>
                     </div>
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
@@ -157,9 +159,14 @@
         </div>
     </div>
 
+    <!-- 5/12 #74: 4タブ構成（ホーム / 魚一覧 / カート / 配送中）に変更 -->
     <nav class="bottom-nav">
         <a href="/pages/restaurant/dashboard.html" class="bottom-nav__item">
-            <span class="bottom-nav__icon"><span class="material-symbols-outlined">set_meal</span></span>
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">storefront</span></span>
+            <span data-i18n="restaurant.navHome"></span>
+        </a>
+        <a href="/pages/restaurant/fish-list.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon"><img src="/images/role-fish.svg" alt=""></span>
             <span data-i18n="restaurant.title"></span>
         </a>
         <a href="/pages/restaurant/cart.html" class="bottom-nav__item" style="position:relative;">
@@ -247,6 +254,9 @@
                     const badge = document.getElementById('cart-badge');
                     if (badge) badge.style.display = items.length > 0 ? 'block' : 'none';
                 });
+                // 5/12 #72: 公開ページは自分の uid を渡して開く
+                const link = document.getElementById('public-page-link');
+                if (link) link.href = `/pages/farmer/restaurant.html?id=${window.currentUser.uid}`;
             }
         });
 

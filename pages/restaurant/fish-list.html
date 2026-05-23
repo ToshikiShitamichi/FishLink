@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
+    <title>FishLink</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        .nav-badge {
+            position: absolute;
+            top: 6px;
+            right: 50%;
+            transform: translateX(18px);
+            background: #ef4444;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .market-header {
+            margin-bottom: 10px;
+        }
+
+        .market-header__title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--color-text);
+        }
+
+        .market-header__sub {
+            font-size: 12px;
+            color: var(--color-text-sub);
+            margin-top: 2px;
+        }
+
+        .chip-section {
+            margin-bottom: 10px;
+        }
+
+        .chip-label {
+            font-size: 11px;
+            color: var(--color-text-sub);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .chip-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .chip-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chip {
+            flex-shrink: 0;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text);
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            font-family: inherit;
+            transition: background .12s, color .12s, border-color .12s;
+        }
+
+        .chip--sort.active {
+            background: #0f172a;
+            color: #fff;
+            border-color: #0f172a;
+        }
+
+        .chip--filter.active {
+            background: #ecfdf5;
+            color: #047857;
+            border-color: #a7f3d0;
+        }
+
+        /* 5/9 #59: 1列・横長リストレイアウト（画像左・情報右） */
+        .fish-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .fish-grid > div { min-width: 0; position: relative; }
+
+        /* 5/11 #63: カード高さを固定し、写真は object-fit:cover でトリミング統一 */
+        .fish-grid-card {
+            border-radius: 16px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+            cursor: pointer;
+            transition: box-shadow .15s;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: row;
+            min-width: 0;
+            height: 140px;
+        }
+
+        .fish-grid-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+        }
+
+        /* 画像：固定幅 140×140 で正方形にトリミング（縦写真・横写真とも揃う） */
+        .fish-grid-card__img {
+            position: relative;
+            width: 140px;
+            height: 100%;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #d6d3d1, #f5f5f4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .fish-grid-card__img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .fish-grid-card__img-placeholder {
+            font-size: 40px;
+        }
+
+        .fish-grid-card__price {
+            position: absolute;
+            left: 6px;
+            top: 6px;
+            background: rgba(0, 0, 0, .75);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+        }
+
+        .fish-grid-card__stock {
+            position: absolute;
+            right: 6px;
+            bottom: 6px;
+            background: rgba(255, 255, 255, .9);
+            color: #16a34a;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 20px;
+        }
+
+        /* 5/11 #66: カードのカートボタン廃止。右余白はお気に入りボタン用のみ */
+        .fish-grid-card__body {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 12px 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            overflow: hidden;
+        }
+
+        .fish-grid-card__name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-text);
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.3;
+            padding-right: 32px; /* お気に入りボタン用 */
+        }
+
+        .fish-grid-card__size {
+            font-size: 12px;
+            color: var(--color-text-sub);
+        }
+
+        .fish-grid-card__place {
+            font-size: 12px;
+            color: var(--color-text-sub);
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            min-width: 0;
+        }
+        .fish-grid-card__place > span:not(.material-symbols-outlined) {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .fish-grid-card__cart-btn {
+            position: absolute;
+            right: 8px; bottom: 8px;
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            color: #fff;
+            border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,.2);
+            font-family: inherit;
+        }
+        .fish-grid-card__cart-btn:hover { background: var(--color-primary-dk); }
+        .fish-grid-card__cart-btn .material-symbols-outlined { font-size: 18px; }
+        .fish-grid-card__cart-btn.added { background: #047857; }
+
+        .fish-grid-card__fav-btn {
+            position: absolute;
+            right: 6px; top: 6px;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            color: #94a3b8;
+            border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,.15);
+            font-family: inherit;
+            z-index: 2;
+        }
+        .fish-grid-card__fav-btn:hover { background: #fff; }
+        .fish-grid-card__fav-btn .material-symbols-outlined {
+            font-size: 18px;
+            font-variation-settings: 'FILL' 0, 'wght' 500;
+        }
+        .fish-grid-card__fav-btn.active {
+            background: #fff;
+            color: #ef4444;
+        }
+        .fish-grid-card__fav-btn.active .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 500;
+        }
+        .fish-grid-card__distance {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-top: 2px;
+        }
+
+        /* 5/5 #1: 生産者情報（顔写真・名前・レビュー） */
+        /* 5/9 #59: 1列レイアウトでは body padding-right がカートボタンを避けるので margin-right 不要 */
+        /* 5/11 #64: タップで生産者ページへ遷移可能に */
+        .fish-grid-card__farmer {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            margin-top: auto;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            min-width: 0;
+            cursor: pointer;
+            transition: background .12s;
+        }
+        .fish-grid-card__farmer:hover {
+            background: #f1f5f9;
+        }
+
+        .fish-grid-card__farmer-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fish-grid-card__farmer-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .fish-grid-card__farmer-avatar .material-symbols-outlined {
+            font-size: 18px;
+            color: #94a3b8;
+        }
+
+        .fish-grid-card__farmer-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .fish-grid-card__farmer-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .fish-grid-card__farmer-rating {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            color: var(--color-text-sub);
+            white-space: nowrap;
+        }
+
+        .fish-grid-card__farmer-rating .material-symbols-outlined {
+            font-size: 12px;
+            color: #f59e0b;
+            font-variation-settings: 'FILL' 1;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-text-sub);
+        }
+
+        .empty-state__icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .empty-state__text {
+            font-size: 15px;
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer></script>
+</head>
+
+<body>
+
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="page" style="padding-bottom: 120px; max-width:480px; margin:0 auto;">
+
+        <!-- ヘッダー -->
+        <div class="page-header" style="align-items:center;">
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
+            </select>
+            <div class="header-actions">
+                <button class="header-action-btn" data-popover="notif" type="button" aria-label="notifications">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span class="header-action-btn__badge" id="notif-badge"></span>
+                </button>
+                <button class="header-action-btn" data-popover="todos" type="button" aria-label="todo list">
+                    <span class="material-symbols-outlined">checklist</span>
+                    <span class="header-action-btn__badge" id="todos-badge"></span>
+                </button>
+                <a class="header-action-btn" href="/pages/restaurant/account.html" aria-label="account">
+                    <span class="material-symbols-outlined">account_circle</span>
+                </a>
+                <div class="header-popover" data-popover-for="notif">
+                    <div class="header-popover__head" data-i18n="notifications.title"></div>
+                    <div class="header-popover__body" id="notif-list">
+                        <div class="header-popover__empty" data-i18n="notifications.empty"></div>
+                    </div>
+                </div>
+                <div class="header-popover" data-popover-for="todos">
+                    <div class="header-popover__head" data-i18n="todos.title"></div>
+                    <div class="header-popover__body" id="todos-list">
+                        <div class="header-popover__empty" data-i18n="todos.empty"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 魚一覧ヘッダー -->
+        <div style="padding: 0 16px;">
+            <!-- 特別割引キャンペーンバナー（管理者の campaignActive が true のとき表示） -->
+            <div id="campaign-banner" style="display:none; margin-bottom:12px; padding:12px 14px; border-radius:14px; background:linear-gradient(135deg, #f97316, #f59e0b); color:#fff; box-shadow:0 2px 8px rgba(249,115,22,.25);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="material-symbols-outlined" style="font-size:22px;">local_offer</span>
+                    <div>
+                        <div style="font-size:14px; font-weight:700;" data-i18n="restaurant.campaignTitle"></div>
+                        <div style="font-size:12px; opacity:0.95;" data-i18n="restaurant.campaignDesc"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="market-header">
+                <div class="market-header__title" data-i18n="restaurant.title"></div>
+                <div class="market-header__sub" data-i18n="restaurant.subtitle"></div>
+            </div>
+
+            <!-- 並び替えチップ -->
+            <div class="chip-section">
+                <div class="chip-label" data-i18n="restaurant.sort"></div>
+                <div class="chip-row" id="sort-chips">
+                    <button type="button" class="chip chip--sort active" data-value="distance" data-i18n="restaurant.sortDistance"></button>
+                    <!-- 5/13: 新ダッシュボードのソートと揃える（評価が高い順） -->
+                    <button type="button" class="chip chip--sort" data-value="rating" data-i18n="restaurant.sortRating"></button>
+                    <button type="button" class="chip chip--sort" data-value="price" data-i18n="restaurant.sortPrice"></button>
+                    <button type="button" class="chip chip--sort" data-value="newest" data-i18n="restaurant.sortNewest"></button>
+                </div>
+            </div>
+
+            <!-- 魚種フィルタチップ -->
+            <div class="chip-section">
+                <div class="chip-label" data-i18n="restaurant.filter"></div>
+                <div class="chip-row" id="filter-chips"></div>
+            </div>
+
+            <!-- 州フィルタチップ -->
+            <div class="chip-section">
+                <div class="chip-label" data-i18n="restaurant.filterProvince"></div>
+                <div class="chip-row" id="province-chips"></div>
+            </div>
+
+            <!-- 魚一覧グリッド -->
+            <div class="fish-grid" id="fish-grid"></div>
+
+            <div id="load-more-wrap" style="display:none; padding:16px 0; text-align:center;">
+                <button type="button" id="load-more-btn"
+                    style="padding:10px 20px; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); border-radius:999px; font-size:13px; font-weight:600; cursor:pointer;"
+                    data-i18n="restaurant.loadMore"></button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 下部ナビ -->
+    <nav class="bottom-nav" style="flex-direction:column; gap:0;">
+        <div id="market-footer" style="display:none; width:100%; padding:6px 16px; display:flex; justify-content:space-between; font-size:11px; color:var(--color-text-sub); border-bottom:1px solid var(--color-border);">
+            <span id="footer-count"></span>
+            <span data-i18n="restaurant.tapHint"></span>
+        </div>
+        <!-- 5/12 #74: 4タブ構成（ホーム / 魚一覧 / カート / 配送中） -->
+        <div style="display:flex; width:100%;">
+            <a href="/pages/restaurant/dashboard.html" class="bottom-nav__item">
+                <span class="bottom-nav__icon"><span class="material-symbols-outlined">storefront</span></span>
+                <span data-i18n="restaurant.navHome"></span>
+            </a>
+            <a href="/pages/restaurant/fish-list.html" class="bottom-nav__item active">
+                <span class="bottom-nav__icon"><img src="/images/role-fish.svg" alt=""></span>
+                <span data-i18n="restaurant.title"></span>
+            </a>
+            <a href="/pages/restaurant/cart.html" class="bottom-nav__item" style="position:relative;">
+                <span class="bottom-nav__icon"><span class="material-symbols-outlined">shopping_cart</span></span>
+                <span class="nav-badge" id="cart-badge" style="display:none;"></span>
+                <span data-i18n="cart.navCart"></span>
+            </a>
+            <a href="/pages/restaurant/orders.html" class="bottom-nav__item" style="position:relative;">
+                <span class="bottom-nav__icon"><span class="material-symbols-outlined">local_shipping</span></span>
+                <span class="nav-badge" id="order-badge" style="display:none;"></span>
+                <span data-i18n="delivery.myOrders"></span>
+            </a>
+        </div>
+    </nav>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import { initHeaderPopovers } from '/js/header-actions.js';
+        import { subscribeTodos } from '/js/todos.js';
+        import { subscribeNotifications } from '/js/notifications.js';
+        import {
+            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, onSnapshot
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { subscribeCart } from '/js/cart.js';
+        import { subscribeFavorites, toggleFavorite } from '/js/favorites.js';
+        import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
+        import { normalizeProvince, formatProvince, formatDistrict } from '/js/province-utils.js';
+
+        const loading = document.getElementById('loading');
+        let cartListingIds = new Set();
+        let favoriteIds = new Set();
+
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+        initHeaderPopovers();
+
+        // ログアウトはアカウントページ内に移動
+
+        // 並び替え・絞り込みの現在値
+        // 5/12 #74: 新ダッシュボードの「もっと見る」からの URL パラメータを受け取る
+        //   ?sort=distance|price|newest|rating (rating は今のところ distance にフォールバック)
+        //   ?fishType=<key> で魚種絞り込み（魚種カテゴリーからの遷移）
+        //   ?filter=history で過去注文した商品のみ（今後実装、フックのみ）
+        //   ?q=<text> でフリーテキスト検索（今後実装、フックのみ）
+        const _params = new URLSearchParams(location.search);
+        const _sortParam = _params.get('sort');
+        const _fishTypeParam = _params.get('fishType');
+        let currentSort = (['distance','price','newest','rating'].includes(_sortParam) ? _sortParam : 'distance');
+        let currentFilter = (_fishTypeParam && _fishTypeParam !== '') ? _fishTypeParam : '';
+        let currentProvince = '';
+
+        // 5/12 #74 修正：URL パラメータで指定された sort をソートチップの初期 active 状態に反映
+        //   （HTML 上は distance チップに active が固定されているため、ここで張り直す）
+        document.querySelectorAll('#sort-chips .chip').forEach(c => {
+            c.classList.toggle('active', c.dataset.value === currentSort);
+        });
+
+        const FISH_FILTER_KEYS = [
+            'striped_snakehead', 'walking_catfish', 'red_tilapia', 'nile_tilapia',
+            'silver_barb', 'spot_pangasius', 'pangasius', 'giant_snakehead',
+            'climbing_perch', 'frog'
+        ];
+
+        // 魚種チップを生成
+        function populateFilterChips() {
+            const row = document.getElementById('filter-chips');
+            row.innerHTML = '';
+
+            const allBtn = document.createElement('button');
+            allBtn.type = 'button';
+            allBtn.className = 'chip chip--filter' + (currentFilter === '' ? ' active' : '');
+            allBtn.dataset.value = '';
+            allBtn.textContent = i18next.t('restaurant.filterAll');
+            row.appendChild(allBtn);
+
+            // お気に入りフィルタ
+            const favBtn = document.createElement('button');
+            favBtn.type = 'button';
+            favBtn.className = 'chip chip--filter' + (currentFilter === '__favorites' ? ' active' : '');
+            favBtn.dataset.value = '__favorites';
+            favBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:-2px; color:#ef4444; font-variation-settings:'FILL' 1;">favorite</span> ${i18next.t('restaurant.filterFavorites')}`;
+            row.appendChild(favBtn);
+
+            FISH_FILTER_KEYS.forEach(key => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'chip chip--filter' + (currentFilter === key ? ' active' : '');
+                btn.dataset.value = key;
+                // "ライギョ / Striped snakehead / ត្រីរ៉ស់" のうち現在言語部分のみ抽出
+                const label = i18next.t(`fish.${key}`);
+                const lang = i18next.language;
+                const parts = label.split('/').map(s => s.trim());
+                btn.textContent = (lang === 'en' && parts[1]) ? parts[1]
+                    : (lang === 'km' && parts[2]) ? parts[2]
+                    : parts[0];
+                row.appendChild(btn);
+            });
+        }
+        populateFilterChips();
+
+        // 州チップを生成（allItems から現存する州を抽出）
+        // 5/11 #65: province を内部キーに正規化してから重複排除。表示時は i18n ラベル
+        function populateProvinceChips() {
+            const row = document.getElementById('province-chips');
+            row.innerHTML = '';
+
+            const allBtn = document.createElement('button');
+            allBtn.type = 'button';
+            allBtn.className = 'chip chip--filter' + (currentProvince === '' ? ' active' : '');
+            allBtn.dataset.value = '';
+            allBtn.textContent = i18next.t('restaurant.filterAll');
+            row.appendChild(allBtn);
+
+            // 自分の州（正規化済みキー）を最優先で表示
+            const myKey = normalizeProvince(window.currentUserData?.province) || '';
+            // farmerProvince を内部キーに正規化してから重複排除（同じ州の言語違いを統合）
+            // 正規化できない値は raw のまま扱う
+            const keys = [...new Set(
+                allItems.map(it => normalizeProvince(it.farmerProvince) || it.farmerProvince)
+                    .filter(Boolean)
+            )].sort((a, b) => {
+                if (a === myKey) return -1;
+                if (b === myKey) return 1;
+                return formatProvince(a).localeCompare(formatProvince(b));
+            });
+            keys.forEach(key => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'chip chip--filter' + (currentProvince === key ? ' active' : '');
+                btn.dataset.value = key;
+                btn.textContent = formatProvince(key);
+                row.appendChild(btn);
+            });
+        }
+
+        // チップクリック：並び替え
+        document.getElementById('sort-chips').addEventListener('click', (e) => {
+            const btn = e.target.closest('button.chip');
+            if (!btn) return;
+            currentSort = btn.dataset.value;
+            document.querySelectorAll('#sort-chips .chip').forEach(c => c.classList.toggle('active', c === btn));
+            renderList();
+        });
+
+        // チップクリック：魚種フィルタ
+        document.getElementById('filter-chips').addEventListener('click', (e) => {
+            const btn = e.target.closest('button.chip');
+            if (!btn) return;
+            currentFilter = btn.dataset.value;
+            document.querySelectorAll('#filter-chips .chip').forEach(c => c.classList.toggle('active', c === btn));
+            renderList();
+        });
+
+        // チップクリック：州フィルタ
+        document.getElementById('province-chips').addEventListener('click', (e) => {
+            const btn = e.target.closest('button.chip');
+            if (!btn) return;
+            currentProvince = btn.dataset.value;
+            document.querySelectorAll('#province-chips .chip').forEach(c => c.classList.toggle('active', c === btn));
+            renderList();
+        });
+
+        // 「もっと見る」ボタン
+        document.getElementById('load-more-btn').addEventListener('click', async () => {
+            if (isLoadingMore || !hasMoreListings) return;
+            isLoadingMore = true;
+            const btn = document.getElementById('load-more-btn');
+            btn.disabled = true;
+            btn.textContent = '...';
+            try {
+                await loadFishListings({ append: true });
+            } finally {
+                btn.disabled = false;
+                btn.textContent = i18next.t('restaurant.loadMore');
+            }
+        });
+
+        // ── 距離計算（Google Maps Distance Matrix） ──────────────
+        // 起点1つ、終点を複数渡して {km, ok}（ok=true=道路距離成功、false=haversine フォールバック）の配列を返す
+        async function calcRoadDistances(originLat, originLng, destinations) {
+            return new Promise((resolve) => {
+                if (typeof google === 'undefined' || !google.maps) {
+                    resolve(destinations.map(d => ({ km: haversine(originLat, originLng, d.lat, d.lng), ok: false })));
+                    return;
+                }
+                const service = new google.maps.DistanceMatrixService();
+                const origin = new google.maps.LatLng(originLat, originLng);
+                const dests = destinations.map(d => new google.maps.LatLng(d.lat, d.lng));
+
+                service.getDistanceMatrix({
+                    origins: [origin],
+                    destinations: dests,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                    unitSystem: google.maps.UnitSystem.METRIC,
+                }, (response, status) => {
+                    if (status !== 'OK' || !response.rows[0]) {
+                        resolve(destinations.map(d => ({ km: haversine(originLat, originLng, d.lat, d.lng), ok: false })));
+                        return;
+                    }
+                    const results = response.rows[0].elements.map((el, idx) => {
+                        if (el.status === 'OK') return { km: el.distance.value / 1000, ok: true };
+                        const dest = destinations[idx];
+                        return { km: haversine(originLat, originLng, dest.lat, dest.lng), ok: false };
+                    });
+                    resolve(results);
+                });
+            });
+        }
+
+        function haversine(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2
+                + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+                * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        // ── データ取得＆表示 ──────────────────────────────────────
+        let allItems = [];
+        let serviceRate = 0.05;
+        const PAGE_SIZE = 10;
+        let lastListingDoc = null;
+        let hasMoreListings = false;
+        let isLoadingMore = false;
+
+        async function loadFishListings({ append = false } = {}) {
+            if (!append) loading.classList.add('show');
+
+            try {
+                const uid = window.currentUser?.uid;
+                if (!uid) return;
+
+                const myLoc = window.currentUserData?.location;
+
+                // サービス料率＋キャンペーンバナー表示（初回のみ）
+                if (!append) {
+                    try {
+                        const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
+                        if (campSnap.exists()) {
+                            const c = campSnap.data();
+                            serviceRate = c.serviceRate ?? 0.05;
+                            // 管理者の bannerActive フラグでバナー表示制御
+                            if (c.bannerActive === true) {
+                                const banner = document.getElementById('campaign-banner');
+                                if (banner) banner.style.display = 'block';
+                            }
+                        }
+                    } catch (e) { }
+                }
+
+                // 並び替え用に createdAt DESC + limit でページング取得
+                const baseConds = [
+                    collection(db, 'fishListings'),
+                    where('isActive', '==', true),
+                    orderBy('createdAt', 'desc'),
+                ];
+                if (append && lastListingDoc) baseConds.push(startAfter(lastListingDoc));
+                baseConds.push(limit(PAGE_SIZE));
+                const q = query(...baseConds);
+                const snap = await getDocs(q);
+                lastListingDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : lastListingDoc;
+                hasMoreListings = snap.docs.length === PAGE_SIZE;
+
+                // 農家情報をまとめて取得（UID → location）。既知 UID はキャッシュ流用
+                window._farmerCache = window._farmerCache || {};
+                const farmerCache = window._farmerCache;
+                const farmerIds = [...new Set(snap.docs.map(d => d.data().farmerId).filter(fid => !farmerCache[fid]))];
+                await Promise.all(farmerIds.map(async (fid) => {
+                    const fSnap = await getDoc(doc(db, 'users', fid));
+                    farmerCache[fid] = fSnap.exists() ? fSnap.data() : {};
+                }));
+                const farmerMap = farmerCache;
+
+                // 道路距離を一括計算
+                const itemsRaw = snap.docs.map(d => {
+                    const data = d.data();
+                    const farmer = farmerMap[data.farmerId] || {};
+                    return { id: d.id, data, farmer };
+                });
+
+                // 位置ありのアイテムだけ距離計算（キャッシュ優先）
+                const locsWithIndex = [];
+                itemsRaw.forEach((it, i) => {
+                    if (it.farmer.location) locsWithIndex.push({ index: i, loc: it.farmer.location, farmerId: it.data.farmerId });
+                });
+
+                const distanceMap = {}; // index → km
+                if (myLoc && locsWithIndex.length > 0) {
+                    // まずキャッシュで解決（位置変更検知つき）
+                    const uncached = [];
+                    locsWithIndex.forEach(l => {
+                        const cached = getCachedDistance(uid, l.farmerId, {
+                            rLat: myLoc.lat, rLng: myLoc.lng,
+                            fLat: l.loc.lat, fLng: l.loc.lng,
+                        });
+                        if (cached !== null) {
+                            distanceMap[l.index] = cached;
+                        } else {
+                            uncached.push(l);
+                        }
+                    });
+
+                    // 未キャッシュ分のみ Distance Matrix API へ
+                    if (uncached.length > 0) {
+                        try {
+                            const locs = uncached.map(l => l.loc);
+                            const results = await calcRoadDistances(myLoc.lat, myLoc.lng, locs);
+                            uncached.forEach((l, j) => {
+                                const r = results[j];
+                                distanceMap[l.index] = r.km;
+                                // 道路距離が取れたときだけキャッシュ（haversine フォールバックは保存しない）
+                                if (r.ok) setCachedDistance(uid, l.farmerId, r.km, {
+                                    rLat: myLoc.lat, rLng: myLoc.lng,
+                                    fLat: l.loc.lat, fLng: l.loc.lng,
+                                });
+                            });
+                        } catch (e) {
+                            console.warn('Distance Matrix failed, using haversine:', e);
+                            uncached.forEach(l => {
+                                distanceMap[l.index] = haversine(myLoc.lat, myLoc.lng, l.loc.lat, l.loc.lng);
+                            });
+                        }
+                    }
+                }
+
+                const newItems = itemsRaw.map((it, i) => {
+                    const data = it.data;
+                    const farmer = it.farmer;
+                    const distanceKm = distanceMap[i] ?? null;
+                    // 一覧表示単価 = (魚代 + 内臓処理代) × (1 + サービス料率)
+                    const rawUnit = (data.price || 0) + (data.gutPrice || 0);
+                    const displayPrice = Math.round(rawUnit * (1 + serviceRate));
+                    return {
+                        id: it.id,
+                        ...data,
+                        farmerName: farmer.displayName || '',
+                        farmerProvince: farmer.province || '',
+                        farmerDistrict: farmer.district || '',
+                        farmerDistrictKm: farmer.districtKm || '',
+                        farmerAvatarUrl: farmer.avatarUrl || null,
+                        farmerAvgRating: Number(farmer.avgRating || 0),
+                        farmerReviewCount: Number(farmer.reviewCount || 0),
+                        distanceKm,
+                        maxDistance: data.maxDistance || null,
+                        displayPrice,
+                        createdAtMs: data.createdAt?.toMillis?.() || 0,
+                    };
+                });
+
+                if (append) {
+                    // 追加分を結合して重複除去
+                    const seen = new Set(allItems.map(it => it.id));
+                    newItems.forEach(it => { if (!seen.has(it.id)) allItems.push(it); });
+                } else {
+                    allItems = newItems;
+                }
+                renderList();
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+                isLoadingMore = false;
+            }
+        }
+
+        // ── 表示 ────────────────────────────────────────────────
+        function renderList() {
+            const sortVal = currentSort;
+            const filterVal = currentFilter;
+
+            let items = [...allItems];
+
+            // 配送可能距離超過を非表示（距離不明はフォールバックで表示）
+            items = items.filter(it => {
+                if (it.distanceKm === null) return true; // 距離計算できない場合は一旦表示
+                if (it.maxDistance && it.distanceKm > it.maxDistance) return false;
+                return true;
+            });
+
+            // 州フィルタ（5/11 #65: 正規化キー or raw で比較）
+            if (currentProvince) {
+                items = items.filter(it => {
+                    const itKey = normalizeProvince(it.farmerProvince) || it.farmerProvince;
+                    return itKey === currentProvince;
+                });
+            }
+
+            // お気に入りフィルタ
+            if (filterVal === '__favorites') {
+                items = items.filter(it => favoriteIds.has(it.id));
+            } else if (filterVal) {
+                // 魚種フィルター
+                items = items.filter(it => {
+                    if (it.fishType === filterVal) return true;
+                    // 旧データ（日本語テキスト保存）との比較: fishTypeにコード名を含むか
+                    const label = i18next.t(`fish.${filterVal}`);
+                    return it.fishType === label || it.fishType.includes(label.split('/')[0]?.trim());
+                });
+            }
+
+            // ソート
+            if (sortVal === 'distance') {
+                items.sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
+            } else if (sortVal === 'price') {
+                items.sort((a, b) => a.displayPrice - b.displayPrice);
+            } else if (sortVal === 'newest') {
+                items.sort((a, b) => b.createdAtMs - a.createdAtMs);
+            } else if (sortVal === 'rating') {
+                // 5/12 #74: 新ダッシュボード「評価が高い農家」棚からの遷移用。
+                //   各 listing の farmer.avgRating（よい率 0-100）で降順。
+                items.sort((a, b) => (b.farmerAvgRating ?? 0) - (a.farmerAvgRating ?? 0));
+            }
+
+            const grid = document.getElementById('fish-grid');
+            const footer = document.getElementById('market-footer');
+            const loadMoreWrap = document.getElementById('load-more-wrap');
+
+            // 州チップを更新（読み込み済み農家から動的生成）
+            populateProvinceChips();
+
+            // もっと見るボタンの表示制御
+            if (loadMoreWrap) loadMoreWrap.style.display = hasMoreListings ? 'block' : 'none';
+
+            if (items.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column:1/-1;">
+                        <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">set_meal</span></div>
+                        <div class="empty-state__text">${i18next.t('restaurant.empty')}</div>
+                    </div>
+                `;
+                footer.style.display = 'none';
+                return;
+            }
+
+            grid.innerHTML = items.map(item => {
+                const fishName = i18next.exists(`fish.${item.fishType}`)
+                    ? i18next.t(`fish.${item.fishType}`)
+                    : item.fishType;
+
+                const distText = (item.distanceKm !== null && item.distanceKm !== undefined)
+                    ? `${(Math.floor(item.distanceKm * 10) / 10)} km`
+                    : '';
+                // 5/11: UI 言語が km なら districtKm を優先
+                const districtText = formatDistrict({ district: item.farmerDistrict, districtKm: item.farmerDistrictKm });
+
+                const imgHtml = item.photoUrl
+                    ? `<img src="${item.photoUrl}" alt="${fishName}">`
+                    : `<span class="fish-grid-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">set_meal</span></span>`;
+
+                // 5/11 #66: カードのカートボタンを廃止。カート追加は商品説明画面で行う
+                const cartBtnHtml = '';
+
+                const isFav = favoriteIds.has(item.id);
+                const favBtnHtml = `
+                    <button class="fish-grid-card__fav-btn ${isFav ? 'active' : ''}" type="button"
+                        data-act="toggle-fav" data-id="${item.id}"
+                        title="${i18next.t(isFav ? 'restaurant.unfavorite' : 'restaurant.favorite')}"
+                        aria-pressed="${isFav}">
+                        <span class="material-symbols-outlined">favorite</span>
+                    </button>`;
+
+                return `
+                    <div style="position:relative;">
+                    ${favBtnHtml}
+                    <a class="fish-grid-card" href="/pages/restaurant/order.html?id=${item.id}">
+                        <div class="fish-grid-card__img">
+                            ${imgHtml}
+                            <div class="fish-grid-card__price">
+                                ${item.displayPrice.toLocaleString()} KHR/kg
+                            </div>
+                            <div class="fish-grid-card__stock">
+                                ${item.stock > 0 ? i18next.t('restaurant.stock', { kg: item.stock }) : i18next.t('dashboard.outOfStock')}
+                            </div>
+                        </div>
+                        <div class="fish-grid-card__body">
+                            <div class="fish-grid-card__name">${fishName}</div>
+                            <div class="fish-grid-card__size">（${item.size} head/kg）</div>
+                            ${item.farmerProvince ? `<div class="fish-grid-card__place"><span class="material-symbols-outlined" style="font-size:14px;">location_on</span><span>${formatProvince(item.farmerProvince)}${districtText ? ', ' + districtText : ''}${distText ? ' · ' + distText : ''}</span></div>` : (distText ? `<div class="fish-grid-card__place"><span>${distText}</span></div>` : '')}
+                            ${item.farmerName ? `
+                                <div class="fish-grid-card__farmer" data-act="view-farmer" data-farmer-id="${item.farmerId}" role="button" tabindex="0" title="${i18next.t('restaurant.viewFarmer')}">
+                                    <div class="fish-grid-card__farmer-avatar">
+                                        ${item.farmerAvatarUrl
+                                            ? `<img src="${item.farmerAvatarUrl}" alt="" loading="lazy">`
+                                            : `<span class="material-symbols-outlined">person</span>`}
+                                    </div>
+                                    <div class="fish-grid-card__farmer-info">
+                                        <div class="fish-grid-card__farmer-name">${item.farmerName}</div>
+                                        <div class="fish-grid-card__farmer-rating">
+                                            <span class="material-symbols-outlined">star</span>
+                                            ${Math.round(item.farmerAvgRating)}%（${item.farmerReviewCount}）
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </a>
+                    ${cartBtnHtml}
+                    </div>
+                `;
+            }).join('');
+
+            footer.style.display = 'flex';
+            document.getElementById('footer-count').textContent =
+                i18next.t('restaurant.count', { count: items.length });
+        }
+
+        // 言語変更時
+        onLanguageChange(() => {
+            populateFilterChips();
+            const moreBtn = document.getElementById('load-more-btn');
+            if (moreBtn) moreBtn.textContent = i18next.t('restaurant.loadMore');
+            renderList();
+        });
+
+        // データ読み込み（auth完了後）
+        // 注文バッジ（リアルタイム監視）
+        function watchOrderBadge() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+
+            const lastSeen = parseInt(localStorage.getItem('fishlink_rest_orders_seen') || '0');
+
+            const q = query(
+                collection(db, 'orders'),
+                where('restaurantId', '==', uid)
+            );
+            onSnapshot(q, (snap) => {
+                const hasNew = snap.docs.some(d => {
+                    const t = d.data().createdAt?.toMillis?.() || 0;
+                    return t > lastSeen;
+                });
+                const badge = document.getElementById('order-badge');
+                badge.style.display = hasNew ? 'block' : 'none';
+            });
+        }
+
+        // カートバッジ（5/11 #66: カード上のカートボタン廃止に伴いバッジ更新のみに簡略化）
+        function watchCartBadge() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            subscribeCart(uid, (items) => {
+                cartListingIds = new Set(items.map(it => it.listingId));
+                const badge = document.getElementById('cart-badge');
+                if (badge) badge.style.display = items.length > 0 ? 'block' : 'none';
+            });
+        }
+
+        // お気に入り購読＋UI差分更新
+        function watchFavorites() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            subscribeFavorites(uid, (ids) => {
+                favoriteIds = new Set(ids);
+                // 表示中のカードのお気に入りボタンを即時反映
+                document.querySelectorAll('[data-act="toggle-fav"]').forEach(btn => {
+                    const isFav = favoriteIds.has(btn.dataset.id);
+                    btn.classList.toggle('active', isFav);
+                    btn.setAttribute('aria-pressed', isFav);
+                });
+                // お気に入りフィルタ中なら一覧を再描画
+                if (currentFilter === '__favorites') {
+                    renderList();
+                }
+            });
+        }
+
+        // お気に入りトグル / 生産者ページ遷移 のクリック処理を集約
+        // 5/11 #66: カード上のカートボタンは廃止。カート追加は商品説明画面で実施
+        document.getElementById('fish-grid').addEventListener('click', async (e) => {
+            // 5/11 #64: 農家ブロックタップで生産者ページへ遷移（カード全体の order.html 遷移より優先）
+            const farmerBlock = e.target.closest('[data-act="view-farmer"]');
+            if (farmerBlock) {
+                e.preventDefault();
+                e.stopPropagation();
+                const farmerId = farmerBlock.dataset.farmerId;
+                if (farmerId) {
+                    window.location.href = `/pages/restaurant/farmer.html?id=${farmerId}`;
+                }
+                return;
+            }
+
+            const favBtn = e.target.closest('[data-act="toggle-fav"]');
+            if (favBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const listingId = favBtn.dataset.id;
+                const uid = window.currentUser?.uid;
+                if (!uid) return;
+                favBtn.disabled = true;
+                try {
+                    await toggleFavorite(uid, listingId);
+                } catch (err) {
+                    console.error('toggleFavorite failed:', err);
+                } finally {
+                    favBtn.disabled = false;
+                }
+                return;
+            }
+        });
+
+        // Google Maps API & currentUserData の両方を待ってから実行
+        function waitForGoogleMaps(cb) {
+            if (typeof google !== 'undefined' && google.maps) { cb(); }
+            else { setTimeout(() => waitForGoogleMaps(cb), 200); }
+        }
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) { cb(); }
+            else { setTimeout(() => waitForUserData(cb), 200); }
+        }
+
+        waitForUserData(() => {
+            watchOrderBadge();
+            watchCartBadge();
+            watchFavorites();
+            if (window.currentUser?.uid) {
+                subscribeTodos(window.currentUser.uid, 'restaurant');
+                subscribeNotifications(window.currentUser.uid);
+            }
+            waitForGoogleMaps(() => loadFishListings());
+        });
+    </script>
+
+</body>
+
+</html>

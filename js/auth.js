@@ -182,6 +182,13 @@ async function logout() {
         localStorage.removeItem('fishlink_fcm_token');
     } catch (e) { /* ignore — ログアウト自体は止めない */ }
 
+    // 5/12 #69 追補：別アカウントが同端末でログインした際に元アカウントの
+    //   キャッシュ済みデータが見えないよう、セッションキャッシュ全消去
+    try {
+        const mod = await import('/js/data-cache.js');
+        mod.clearAll();
+    } catch (e) { /* data-cache 未配置でも logout は止めない */ }
+
     await signOut(auth);
     window.location.href = '/index.html';
 }

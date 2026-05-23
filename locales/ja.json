@@ -197,6 +197,7 @@
         "sortDistance": "距離が近い順",
         "sortPrice": "価格が安い順",
         "sortNewest": "新着順",
+        "sortRating": "評価が高い順",
         "filter": "絞り込み",
         "filterAll": "すべて",
         "filterFavorites": "お気に入り",
@@ -212,7 +213,16 @@
         "empty": "条件に合う魚が見つかりません",
         "map": "地図",
         "priceWithFee": "（税サ込）",
-        "viewFarmer": "生産者ページを見る"
+        "viewFarmer": "生産者ページを見る",
+        "navHome": "ホーム",
+        "searchPlaceholder": "魚種・農家を探す",
+        "shelfNearest": "近くの農家",
+        "shelfTopRated": "評価が高い農家",
+        "shelfNewest": "新着の魚",
+        "shelfCheapest": "安い魚",
+        "shelfHistory": "過去注文した商品",
+        "shelfHistoryEmpty": "まだ注文履歴がありません",
+        "noResults": "見つかりませんでした"
     },
     "delivery": {
         "statusNow": "現在：{{status}}",
@@ -509,6 +519,7 @@
         "avatar": "顔写真",
         "pondPhoto": "養殖環境",
         "restaurantPhoto": "レストラン写真",
+        "restaurantInfoTitle": "レストラン情報",
         "activeListings": "出品中の魚",
         "viewAllReviews": "レビューを見る（{{count}}件）",
         "ratingOverall": "総合評価",
@@ -574,7 +585,8 @@
         "errorStock": "{{name}} の在庫が不足しています（残り{{stock}}kg）",
         "errorDelivery": "納品日時を選んでください",
         "errorSubmit": "注文に失敗しました。再度お試しください",
-        "navCart": "カート"
+        "navCart": "カート",
+        "distance": "配送距離 {{km}} km"
     },
     "notifMessages": {
         "newOrder": {
@@ -762,6 +774,9 @@
         "menuHintPurchase": "購入金額・取引履歴",
         "menuHintProfileFarmer": "生産者の一言・養殖環境写真",
         "menuHintProfileRestaurant": "レストラン写真",
+        "publicPage": "公開ページを見る",
+        "publicPageHint": "他のユーザーから見えるあなたのページ",
+        "editProfile": "プロフィールを編集",
         "adminChat": "運営からのメッセージ",
         "adminChatHint": "FishLink運営とのチャット"
     },

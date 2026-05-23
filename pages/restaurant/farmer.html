@@ -187,6 +187,14 @@
 
     <div class="profile-page">
 
+        <!-- 5/12 #72: 自分自身のページを見ている場合のみ表示する編集ボタン -->
+        <div id="self-edit-bar" style="display:none; margin-bottom:12px;">
+            <a href="/pages/farmer/account/profile.html" class="edit-btn" style="display:inline-flex; align-items:center; gap:4px; background:#eef2ff; color:#3730a3; border:none; border-radius:20px; padding:8px 14px; font-size:13px; font-weight:600; text-decoration:none;">
+                <span class="material-symbols-outlined" style="font-size:16px;">edit</span>
+                <span data-i18n="account.editProfile"></span>
+            </a>
+        </div>
+
         <div class="farmer-hero">
             <div class="farmer-hero__avatar" id="avatar">
                 <span class="material-symbols-outlined" style="font-size:50px; color:#94a3b8;">person</span>
@@ -210,11 +218,8 @@
 
         <div class="section">
             <div class="section__title" data-i18n="profile.pondPhoto"></div>
-            <div class="pond-photo" id="pond-photo">
-                <div class="pond-placeholder">
-                    <span class="material-symbols-outlined" style="font-size:48px;">water</span>
-                </div>
-            </div>
+            <!-- 5/12 #72: 複数枚対応（pondPhotos[]）。1枚以下は従来通り。 -->
+            <div id="pond-photos"></div>
         </div>
 
         <div class="subrating-wrap">
@@ -260,6 +265,7 @@
             doc, getDoc, collection, collectionGroup, query, where, orderBy, getDocs
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { formatProvince, formatLocation } from '/js/province-utils.js';
+        import { getReviewerAvatarUrl, getPondPhotos } from '/js/profile-utils.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -268,6 +274,19 @@
 
         const targetUid = new URLSearchParams(location.search).get('id');
         if (!targetUid) { history.back(); }
+
+        // 5/12 #72: 自分自身を見ている場合は編集ボタンを表示
+        function showSelfEditBarIfNeeded() {
+            if (window.currentUser?.uid && window.currentUser.uid === targetUid) {
+                const bar = document.getElementById('self-edit-bar');
+                if (bar) bar.style.display = 'block';
+            }
+        }
+        // currentUser は watchAuthState 後にセットされるため、ポーリングで待つ
+        (function waitForCurrent() {
+            if (window.currentUser) { showSelfEditBarIfNeeded(); return; }
+            setTimeout(waitForCurrent, 200);
+        })();
 
         function fmtDate(ts) {
             const d = ts?.toDate?.() || new Date(ts || 0);
@@ -353,8 +372,14 @@
                 }
 
                 // 養殖環境の写真
-                if (user.pondPhotoUrl) {
-                    document.getElementById('pond-photo').innerHTML = `<img src="${user.pondPhotoUrl}" alt="pond">`;
+                // 5/12 #72: 複数養殖環境写真（配列優先・単数互換）
+                const pondPhotos = getPondPhotos(user);
+                if (pondPhotos.length > 0) {
+                    document.getElementById('pond-photos').innerHTML = pondPhotos
+                        .map(u => `<div class="pond-photo" style="margin-bottom:10px;"><img src="${u}" alt="pond" loading="lazy"></div>`)
+                        .join('');
+                } else {
+                    document.getElementById('pond-photos').innerHTML = `<div class="pond-photo"><div class="pond-placeholder"><span class="material-symbols-outlined" style="font-size:48px;">water</span></div></div>`;
                 }
 
                 // 出品中の魚
@@ -424,9 +449,12 @@
                         const v = legacyToVerdict(r);
                         const reviewer = reviewerMap[r.fromUid] || {};
                         const reviewerName = reviewer.displayName || i18next.t('profile.anonymousReviewer');
-                        const avatarHtml = reviewer.avatarUrl
-                            ? `<img src="${reviewer.avatarUrl}" alt="" loading="lazy">`
-                            : `<span class="material-symbols-outlined">storefront</span>`;
+                        // 5/12 #71: ロール別の登録済み画像をアイコンとして表示
+                        //   restaurant: restaurantPhotoUrl || avatarUrl, farmer: avatarUrl || pondPhotoUrl
+                        const reviewerAvatar = getReviewerAvatarUrl(reviewer);
+                        const avatarHtml = reviewerAvatar
+                            ? `<img src="${reviewerAvatar}" alt="" loading="lazy">`
+                            : `<span class="material-symbols-outlined">${reviewer.role === 'farmer' ? 'person' : 'storefront'}</span>`;
                         return `
                             <div class="review-card">
                                 <div class="review-card__reviewer">

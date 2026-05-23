@@ -16,8 +16,6 @@
     <style>
         .sub-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
         .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
-        .photo-box img { width: 100%; max-height: 240px; object-fit: cover; border-radius: 14px; display: block; }
-        .photo-placeholder { width: 100%; height: 180px; display: flex; align-items: center; justify-content: center; color: #94a3b8; background: #fff; border-radius: 14px; border: 1px dashed var(--color-border); }
         .img-actions { display: flex; justify-content: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
         .img-actions button { background: #fff; border: 1px solid var(--color-border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--color-text); font-family: inherit; }
         .img-actions button.danger { color: #b91c1c; border-color: #fecaca; }
@@ -27,6 +25,14 @@
         .edit-toggle { display: flex; justify-content: flex-end; margin-bottom: 8px; }
         .edit-btn { background: #eef2ff; color: #3730a3; border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
         .label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 8px; }
+        /* 5/12 #72: 複数写真ギャラリー */
+        .photos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .photos-grid__cell { position: relative; aspect-ratio: 1 / 1; background: #fff; border: 1px dashed var(--color-border); border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; color: #94a3b8; }
+        .photos-grid__cell img { width: 100%; height: 100%; object-fit: cover; }
+        .photos-grid__remove { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; background: rgba(15,23,42,.7); color: #fff; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-family: inherit; }
+        .photos-grid__remove .material-symbols-outlined { font-size: 16px; }
+        .photos-grid__add { cursor: pointer; }
+        .photos-grid__add:hover { background: #f1f5f9; }
     </style>
 </head>
 <body>
@@ -44,7 +50,7 @@
             </select>
         </div>
 
-        <div class="sub-page__title" data-i18n="profile.restaurantPhoto"></div>
+        <div class="sub-page__title" data-i18n="profile.restaurantInfoTitle"></div>
 
         <div class="sub-page">
 
@@ -57,21 +63,15 @@
 
         <div id="view-mode">
             <div class="label" data-i18n="profile.restaurantPhoto"></div>
-            <div class="photo-box" id="v-photo">
-                <div class="photo-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">storefront</span></div>
-            </div>
+            <!-- 5/12 #72: 複数枚対応（restaurantPhotos[]） -->
+            <div id="v-photos-grid" class="photos-grid"></div>
         </div>
 
         <div id="edit-mode" style="display:none;">
             <div class="label" data-i18n="profile.restaurantPhoto"></div>
-            <div class="photo-box" id="e-photo">
-                <div class="photo-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">storefront</span></div>
-            </div>
-            <div class="img-actions">
-                <button type="button" id="btn-photo-upload" data-i18n="profile.uploadPhoto"></button>
-                <button type="button" id="btn-photo-remove" class="danger" data-i18n="profile.removePhoto"></button>
-                <input type="file" id="photo-file" accept="image/*" style="display:none;">
-            </div>
+            <!-- 5/12 #72: 複数枚対応。最大5枚まで。 -->
+            <div id="e-photos-grid" class="photos-grid"></div>
+            <input type="file" id="photo-file" accept="image/*" multiple style="display:none;">
             <div class="save-row">
                 <button class="edit-btn" id="btn-cancel" style="flex:1;" data-i18n="account.cancel"></button>
                 <button class="save" id="btn-save" data-i18n="account.save"></button>
@@ -86,36 +86,77 @@
         import { watchAuthState } from '/js/auth.js';
         import { db, storage } from '/js/firebase-config.js';
         import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
-        import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+        import { ref } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { uploadImageResized } from '/js/image-resize.js';
+        import { invalidate as invalidateDataCache } from '/js/data-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
         await initI18n();
         initLangSelector();
 
+        const MAX_PHOTOS = 5;
         let userData = null;
-        let editState = { photoUrl: null, file: null, removed: false };
+        // 5/12 #72: restaurantPhotos[] を一級扱い。restaurantPhotoUrl は配列の [0] として書き戻して互換維持。
+        let editState = { photos: [] };
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
             else setTimeout(() => waitForUserData(cb), 200);
         }
 
-        function showPhoto(id, url) {
-            const box = document.getElementById(id);
-            if (url) {
-                box.innerHTML = `<img src="${url}" alt="restaurant">`;
-            } else {
-                box.innerHTML = `<div class="photo-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">storefront</span></div>`;
+        function readRestaurantPhotos(u) {
+            if (Array.isArray(u?.restaurantPhotos) && u.restaurantPhotos.length > 0) {
+                return u.restaurantPhotos.filter(Boolean);
+            }
+            return u?.restaurantPhotoUrl ? [u.restaurantPhotoUrl] : [];
+        }
+
+        function renderViewGrid(urls) {
+            const grid = document.getElementById('v-photos-grid');
+            if (urls.length === 0) {
+                grid.innerHTML = `<div class="photos-grid__cell"><span class="material-symbols-outlined" style="font-size:36px;">storefront</span></div>`;
+                return;
+            }
+            grid.innerHTML = urls.map(u => `<div class="photos-grid__cell"><img src="${u}" alt="restaurant" loading="lazy"></div>`).join('');
+        }
+
+        function renderEditGrid() {
+            const grid = document.getElementById('e-photos-grid');
+            const cells = editState.photos.map((p, i) => {
+                const src = p.url || p.previewDataUrl || '';
+                return `<div class="photos-grid__cell" data-idx="${i}">
+                    ${src ? `<img src="${src}" alt="">` : ''}
+                    <button type="button" class="photos-grid__remove" data-act="remove" data-idx="${i}" aria-label="remove">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>`;
+            }).join('');
+            const addCell = editState.photos.length < MAX_PHOTOS
+                ? `<div class="photos-grid__cell photos-grid__add" id="photo-add-cell">
+                        <span class="material-symbols-outlined" style="font-size:36px;">add_a_photo</span>
+                   </div>` : '';
+            grid.innerHTML = cells + addCell;
+            grid.querySelectorAll('[data-act="remove"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const i = Number(btn.dataset.idx);
+                    editState.photos.splice(i, 1);
+                    renderEditGrid();
+                });
+            });
+            const addCellEl = document.getElementById('photo-add-cell');
+            if (addCellEl) {
+                addCellEl.addEventListener('click', () => document.getElementById('photo-file').click());
             }
         }
 
-        function renderView() { showPhoto('v-photo', userData.restaurantPhotoUrl || null); }
+        function renderView() {
+            renderViewGrid(readRestaurantPhotos(userData));
+        }
 
         document.getElementById('btn-edit').addEventListener('click', () => {
-            editState = { photoUrl: userData.restaurantPhotoUrl || null, file: null, removed: false };
-            showPhoto('e-photo', editState.photoUrl);
+            editState = { photos: readRestaurantPhotos(userData).map(url => ({ url })) };
+            renderEditGrid();
             document.getElementById('view-mode').style.display = 'none';
             document.getElementById('edit-mode').style.display = 'block';
             document.getElementById('btn-edit').style.display = 'none';
@@ -125,22 +166,18 @@
             document.getElementById('edit-mode').style.display = 'none';
             document.getElementById('btn-edit').style.display = 'inline-flex';
         });
-        document.getElementById('btn-photo-upload').addEventListener('click', () => document.getElementById('photo-file').click());
         document.getElementById('photo-file').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            editState.file = file;
-            editState.removed = false;
-            const reader = new FileReader();
-            reader.onload = (ev) => showPhoto('e-photo', ev.target.result);
-            reader.readAsDataURL(file);
-        });
-        document.getElementById('btn-photo-remove').addEventListener('click', () => {
-            editState.file = null;
-            editState.removed = true;
-            editState.photoUrl = null;
-            document.getElementById('photo-file').value = '';
-            showPhoto('e-photo', null);
+            const files = Array.from(e.target.files || []);
+            for (const file of files) {
+                if (editState.photos.length >= MAX_PHOTOS) break;
+                const entry = { file };
+                editState.photos.push(entry);
+                const reader = new FileReader();
+                reader.onload = (ev) => { entry.previewDataUrl = ev.target.result; renderEditGrid(); };
+                reader.readAsDataURL(file);
+            }
+            renderEditGrid();
+            e.target.value = '';
         });
         document.getElementById('btn-save').addEventListener('click', async () => {
             const uid = window.currentUser?.uid;
@@ -149,17 +186,25 @@
             btn.disabled = true;
             loading.classList.add('show');
             try {
-                let restaurantPhotoUrl = editState.photoUrl;
-                if (editState.file) {
-                    // 5/11 #67: リサイズ+圧縮+リトライ
-                    const baseName = (editState.file.name || 'rest').replace(/\.[^.]+$/, '');
-                    const storageRef = ref(storage, `profile/${uid}/rest_${Date.now()}_${baseName}.jpg`);
-                    restaurantPhotoUrl = await uploadImageResized(storageRef, editState.file);
-                } else if (editState.removed) {
-                    restaurantPhotoUrl = null;
+                const restaurantPhotos = [];
+                for (const p of editState.photos) {
+                    if (p.url) { restaurantPhotos.push(p.url); continue; }
+                    if (p.file) {
+                        const baseName = (p.file.name || 'rest').replace(/\.[^.]+$/, '');
+                        const storageRef = ref(storage, `profile/${uid}/rest_${Date.now()}_${baseName}.jpg`);
+                        const url = await uploadImageResized(storageRef, p.file);
+                        restaurantPhotos.push(url);
+                    }
                 }
-                await updateDoc(doc(db, 'users', uid), { restaurantPhotoUrl: restaurantPhotoUrl || null });
-                userData.restaurantPhotoUrl = restaurantPhotoUrl || null;
+                const restaurantPhotoUrl = restaurantPhotos[0] || null;
+                await updateDoc(doc(db, 'users', uid), {
+                    restaurantPhotos,
+                    restaurantPhotoUrl,
+                });
+                // 5/12 #69 追補：他画面のキャッシュにも反映させるため自分のドキュメントキャッシュを破棄
+                invalidateDataCache('users', uid);
+                userData.restaurantPhotos = restaurantPhotos;
+                userData.restaurantPhotoUrl = restaurantPhotoUrl;
                 renderView();
                 document.getElementById('btn-cancel').click();
             } catch (err) {

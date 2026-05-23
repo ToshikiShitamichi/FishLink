@@ -141,6 +141,14 @@
 
     <div class="profile-page">
 
+        <!-- 5/12 #72: 自分自身のページを見ている場合のみ表示する編集ボタン -->
+        <div id="self-edit-bar" style="display:none; margin-bottom:12px;">
+            <a href="/pages/restaurant/account/profile.html" class="edit-btn" style="display:inline-flex; align-items:center; gap:4px; background:#eef2ff; color:#3730a3; border:none; border-radius:20px; padding:8px 14px; font-size:13px; font-weight:600; text-decoration:none;">
+                <span class="material-symbols-outlined" style="font-size:16px;">edit</span>
+                <span data-i18n="account.editProfile"></span>
+            </a>
+        </div>
+
         <div class="hero-photo" id="hero-photo">
             <span class="material-symbols-outlined" style="font-size:60px; color:#94a3b8;">storefront</span>
         </div>
@@ -200,6 +208,7 @@
             doc, getDoc, collectionGroup, query, where, orderBy, getDocs
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { formatProvince, formatLocation } from '/js/province-utils.js';
+        import { getReviewerAvatarUrl, getRestaurantPhotos } from '/js/profile-utils.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -208,6 +217,18 @@
 
         const targetUid = new URLSearchParams(location.search).get('id');
         if (!targetUid) { history.back(); }
+
+        // 5/12 #72: 自分自身を見ている場合は編集ボタンを表示
+        (function waitForCurrent() {
+            if (window.currentUser) {
+                if (window.currentUser.uid === targetUid) {
+                    const bar = document.getElementById('self-edit-bar');
+                    if (bar) bar.style.display = 'block';
+                }
+                return;
+            }
+            setTimeout(waitForCurrent, 200);
+        })();
 
         function fmtDate(ts) {
             const d = ts?.toDate?.() || new Date(ts || 0);
@@ -248,9 +269,24 @@
                 if (!userSnap.exists()) { history.back(); return; }
                 const user = userSnap.data();
 
-                // 写真
-                if (user.restaurantPhotoUrl) {
-                    document.getElementById('hero-photo').innerHTML = `<img src="${user.restaurantPhotoUrl}" alt="${user.displayName || ''}">`;
+                // 5/12 #72: 複数店舗写真（配列優先・単数互換）
+                const restPhotos = getRestaurantPhotos(user);
+                const heroEl = document.getElementById('hero-photo');
+                if (restPhotos.length === 1) {
+                    heroEl.innerHTML = `<img src="${restPhotos[0]}" alt="${escapeHtml(user.displayName || '')}">`;
+                } else if (restPhotos.length > 1) {
+                    // 横スクロール・スナップ式のシンプルカルーセル
+                    heroEl.style.padding = '0';
+                    heroEl.style.background = '#000';
+                    heroEl.innerHTML = `
+                        <div style="display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; width:100%; height:100%;">
+                            ${restPhotos.map(u => `
+                                <div style="flex:0 0 100%; scroll-snap-align:start; height:100%;">
+                                    <img src="${u}" alt="" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
                 }
                 // 名前・場所
                 document.getElementById('name').textContent = user.displayName || '-';
@@ -318,9 +354,12 @@
                         const v = legacyToVerdict(r);
                         const reviewer = reviewerMap[r.fromUid] || {};
                         const reviewerName = reviewer.displayName || i18next.t('profile.anonymousReviewer');
-                        const avatarHtml = reviewer.avatarUrl
-                            ? `<img src="${reviewer.avatarUrl}" alt="" loading="lazy">`
-                            : `<span class="material-symbols-outlined">phishing</span>`;
+                        // 5/12 #71: ロール別の登録済み画像をアイコンとして表示
+                        //   farmer: avatarUrl || pondPhotoUrl, restaurant: restaurantPhotoUrl || avatarUrl
+                        const reviewerAvatar = getReviewerAvatarUrl(reviewer);
+                        const avatarHtml = reviewerAvatar
+                            ? `<img src="${reviewerAvatar}" alt="" loading="lazy">`
+                            : `<span class="material-symbols-outlined">${reviewer.role === 'restaurant' ? 'restaurant' : 'person'}</span>`;
                         return `
                             <div class="review-card">
                                 <div class="review-card__reviewer">

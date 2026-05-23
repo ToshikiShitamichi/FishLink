@@ -298,6 +298,17 @@ select:focus {
 
 .role-option__icon {
     font-size: 32px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+}
+
+.role-option__icon img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
 }
 
 .role-option__text {
@@ -471,6 +482,18 @@ select:focus {
 
 .bottom-nav__icon {
     font-size: 22px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 22px;
+}
+
+/* 5/12 #74: 魚アイコン（fish.svg）を bottom-nav 内で扱うときのサイズ調整 */
+.bottom-nav__icon img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
 }
 
 /* iPhone等のノッチ対応 */

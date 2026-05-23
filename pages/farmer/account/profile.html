@@ -22,6 +22,14 @@
         .acc-row textarea { width: 100%; border: 1px solid var(--color-border); border-radius: 10px; padding: 8px 10px; font-size: 16px; font-family: inherit; margin-top: 4px; min-height: 80px; resize: vertical; }
         .pond-box img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; display: block; }
         .pond-placeholder { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; color: #94a3b8; background: #fff; border-radius: 12px; border: 1px dashed var(--color-border); }
+        /* 5/12 #72: 複数写真ギャラリー（編集・閲覧モード共通） */
+        .photos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+        .photos-grid__cell { position: relative; aspect-ratio: 1 / 1; background: #fff; border: 1px dashed var(--color-border); border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; color: #94a3b8; }
+        .photos-grid__cell img { width: 100%; height: 100%; object-fit: cover; }
+        .photos-grid__remove { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; background: rgba(15,23,42,.7); color: #fff; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-family: inherit; }
+        .photos-grid__remove .material-symbols-outlined { font-size: 16px; }
+        .photos-grid__add { cursor: pointer; }
+        .photos-grid__add:hover { background: #f1f5f9; }
         .avatar-box { display: flex; justify-content: center; }
         .avatar-circle {
             width: 120px; height: 120px; border-radius: 50%;
@@ -81,9 +89,8 @@
             </div>
             <div class="acc-row">
                 <div class="acc-row__label" data-i18n="profile.pondPhoto"></div>
-                <div class="pond-box" id="v-pond">
-                    <div class="pond-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">water</span></div>
-                </div>
+                <!-- 5/12 #72: 複数枚対応（pondPhotos[]）。1枚以下なら従来通り単数表示。 -->
+                <div id="v-pond-grid" class="photos-grid"></div>
             </div>
         </div>
 
@@ -107,14 +114,9 @@
             </div>
             <div class="acc-row">
                 <div class="acc-row__label" data-i18n="profile.pondPhoto"></div>
-                <div class="pond-box" id="e-pond">
-                    <div class="pond-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">water</span></div>
-                </div>
-                <div class="img-actions">
-                    <button type="button" id="btn-pond-upload" data-i18n="profile.uploadPhoto"></button>
-                    <button type="button" id="btn-pond-remove" class="danger" data-i18n="profile.removePhoto"></button>
-                    <input type="file" id="pond-file" accept="image/*" style="display:none;">
-                </div>
+                <!-- 5/12 #72: 複数枚対応。最大5枚まで。 -->
+                <div id="e-pond-grid" class="photos-grid"></div>
+                <input type="file" id="pond-file" accept="image/*" multiple style="display:none;">
             </div>
             <div class="save-row">
                 <button class="edit-btn" id="btn-cancel" style="flex:1;" data-i18n="account.cancel"></button>
@@ -132,26 +134,71 @@
         import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { uploadImageResized } from '/js/image-resize.js';
+        import { invalidate as invalidateDataCache } from '/js/data-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
         await initI18n();
         initLangSelector();
 
+        const MAX_POND_PHOTOS = 5;
         let userData = null;
-        let editState = { pondPhotoUrl: null, pondFile: null, pondRemoved: false, avatarUrl: null, avatarFile: null, avatarRemoved: false };
+        // 5/12 #72: pondPhotos[] を一級扱い。pondPhotoUrl は配列の [0] として書き戻して互換維持。
+        // editState.pond は配列。各要素は { url } か { file } のいずれか（新規アップロード分は file ベース）。
+        let editState = {
+            pond: [],
+            avatarUrl: null, avatarFile: null, avatarRemoved: false,
+        };
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
             else setTimeout(() => waitForUserData(cb), 200);
         }
 
-        function showPond(id, url) {
-            const box = document.getElementById(id);
-            if (url) {
-                box.innerHTML = `<img src="${url}" alt="pond">`;
-            } else {
-                box.innerHTML = `<div class="pond-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">water</span></div>`;
+        // 5/12 #72: 既存単数フィールドとの互換 — 配列が空の場合は単数を採用
+        function readPondPhotos(u) {
+            if (Array.isArray(u?.pondPhotos) && u.pondPhotos.length > 0) {
+                return u.pondPhotos.filter(Boolean);
+            }
+            return u?.pondPhotoUrl ? [u.pondPhotoUrl] : [];
+        }
+
+        function renderViewPondGrid(urls) {
+            const grid = document.getElementById('v-pond-grid');
+            if (urls.length === 0) {
+                grid.innerHTML = `<div class="photos-grid__cell"><span class="material-symbols-outlined" style="font-size:36px;">water</span></div>`;
+                return;
+            }
+            grid.innerHTML = urls.map(u => `<div class="photos-grid__cell"><img src="${u}" alt="pond" loading="lazy"></div>`).join('');
+        }
+
+        function renderEditPondGrid() {
+            const grid = document.getElementById('e-pond-grid');
+            const cells = editState.pond.map((p, i) => {
+                const src = p.url || p.previewDataUrl || '';
+                return `<div class="photos-grid__cell" data-idx="${i}">
+                    ${src ? `<img src="${src}" alt="">` : ''}
+                    <button type="button" class="photos-grid__remove" data-act="remove" data-idx="${i}" aria-label="remove">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>`;
+            }).join('');
+            const addCell = editState.pond.length < MAX_POND_PHOTOS
+                ? `<div class="photos-grid__cell photos-grid__add" id="pond-add-cell">
+                        <span class="material-symbols-outlined" style="font-size:36px;">add_a_photo</span>
+                   </div>` : '';
+            grid.innerHTML = cells + addCell;
+            // バインド
+            grid.querySelectorAll('[data-act="remove"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const i = Number(btn.dataset.idx);
+                    editState.pond.splice(i, 1);
+                    renderEditPondGrid();
+                });
+            });
+            const addCellEl = document.getElementById('pond-add-cell');
+            if (addCellEl) {
+                addCellEl.addEventListener('click', () => document.getElementById('pond-file').click());
             }
         }
 
@@ -166,17 +213,18 @@
 
         function renderView() {
             document.getElementById('v-message').textContent = userData.farmerMessage || '-';
-            showPond('v-pond', userData.pondPhotoUrl || null);
+            renderViewPondGrid(readPondPhotos(userData));
             showAvatar('v-avatar', userData.avatarUrl || null);
         }
 
         document.getElementById('btn-edit').addEventListener('click', () => {
             document.getElementById('in-message').value = userData.farmerMessage || '';
+            // 5/12 #72: 既存写真をすべて編集セットに引き込む
             editState = {
-                pondPhotoUrl: userData.pondPhotoUrl || null, pondFile: null, pondRemoved: false,
+                pond: readPondPhotos(userData).map(url => ({ url })),
                 avatarUrl: userData.avatarUrl || null, avatarFile: null, avatarRemoved: false,
             };
-            showPond('e-pond', editState.pondPhotoUrl);
+            renderEditPondGrid();
             showAvatar('e-avatar', editState.avatarUrl);
             document.getElementById('view-mode').style.display = 'none';
             document.getElementById('edit-mode').style.display = 'block';
@@ -187,22 +235,21 @@
             document.getElementById('edit-mode').style.display = 'none';
             document.getElementById('btn-edit').style.display = 'inline-flex';
         });
-        document.getElementById('btn-pond-upload').addEventListener('click', () => document.getElementById('pond-file').click());
+        // 5/12 #72: 複数ファイル選択に対応。MAX_POND_PHOTOS の上限まで追加。
         document.getElementById('pond-file').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            editState.pondFile = file;
-            editState.pondRemoved = false;
-            const reader = new FileReader();
-            reader.onload = (ev) => showPond('e-pond', ev.target.result);
-            reader.readAsDataURL(file);
-        });
-        document.getElementById('btn-pond-remove').addEventListener('click', () => {
-            editState.pondFile = null;
-            editState.pondRemoved = true;
-            editState.pondPhotoUrl = null;
-            document.getElementById('pond-file').value = '';
-            showPond('e-pond', null);
+            const files = Array.from(e.target.files || []);
+            for (const file of files) {
+                if (editState.pond.length >= MAX_POND_PHOTOS) break;
+                const entry = { file };
+                editState.pond.push(entry);
+                // プレビュー用 DataURL を非同期生成し、生成後に再描画
+                const reader = new FileReader();
+                reader.onload = (ev) => { entry.previewDataUrl = ev.target.result; renderEditPondGrid(); };
+                reader.readAsDataURL(file);
+            }
+            renderEditPondGrid();
+            // 同一ファイル再選択を許可するため value をリセット
+            e.target.value = '';
         });
         document.getElementById('btn-avatar-upload').addEventListener('click', () => document.getElementById('avatar-file').click());
         document.getElementById('avatar-file').addEventListener('change', (e) => {
@@ -229,15 +276,23 @@
             loading.classList.add('show');
             try {
                 const farmerMessage = document.getElementById('in-message').value.trim();
-                let pondPhotoUrl = editState.pondPhotoUrl;
-                if (editState.pondFile) {
-                    // 5/11 #67: リサイズ+圧縮+リトライ
-                    const baseName = (editState.pondFile.name || 'pond').replace(/\.[^.]+$/, '');
-                    const storageRef = ref(storage, `profile/${uid}/pond_${Date.now()}_${baseName}.jpg`);
-                    pondPhotoUrl = await uploadImageResized(storageRef, editState.pondFile);
-                } else if (editState.pondRemoved) {
-                    pondPhotoUrl = null;
+                // 5/12 #72: pondPhotos[] を順序通りにアップロード（新規分のみ実アップロード）
+                const pondPhotos = [];
+                for (const p of editState.pond) {
+                    if (p.url) {
+                        pondPhotos.push(p.url);
+                        continue;
+                    }
+                    if (p.file) {
+                        const baseName = (p.file.name || 'pond').replace(/\.[^.]+$/, '');
+                        const storageRef = ref(storage, `profile/${uid}/pond_${Date.now()}_${baseName}.jpg`);
+                        const url = await uploadImageResized(storageRef, p.file);
+                        pondPhotos.push(url);
+                    }
                 }
+                // 互換維持: pondPhotoUrl は配列の [0] 相当
+                const pondPhotoUrl = pondPhotos[0] || null;
+
                 let avatarUrl = editState.avatarUrl;
                 if (editState.avatarFile) {
                     // 5/11 #67: リサイズ+圧縮+リトライ（アバターは小さめでもOK）
@@ -251,11 +306,15 @@
                 }
                 await updateDoc(doc(db, 'users', uid), {
                     farmerMessage: farmerMessage || null,
-                    pondPhotoUrl: pondPhotoUrl || null,
+                    pondPhotos,
+                    pondPhotoUrl,
                     avatarUrl: avatarUrl || null,
                 });
+                // 5/12 #69 追補：他画面のキャッシュにも反映させるため自分のドキュメントキャッシュを破棄
+                invalidateDataCache('users', uid);
                 userData.farmerMessage = farmerMessage || null;
-                userData.pondPhotoUrl = pondPhotoUrl || null;
+                userData.pondPhotos = pondPhotos;
+                userData.pondPhotoUrl = pondPhotoUrl;
                 userData.avatarUrl = avatarUrl || null;
                 renderView();
                 document.getElementById('btn-cancel').click();
