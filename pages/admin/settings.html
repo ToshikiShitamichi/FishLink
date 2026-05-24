@@ -366,7 +366,7 @@
             } catch (err) {
                 console.error(err);
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
 

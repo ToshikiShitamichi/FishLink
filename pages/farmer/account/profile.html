@@ -135,6 +135,8 @@
         import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { uploadImageResized } from '/js/image-resize.js';
         import { invalidate as invalidateDataCache } from '/js/data-cache.js';
+        // 5/23 #69 Phase B: メモリ画像キャッシュ
+        import { asCachedImgAttrs } from '/js/image-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -169,7 +171,7 @@
                 grid.innerHTML = `<div class="photos-grid__cell"><span class="material-symbols-outlined" style="font-size:36px;">water</span></div>`;
                 return;
             }
-            grid.innerHTML = urls.map(u => `<div class="photos-grid__cell"><img src="${u}" alt="pond" loading="lazy"></div>`).join('');
+            grid.innerHTML = urls.map(u => `<div class="photos-grid__cell"><img ${asCachedImgAttrs(u)} alt="pond" loading="lazy"></div>`).join('');
         }
 
         function renderEditPondGrid() {
@@ -177,7 +179,7 @@
             const cells = editState.pond.map((p, i) => {
                 const src = p.url || p.previewDataUrl || '';
                 return `<div class="photos-grid__cell" data-idx="${i}">
-                    ${src ? `<img src="${src}" alt="">` : ''}
+                    ${src ? `<img ${asCachedImgAttrs(src)} alt="">` : ''}
                     <button type="button" class="photos-grid__remove" data-act="remove" data-idx="${i}" aria-label="remove">
                         <span class="material-symbols-outlined">close</span>
                     </button>
@@ -205,7 +207,8 @@
         function showAvatar(id, url) {
             const box = document.getElementById(id);
             if (url) {
-                box.innerHTML = `<img src="${url}" alt="avatar">`;
+                // data: の preview URL もそのまま通す（image-cache が透過処理）
+                box.innerHTML = `<img ${asCachedImgAttrs(url)} alt="avatar">`;
             } else {
                 box.innerHTML = `<span class="material-symbols-outlined" style="font-size:56px;">person</span>`;
             }
@@ -323,14 +326,14 @@
                 alert(i18next.t('account.saveFailed'));
             } finally {
                 btn.disabled = false;
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
 
         waitForUserData(() => {
             userData = { ...window.currentUserData };
             renderView();
-            loading.classList.remove('show');
+            loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
     </script>
 </body>

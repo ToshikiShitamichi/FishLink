@@ -495,6 +495,12 @@
         import { subscribeFavorites, toggleFavorite } from '/js/favorites.js';
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
         import { normalizeProvince, formatProvince, formatDistrict } from '/js/province-utils.js';
+        // 5/23 #69 改善: メモリ画像キャッシュ（フラッシュ解消）
+        import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
+        import { getCachedUser } from '/js/data-cache.js';
+        // 5/23 #69 Phase J: 画面描画状態の永続キャッシュ（stale-while-revalidate）
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         let cartListingIds = new Set();
@@ -696,8 +702,9 @@
         let hasMoreListings = false;
         let isLoadingMore = false;
 
-        async function loadFishListings({ append = false } = {}) {
-            if (!append) loading.classList.add('show');
+        // 5/23 #69 Phase J: silent=true で spinner を出さない（cached 描画後の裏側 fresh fetch 用）
+        async function loadFishListings({ append = false, silent = false } = {}) {
+            if (!append && !silent) loading.classList.add('show');
 
             try {
                 const uid = window.currentUser?.uid;
@@ -734,13 +741,13 @@
                 lastListingDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : lastListingDoc;
                 hasMoreListings = snap.docs.length === PAGE_SIZE;
 
-                // 農家情報をまとめて取得（UID → location）。既知 UID はキャッシュ流用
+                // 5/23 #69 Phase B: 農家情報は data-cache 経由（同一タブ内なら sessionStorage / memory ヒット）
                 window._farmerCache = window._farmerCache || {};
                 const farmerCache = window._farmerCache;
                 const farmerIds = [...new Set(snap.docs.map(d => d.data().farmerId).filter(fid => !farmerCache[fid]))];
                 await Promise.all(farmerIds.map(async (fid) => {
-                    const fSnap = await getDoc(doc(db, 'users', fid));
-                    farmerCache[fid] = fSnap.exists() ? fSnap.data() : {};
+                    const data = await getCachedUser(fid);
+                    farmerCache[fid] = data || {};
                 }));
                 const farmerMap = farmerCache;
 
@@ -826,12 +833,21 @@
                     newItems.forEach(it => { if (!seen.has(it.id)) allItems.push(it); });
                 } else {
                     allItems = newItems;
+                    // 5/23 #69 Phase J: 初回ページ分のみ render-cache に保存（次回訪問で即時表示用）
+                    //   - 2 ページ目以降の追記分は保存しない（cold start で 1 ページ目から再描画）
+                    //   - serviceRate も保存（表示価格計算に使う）
+                    try {
+                        saveRenderState('fish-list_items', {
+                            items: newItems,
+                            serviceRate,
+                        });
+                    } catch (e) { /* ignore */ }
                 }
                 renderList();
             } catch (err) {
                 console.error(err);
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
                 isLoadingMore = false;
             }
         }
@@ -905,7 +921,7 @@
                 return;
             }
 
-            grid.innerHTML = items.map(item => {
+            grid.innerHTML = items.map((item, idx) => {
                 const fishName = i18next.exists(`fish.${item.fishType}`)
                     ? i18next.t(`fish.${item.fishType}`)
                     : item.fishType;
@@ -916,8 +932,11 @@
                 // 5/11: UI 言語が km なら districtKm を優先
                 const districtText = formatDistrict({ district: item.farmerDistrict, districtKm: item.farmerDistrictKm });
 
+                // 5/23 Phase I: 最初のカードを LCP 候補として fetchpriority="high" 付与
+                // （asCachedImgAttrs が priority opt を解釈して fetchpriority 属性を出力）
+                const isPriority = idx === 0;
                 const imgHtml = item.photoUrl
-                    ? `<img src="${item.photoUrl}" alt="${fishName}">`
+                    ? `<img ${asCachedImgAttrs(item.photoUrl, isPriority ? { priority: 'high' } : {})} alt="${fishName}">`
                     : `<span class="fish-grid-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">set_meal</span></span>`;
 
                 // 5/11 #66: カードのカートボタンを廃止。カート追加は商品説明画面で行う
@@ -953,7 +972,7 @@
                                 <div class="fish-grid-card__farmer" data-act="view-farmer" data-farmer-id="${item.farmerId}" role="button" tabindex="0" title="${i18next.t('restaurant.viewFarmer')}">
                                     <div class="fish-grid-card__farmer-avatar">
                                         ${item.farmerAvatarUrl
-                                            ? `<img src="${item.farmerAvatarUrl}" alt="" loading="lazy">`
+                                            ? `<img ${asCachedImgAttrs(item.farmerAvatarUrl)} alt="" loading="lazy">`
                                             : `<span class="material-symbols-outlined">person</span>`}
                                     </div>
                                     <div class="fish-grid-card__farmer-info">
@@ -1082,6 +1101,25 @@
             else { setTimeout(() => waitForUserData(cb), 200); }
         }
 
+        // 5/23 #69 Phase J: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
+        //   waitForUserData の前に実行（currentUserData 待ち不要・initI18n は冒頭で await 済）
+        //   currentSort / currentFilter は URLSearchParams から module 冒頭で初期化済み
+        //   populateFilterChips() も module 冒頭で呼ばれているのでここでは renderList のみ
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState('fish-list_items');
+            if (cached && Array.isArray(cached.items)) {
+                allItems = cached.items;
+                if (typeof cached.serviceRate === 'number') serviceRate = cached.serviceRate;
+                renderList();
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) {
+            console.warn('cached fish-list render failed:', e);
+        }
+
         waitForUserData(() => {
             watchOrderBadge();
             watchCartBadge();
@@ -1090,7 +1128,7 @@
                 subscribeTodos(window.currentUser.uid, 'restaurant');
                 subscribeNotifications(window.currentUser.uid);
             }
-            waitForGoogleMaps(() => loadFishListings());
+            waitForGoogleMaps(() => loadFishListings({ silent: cachedRendered }));
         });
     </script>
 

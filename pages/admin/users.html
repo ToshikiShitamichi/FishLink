@@ -346,7 +346,7 @@
                     selectUser(targetUid);
                 }
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         }
 
@@ -596,7 +596,7 @@
                 console.error(err);
                 alert(err.message || 'Failed');
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         }
 

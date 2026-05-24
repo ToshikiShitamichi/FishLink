@@ -107,12 +107,53 @@
         .home-card__price-unit { font-size: 11px; font-weight: 500; color: var(--color-text-sub); margin-left: 2px; }
         .home-card__stock { font-size: 11px; color: #047857; }
         .home-card__stock--out { color: #b91c1c; }
-        .home-card__farmer {
+        /* 5/23 #79: 距離は農家ブロックの上の独立行に分離 */
+        .home-card__place {
             font-size: 11px; color: var(--color-text-sub);
-            display: flex; align-items: center; gap: 3px; margin-top: 4px;
+            display: flex; align-items: center; gap: 3px;
+            margin-top: 2px;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .home-card__farmer .material-symbols-outlined { font-size: 12px; color: #f59e0b; font-variation-settings: 'FILL' 1; }
+        .home-card__place .material-symbols-outlined { font-size: 13px; }
+
+        /* 5/23 #79: 農家ブロック（fish-list.html の .fish-grid-card__farmer と同型・narrow 用に縮小） */
+        .home-card__farmer-block {
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 8px;
+            margin-top: 4px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            min-width: 0;
+            cursor: pointer;
+            transition: background .12s;
+            text-decoration: none; color: inherit;
+        }
+        .home-card__farmer-block:hover { background: #f1f5f9; }
+        .home-card__farmer-avatar {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .home-card__farmer-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .home-card__farmer-avatar .material-symbols-outlined { font-size: 14px; color: #94a3b8; }
+        .home-card__farmer-info { flex: 1; min-width: 0; }
+        .home-card__farmer-name {
+            font-size: 11px; font-weight: 600;
+            color: var(--color-text);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .home-card__farmer-rating {
+            display: flex; align-items: center; gap: 2px;
+            font-size: 10px; color: var(--color-text-sub);
+            white-space: nowrap;
+        }
+        .home-card__farmer-rating .material-symbols-outlined {
+            font-size: 11px; color: #f59e0b; font-variation-settings: 'FILL' 1;
+        }
 
         .shelf__empty {
             padding: 14px; margin: 0 16px;
@@ -294,6 +335,12 @@
         import { subscribeCart } from '/js/cart.js';
         // 5/12 #69 追補：同一タブ内で users/{uid} を再利用してリクエスト数を削減
         import { getCachedUser, getCachedDoc } from '/js/data-cache.js';
+        // 5/23 #79: 農家ブロックのアバター解決
+        import { getReviewerAvatarUrl } from '/js/profile-utils.js';
+        // 5/23 #69 改善: メモリ画像キャッシュ（フラッシュ解消）
+        import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/23 #69 Phase J: 画面描画状態の sessionStorage キャッシュ（stale-while-revalidate）
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -346,7 +393,10 @@
         }
 
         // 共通カード描画
-        function renderCard(listing, farmer, distanceKm, serviceRate) {
+        // 5/23 #79: 農家表示部分を fish-list.html と同型のブロック（アバター丸 + 名前 + ⭐%（件）） に変更。
+        // カード全体は横スクロール棚向けの 168px 縦長レイアウトを維持。
+        // 5/23 Phase I: isPriority=true なら fetchpriority="high" + loading="eager" で LCP 候補をブースト
+        function renderCard(listing, farmer, distanceKm, serviceRate, isPriority = false) {
             const fishType = listing.fishType || '';
             const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
             const unitPrice = Math.round(((listing.price || 0) + (listing.gutPrice || 0)) * (1 + serviceRate));
@@ -354,13 +404,17 @@
             const stock = Number(listing.stock || 0);
             const farmerName = farmer?.displayName || '';
             const rating = Number(farmer?.avgRating || 0);
+            const reviewCount = Number(farmer?.reviewCount || 0);
+            const farmerAvatarUrl = farmer ? getReviewerAvatarUrl(farmer) : null;
             const distText = Number.isFinite(distanceKm) ? `${distanceKm.toFixed(1)} km` : '';
+            const imgAttrs = asCachedImgAttrs(photo, isPriority ? { priority: 'high' } : {});
+            const loadAttr = isPriority ? '' : 'loading="lazy"';
 
             return `
                 <a class="home-card" href="/pages/restaurant/order.html?id=${listing.id}">
                     <div class="home-card__img">
                         ${photo
-                            ? `<img src="${photo}" alt="${escapeHtml(fishName)}" loading="lazy">`
+                            ? `<img ${imgAttrs} alt="${escapeHtml(fishName)}" ${loadAttr}>`
                             : `<span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span>`
                         }
                     </div>
@@ -371,11 +425,28 @@
                         <div class="home-card__stock ${stock <= 0 ? 'home-card__stock--out' : ''}">
                             ${stock > 0 ? i18next.t('restaurant.stock', { kg: stock }) : i18next.t('order.stockUnavailable')}
                         </div>
-                        <div class="home-card__farmer">
-                            ${escapeHtml(farmerName)}
-                            ${rating > 0 ? `<span class="material-symbols-outlined">star</span>${rating.toFixed(1)}` : ''}
-                            ${distText ? ` · ${distText}` : ''}
-                        </div>
+                        ${distText ? `
+                            <div class="home-card__place">
+                                <span class="material-symbols-outlined">location_on</span>
+                                <span>${escapeHtml(distText)}</span>
+                            </div>
+                        ` : ''}
+                        ${farmerName ? `
+                            <div class="home-card__farmer-block" data-act="view-farmer" data-farmer-id="${listing.farmerId}" role="button" tabindex="0">
+                                <div class="home-card__farmer-avatar">
+                                    ${farmerAvatarUrl
+                                        ? `<img ${asCachedImgAttrs(farmerAvatarUrl)} alt="" loading="lazy">`
+                                        : `<span class="material-symbols-outlined">person</span>`}
+                                </div>
+                                <div class="home-card__farmer-info">
+                                    <div class="home-card__farmer-name">${escapeHtml(farmerName)}</div>
+                                    <div class="home-card__farmer-rating">
+                                        <span class="material-symbols-outlined">star</span>
+                                        ${Math.round(rating)}%（${reviewCount}）
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                 </a>
             `;
@@ -387,10 +458,13 @@
                 row.innerHTML = `<div class="shelf__empty" style="margin:0; flex:1;">${emptyMsg}</div>`;
                 return;
             }
-            row.innerHTML = listings.map(l => {
+            // 5/23 Phase I: 最上段棚（shelf-newest）の最初の 1 枚のみ LCP 候補として優先ロード
+            const isPriorityShelf = (elId === 'shelf-newest');
+            row.innerHTML = listings.map((l, idx) => {
                 const farmer = farmerMap.get(l.farmerId) || null;
                 const dist = farmer?.location ? haversine(myLoc, farmer.location) : Infinity;
-                return renderCard(l, farmer, dist, serviceRate);
+                const isPriority = isPriorityShelf && idx === 0;
+                return renderCard(l, farmer, dist, serviceRate, isPriority);
             }).join('');
         }
 
@@ -402,9 +476,11 @@
         }
 
         // データ取得
-        async function loadShelves() {
+        // 5/23 #69 Phase J: skipSkeleton=true で skeleton 描画をスキップ。
+        //   render-cache から既に内容が描画されている場合に呼ぶことで、フラッシュを防ぐ。
+        async function loadShelves({ skipSkeleton = false } = {}) {
             const shelfIds = ['shelf-nearest', 'shelf-rated', 'shelf-newest', 'shelf-cheapest', 'shelf-history'];
-            setSkeletons(shelfIds);
+            if (!skipSkeleton) setSkeletons(shelfIds);
 
             const uid = window.currentUser?.uid;
             const myLoc = window.currentUserData?.location || null;
@@ -515,6 +591,20 @@
             renderShelf('shelf-newest', newest, farmerMap, myLoc, serviceRate, emptyMsg);
             renderShelf('shelf-cheapest', cheapest, farmerMap, myLoc, serviceRate, emptyMsg);
             renderShelf('shelf-history', history, farmerMap, myLoc, serviceRate, i18next.t('restaurant.shelfHistoryEmpty'));
+
+            // 5/23 #69 Phase J: render-cache に保存。次回訪問時に即時表示できるように。
+            //   - listings は Firestore docs から `{ id, ...data() }` の形に変換済（JSON 化可能）
+            //   - farmerMap は Map なので Object.fromEntries で plain object に変換
+            //   - serviceRate も保存（価格表示に使う）
+            //   - 5/23 改2：myLoc も保存することで、次回 cached render が currentUserData 待ち不要に
+            try {
+                saveRenderState('dashboard_shelves', {
+                    nearest, topRated, newest, cheapest, history,
+                    farmers: Object.fromEntries(farmerMap),
+                    serviceRate,
+                    myLoc,
+                });
+            } catch (e) { /* 保存失敗は無視 */ }
         }
 
         // 検索 → fish-list.html に q を渡す
@@ -522,6 +612,17 @@
             // デフォルト動作（GET 遷移）を使う。q が空のときは無視。
             const q = document.getElementById('search-input').value.trim();
             if (!q) { e.preventDefault(); }
+        });
+
+        // 5/23 #79: 農家ブロック（data-act="view-farmer"）タップで生産者ページへ。
+        // 外側の <a class="home-card"> による order.html 遷移を防ぐため preventDefault + stopPropagation。
+        document.addEventListener('click', (e) => {
+            const farmerEl = e.target.closest('[data-act="view-farmer"]');
+            if (!farmerEl) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const farmerId = farmerEl.dataset.farmerId;
+            if (farmerId) location.href = `/pages/restaurant/farmer.html?id=${farmerId}`;
         });
 
         // 通知バッジ・カートバッジ・注文バッジ（既存 dashboard 同様）
@@ -541,19 +642,48 @@
             });
         }
 
+        // 5/23 #69 Phase J 改2: 描画キャッシュ確認 → HIT すれば waitForUserData を待たずに即時表示
+        //   - initI18n は既に完了済み（モジュール冒頭で await 済）
+        //   - myLoc も cache に保存されているため currentUserData を待たなくて良い
+        //   - これにより spinner 表示時間が ~1500ms → ~200-300ms（initI18n のみ）に短縮
+        let cachedRendered = false;
+        try {
+            const cachedShelves = loadRenderState('dashboard_shelves');
+            if (cachedShelves) {
+                renderCategories();
+                const fmap = new Map(Object.entries(cachedShelves.farmers || {}));
+                const sRate = cachedShelves.serviceRate ?? 0.05;
+                const myLoc = cachedShelves.myLoc || null;
+                const emptyMsg = i18next.t('restaurant.noResults');
+                renderShelf('shelf-nearest', cachedShelves.nearest || [], fmap, myLoc, sRate, emptyMsg);
+                renderShelf('shelf-rated', cachedShelves.topRated || [], fmap, myLoc, sRate, emptyMsg);
+                renderShelf('shelf-newest', cachedShelves.newest || [], fmap, myLoc, sRate, emptyMsg);
+                renderShelf('shelf-cheapest', cachedShelves.cheapest || [], fmap, myLoc, sRate, emptyMsg);
+                renderShelf('shelf-history', cachedShelves.history || [], fmap, myLoc, sRate, i18next.t('restaurant.shelfHistoryEmpty'));
+                // スピナー解除（fresh fetch は裏で続行）
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) {
+            console.warn('cached shelves render failed:', e);
+        }
+
         waitForUserData(async () => {
-            renderCategories();
+            if (!cachedRendered) renderCategories();
+
             if (window.currentUser?.uid) {
                 subscribeTodos(window.currentUser.uid, 'restaurant');
                 subscribeNotifications(window.currentUser.uid);
             }
             watchBadges();
             try {
-                await loadShelves();
+                // cached があれば skeleton スキップ（フラッシュ防止）
+                await loadShelves({ skipSkeleton: cachedRendered });
             } catch (e) {
                 console.error('loadShelves failed:', e);
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
     </script>

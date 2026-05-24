@@ -524,6 +524,8 @@
             collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { getOrderNumber } from '/js/order-utils.js';
+        // 5/23 #69 Phase B: メモリ画像キャッシュ
+        import { asCachedImgAttrs } from '/js/image-cache.js';
 
         const loading = document.getElementById('loading');
 
@@ -667,7 +669,7 @@
             } catch (err) {
                 console.error(err);
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
                 ordersLoadingMore = false;
             }
         }
@@ -724,7 +726,7 @@
                 ? `<span style="position:absolute; top:8px; right:8px; background:rgba(220,38,38,0.92); color:#fff; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; box-shadow:0 1px 4px rgba(0,0,0,0.2);">${i18next.t('orders.totalItems', { count: itemCountForBadge })}</span>`
                 : '';
             const imgInner = photoUrl
-                ? `<img src="${photoUrl}" alt="${fishName}">`
+                ? `<img ${asCachedImgAttrs(photoUrl)} alt="${fishName}">`
                 : `<span class="order-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">set_meal</span></span>`;
             const imgHtml = `<div style="position:relative;">${imgInner}${photoCountBadge}</div>`;
 
@@ -791,7 +793,7 @@
             const isPendingAction = order.status === 'pending' && !isExpiredPending;
             const expandedClass = isPendingAction ? ' expanded' : '';
             const rowThumb = photoUrl
-                ? `<img src="${photoUrl}" alt="" loading="lazy">`
+                ? `<img ${asCachedImgAttrs(photoUrl)} alt="" loading="lazy">`
                 : `<span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span>`;
 
             // 配送先（レストラン名 + 場所）
@@ -1246,7 +1248,7 @@
                     } catch (err) {
                         console.error(err);
                         btn.disabled = false;
-                        loading.classList.remove('show');
+                        loading.classList.remove('show'); document.body.classList.add('app-ready');
                     }
                 });
             });
@@ -1275,7 +1277,7 @@
                         console.error(err);
                     } finally {
                         btn.disabled = false;
-                        loading.classList.remove('show');
+                        loading.classList.remove('show'); document.body.classList.add('app-ready');
                     }
                 });
             });

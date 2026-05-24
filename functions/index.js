@@ -4,6 +4,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { initializeApp } = require("firebase-admin/app");
 const { getMessaging } = require("firebase-admin/messaging");
 const { getFirestore } = require("firebase-admin/firestore");
+const { getStorage } = require("firebase-admin/storage");  // 5/23 #81: ボイスメッセージの自動削除用
 const { getAuth } = require("firebase-admin/auth");
 
 initializeApp();
@@ -282,6 +283,17 @@ const MESSAGES = {
     ja: { title: "{{name}} からの問い合わせ", body: "{{text}}" },
     en: { title: "Inquiry from {{name}}", body: "{{text}}" },
     km: { title: "សំណើពី {{name}}", body: "{{text}}" },
+  },
+  // 5/23 #80: 商品ページ Q&A 通知
+  commentQuestion: {
+    ja: { title: "{{fish}} に新しい質問", body: "{{sender}}: {{text}}" },
+    en: { title: "New question on {{fish}}", body: "{{sender}}: {{text}}" },
+    km: { title: "សំណួរថ្មីលើ {{fish}}", body: "{{sender}}: {{text}}" },
+  },
+  commentReply: {
+    ja: { title: "{{farmer}} から返信", body: "{{text}}" },
+    en: { title: "Reply from {{farmer}}", body: "{{text}}" },
+    km: { title: "ចម្លើយពី {{farmer}}", body: "{{text}}" },
   },
 };
 
@@ -650,6 +662,13 @@ const CHAT_MESSAGES = {
   km: { title: "សារពី {{sender}}", body: "{{text}}" },
 };
 
+// 5/23 #81: ボイスメッセージ用テンプレート（本文は秒数を埋め込み）
+const CHAT_VOICE_MESSAGES = {
+  ja: { title: "{{sender}} からメッセージ", body: "ボイスメッセージ ({{sec}}秒)" },
+  en: { title: "Message from {{sender}}", body: "Voice message ({{sec}}s)" },
+  km: { title: "សារពី {{sender}}", body: "សារសំឡេង ({{sec}} វិនាទី)" },
+};
+
 exports.onMessageCreated = onDocumentCreated(
   {
     document: "orders/{orderId}/messages/{messageId}",
@@ -685,10 +704,17 @@ exports.onMessageCreated = onDocumentCreated(
     const senderName = senderSnap.data()?.displayName || "";
     const lang = toData.lang || "en";
 
-    const tmpl = CHAT_MESSAGES[lang] || CHAT_MESSAGES.en;
+    // 5/23 #81: ボイスメッセージは別テンプレ（本文は秒数）。クライアント側で voice.notifBody での再翻訳も可能。
+    const isVoice = msg.type === 'voice';
+    const tmpl = isVoice
+      ? (CHAT_VOICE_MESSAGES[lang] || CHAT_VOICE_MESSAGES.en)
+      : (CHAT_MESSAGES[lang] || CHAT_MESSAGES.en);
     const truncText = (msg.text || "").substring(0, 50);
+    const sec = String(Math.max(0, Math.floor(msg.voiceDurationSec || 0)));
     const title = tmpl.title.replace("{{sender}}", senderName);
-    const body = tmpl.body.replace("{{sender}}", senderName).replace("{{text}}", truncText);
+    const body = isVoice
+      ? tmpl.body.replace("{{sec}}", sec)
+      : tmpl.body.replace("{{sender}}", senderName).replace("{{text}}", truncText);
 
     const isFarmer = toUid === order.farmerId;
     const chatUrl = isFarmer
@@ -696,10 +722,10 @@ exports.onMessageCreated = onDocumentCreated(
       : `/pages/restaurant/delivery.html?id=${orderId}`;
 
     await notifyUser(toUid, {
-      type: "chat_message",
+      type: isVoice ? "chat_voice_message" : "chat_message",
       title, body,
-      msgKey: "chatMessage",
-      vars: { sender: senderName, text: truncText },
+      msgKey: isVoice ? "voiceNotif" : "chatMessage",
+      vars: isVoice ? { sender: senderName, sec } : { sender: senderName, text: truncText },
       url: chatUrl,
       orderId,
     });
@@ -1895,5 +1921,179 @@ exports.onAdminChatMessage = onDocumentCreated(
     } else {
       console.log("onAdminChatMessage: senderRole not handled", { senderRole, uid });
     }
+  }
+);
+
+// ── 5/23 #80: 商品ページ Q&A 通知 ─────────────────────────────────
+// fishListings/{listingId}/comments/{commentId} の作成・更新で FCM 通知。
+//   - 質問新規投稿 → listing の farmer に通知
+//   - 返信新規追加（replyText が null/空 → 非空に変化）→ 質問者に通知
+// 通知 URL は /pages/restaurant/comments.html?id={listingId} に統一（農家・レストラン共用ページ）。
+exports.onCommentCreated = onDocumentCreated(
+  {
+    document: "fishListings/{listingId}/comments/{commentId}",
+    region: "asia-southeast1",
+    database: "(default)",
+  },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+    const { listingId } = event.params;
+    // 削除済みフラグ付きで作成された場合はスキップ
+    if (data.isDeleted) return;
+
+    const listingSnap = await db.doc(`fishListings/${listingId}`).get();
+    if (!listingSnap.exists) return;
+    const listing = listingSnap.data();
+    const farmerId = listing.farmerId;
+    if (!farmerId) return;
+
+    // 自分（farmer）が自分の商品にコメントした場合は通知しない
+    if (data.senderId === farmerId) return;
+
+    const [farmerSnap, senderSnap] = await Promise.all([
+      db.doc(`users/${farmerId}`).get(),
+      db.doc(`users/${data.senderId}`).get(),
+    ]);
+    const farmerData = farmerSnap.data() || {};
+    const lang = farmerData.lang || "en";
+    const senderName = senderSnap.data()?.displayName || "";
+
+    // 魚種名は farmer の言語に依らずキー文字列のまま送る（クライアント側で msgKey/vars 再翻訳可能）
+    const fishKey = listing.fishType || "";
+    const truncText = (data.text || "").substring(0, 80);
+    const vars = { sender: senderName, fish: fishKey, text: truncText };
+    const { title, body } = getMessage("commentQuestion", lang, vars);
+
+    await notifyUser(farmerId, {
+      type: "comment_question",
+      title, body,
+      msgKey: "commentQuestion",
+      vars,
+      url: `/pages/restaurant/comments.html?id=${listingId}`,
+    });
+
+    console.log("Comment question notification sent to farmer:", farmerId, listingId);
+  }
+);
+
+exports.onCommentUpdated = onDocumentUpdated(
+  {
+    document: "fishListings/{listingId}/comments/{commentId}",
+    region: "asia-southeast1",
+    database: "(default)",
+  },
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    // replyText が新規に追加された場合のみ通知。取消・編集や isDeleted 切替では通知しない。
+    const hadReply = !!(before.replyText && String(before.replyText).trim());
+    const hasReply = !!(after.replyText && String(after.replyText).trim());
+    if (hadReply || !hasReply) return;
+
+    const { listingId } = event.params;
+    const askerUid = after.senderId;
+    if (!askerUid) return;
+    // 返信者が質問者本人なら通知しない
+    if (after.replyByUid && after.replyByUid === askerUid) return;
+
+    const [askerSnap, listingSnap] = await Promise.all([
+      db.doc(`users/${askerUid}`).get(),
+      db.doc(`fishListings/${listingId}`).get(),
+    ]);
+    const askerData = askerSnap.data() || {};
+    const lang = askerData.lang || "en";
+    const farmerId = listingSnap.data()?.farmerId;
+    const farmerSnap = farmerId ? await db.doc(`users/${farmerId}`).get() : null;
+    const farmerName = farmerSnap?.data()?.displayName || "";
+
+    const truncText = String(after.replyText || "").substring(0, 80);
+    const vars = { farmer: farmerName, text: truncText };
+    const { title, body } = getMessage("commentReply", lang, vars);
+
+    await notifyUser(askerUid, {
+      type: "comment_reply",
+      title, body,
+      msgKey: "commentReply",
+      vars,
+      url: `/pages/restaurant/comments.html?id=${listingId}`,
+    });
+
+    console.log("Comment reply notification sent to asker:", askerUid, listingId);
+  }
+);
+
+// ── 5/23 #81: ボイスメッセージの 30日自動削除 ─────────────────────
+// orders/*/messages/* で type='voice' かつ createdAt が 30日以上前のものを対象に：
+//   1) Storage の voice/{orderId}/{msgId}.{ext} を削除
+//   2) Firestore の voiceUrl/voiceStoragePath を null + voiceExpired=true
+// 要件：collectionGroup('messages') の (type ASC, createdAt ASC) 複合インデックス。
+//   初回実行時にインデックス未作成だと Firestore がエラーリンクを返すので、それで作成可能。
+exports.deleteExpiredVoiceMessages = onSchedule(
+  {
+    schedule: "every 24 hours",
+    region: "asia-southeast1",
+    timeZone: "Asia/Phnom_Penh",
+  },
+  async () => {
+    const admin = require("firebase-admin/firestore");
+    const cutoffMs = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const cutoff = admin.Timestamp.fromMillis(cutoffMs);
+
+    let snap;
+    try {
+      snap = await db.collectionGroup('messages')
+        .where('type', '==', 'voice')
+        .where('createdAt', '<', cutoff)
+        .limit(500)
+        .get();
+    } catch (e) {
+      console.error('deleteExpiredVoiceMessages query failed (collectionGroup index required?):', e.message);
+      return;
+    }
+    if (snap.empty) {
+      console.log('deleteExpiredVoiceMessages: nothing to delete');
+      return;
+    }
+
+    const bucket = getStorage().bucket();
+    let deleted = 0;
+    let cleared = 0;
+    let skipped = 0;
+
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+      // 既に voiceExpired 済みなら Storage 削除はスキップ（doc は前回処理済みのはず）
+      if (data.voiceExpired === true) { skipped++; continue; }
+
+      if (data.voiceStoragePath) {
+        try {
+          await bucket.file(data.voiceStoragePath).delete();
+          deleted++;
+        } catch (e) {
+          // 既に削除済み（404）は無視
+          if (e?.code !== 404) {
+            console.warn('voice storage delete failed:', data.voiceStoragePath, e.message);
+          }
+        }
+      }
+
+      try {
+        await docSnap.ref.update({
+          voiceUrl: null,
+          voiceStoragePath: null,
+          voiceExpired: true,
+        });
+        cleared++;
+      } catch (e) {
+        console.warn('voice msg update failed:', docSnap.ref.path, e.message);
+      }
+    }
+
+    console.log('deleteExpiredVoiceMessages done:', {
+      scanned: snap.size, storageDeleted: deleted, docsCleared: cleared, alreadyExpired: skipped,
+    });
   }
 );

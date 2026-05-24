@@ -89,6 +89,8 @@
         import { ref } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { uploadImageResized } from '/js/image-resize.js';
         import { invalidate as invalidateDataCache } from '/js/data-cache.js';
+        // 5/23 #69 Phase B: メモリ画像キャッシュ
+        import { asCachedImgAttrs } from '/js/image-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -118,7 +120,7 @@
                 grid.innerHTML = `<div class="photos-grid__cell"><span class="material-symbols-outlined" style="font-size:36px;">storefront</span></div>`;
                 return;
             }
-            grid.innerHTML = urls.map(u => `<div class="photos-grid__cell"><img src="${u}" alt="restaurant" loading="lazy"></div>`).join('');
+            grid.innerHTML = urls.map(u => `<div class="photos-grid__cell"><img ${asCachedImgAttrs(u)} alt="restaurant" loading="lazy"></div>`).join('');
         }
 
         function renderEditGrid() {
@@ -126,7 +128,7 @@
             const cells = editState.photos.map((p, i) => {
                 const src = p.url || p.previewDataUrl || '';
                 return `<div class="photos-grid__cell" data-idx="${i}">
-                    ${src ? `<img src="${src}" alt="">` : ''}
+                    ${src ? `<img ${asCachedImgAttrs(src)} alt="">` : ''}
                     <button type="button" class="photos-grid__remove" data-act="remove" data-idx="${i}" aria-label="remove">
                         <span class="material-symbols-outlined">close</span>
                     </button>
@@ -212,14 +214,14 @@
                 alert(i18next.t('account.saveFailed'));
             } finally {
                 btn.disabled = false;
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
 
         waitForUserData(() => {
             userData = { ...window.currentUserData };
             renderView();
-            loading.classList.remove('show');
+            loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
     </script>
 </body>

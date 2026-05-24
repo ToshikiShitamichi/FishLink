@@ -150,6 +150,80 @@
             background: var(--color-surface);
         }
 
+        /* 5/23 #80: 注文画面 質問プレビュー枠（食べチョク参考） */
+        .qa-preview {
+            margin-top: 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            background: #f8fafc;
+            padding: 12px;
+        }
+        .qa-preview__title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .qa-preview__title .material-symbols-outlined { font-size: 16px; color: #0d6e4c; }
+        .qa-preview__item {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 10px;
+        }
+        .qa-preview__head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+        .qa-preview__avatar {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .qa-preview__avatar > img { width: 100%; height: 100%; object-fit: cover; }
+        .qa-preview__avatar > .material-symbols-outlined { font-size: 16px; color: #94a3b8; }
+        .qa-preview__name { font-size: 12px; font-weight: 700; color: var(--color-text); flex: 1; min-width: 0; }
+        .qa-preview__badge {
+            font-size: 10px; font-weight: 700;
+            padding: 1px 6px; border-radius: 999px;
+            background: #eff6ff; color: #1e40af;
+            white-space: nowrap;
+        }
+        .qa-preview__badge--reply { background: #ecfdf5; color: #065f46; }
+        .qa-preview__badge--noreply { background: #fef3c7; color: #92400e; }
+        .qa-preview__text {
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--color-text);
+            padding-left: 30px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            /* 2行で省略 */
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .qa-preview__reply { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--color-border); }
+        .qa-preview__noreply-row { padding-left: 30px; margin-top: 6px; }
+        .qa-preview__empty {
+            text-align: center; padding: 10px;
+            color: var(--color-text-sub); font-size: 12px;
+        }
+        .qa-preview__more {
+            display: block;
+            margin-top: 8px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #0d6e4c;
+            text-decoration: none;
+            padding: 6px;
+        }
+
         .fish-detail__badges {
             display: flex;
             gap: 8px;
@@ -635,10 +709,18 @@
         import { db } from '/js/firebase-config.js';
         import { addToCart, subscribeCart } from '/js/cart.js';
         import {
-            doc, getDoc, collection, query, where, getDocs
+            doc, getDoc, collection, query, where, orderBy, limit, getDocs
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
         import { formatProvince, formatDistrict } from '/js/province-utils.js';
+        // 5/23 #80: 質問プレビューのアバター画像
+        import { getReviewerAvatarUrl } from '/js/profile-utils.js';
+        // 5/23 #69 改善: メモリ画像キャッシュ（フラッシュ解消）
+        import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
+        import { getCachedUser, getCachedListing } from '/js/data-cache.js';
+        // 5/23 #69 Phase J: 画面描画状態の永続キャッシュ
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -697,6 +779,26 @@
             else { setTimeout(() => waitForUserData(callback), 300); }
         }
 
+        // 5/23 #69 Phase J: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
+        //   listingId 単位でキャッシュ。次回同じ商品ページを開いたとき即時表示される。
+        //   loadQuestionPreview / loadMoreFromFarmer は auth 完了後（waitForUserData 内）で実行。
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState(`order:${listingId}`);
+            if (cached?.listingData && cached?.farmerData) {
+                listingData = cached.listingData;
+                farmerData = cached.farmerData;
+                distanceKm = cached.distanceKm ?? 0;
+                serviceRate = cached.serviceRate ?? 0.05;
+                renderFishDetail();
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) {
+            console.warn('cached order render failed:', e);
+        }
+
         // 5/5: カート状態の購読 — フッターのボタン状態と「他の魚」セクションの追加済み表示を維持
         let cartItemsCount = 0;
         let cartListingIds = new Set();
@@ -731,16 +833,14 @@
         }
 
         waitForUserData(async () => {
-            loading.classList.add('show');
+            // 5/23 #69 Phase J: cached 描画済なら spinner を出さず裏で更新
+            if (!cachedRendered) loading.classList.add('show');
             try {
-                // 魚データ取得
-                const listingSnap = await getDoc(doc(db, 'fishListings', listingId));
-                if (!listingSnap.exists()) { location.href = '/pages/restaurant/fish-list.html'; return; }
-                listingData = listingSnap.data();
+                // 5/23 #69 Phase B: data-cache 経由（同一タブ内の重複取得を抑止）
+                listingData = await getCachedListing(listingId);
+                if (!listingData) { location.href = '/pages/restaurant/fish-list.html'; return; }
 
-                // 農家データ取得
-                const farmerSnap = await getDoc(doc(db, 'users', listingData.farmerId));
-                farmerData = farmerSnap.exists() ? farmerSnap.data() : {};
+                farmerData = (await getCachedUser(listingData.farmerId)) || {};
 
                 // 距離計算（キャッシュ優先、なければ Distance Matrix 呼出）
                 const myLoc = window.currentUserData?.location;
@@ -768,14 +868,22 @@
                 } catch (e) { /* settings未作成時は無視 */ }
 
                 renderFishDetail();
+                // 5/23 #80: 質問プレビュー（最新の質問+返信ペア1件）を非同期描画
+                loadQuestionPreview();
                 // 同一農家の他商品（配送料節約のヒント）
                 loadMoreFromFarmer();
                 // 5/5 #3: カート状態の購読
                 startCartWatch();
+                // 5/23 #69 Phase J: 次回訪問用に cache 保存
+                try {
+                    saveRenderState(`order:${listingId}`, {
+                        listingData, farmerData, distanceKm, serviceRate,
+                    });
+                } catch (e) { /* ignore */ }
             } catch (err) {
                 console.error(err);
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
 
@@ -804,7 +912,7 @@
                     const shortName = String(fName).trim();
                     const unit = Math.round(((x.price || 0) + (x.gutPrice || 0)) * (1 + serviceRate));
                     const img = x.photoUrl
-                        ? `<img src="${x.photoUrl}" alt="" loading="lazy" style="width:100%; height:80px; object-fit:cover; border-radius:8px;">`
+                        ? `<img ${asCachedImgAttrs(x.photoUrl)} alt="" loading="lazy" style="width:100%; height:80px; object-fit:cover; border-radius:8px;">`
                         : `<div style="width:100%; height:80px; background:#f1f5f9; border-radius:8px; display:flex; align-items:center; justify-content:center;"><span class="material-symbols-outlined" style="font-size:32px; color:#94a3b8;">set_meal</span></div>`;
                     return `
                         <a href="/pages/restaurant/order.html?id=${d.id}" style="flex-shrink:0; width:120px; text-decoration:none; color:inherit; display:block;">
@@ -817,6 +925,79 @@
                 wrap.style.display = 'block';
             } catch (e) {
                 console.warn('loadMoreFromFarmer failed:', e.message);
+            }
+        }
+
+        // ── 5/23 #80: 質問・返信プレビュー（最新の非削除質問1件 + その返信） ──
+        async function loadQuestionPreview() {
+            const body = document.getElementById('qa-preview-body');
+            if (!body) return;
+            try {
+                // 最新の数件を取得して、削除済みをクライアント側で除外
+                const q = query(
+                    collection(db, 'fishListings', listingId, 'comments'),
+                    orderBy('createdAt', 'desc'),
+                    limit(5)
+                );
+                const snap = await getDocs(q);
+                const docs = snap.docs.filter(d => d.data().isDeleted !== true);
+                if (docs.length === 0) {
+                    // 既に「まだ質問はありません」が表示されているのでそのまま
+                    return;
+                }
+                const c = docs[0].data();
+                // 質問者のアバター・名前を取得（5/23 #69 Phase B: data-cache 経由）
+                const sender = (await getCachedUser(c.senderId)) || {};
+                const senderAvatarUrl = getReviewerAvatarUrl(sender);
+                const senderName = sender.displayName || '';
+                const senderAvatar = senderAvatarUrl
+                    ? `<img ${asCachedImgAttrs(senderAvatarUrl)} alt="" loading="lazy">`
+                    : `<span class="material-symbols-outlined">person</span>`;
+
+                // 返信部分（あれば）
+                let replyHtml = '';
+                if (c.replyText) {
+                    // replyByUid のユーザー。なければ listing の farmer をフォールバック
+                    let replyUser = farmerData;
+                    if (c.replyByUid && c.replyByUid !== listingData.farmerId) {
+                        try {
+                            const r = await getCachedUser(c.replyByUid);
+                            if (r) replyUser = r;
+                        } catch (e) { /* fall through */ }
+                    }
+                    const replyAvatarUrl = getReviewerAvatarUrl(replyUser);
+                    const replyName = replyUser.displayName || '';
+                    const replyAvatar = replyAvatarUrl
+                        ? `<img ${asCachedImgAttrs(replyAvatarUrl)} alt="" loading="lazy">`
+                        : `<span class="material-symbols-outlined">person</span>`;
+                    replyHtml = `
+                        <div class="qa-preview__reply">
+                            <div class="qa-preview__head">
+                                <div class="qa-preview__avatar">${replyAvatar}</div>
+                                <div class="qa-preview__name">${escapeHtml(replyName)}</div>
+                                <span class="qa-preview__badge qa-preview__badge--reply">${escapeHtml(i18next.t('comments.replyLabel'))}</span>
+                            </div>
+                            <div class="qa-preview__text">${escapeHtml(c.replyText)}</div>
+                        </div>
+                    `;
+                } else {
+                    replyHtml = `<div class="qa-preview__noreply-row"><span class="qa-preview__badge qa-preview__badge--noreply">${escapeHtml(i18next.t('comments.noReply'))}</span></div>`;
+                }
+
+                body.innerHTML = `
+                    <div class="qa-preview__item">
+                        <div class="qa-preview__head">
+                            <div class="qa-preview__avatar">${senderAvatar}</div>
+                            <div class="qa-preview__name">${escapeHtml(senderName)}</div>
+                            <span class="qa-preview__badge">${escapeHtml(i18next.t('comments.questionLabel'))}</span>
+                        </div>
+                        <div class="qa-preview__text">${escapeHtml(c.text || '')}</div>
+                        ${replyHtml}
+                    </div>
+                `;
+            } catch (e) {
+                console.warn('loadQuestionPreview failed:', e.message);
+                // フォールバック：empty メッセージはそのまま
             }
         }
 
@@ -855,9 +1036,11 @@
             if (photos.length === 0) {
                 carouselHtml = `<div class="fish-detail__slide"><span class="fish-detail__img-placeholder"><span class="material-symbols-outlined" style="font-size:64px;">set_meal</span></span></div>`;
             } else if (photos.length === 1) {
-                carouselHtml = `<div class="fish-detail__slide"><img src="${photos[0]}" alt="${fishName}"></div>`;
+                // 5/23 Phase I: ヒーロー画像は LCP の主候補 → fetchpriority="high"
+                carouselHtml = `<div class="fish-detail__slide"><img ${asCachedImgAttrs(photos[0], { priority: 'high' })} alt="${fishName}"></div>`;
             } else {
-                const slides = photos.map(url => `<div class="fish-detail__slide"><img src="${url}" alt="${fishName}"></div>`).join('');
+                // 5/23 Phase I: カルーセル先頭を LCP 候補として優先、2 枚目以降は通常
+                const slides = photos.map((url, idx) => `<div class="fish-detail__slide"><img ${asCachedImgAttrs(url, idx === 0 ? { priority: 'high' } : {})} alt="${fishName}"></div>`).join('');
                 const dots = photos.map((_, i) => `<div class="fish-detail__dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`).join('');
                 carouselHtml = `
                     <div class="fish-detail__slides" id="photo-slides">${slides}</div>
@@ -879,9 +1062,19 @@
                         <span style="color:var(--color-text-sub);">(${reviewCount}${i18next.t('order.reviews')})</span>
                     </div>
                     ${placeText ? `<div class="fish-detail__location"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span> ${placeText} · ${dist} km</div>` : ''}
-                    <a href="/pages/restaurant/comments.html?id=${listingId}" class="fish-detail__comment-btn">${i18next.t('order.comment')}</a>
                     <div class="fish-detail__badges">
                         <span class="${stockClass}">${stockText}</span>
+                    </div>
+                    <!-- 5/23 #80: 質問・返信プレビュー枠（食べチョク参考）。中身は loadQuestionPreview で非同期描画。 -->
+                    <div class="qa-preview" id="qa-preview">
+                        <div class="qa-preview__title">
+                            <span class="material-symbols-outlined">help</span>
+                            <span>${escapeHtml(i18next.t('comments.previewTitle'))}</span>
+                        </div>
+                        <div id="qa-preview-body">
+                            <div class="qa-preview__empty">${escapeHtml(i18next.t('comments.previewEmpty'))}</div>
+                        </div>
+                        <a href="/pages/restaurant/comments.html?id=${listingId}" class="qa-preview__more">${escapeHtml(i18next.t('order.comment'))} →</a>
                     </div>
                     ${listingData.description ? `
                         <div style="margin-top:14px; padding:12px 14px; background:#f8fafc; border-radius:12px; border:1px solid var(--color-border);">

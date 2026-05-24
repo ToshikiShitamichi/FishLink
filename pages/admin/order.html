@@ -352,6 +352,8 @@
         import {
             doc, getDoc, updateDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 5/23 #69 Phase F: メモリ画像キャッシュ
+        import { asCachedImgAttrs } from '/js/image-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -410,11 +412,11 @@
                     document.getElementById('order-no-display').textContent = orderNo;
 
                     render();
-                    loading.classList.remove('show');
+                    loading.classList.remove('show'); document.body.classList.add('app-ready');
                 });
             } catch (err) {
                 console.error(err);
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
 
@@ -550,7 +552,7 @@
 
             // 送金先情報
             const qrImage = farmerData?.qrImageUrl
-                ? `<img src="${farmerData.qrImageUrl}" alt="QR">`
+                ? `<img ${asCachedImgAttrs(farmerData.qrImageUrl)} alt="QR">`
                 : `<span class="qr-preview__empty">${i18next.t('admin.order.noQr')}</span>`;
             const qrLink = farmerData?.qrLink
                 ? `<a href="${farmerData.qrLink}" target="_blank" rel="noopener" class="external-link">${farmerData.qrLink}</a>`

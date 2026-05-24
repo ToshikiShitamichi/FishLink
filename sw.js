@@ -56,7 +56,67 @@ self.addEventListener('notificationclick', (event) => {
 // 5/23 #75/#76: ダッシュボード棚順並び替え + 魚種カテゴリアイコン10種に差し替え → v83
 // 5/23 #77: image-resize.js のエラー診断強化（Event→Error 正規化 + phase/code 付き wrap）→ v84
 // 5/23 #78: 投稿完了/注文確定の location.href → location.replace 化（戻るボタン誤操作対策）— v84 に含む
-const CACHE_NAME = 'fishlink-v84';
+// 5/23 #80: 商品ページ Q&A（コメント→質問へリブランド + 1問1答スレッド + プレビュー + FCM通知）→ v85
+//   - i18n locales (comments.* / order.comment) 更新あり → PRECACHE 更新のため版番号バンプ
+// 5/23 #81: 取引チャット ボイスメッセージ機能（録音/プレビュー/Storage保存/FCM通知 + 30日自動削除）→ v86
+//   - js/voice-message.js を新規 PRECACHE 対象に追加。locales に voice.* キー追加。
+// 5/23 #82 Phase 1: 紹介クーポン機能（招待コード生成・表示・シェア + 注文時コード入力の記録のみ）→ v87
+//   - js/referral.js を新規 PRECACHE 対象に追加。locales に referral.* キー追加。
+// 5/23 #69 改善（Phase A）: メモリ画像キャッシュ（dashboard / fish-list / order 適用）→ v88
+//   - js/image-cache.js を新規 PRECACHE 対象に追加。
+//   - 一度フェッチした画像を blob URL で memory 保持し、画面遷移時のフラッシュを解消。
+//     SW のディスクキャッシュとは別レイヤー（同セッション内に閉じる）。
+// 5/23 #69 改善（Phase B）: image-cache + data-cache を残画面に展開 → v89
+//   - 画像キャッシュ適用：farmer.html / restaurant.html / cart.html / delivery.html / farmer dashboard / orders / comments / account profile
+//   - data-cache 拡張：fish-list / order / cart / farmer.html / restaurant.html / comments の users/fishListings 取得を getCachedUser/getCachedListing 経由に
+//   - cart.html の stock 検証は引き続き直接 getDoc（最新値が必要）
+// 5/23 #69 改善（Phase C）: JS 実行前の白画面対策 → v90
+//   - style.css の .loading-overlay デフォルトを display:none → display:flex に反転。
+//     HTML パース直後からスピナーが表示される。
+//   - body.app-ready が立った時点で .show 制御に切り替え（旧挙動互換）。
+//   - i18n.js に 10秒 failsafe を追加（ページが個別に app-ready を立てない場合の保険）。
+//   - 主要画面の loading.classList.remove('show') の直後に document.body.classList.add('app-ready') を追加。
+// 5/23 #69 改善（Phase D）: IndexedDB 永続画像キャッシュ → v91
+//   - image-cache.js に IDB 層追加：prefetch / revalidate で取得した Blob を IndexedDB に保存し、
+//     起動時に最新の N 件（200件）を memory に preload して描画前に warm-up。
+//   - タブ間・セッション間で画像キャッシュを共有。LRU eviction（上限 500 件）。
+//   - auth.js logout で IndexedDB を clearAll（プライバシー保護）。
+// 5/23 #69 改善（Phase E）: quota 監視 + CORS 見える化 → v92
+//   - navigator.storage.estimate() ベースで 80% 超過時に強制 eviction。30 件書込み毎にチェック。
+//   - QuotaExceededError 発生時にも即 forceEvictIDB（aggressive eviction）。
+//   - fetch 失敗をページに 1 回だけ console.warn（CORS 設定不足の早期発見用）。
+// 5/23 #69 改善（Phase F）: admin 配下 + post.html 仕上げ → v92 ステイ（HTML 変更のみ）
+//   - admin/reports.html / order.html に image-cache 適用
+//   - admin 計 6 ページに app-ready 付与（reports/order/users/index/settings/caa）
+//   - farmer/post.html の CAA 価格データ取得を data-cache 経由に
+// 5/23 #69 改善（Phase G）: 実機ログ受けて 2 件修正 → v93
+//   - REGRESSION 修正：index.html / register.html に app-ready を追加（10秒 failsafe 待ちを解消）
+//   - prefetch を 800ms 遅延 + SW キャッシュ優先取得で二重ネットワーク要求を回避（cold start 改善）
+// 5/23 #69 改善（Phase H）: HEAD revalidate を 60秒 → 1時間 に延長 → v94
+//   - Firebase Storage の download URL は token 含めて immutable。同一 URL の HEAD ETag 確認は不要。
+//   - 実機ログ（本番）で 20件キャッシュ × 毎分 HEAD = 約 20リクエスト/分 が削減対象だった。
+//   - Cambodia 4G の帯域・LCP 改善のための調整。
+// 5/23 #69 改善（Phase I）: LCP 改善 — fetchpriority="high" を上半分の画像に付与 → v95
+//   - asCachedImgAttrs に priority オプション追加。
+//   - dashboard.html の shelf-newest[0] / fish-list.html の items[0] / order.html のヒーロー画像に付与。
+// 5/23 #69 改善（Phase J）: ページレベル stale-while-revalidate → v96
+//   - js/render-cache.js を新規 PRECACHE 対象に追加。sessionStorage で画面描画状態を保存。
+//   - dashboard.html: 2 回目以降の訪問で cached を即時描画 → スピナーなしで表示 → 裏で fresh fetch + silent update
+//   - auth.js logout で render-cache もクリア（プライバシー保護）
+// 5/23 #69 改善（Phase J 改2）: 実機ログ受けて 2 件修正 → v97
+//   - render-cache を sessionStorage → localStorage に変更（タブ閉じても永続）＋ TTL 24時間
+//   - dashboard.html の cached render を initI18n 直後（waitForUserData の前）に移動
+//     → spinner 表示時間が ~1500ms → ~200-300ms に短縮（currentUserData 待ち不要に）
+//   - cache に myLoc も保存（render 時の距離表示用）
+// 5/23 #69 改善（Phase J 拡張）: render-cache を 4 画面に展開 → v98
+//   - fish-list.html / order.html (listing 単位) / farmer.html (farmer 単位) / restaurant.html (restaurant 単位) / farmer/dashboard.html
+//   - 各画面で fetch から render を分離 → cached / fresh 両方から同じ render 関数を呼ぶ
+//   - Timestamp は toMillis 化で JSON 化（fmtDate は Number/Timestamp 両対応）
+// 5/24 ドキュメント整理リリース → v99
+//   - CLAUDE.md の #81（ボイスメッセージ）/ #82（紹介クーポン）の完了・未完了範囲を
+//     クライアント要望ベースで再整理。ソース変更なし・PRECACHE 変更なし。
+//   - 既存セッションへの再配信を促すため版番号のみバンプ（旧 SW 強制更新）。
+const CACHE_NAME = 'fishlink-v99';
 
 const PRECACHE_URLS = [
     '/',
@@ -71,6 +131,10 @@ const PRECACHE_URLS = [
     '/js/profile-utils.js',
     '/js/data-cache.js',
     '/js/image-resize.js',
+    '/js/voice-message.js',
+    '/js/referral.js',
+    '/js/image-cache.js',
+    '/js/render-cache.js',
     '/locales/ja.json',
     '/locales/en.json',
     '/locales/km.json',

@@ -201,7 +201,7 @@
             <div class="photo-preview-area" id="photo-preview"></div>
 
             <!-- チャット入力 -->
-            <div class="chat-input">
+            <div class="chat-input" id="chat-input-wrap">
                 <button id="photo-btn" style="border:none; background:var(--color-surface); cursor:pointer; padding:6px 8px; border-radius:50%; color:var(--color-text-sub);"><span class="material-symbols-outlined">photo_camera</span></button>
                 <input type="file" id="photo-input" accept="image/*" multiple style="display:none;">
                 <input type="text" id="chat-text" data-i18n="[placeholder]delivery.chatPlaceholder">
@@ -226,6 +226,12 @@
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { uploadImageResized } from '/js/image-resize.js';
+        // 5/23 #81: ボイスメッセージ
+        import { initVoiceRecorder, renderVoiceBubble } from '/js/voice-message.js';
+        // 5/23 #69 Phase B: メモリ画像キャッシュ
+        import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
+        import { getCachedUser, getCachedListing } from '/js/data-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -256,16 +262,16 @@
             let fishName = '';
             let fishTypeKey = orderData.snapFishType;
             if (!fishTypeKey && orderData.listingId) {
-                const lSnap = await getDoc(doc(db, 'fishListings', orderData.listingId));
-                fishTypeKey = lSnap.data()?.fishType;
+                // 5/23 #69 Phase B: data-cache 経由
+                const l = await getCachedListing(orderData.listingId);
+                fishTypeKey = l?.fishType;
             }
             if (fishTypeKey) {
                 fishName = i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey;
             }
 
-            // レストラン情報
-            const restSnap = await getDoc(doc(db, 'users', orderData.restaurantId));
-            const rest = restSnap.data() || {};
+            // レストラン情報（5/23 #69 Phase B: data-cache 経由）
+            const rest = (await getCachedUser(orderData.restaurantId)) || {};
             const restName = rest.displayName || '';
             const restLoc = rest.location || null;
             const locLabel = [rest.province, rest.district].filter(Boolean).join(', ');
@@ -314,8 +320,15 @@
                     const time = msg.createdAt?.toDate();
                     const timeStr = time ? `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}` : '';
                     const isSelf = msg.senderId === myUid;
+
+                    // 5/23 #81: ボイスメッセージ
+                    if (msg.type === 'voice') {
+                        timeline.innerHTML += renderVoiceBubble(msg, isSelf, timeStr);
+                        return;
+                    }
+
                     const imgs = msg.imageUrls || (msg.imageUrl ? [msg.imageUrl] : []);
-                    const imgHtml = imgs.map(url => `<img class="tl-chat__img" src="${url}">`).join('');
+                    const imgHtml = imgs.map(url => `<img class="tl-chat__img" ${asCachedImgAttrs(url)}>`).join('');
 
                     timeline.innerHTML += `
                         <div class="tl-chat ${isSelf ? 'self' : ''}">
@@ -327,7 +340,14 @@
                 timeline.scrollTop = timeline.scrollHeight;
             });
 
-            loading.classList.remove('show');
+            // 5/23 #81: マイクボタンを chat-input に組み込む
+            initVoiceRecorder({
+                chatInputContainer: document.getElementById('chat-input-wrap'),
+                getOrderId: () => orderId,
+                getSenderUid: () => myUid,
+            });
+
+            loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
 
         // クイックステータス：テンプレをチャット入力欄へ流し込む（送信は「送信」ボタンで）

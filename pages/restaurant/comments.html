@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="km">
-
+<!--
+  5/23 #80: 1問1答 Q&A 型に改造。
+    - 既存コレクション fishListings/{id}/comments を維持（新規フィールド: senderRole / replyText / replyAt / replyByUid）
+    - レイアウト：質問カード（質問 + 返信ペア）。Tabechoku 参考。
+    - 返信は listing.farmerId のみ可（Firestore Rules の既存 update ルールで担保）
+    - FCM 通知は Cloud Functions の onCommentCreated / onCommentUpdated で送信
+-->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -38,48 +44,100 @@
             line-height: 1.5;
         }
 
-        .comment-list { display: flex; flex-direction: column; gap: 10px; }
+        .qa-list { display: flex; flex-direction: column; gap: 12px; }
 
-        .day-label { text-align: center; font-size: 11px; color: var(--color-text-sub); margin: 4px 0; }
+        .qa-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            padding: 12px 14px;
+        }
 
-        .chat-row { display: flex; align-items: flex-end; gap: 6px; }
-        .chat-row.mine { justify-content: flex-end; }
-        .chat-bubble {
-            max-width: 80%;
-            padding: 10px 12px;
-            border-radius: 16px;
+        .qa-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .qa-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .qa-avatar > img { width: 100%; height: 100%; object-fit: cover; }
+        .qa-avatar > .material-symbols-outlined { font-size: 20px; color: #94a3b8; }
+        .qa-meta { flex: 1; min-width: 0; }
+        .qa-name { font-size: 13px; font-weight: 700; color: var(--color-text); line-height: 1.3; }
+        .qa-time { font-size: 11px; color: var(--color-text-sub); }
+        .qa-badge {
+            font-size: 10px; font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1e40af;
+            white-space: nowrap;
+        }
+        .qa-badge--reply { background: #ecfdf5; color: #065f46; }
+        .qa-badge--noreply { background: #fef3c7; color: #92400e; }
+        .qa-text {
             font-size: 13px;
-            line-height: 1.5;
+            line-height: 1.55;
             word-break: break-word;
-            position: relative;
-        }
-        .chat-bubble.farmer {
-            background: #ecfdf5;
-            color: #065f46;
-            border-top-left-radius: 4px;
-        }
-        .chat-bubble.restaurant {
-            background: #f1f5f9;
+            white-space: pre-wrap;
             color: var(--color-text);
-            border-top-left-radius: 4px;
+            padding-left: 40px;
         }
-        .chat-row.mine .chat-bubble {
-            background: #0f172a;
+        .qa-delete-row { text-align: right; margin-top: 4px; padding-left: 40px; }
+        .qa-delete-btn {
+            font-size: 11px; color: #b91c1c;
+            background: transparent; border: none;
+            cursor: pointer; padding: 2px 6px;
+            font-family: inherit;
+        }
+        .qa-reply-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--color-border);
+        }
+        .qa-reply-form {
+            padding-left: 40px;
+            margin-top: 8px;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .qa-reply-form textarea {
+            width: 100%;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 13px;
+            min-height: 56px;
+            resize: vertical;
+            font-family: inherit;
+            box-sizing: border-box;
+            background: #f8fafc;
+        }
+        .qa-reply-form textarea:focus { outline: none; background: #fff; border-color: var(--color-primary); }
+        .qa-reply-send {
+            align-self: flex-end;
+            background: #0d6e4c;
             color: #fff;
-            border-top-right-radius: 4px;
-            border-top-left-radius: 16px;
+            border: none;
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
         }
-        .chat-sender { font-size: 11px; font-weight: 700; color: var(--color-text-sub); margin-bottom: 4px; }
-        .chat-time { font-size: 10px; color: var(--color-text-sub); margin: 4px 6px 0; white-space: nowrap; }
-        .chat-delete-btn {
-            font-size: 10px; color: #b91c1c; background: transparent;
-            border: none; cursor: pointer; padding: 2px 6px;
-            margin-top: 2px; font-family: inherit;
-        }
-        .chat-deleted-bubble {
-            font-size: 12px; color: #94a3b8; font-style: italic;
-            background: #f1f5f9; padding: 8px 12px; border-radius: 12px;
-            display: inline-block; max-width: 80%;
+        .qa-reply-send:disabled { opacity: .6; }
+
+        .qa-deleted-placeholder {
+            font-size: 12px;
+            color: #94a3b8;
+            font-style: italic;
+            padding: 6px 10px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            display: inline-block;
+            margin-left: 40px;
         }
 
         .footer-input {
@@ -160,7 +218,7 @@
 
         <div class="info-banner" id="info-banner" data-i18n="comments.publicNote"></div>
 
-        <div class="comment-list" id="comment-list">
+        <div class="qa-list" id="qa-list">
             <div class="empty-small" data-i18n="comments.empty"></div>
         </div>
     </div>
@@ -177,6 +235,11 @@
         import { initI18n, initLangSelector } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
+        import { getReviewerAvatarUrl } from '/js/profile-utils.js';
+        // 5/23 #69 Phase B: メモリ画像キャッシュ
+        import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
+        import { getCachedUser, getCachedListing } from '/js/data-cache.js';
         import {
             doc, getDoc, updateDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -194,6 +257,10 @@
             else setTimeout(() => waitForUserData(cb), 200);
         }
 
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
         function relative(ts) {
             const ms = ts?.toMillis?.() || 0;
             if (!ms) return i18next.t('comments.justNow');
@@ -207,36 +274,39 @@
             return i18next.t('comments.daysAgo', { n: days });
         }
 
+        function renderAvatar(user) {
+            const url = getReviewerAvatarUrl(user);
+            if (url) {
+                return `<img ${asCachedImgAttrs(url)} alt="" loading="lazy">`;
+            }
+            return `<span class="material-symbols-outlined">person</span>`;
+        }
+
         waitForUserData(async () => {
             loading.classList.add('show');
             try {
-                const listingSnap = await getDoc(doc(db, 'fishListings', listingId));
-                if (!listingSnap.exists()) { history.back(); return; }
-                const listing = listingSnap.data();
+                // 5/23 #69 Phase B: data-cache 経由
+                const listing = await getCachedListing(listingId);
+                if (!listing) { history.back(); return; }
 
                 const fishKey = listing.fishType || '';
                 const fishName = i18next.exists(`fish.${fishKey}`) ? i18next.t(`fish.${fishKey}`) : fishKey;
                 const shortName = fishName ? fishName.trim() : '';
                 document.getElementById('fish-name').textContent = `${shortName}${listing.size ? `（${listing.size} head/kg）` : ''}`;
 
-                const farmerSnap = await getDoc(doc(db, 'users', listing.farmerId));
-                const farmerName = farmerSnap.data()?.displayName || '';
+                const farmerData = (await getCachedUser(listing.farmerId)) || {};
+                const farmerName = farmerData.displayName || '';
                 const price = (listing.price || 0) + (listing.gutPrice || 0);
                 document.getElementById('fish-meta').textContent = `${farmerName} · ${price.toLocaleString()} KHR/kg`;
 
-                // ユーザー情報を逐次取得
-                const userCache = {};
+                // ユーザー情報キャッシュ（5/23 #69 Phase B: data-cache 経由）
                 async function getUser(uid) {
-                    if (userCache[uid]) return userCache[uid];
-                    const s = await getDoc(doc(db, 'users', uid));
-                    userCache[uid] = s.exists() ? s.data() : {};
-                    return userCache[uid];
+                    if (!uid) return {};
+                    return (await getCachedUser(uid)) || {};
                 }
-                userCache[listing.farmerId] = farmerSnap.data() || {};
 
-                // 出品者（農家）かどうか
                 const uid = window.currentUser?.uid;
-                const isOwner = uid === listing.farmerId;
+                const isOwner = uid === listing.farmerId;  // この listing の farmer
 
                 // 農家視点のときはバナー文言を差し替え
                 if (window.currentUserData?.role === 'farmer') {
@@ -245,66 +315,115 @@
                     banner.textContent = i18next.t('comments.publicNoteFarmer');
                 }
 
-                // コメント購読
+                // 質問一覧購読
                 const commentsRef = collection(db, 'fishListings', listingId, 'comments');
-                const q = query(commentsRef, orderBy('createdAt', 'asc'));
+                const q = query(commentsRef, orderBy('createdAt', 'desc'));
                 onSnapshot(q, async (snap) => {
-                    const listEl = document.getElementById('comment-list');
+                    const listEl = document.getElementById('qa-list');
                     if (snap.empty) {
-                        listEl.innerHTML = `<div class="empty-small">${i18next.t('comments.empty')}</div>`;
+                        listEl.innerHTML = `<div class="empty-small">${escapeHtml(i18next.t('comments.empty'))}</div>`;
                         return;
                     }
+
+                    // 必要なユーザー情報を先に取得（senderId / replyByUid）
                     const items = [];
                     for (const d of snap.docs) {
                         const c = d.data();
-                        const from = await getUser(c.senderId);
-                        items.push({ id: d.id, c, from });
+                        const sender = await getUser(c.senderId);
+                        let replyUser = null;
+                        if (c.replyText && c.replyByUid) {
+                            replyUser = await getUser(c.replyByUid);
+                        }
+                        items.push({ id: d.id, c, sender, replyUser });
                     }
-                    listEl.innerHTML = items.map(({ id, c, from }) => {
-                        const isMine = c.senderId === uid;
-                        const role = from.role || 'restaurant';
-                        const time = relative(c.createdAt);
-                        const isDeleted = c.isDeleted === true;
 
-                        // 取消済み：プレースホルダー表示（送信者/受信者共通）
+                    listEl.innerHTML = items.map(({ id, c, sender, replyUser }) => {
+                        const isDeleted = c.isDeleted === true;
+                        const senderName = sender.displayName || '';
+                        const senderAvatar = renderAvatar(sender);
+                        const time = relative(c.createdAt);
+
+                        // 取り消し済みの質問：プレースホルダー表示
                         if (isDeleted) {
                             return `
-                                <div class="chat-row ${isMine ? 'mine' : ''}">
-                                    <div class="chat-deleted-bubble">${i18next.t('comments.deleted')}</div>
+                                <div class="qa-card">
+                                    <div class="qa-header">
+                                        <div class="qa-avatar"><span class="material-symbols-outlined">person</span></div>
+                                        <div class="qa-meta">
+                                            <div class="qa-time">${escapeHtml(time)}</div>
+                                        </div>
+                                    </div>
+                                    <div class="qa-deleted-placeholder">${escapeHtml(i18next.t('comments.deleted'))}</div>
                                 </div>
                             `;
                         }
 
-                        const deleteBtn = isOwner
-                            ? `<button class="chat-delete-btn" data-id="${id}" type="button">${i18next.t('comments.delete')}</button>`
+                        // 質問削除ボタン（listing の farmer のみ）
+                        const deleteBtnHtml = isOwner
+                            ? `<div class="qa-delete-row"><button class="qa-delete-btn" data-action="del-q" data-id="${id}" type="button">${escapeHtml(i18next.t('comments.delete'))}</button></div>`
                             : '';
 
-                        if (isMine) {
-                            return `
-                                <div class="chat-row mine">
-                                    <span class="chat-time">${time}</span>
-                                    <div>
-                                        <div class="chat-bubble">${escapeHtml(c.text || '')}</div>
-                                        ${deleteBtn ? `<div style="text-align:right;">${deleteBtn}</div>` : ''}
+                        // 返信セクション
+                        let replyHtml = '';
+                        if (c.replyText) {
+                            const replyAvatar = renderAvatar(replyUser || farmerData);
+                            const replyName = (replyUser || farmerData).displayName || '';
+                            const replyTime = relative(c.replyAt);
+                            const replyDeleteBtn = isOwner
+                                ? `<div class="qa-delete-row"><button class="qa-delete-btn" data-action="del-r" data-id="${id}" type="button">${escapeHtml(i18next.t('comments.delete'))}</button></div>`
+                                : '';
+                            replyHtml = `
+                                <div class="qa-reply-section">
+                                    <div class="qa-header">
+                                        <div class="qa-avatar">${replyAvatar}</div>
+                                        <div class="qa-meta">
+                                            <div class="qa-name">${escapeHtml(replyName)}</div>
+                                            <div class="qa-time">${escapeHtml(replyTime)}</div>
+                                        </div>
+                                        <span class="qa-badge qa-badge--reply">${escapeHtml(i18next.t('comments.replyLabel'))}</span>
                                     </div>
+                                    <div class="qa-text">${escapeHtml(c.replyText)}</div>
+                                    ${replyDeleteBtn}
+                                </div>
+                            `;
+                        } else if (isOwner) {
+                            // 未返信 → owner（farmer）にはインライン返信フォーム
+                            replyHtml = `
+                                <div class="qa-reply-section">
+                                    <form class="qa-reply-form" data-action="reply" data-id="${id}">
+                                        <textarea data-role="reply-input" placeholder="${escapeHtml(i18next.t('comments.replyPlaceholder'))}" required></textarea>
+                                        <button type="submit" class="qa-reply-send">${escapeHtml(i18next.t('comments.replySend'))}</button>
+                                    </form>
+                                </div>
+                            `;
+                        } else {
+                            // 未返信 → owner 以外には「未返信」バッジ
+                            replyHtml = `
+                                <div class="qa-reply-section" style="padding-left:40px;">
+                                    <span class="qa-badge qa-badge--noreply">${escapeHtml(i18next.t('comments.noReply'))}</span>
                                 </div>
                             `;
                         }
-                        const bubbleClass = `chat-bubble ${role === 'farmer' ? 'farmer' : 'restaurant'}`;
+
                         return `
-                            <div class="chat-row">
-                                <div style="max-width:80%;">
-                                    <div class="chat-sender">${from.displayName || ''}</div>
-                                    <div class="${bubbleClass}">${escapeHtml(c.text || '')}</div>
-                                    ${deleteBtn}
+                            <div class="qa-card" data-id="${id}">
+                                <div class="qa-header">
+                                    <div class="qa-avatar">${senderAvatar}</div>
+                                    <div class="qa-meta">
+                                        <div class="qa-name">${escapeHtml(senderName)}</div>
+                                        <div class="qa-time">${escapeHtml(time)}</div>
+                                    </div>
+                                    <span class="qa-badge">${escapeHtml(i18next.t('comments.questionLabel'))}</span>
                                 </div>
-                                <span class="chat-time">${time}</span>
+                                <div class="qa-text">${escapeHtml(c.text || '')}</div>
+                                ${deleteBtnHtml}
+                                ${replyHtml}
                             </div>
                         `;
                     }).join('');
 
-                    // 取消ボタンハンドラ
-                    listEl.querySelectorAll('.chat-delete-btn').forEach(btn => {
+                    // 質問取り消し
+                    listEl.querySelectorAll('[data-action="del-q"]').forEach(btn => {
                         btn.addEventListener('click', async () => {
                             if (!confirm(i18next.t('comments.confirmDelete'))) return;
                             try {
@@ -313,25 +432,61 @@
                                     deletedAt: serverTimestamp(),
                                 });
                             } catch (err) {
-                                console.error(err);
+                                console.error('delete question failed:', err);
                                 alert(i18next.t('comments.errorSubmit'));
                             }
                         });
                     });
 
-                    listEl.scrollIntoView({ block: 'end' });
+                    // 返信取り消し（reply フィールドを null に戻す）
+                    listEl.querySelectorAll('[data-action="del-r"]').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            if (!confirm(i18next.t('comments.replyConfirmDelete'))) return;
+                            try {
+                                await updateDoc(doc(db, 'fishListings', listingId, 'comments', btn.dataset.id), {
+                                    replyText: null,
+                                    replyAt: null,
+                                    replyByUid: null,
+                                });
+                            } catch (err) {
+                                console.error('delete reply failed:', err);
+                                alert(i18next.t('comments.errorSubmit'));
+                            }
+                        });
+                    });
+
+                    // 返信送信
+                    listEl.querySelectorAll('form[data-action="reply"]').forEach(form => {
+                        form.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const input = form.querySelector('[data-role="reply-input"]');
+                            const text = (input.value || '').trim();
+                            if (!text) return;
+                            const sendBtn = form.querySelector('.qa-reply-send');
+                            sendBtn.disabled = true;
+                            try {
+                                await updateDoc(doc(db, 'fishListings', listingId, 'comments', form.dataset.id), {
+                                    replyText: text,
+                                    replyAt: serverTimestamp(),
+                                    replyByUid: uid,
+                                });
+                                input.value = '';
+                            } catch (err) {
+                                console.error('reply failed:', err);
+                                alert(i18next.t('comments.errorSubmit'));
+                                sendBtn.disabled = false;
+                            }
+                        });
+                    });
                 });
             } catch (err) {
-                console.error(err);
+                console.error('comments init failed:', err);
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
 
-        function escapeHtml(s) {
-            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
-
+        // 新規質問送信
         document.getElementById('send-btn').addEventListener('click', async () => {
             const input = document.getElementById('comment-input');
             const text = input.value.trim();
@@ -343,12 +498,13 @@
             try {
                 await addDoc(collection(db, 'fishListings', listingId, 'comments'), {
                     senderId: uid,
+                    senderRole: window.currentUserData?.role || null,
                     text,
                     createdAt: serverTimestamp(),
                 });
                 input.value = '';
             } catch (err) {
-                console.error(err);
+                console.error('comment submit failed:', err);
                 alert(i18next.t('comments.errorSubmit'));
             } finally {
                 btn.disabled = false;

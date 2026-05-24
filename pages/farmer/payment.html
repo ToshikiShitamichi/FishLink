@@ -268,7 +268,7 @@
                 applyReviewedState(snap.exists());
             });
 
-            loading.classList.remove('show');
+            loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
 
         // 5/7 #55: レビュー済みなら詳細画面のレビューボタンを「レビュー済み」表示に

@@ -563,7 +563,7 @@
             } catch (err) {
                 console.error(err);
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
 
@@ -685,7 +685,7 @@
                 err.classList.add('show');
             } finally {
                 btn.disabled = false;
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
 
@@ -791,7 +791,7 @@
                 }));
                 render();
             } catch (e) { console.error(e); }
-            finally { loading.classList.remove('show'); }
+            finally { loading.classList.remove('show'); document.body.classList.add('app-ready'); }
         }
 
         document.getElementById('history-open-btn').addEventListener('click', openHistoryDrawer);

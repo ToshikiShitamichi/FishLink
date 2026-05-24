@@ -122,6 +122,11 @@ async function register({ loginId, displayName, phone, password, role, location,
     // 表示時に i18n の province.{key} で 3言語ラベルに変換
     const normalizedProvince = normalizeProvince(province) || province || null;
 
+    // 5/23 #82 Phase 1: 招待コード（[A-Za-z0-9]×8）を生成して登録時に書き込む
+    // dedup なしでよい（衝突確率 ≈ 1/2.18e14）。
+    const { generateReferralCode } = await import('/js/referral.js');
+    const referralCode = generateReferralCode();
+
     // Firestore に users ドキュメントを作成
     await setDoc(doc(db, 'users', uid), {
         loginId: id,
@@ -138,6 +143,8 @@ async function register({ loginId, displayName, phone, password, role, location,
         fcmToken: null,
         avgRating: 0,
         reviewCount: 0,
+        referralCode,            // 5/23 #82: 自身の招待コード（Phase 1 から書き込み）
+        referralCount: 0,        // 5/23 #82 Phase 2 で増分予定
         createdAt: serverTimestamp(),
     });
 
@@ -188,6 +195,18 @@ async function logout() {
         const mod = await import('/js/data-cache.js');
         mod.clearAll();
     } catch (e) { /* data-cache 未配置でも logout は止めない */ }
+
+    // 5/23 #69 Phase D：IndexedDB の永続画像キャッシュもクリア（プライバシー保護）
+    try {
+        const mod = await import('/js/image-cache.js');
+        await mod.clearAll();
+    } catch (e) { /* image-cache 未配置でも logout は止めない */ }
+
+    // 5/23 #69 Phase J：sessionStorage の画面描画キャッシュもクリア
+    try {
+        const mod = await import('/js/render-cache.js');
+        mod.clearRenderState();
+    } catch (e) { /* render-cache 未配置でも logout は止めない */ }
 
     await signOut(auth);
     window.location.href = '/index.html';

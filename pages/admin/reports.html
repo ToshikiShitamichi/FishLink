@@ -179,6 +179,8 @@
         import {
             collection, query, where, orderBy, onSnapshot, doc, updateDoc, getDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 5/23 #69 Phase F: メモリ画像キャッシュ
+        import { asCachedImgAttrs } from '/js/image-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -303,7 +305,7 @@
                             : `<div class="report-card__detail">${i18next.t('admin.reports.detailEmpty')}</div>`
                         }
                         ${photos.length
-                            ? `<div class="report-card__photos">${photos.map(u => `<a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="photo"></a>`).join('')}</div>`
+                            ? `<div class="report-card__photos">${photos.map(u => `<a href="${u}" target="_blank" rel="noopener"><img ${asCachedImgAttrs(u)} alt="photo"></a>`).join('')}</div>`
                             : ''
                         }
                         <div class="report-card__actions">
@@ -387,10 +389,10 @@
                 await preloadUsers(allReports);
                 buildTabs();
                 render();
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }, (err) => {
                 console.error(err);
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             });
         });
 

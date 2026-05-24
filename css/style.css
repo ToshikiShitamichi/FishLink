@@ -420,17 +420,28 @@ select:focus {
 }
 
 /* ── ローディング ────────────────────────────────────────────── */
+/* 5/23 #69 Phase C: デフォルトを display: flex に反転。HTML パース直後から
+   スピナーが見える状態にして「JS 実行開始前の 0.X 秒の白画面」を解消する。
+   各ページの JS は `loading.classList.add('show')` を呼ばずに済むが、
+   データロード完了時には `document.body.classList.add('app-ready')` を必ず呼ぶこと。
+   これにより以降は `.show` の有無で表示制御に切り替わる。
+   フェイルセーフとして i18n.js が 10 秒タイムアウトで自動付与する。 */
 .loading-overlay {
     position: fixed;
     inset: 0;
     background: rgba(255, 255, 255, .8);
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     z-index: 999;
 }
 
-.loading-overlay.show {
+/* body.app-ready 以降は .show 制御に切り替わる（旧来の挙動と互換） */
+body.app-ready .loading-overlay {
+    display: none;
+}
+
+body.app-ready .loading-overlay.show {
     display: flex;
 }
 

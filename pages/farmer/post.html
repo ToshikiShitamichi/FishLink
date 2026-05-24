@@ -460,6 +460,8 @@
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { uploadImageResized } from '/js/image-resize.js';
+        // 5/23 #69 Phase F: CAA 価格データはほぼ静的なので data-cache 経由で再読込抑止
+        import { getCachedDoc } from '/js/data-cache.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -547,10 +549,10 @@
         let caaDataLoaded = false;
 
         async function loadCaaData() {
+            // 5/23 #69 Phase F: data-cache 経由（同一タブ内なら sessionStorage / memory ヒット）
             await Promise.all(CAA_FISH_TYPES.map(async (ft) => {
                 try {
-                    const snap = await getDoc(doc(db, 'caaPrice', ft));
-                    CAA_DATA[ft] = snap.exists() ? snap.data() : {};
+                    CAA_DATA[ft] = (await getCachedDoc('caaPrice', ft)) || {};
                 } catch (e) {
                     console.warn('CAA load failed for', ft, e);
                     CAA_DATA[ft] = {};
@@ -928,7 +930,7 @@
                 errorMsg.classList.add('show');
             } finally {
                 submitBtn.disabled = false;
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
     </script>

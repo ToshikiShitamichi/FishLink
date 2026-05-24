@@ -219,14 +219,14 @@
                 alert(i18next.t('account.saveFailed'));
             } finally {
                 btn.disabled = false;
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
 
         waitForUserData(() => {
             userData = { ...window.currentUserData };
             renderView();
-            loading.classList.remove('show');
+            loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
     </script>
 </body>

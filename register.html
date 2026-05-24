@@ -466,6 +466,8 @@
         // i18n 初期化
         await initI18n();
         initLangSelector();
+        // 5/23 #69 Phase G: 初期スピナーを解除
+        document.body.classList.add('app-ready');
 
         // ── 登録処理 ───────────────────────────────────────────────
         const registerBtn = document.getElementById('register-btn');

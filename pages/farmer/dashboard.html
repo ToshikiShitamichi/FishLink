@@ -328,7 +328,7 @@
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
-        import { db } from '/js/firebase-config.js';
+        import { db, auth } from '/js/firebase-config.js';
         import { initHeaderPopovers } from '/js/header-actions.js';
         import { subscribeTodos } from '/js/todos.js';
         import { subscribeNotifications } from '/js/notifications.js';
@@ -336,6 +336,10 @@
             collection, query, where, orderBy, getDocs, doc, updateDoc, onSnapshot,
             limit, startAfter, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 5/23 #69 Phase B: メモリ画像キャッシュ
+        import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/23 #69 Phase J: 画面描画状態の永続キャッシュ
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
 
@@ -369,7 +373,7 @@
                 : escapeHtml(d.fishType);
 
             const imgHtml = d.photoUrl
-                ? `<img class="fish-card__img" src="${d.photoUrl}" alt="${escapeHtml(fishName)}">`
+                ? `<img class="fish-card__img" ${asCachedImgAttrs(d.photoUrl)} alt="${escapeHtml(fishName)}">`
                 : `<div class="fish-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:28px;">set_meal</span></div>`;
 
             const badgeHtml = d.isActive
@@ -457,8 +461,9 @@
         }
 
         // ── 自分の投稿一覧を取得（5/7 #54 ページネーション対応） ─────────────
-        async function loadMyFishListings({ append = false } = {}) {
-            if (!append) loading.classList.add('show');
+        // 5/23 #69 Phase J: silent=true で spinner を出さない（cached 描画後の裏 fresh fetch 用）
+        async function loadMyFishListings({ append = false, silent = false } = {}) {
+            if (!append && !silent) loading.classList.add('show');
 
             try {
                 const uid = window.currentUser?.uid;
@@ -490,11 +495,35 @@
                 });
 
                 renderAll();
+
+                // 5/23 #69 Phase J: 1ページ目（!append）のみ render-cache に保存
+                //   - Timestamp 等は toMillis 化して JSON 化可能に
+                if (!append) {
+                    try {
+                        const itemsForCache = renderedListings.map(it => ({
+                            id: it.id,
+                            data: serializeListing(it.data),
+                        }));
+                        saveRenderState(`farmer_dashboard:${uid}`, {
+                            items: itemsForCache,
+                            hasMoreListings,
+                        });
+                    } catch (e) { /* ignore */ }
+                }
             } catch (err) {
                 console.error(err);
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
+        }
+
+        // 5/23 #69 Phase J: Firestore Timestamp などを JSON 化可能な形に変換
+        function serializeListing(data) {
+            const out = { ...data };
+            if (out.createdAt?.toMillis) out.createdAt = out.createdAt.toMillis();
+            if (out.updatedAt?.toMillis) out.updatedAt = out.updatedAt.toMillis();
+            if (out.deletedAt?.toMillis) out.deletedAt = out.deletedAt.toMillis();
+            return out;
         }
 
         // 「もっと見る」
@@ -554,7 +583,7 @@
                     console.error(err);
                     alert(i18next.t('dashboard.errorDelete'));
                 } finally {
-                    loading.classList.remove('show');
+                    loading.classList.remove('show'); document.body.classList.add('app-ready');
                 }
                 return;
             }
@@ -603,9 +632,30 @@
         // 言語変更時に投稿一覧を再描画
         onLanguageChange(() => loadMyFishListings());
 
+        // 5/23 #69 Phase J: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
+        //   auth.currentUser は永続化されたセッションがあれば immediate に取得可能
+        let cachedRendered = false;
+        try {
+            const initialUid = auth.currentUser?.uid;
+            if (initialUid) {
+                const cached = loadRenderState(`farmer_dashboard:${initialUid}`);
+                if (cached?.items && Array.isArray(cached.items)) {
+                    renderedListings.length = 0;
+                    cached.items.forEach(it => renderedListings.push(it));
+                    hasMoreListings = !!cached.hasMoreListings;
+                    renderAll();
+                    loading.classList.remove('show');
+                    document.body.classList.add('app-ready');
+                    cachedRendered = true;
+                }
+            }
+        } catch (e) {
+            console.warn('cached farmer dashboard render failed:', e);
+        }
+
         // onAuthStateChanged 後にデータ取得
         setTimeout(() => {
-            loadMyFishListings();
+            loadMyFishListings({ silent: cachedRendered });
             watchOrderBadge();
             if (window.currentUser?.uid) {
                 subscribeTodos(window.currentUser.uid, 'farmer');

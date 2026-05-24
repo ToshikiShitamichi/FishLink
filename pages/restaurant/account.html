@@ -53,6 +53,66 @@
             gap: 6px; margin-top: 20px;
         }
         .nav-badge { position: absolute; top: 6px; right: 50%; transform: translateX(18px); background: #ef4444; width: 10px; height: 10px; border-radius: 50%; }
+
+        /* 5/23 #82 Phase 1: 紹介コードカード */
+        .referral-card {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border: 1px solid #a7f3d0;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .referral-card__head {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 13px; font-weight: 700; color: #065f46;
+            margin-bottom: 4px;
+        }
+        .referral-card__head .material-symbols-outlined { font-size: 18px; }
+        .referral-card__desc {
+            font-size: 11px; color: #047857;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+        .referral-card__code {
+            background: #fff;
+            border: 1px solid #a7f3d0;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #065f46;
+            margin-bottom: 10px;
+            user-select: all;
+        }
+        .referral-card__actions { display: flex; gap: 8px; }
+        .referral-card__btn {
+            flex: 1;
+            background: #fff;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            border-radius: 999px;
+            padding: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .referral-card__btn .material-symbols-outlined { font-size: 16px; }
+        .referral-card__btn--primary {
+            background: #0d6e4c;
+            color: #fff;
+            border-color: #0d6e4c;
+        }
+        .referral-card__phase-note {
+            font-size: 10px; color: #047857;
+            text-align: center;
+            margin-top: 8px;
+            font-style: italic;
+        }
     </style>
 </head>
 
@@ -100,6 +160,27 @@
                 <div class="acc-menu-head__sub" data-i18n="role.restaurant"></div>
                 <div class="acc-menu-head__name" id="display-name">-</div>
                 <div class="acc-menu-head__id" id="login-id">-</div>
+            </div>
+
+            <!-- 5/23 #82 Phase 1: 紹介コードカード -->
+            <div class="referral-card">
+                <div class="referral-card__head">
+                    <span class="material-symbols-outlined">card_giftcard</span>
+                    <span data-i18n="referral.cardTitle"></span>
+                </div>
+                <div class="referral-card__desc" data-i18n="referral.cardDescRestaurant"></div>
+                <div class="referral-card__code" id="referral-code">--------</div>
+                <div class="referral-card__actions">
+                    <button type="button" id="referral-copy" class="referral-card__btn">
+                        <span class="material-symbols-outlined">content_copy</span>
+                        <span data-i18n="referral.copy"></span>
+                    </button>
+                    <button type="button" id="referral-share" class="referral-card__btn referral-card__btn--primary">
+                        <span class="material-symbols-outlined">share</span>
+                        <span data-i18n="referral.share"></span>
+                    </button>
+                </div>
+                <div class="referral-card__phase-note" data-i18n="referral.phase1Note"></div>
             </div>
 
             <div class="acc-menu-list">
@@ -192,6 +273,8 @@
         import {
             collection, query, where, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 5/23 #82 Phase 1: 紹介コード
+        import { ensureUserReferralCode } from '/js/referral.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -243,6 +326,50 @@
             await logout();
         });
 
+        // 5/23 #82 Phase 1: 紹介コードの表示・コピー・シェア
+        async function showReferralCode() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            let code = '--------';
+            try {
+                code = await ensureUserReferralCode(uid, window.currentUserData);
+            } catch (e) {
+                console.warn('ensureUserReferralCode failed:', e);
+                return;
+            }
+            document.getElementById('referral-code').textContent = code;
+
+            document.getElementById('referral-copy').addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(code);
+                    alert(i18next.t('referral.copied'));
+                } catch (e) {
+                    // 古いブラウザ向けフォールバック
+                    const ta = document.createElement('textarea');
+                    ta.value = code;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); } catch (_) { /* ignore */ }
+                    ta.remove();
+                    alert(i18next.t('referral.copied'));
+                }
+            });
+
+            document.getElementById('referral-share').addEventListener('click', async () => {
+                const shareText = i18next.t('referral.shareText', { code });
+                if (navigator.share) {
+                    try {
+                        await navigator.share({ text: shareText });
+                    } catch (e) { /* ユーザーキャンセル */ }
+                } else {
+                    try {
+                        await navigator.clipboard.writeText(shareText);
+                        alert(i18next.t('referral.copied'));
+                    } catch (e) { /* ignore */ }
+                }
+            });
+        }
+
         waitForUserData(() => {
             renderHead();
             watchOrderBadge();
@@ -257,7 +384,11 @@
                 // 5/12 #72: 公開ページは自分の uid を渡して開く
                 const link = document.getElementById('public-page-link');
                 if (link) link.href = `/pages/farmer/restaurant.html?id=${window.currentUser.uid}`;
+                // 5/23 #82 Phase 1: 紹介コード表示
+                showReferralCode();
             }
+            // 5/23 #69 Phase C: 初期スピナー解除
+            document.body.classList.add('app-ready');
         });
 
         onLanguageChange(() => renderHead());

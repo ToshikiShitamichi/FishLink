@@ -459,6 +459,25 @@
             <div data-i18n="cart.confirmDesc"></div>
         </div>
         <div id="confirm-container"></div>
+
+        <!-- 5/23 #82 Phase 1: 紹介コード入力欄。
+             形式・存在・自己コード排除のみ検証し order.appliedReferralCode に記録（実際の割引・ボーナスは Phase 2）。 -->
+        <div class="referral-input-block" style="margin:14px 16px; padding:14px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:14px;">
+            <div style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--color-text); margin-bottom:6px;">
+                <span class="material-symbols-outlined" style="font-size:16px; color:#0d6e4c;">card_giftcard</span>
+                <span data-i18n="referral.inputTitle"></span>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="referral-input" maxlength="8" autocapitalize="off" autocomplete="off" spellcheck="false"
+                    data-i18n="[placeholder]referral.inputPlaceholder"
+                    style="flex:1; border:1px solid var(--color-border); border-radius:10px; padding:10px 12px; font-size:14px; font-family:monospace; letter-spacing:1px; text-transform:none; box-sizing:border-box;">
+                <button type="button" id="referral-apply" style="border:none; background:#0d6e4c; color:#fff; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;">
+                    <span data-i18n="referral.apply"></span>
+                </button>
+            </div>
+            <div id="referral-status" style="font-size:11px; margin-top:6px; min-height:14px;"></div>
+            <div style="font-size:10px; color:var(--color-text-sub); margin-top:4px; font-style:italic;" data-i18n="referral.phase1Note"></div>
+        </div>
     </div>
 
     <!-- 出品詳細モーダル -->
@@ -499,6 +518,12 @@
         } from '/js/order-utils.js';
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
         import { formatProvince, formatDistrict } from '/js/province-utils.js';
+        // 5/23 #82 Phase 1: 紹介コード検証
+        import { validateReferralCode } from '/js/referral.js';
+        // 5/23 #69 Phase B: メモリ画像キャッシュ
+        import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
+        import { getCachedUser, getCachedListing } from '/js/data-cache.js';
 
         const loading = document.getElementById('loading');
         const errEl = document.getElementById('err-msg');
@@ -517,6 +542,10 @@
         // 料率
         let serviceRate = 0.05, campaignActive = false, campaignDiscountRate = 0;
         let farmerRate = 0.05, farmerCampaignActive = false, farmerCampaignDiscountRate = 0;
+
+        // 5/23 #82 Phase 1: 適用済みの紹介コード（confirm ステージで入力 → placeOrders で order docs に記録）
+        // Phase 1 では割引適用なし・記録のみ。
+        let appliedReferralCode = null;
 
         // ── Google Maps ready 待ち ──
         function waitForGoogleMaps() {
@@ -577,18 +606,17 @@
             return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         }
 
+        // 5/23 #69 Phase B: data-cache 経由（同一タブ内の重複取得を抑止）
         async function ensureListing(listingId) {
             if (listingCache.has(listingId)) return listingCache.get(listingId);
-            const snap = await getDoc(doc(db, 'fishListings', listingId));
-            const data = snap.exists() ? snap.data() : null;
+            const data = await getCachedListing(listingId);
             listingCache.set(listingId, data);
             return data;
         }
 
         async function ensureFarmer(farmerId) {
             if (farmerCache.has(farmerId)) return farmerCache.get(farmerId);
-            const snap = await getDoc(doc(db, 'users', farmerId));
-            const data = snap.exists() ? snap.data() : null;
+            const data = await getCachedUser(farmerId);
             farmerCache.set(farmerId, data);
             return data;
         }
@@ -638,7 +666,7 @@
             } catch (err) {
                 console.error(err);
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
 
@@ -731,7 +759,7 @@
 
                     html += `<div class="cart-item">
                         <div class="cart-item__img">
-                            ${photoUrl ? `<img src="${photoUrl}" alt="">` : `<span class="material-symbols-outlined" style="font-size:32px; color:#94a3b8;">set_meal</span>`}
+                            ${photoUrl ? `<img ${asCachedImgAttrs(photoUrl)} alt="">` : `<span class="material-symbols-outlined" style="font-size:32px; color:#94a3b8;">set_meal</span>`}
                         </div>
                         <div class="cart-item__body">
                             <div class="cart-item__name">${escapeHtml(shortName)}</div>
@@ -982,7 +1010,7 @@
                     <div class="suggest-card" data-suggest-idx="${sIdx}">
                         <div class="suggest-card__label">${i18next.t('cart.suggestLabel', { fish: curShort })}</div>
                         <div class="suggest-card__row">
-                            <div class="suggest-card__thumb">${curPhoto ? `<img src="${curPhoto}" alt="" loading="lazy">` : ''}</div>
+                            <div class="suggest-card__thumb">${curPhoto ? `<img ${asCachedImgAttrs(curPhoto)} alt="" loading="lazy">` : ''}</div>
                             <div class="suggest-card__info">
                                 <div class="suggest-card__title">${escapeHtml(s.currentFarmerName)}</div>
                                 <div class="suggest-card__sub">${curShort} · ${curPrice.toLocaleString()} KHR/kg</div>
@@ -994,7 +1022,7 @@
                             <span class="suggest-card__side current">${i18next.t('cart.currentSide')}</span>
                         </div>
                         <div class="suggest-card__row">
-                            <div class="suggest-card__thumb">${altPhoto ? `<img src="${altPhoto}" alt="" loading="lazy">` : ''}</div>
+                            <div class="suggest-card__thumb">${altPhoto ? `<img ${asCachedImgAttrs(altPhoto)} alt="" loading="lazy">` : ''}</div>
                             <div class="suggest-card__info">
                                 <div class="suggest-card__title">${escapeHtml(s.altFarmerName)}</div>
                                 <div class="suggest-card__sub">${altName} · ${altPrice.toLocaleString()} KHR/kg${priceDiffText}</div>
@@ -1049,12 +1077,8 @@
 
         // ── 出品詳細モーダル ──
         async function openListingDetail(listingId, farmerId) {
-            const listing = listingCache.get(listingId) || (await (async () => {
-                const snap = await getDoc(doc(db, 'fishListings', listingId));
-                const data = snap.exists() ? snap.data() : null;
-                if (data) listingCache.set(listingId, data);
-                return data;
-            })());
+            // 5/23 #69 Phase B: ensureListing 経由（data-cache でセッション内重複取得を抑止）
+            const listing = listingCache.get(listingId) || await ensureListing(listingId);
             if (!listing) return;
             const farmer = farmerCache.get(farmerId) || {};
             const dist = distanceCache.get(farmerId) || 0;
@@ -1066,7 +1090,7 @@
                 : (listing.photoUrl ? [listing.photoUrl] : []);
 
             const galleryHtml = photos.length > 0
-                ? `<div class="lm-gallery">${photos.map(u => `<img src="${u}" alt="" loading="lazy">`).join('')}</div>`
+                ? `<div class="lm-gallery">${photos.map(u => `<img ${asCachedImgAttrs(u)} alt="" loading="lazy">`).join('')}</div>`
                 : `<div class="lm-gallery__placeholder"><span class="material-symbols-outlined" style="font-size:64px;">set_meal</span></div>`;
 
             // サービス料込み単価（CLAUDE.md: 表示単価 = (price+gutPrice)×(1+serviceRate)）
@@ -1079,7 +1103,7 @@
             const reviews = farmer.reviewCount || 0;
             const avatarUrl = farmer.avatarUrl;
             const avatarHtml = avatarUrl
-                ? `<img src="${avatarUrl}" alt="">`
+                ? `<img ${asCachedImgAttrs(avatarUrl)} alt="">`
                 : `<span class="material-symbols-outlined" style="font-size:24px; color:#94a3b8;">person</span>`;
 
             document.getElementById('modal-body').innerHTML = `
@@ -1263,6 +1287,8 @@
                         deliveryDateIso: pick.dateIso,
                         deliveryTime: pick.time,
                         deliveryFee,
+                        // 5/23 #82 Phase 1: 適用された紹介コード（記録のみ・割引適用なし）
+                        appliedReferralCode: appliedReferralCode || null,
                         // items[] 新方式
                         items: itemDocs,
                         // legacy: 合計値（fishPrice/serviceFee/... は items合計）
@@ -1299,6 +1325,63 @@
             //   空のカート画面に戻れないようにし、ユーザーの混乱を防ぐ。
             location.replace('/pages/restaurant/orders.html');
         }
+
+        // ── 5/23 #82 Phase 1: 紹介コード入力の検証＆適用 ──
+        (function setupReferralInput() {
+            const input = document.getElementById('referral-input');
+            const applyBtn = document.getElementById('referral-apply');
+            const statusEl = document.getElementById('referral-status');
+            if (!input || !applyBtn || !statusEl) return;
+            const btnLabel = applyBtn.querySelector('[data-i18n]');
+
+            function setStatus(text, color) {
+                statusEl.textContent = text;
+                statusEl.style.color = color;
+            }
+            function setBtn(key) {
+                btnLabel.setAttribute('data-i18n', key);
+                btnLabel.textContent = i18next.t(key);
+            }
+            function release() {
+                appliedReferralCode = null;
+                input.value = '';
+                input.disabled = false;
+                setStatus('', '');
+                setBtn('referral.apply');
+                applyBtn.disabled = false;
+            }
+
+            applyBtn.addEventListener('click', async () => {
+                // 適用済み状態なら「解除」として動く
+                if (appliedReferralCode) { release(); return; }
+                const raw = (input.value || '').trim();
+                if (!raw) { setStatus('', ''); return; }
+                applyBtn.disabled = true;
+                input.disabled = true;
+                setStatus(i18next.t('referral.checking'), 'var(--color-text-sub)');
+                try {
+                    const myUid = window.currentUser?.uid;
+                    const result = await validateReferralCode(raw, myUid);
+                    if (!result.ok) {
+                        appliedReferralCode = null;
+                        setStatus(i18next.t(result.error), '#dc2626');
+                        applyBtn.disabled = false;
+                        input.disabled = false;
+                        return;
+                    }
+                    appliedReferralCode = raw;
+                    setStatus(i18next.t('referral.applied'), '#047857');
+                    setBtn('referral.remove');
+                    applyBtn.disabled = false;
+                } catch (e) {
+                    console.error('validateReferralCode failed:', e);
+                    appliedReferralCode = null;
+                    setStatus(i18next.t('referral.errorGeneric'), '#dc2626');
+                    applyBtn.disabled = false;
+                    input.disabled = false;
+                }
+            });
+        })();
 
         // ── チェックアウトボタン：ステージ遷移を制御 ──
         document.getElementById('checkout-btn').addEventListener('click', async () => {
@@ -1340,7 +1423,7 @@
                 errEl.classList.add('show');
             } finally {
                 btn.disabled = false;
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         });
 

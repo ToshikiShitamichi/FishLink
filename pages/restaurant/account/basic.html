@@ -74,7 +74,7 @@
             document.getElementById('v-displayName').textContent = d.displayName || '-';
             const loc = formatLocation(d) || i18next.t('account.locationUnset');
             document.getElementById('v-location').textContent = loc;
-            loading.classList.remove('show');
+            loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
     </script>
 </body>

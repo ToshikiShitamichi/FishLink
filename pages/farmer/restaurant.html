@@ -209,6 +209,12 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { formatProvince, formatLocation } from '/js/province-utils.js';
         import { getReviewerAvatarUrl, getRestaurantPhotos } from '/js/profile-utils.js';
+        // 5/23 #69 Phase B: メモリ画像キャッシュ
+        import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/23 #69 Phase B: 同一タブ内 users の重複取得を抑止
+        import { getCachedUser } from '/js/data-cache.js';
+        // 5/23 #69 Phase J: 画面描画状態の永続キャッシュ
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -262,68 +268,96 @@
             }[c]));
         }
 
-        async function load() {
-            loading.classList.add('show');
-            try {
-                const userSnap = await getDoc(doc(db, 'users', targetUid));
-                if (!userSnap.exists()) { history.back(); return; }
-                const user = userSnap.data();
+        // 5/23 #69 Phase J: 描画ロジックを fetch から分離。cached / fresh 両方から呼ぶ。
+        function renderRestaurantPage(user, reviewsWithComment, reviewerMap) {
+            // 店舗写真
+            const restPhotos = getRestaurantPhotos(user);
+            const heroEl = document.getElementById('hero-photo');
+            if (restPhotos.length === 1) {
+                heroEl.innerHTML = `<img ${asCachedImgAttrs(restPhotos[0])} alt="${escapeHtml(user.displayName || '')}">`;
+            } else if (restPhotos.length > 1) {
+                heroEl.style.padding = '0';
+                heroEl.style.background = '#000';
+                heroEl.innerHTML = `
+                    <div style="display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; width:100%; height:100%;">
+                        ${restPhotos.map(u => `
+                            <div style="flex:0 0 100%; scroll-snap-align:start; height:100%;">
+                                <img ${asCachedImgAttrs(u)} alt="" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            // 名前・場所
+            document.getElementById('name').textContent = user.displayName || '-';
+            const loc = formatLocation(user) || '-';
+            document.getElementById('location').textContent = loc;
 
-                // 5/12 #72: 複数店舗写真（配列優先・単数互換）
-                const restPhotos = getRestaurantPhotos(user);
-                const heroEl = document.getElementById('hero-photo');
-                if (restPhotos.length === 1) {
-                    heroEl.innerHTML = `<img src="${restPhotos[0]}" alt="${escapeHtml(user.displayName || '')}">`;
-                } else if (restPhotos.length > 1) {
-                    // 横スクロール・スナップ式のシンプルカルーセル
-                    heroEl.style.padding = '0';
-                    heroEl.style.background = '#000';
-                    heroEl.innerHTML = `
-                        <div style="display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; width:100%; height:100%;">
-                            ${restPhotos.map(u => `
-                                <div style="flex:0 0 100%; scroll-snap-align:start; height:100%;">
-                                    <img src="${u}" alt="" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
-                                </div>
-                            `).join('')}
+            // 評価
+            const goodRate = Number(user.avgRating || 0);
+            const count = Number(user.reviewCount || 0);
+            document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
+            document.getElementById('rating-count').textContent = `${count}${i18next.t('order.reviews')}`;
+            document.getElementById('review-count-label').textContent = i18next.t('profile.reviewsCount', { count });
+
+            const sub = user.subRatings || {};
+            const fmtSubRate = (s) => {
+                if (s && typeof s === 'object' && 'good' in s && 'total' in s && s.total > 0) {
+                    return `${Math.round((s.good / s.total) * 100)}%`;
+                }
+                return '—';
+            };
+            document.getElementById('sub-overall').textContent = fmtSubRate(sub.overall);
+            document.getElementById('sub-communication').textContent = fmtSubRate(sub.communication);
+            document.getElementById('sub-reception').textContent = fmtSubRate(sub.reception);
+
+            // 地図
+            if (user.location?.lat && user.location?.lng) {
+                const mapsUrl = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}`;
+                document.getElementById('map-link-footer').href = mapsUrl;
+                const iframe = document.getElementById('map-iframe');
+                iframe.src = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}&z=15&output=embed`;
+                iframe.style.display = 'block';
+            }
+
+            // レビュー
+            const listEl = document.getElementById('reviews-list');
+            if (!reviewsWithComment || reviewsWithComment.length === 0) {
+                listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
+                return;
+            }
+            listEl.innerHTML = reviewsWithComment.map(r => {
+                const v = legacyToVerdict(r);
+                const reviewer = (reviewerMap && reviewerMap[r.fromUid]) || {};
+                const reviewerName = reviewer.displayName || i18next.t('profile.anonymousReviewer');
+                const reviewerAvatar = getReviewerAvatarUrl(reviewer);
+                const avatarHtml = reviewerAvatar
+                    ? `<img ${asCachedImgAttrs(reviewerAvatar)} alt="" loading="lazy">`
+                    : `<span class="material-symbols-outlined">${reviewer.role === 'restaurant' ? 'restaurant' : 'person'}</span>`;
+                return `
+                    <div class="review-card">
+                        <div class="review-card__reviewer">
+                            <div class="review-card__avatar">${avatarHtml}</div>
+                            <div class="review-card__reviewer-name">${escapeHtml(reviewerName)}</div>
                         </div>
-                    `;
-                }
-                // 名前・場所
-                document.getElementById('name').textContent = user.displayName || '-';
-                // 5/11 #65 + 拡張: province は i18n ラベル、district は UI 言語に応じて km/en 切替
-                const loc = formatLocation(user) || '-';
-                document.getElementById('location').textContent = loc;
+                        <div class="review-card__head">
+                            ${verdictBadge(v)}
+                            <div class="review-card__date">${fmtDate(r.createdAt)}</div>
+                        </div>
+                        <div class="review-card__comment">${escapeHtml(r.comment)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
 
-                // 評価（よい率 0-100%）
-                const goodRate = Number(user.avgRating || 0);
-                const count = Number(user.reviewCount || 0);
-                document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
-                document.getElementById('rating-count').textContent = `${count}${i18next.t('order.reviews')}`;
-                document.getElementById('review-count-label').textContent = i18next.t('profile.reviewsCount', { count });
+        async function load({ silent = false } = {}) {
+            if (!silent) loading.classList.add('show');
+            try {
+                const user = await getCachedUser(targetUid);
+                if (!user) { history.back(); return; }
 
-                // サブ評価（よい率 0-100%）
-                const sub = user.subRatings || {};
-                const fmtSubRate = (s) => {
-                    if (s && typeof s === 'object' && 'good' in s && 'total' in s && s.total > 0) {
-                        return `${Math.round((s.good / s.total) * 100)}%`;
-                    }
-                    return '—';
-                };
-                document.getElementById('sub-overall').textContent = fmtSubRate(sub.overall);
-                document.getElementById('sub-communication').textContent = fmtSubRate(sub.communication);
-                document.getElementById('sub-reception').textContent = fmtSubRate(sub.reception);
-
-                // 地図
-                if (user.location?.lat && user.location?.lng) {
-                    const mapsUrl = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}`;
-                    document.getElementById('map-link-footer').href = mapsUrl;
-                    const iframe = document.getElementById('map-iframe');
-                    iframe.src = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}&z=15&output=embed`;
-                    iframe.style.display = 'block';
-                }
-
-                // レビュー取得（5/7 #56: コメントがあるレビューのみ表示。コメントがない場合のみ空表示）
-                // 5/11 #64: レビュー者（農家）の displayName と avatarUrl を一括取得して表示
+                let reviewsWithComment = [];
+                let reviewerMap = {};
                 try {
                     const q = query(
                         collectionGroup(db, 'reviews'),
@@ -331,61 +365,58 @@
                         orderBy('createdAt', 'desc')
                     );
                     const reviewSnap = await getDocs(q);
-                    const listEl = document.getElementById('reviews-list');
                     const reviews = [];
                     reviewSnap.forEach(d => { reviews.push({ id: d.id, ...d.data() }); });
-                    const reviewsWithComment = reviews.filter(r => r.comment && String(r.comment).trim() !== '');
-                    if (reviewsWithComment.length === 0) {
-                        listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
-                        return;
-                    }
-
-                    // レビュー者プロフィールを一括取得（重複排除）
+                    reviewsWithComment = reviews.filter(r => r.comment && String(r.comment).trim() !== '');
                     const reviewerIds = [...new Set(reviewsWithComment.map(r => r.fromUid).filter(Boolean))];
-                    const reviewerMap = {};
                     await Promise.all(reviewerIds.map(async (uid) => {
-                        try {
-                            const s = await getDoc(doc(db, 'users', uid));
-                            reviewerMap[uid] = s.exists() ? s.data() : {};
-                        } catch (e) { reviewerMap[uid] = {}; }
+                        try { reviewerMap[uid] = (await getCachedUser(uid)) || {}; }
+                        catch (e) { reviewerMap[uid] = {}; }
                     }));
-
-                    listEl.innerHTML = reviewsWithComment.map(r => {
-                        const v = legacyToVerdict(r);
-                        const reviewer = reviewerMap[r.fromUid] || {};
-                        const reviewerName = reviewer.displayName || i18next.t('profile.anonymousReviewer');
-                        // 5/12 #71: ロール別の登録済み画像をアイコンとして表示
-                        //   farmer: avatarUrl || pondPhotoUrl, restaurant: restaurantPhotoUrl || avatarUrl
-                        const reviewerAvatar = getReviewerAvatarUrl(reviewer);
-                        const avatarHtml = reviewerAvatar
-                            ? `<img src="${reviewerAvatar}" alt="" loading="lazy">`
-                            : `<span class="material-symbols-outlined">${reviewer.role === 'restaurant' ? 'restaurant' : 'person'}</span>`;
-                        return `
-                            <div class="review-card">
-                                <div class="review-card__reviewer">
-                                    <div class="review-card__avatar">${avatarHtml}</div>
-                                    <div class="review-card__reviewer-name">${escapeHtml(reviewerName)}</div>
-                                </div>
-                                <div class="review-card__head">
-                                    ${verdictBadge(v)}
-                                    <div class="review-card__date">${fmtDate(r.createdAt)}</div>
-                                </div>
-                                <div class="review-card__comment">${escapeHtml(r.comment)}</div>
-                            </div>
-                        `;
-                    }).join('');
                 } catch (err) {
-                    console.warn('collectionGroup reviews failed (likely missing index):', err);
-                    document.getElementById('reviews-list').innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
+                    console.warn('collectionGroup reviews failed:', err);
                 }
+
+                renderRestaurantPage(user, reviewsWithComment, reviewerMap);
+
+                // 5/23 #69 Phase J: 次回訪問用に cache 保存
+                try {
+                    const reviewsForCache = reviewsWithComment.map(r => ({
+                        ...r,
+                        createdAt: r.createdAt?.toMillis?.() || r.createdAt || null,
+                    }));
+                    saveRenderState(`restaurant:${targetUid}`, {
+                        user,
+                        reviewsWithComment: reviewsForCache,
+                        reviewerMap,
+                    });
+                } catch (e) { /* ignore */ }
             } catch (err) {
                 console.error(err);
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         }
 
-        load();
+        // 5/23 #69 Phase J: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState(`restaurant:${targetUid}`);
+            if (cached?.user) {
+                renderRestaurantPage(
+                    cached.user,
+                    cached.reviewsWithComment || [],
+                    cached.reviewerMap || {}
+                );
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) {
+            console.warn('cached restaurant render failed:', e);
+        }
+
+        load({ silent: cachedRendered });
     </script>
 </body>
 

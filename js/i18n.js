@@ -20,8 +20,23 @@ function syncHtmlLang(lang) {
     document.documentElement.setAttribute('lang', lang || 'ja');
 }
 
+// 5/23 #69 Phase C フェイルセーフ：10 秒経っても app-ready が立っていない場合は強制的に立てて
+// 初期スピナーが永続表示される事故を防ぐ（個別ページ JS のミス時の保険）。
+let _appReadyFailsafeArmed = false;
+function armAppReadyFailsafe() {
+    if (_appReadyFailsafeArmed) return;
+    _appReadyFailsafeArmed = true;
+    setTimeout(() => {
+        if (!document.body.classList.contains('app-ready')) {
+            console.warn('[i18n] failsafe: body.app-ready が 10秒経っても付かないため強制付与');
+            document.body.classList.add('app-ready');
+        }
+    }, 10000);
+}
+
 // i18next 初期化
 async function initI18n() {
+    armAppReadyFailsafe();
     const lang = getSavedLang();
     const res = await fetch(`/locales/${lang}.json`);
     const translations = await res.json();

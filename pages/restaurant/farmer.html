@@ -266,6 +266,12 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { formatProvince, formatLocation } from '/js/province-utils.js';
         import { getReviewerAvatarUrl, getPondPhotos } from '/js/profile-utils.js';
+        // 5/23 #69 Phase B: メモリ画像キャッシュ
+        import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/23 #69 Phase B: 同一タブ内 users の重複取得を抑止
+        import { getCachedUser } from '/js/data-cache.js';
+        // 5/23 #69 Phase J: 画面描画状態の永続キャッシュ
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -332,55 +338,113 @@
             document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
 
-        async function load() {
-            loading.classList.add('show');
+        // 5/23 #69 Phase J: 描画ロジックを fetch から分離。cached / fresh 両方から呼ぶ。
+        function renderFarmerPage(user, listings, reviewsWithComment, reviewerMap) {
+            document.getElementById('name').textContent = user.displayName || '-';
+            const loc = formatLocation(user) || '-';
+            document.getElementById('location').textContent = loc;
+
+            if (user.avatarUrl) {
+                document.getElementById('avatar').innerHTML = `<img ${asCachedImgAttrs(user.avatarUrl)} alt="avatar">`;
+            }
+
+            // 「よい率」表示（0-100%）
+            const goodRate = Number(user.avgRating || 0);
+            const count = Number(user.reviewCount || 0);
+            document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
+            document.getElementById('rating-count').textContent = `（${count}${i18next.t('order.reviews')}）`;
+
+            const sub = user.subRatings || {};
+            const fmtSubRate = (s) => {
+                if (s && typeof s === 'object' && 'good' in s && 'total' in s && s.total > 0) {
+                    return `${Math.round((s.good / s.total) * 100)}%`;
+                }
+                return '—';
+            };
+            document.getElementById('sub-overall').textContent = fmtSubRate(sub.overall);
+            document.getElementById('sub-quality').textContent = fmtSubRate(sub.quality);
+            document.getElementById('sub-time').textContent = fmtSubRate(sub.time);
+
+            // 農家の一言
+            if (user.farmerMessage) {
+                document.getElementById('message-box').style.display = 'block';
+                document.getElementById('message-text').textContent = user.farmerMessage;
+            }
+
+            // 養殖環境の写真
+            const pondPhotos = getPondPhotos(user);
+            if (pondPhotos.length > 0) {
+                document.getElementById('pond-photos').innerHTML = pondPhotos
+                    .map(u => `<div class="pond-photo" style="margin-bottom:10px;"><img ${asCachedImgAttrs(u)} alt="pond" loading="lazy"></div>`)
+                    .join('');
+            } else {
+                document.getElementById('pond-photos').innerHTML = `<div class="pond-photo"><div class="pond-placeholder"><span class="material-symbols-outlined" style="font-size:48px;">water</span></div></div>`;
+            }
+
+            // 出品中の魚
+            const container = document.getElementById('listings-container');
+            if (!listings || listings.length === 0) {
+                container.innerHTML = `<div class="empty-small">${i18next.t('account.emptyListings')}</div>`;
+            } else {
+                container.innerHTML = `<div class="listings-grid">${listings.map(data => {
+                    const name = i18next.exists(`fish.${data.fishType}`) ? i18next.t(`fish.${data.fishType}`) : (data.fishType || '');
+                    const shortName = name.trim();
+                    const img = data.photoUrl
+                        ? `<img ${asCachedImgAttrs(data.photoUrl)} alt="${shortName}">`
+                        : `<div style="display:flex; align-items:center; justify-content:center; height:100%;"><span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span></div>`;
+                    const price = (data.price || 0) + (data.gutPrice || 0);
+                    return `
+                        <a class="listing-mini" href="/pages/restaurant/order.html?id=${data.id}">
+                            <div class="listing-mini__img">
+                                ${img}
+                                <div class="listing-mini__price">${fmtKhr(price)}/kg</div>
+                                ${data.stock > 0 ? `<div class="listing-mini__stock">${i18next.t('restaurant.stock', { kg: data.stock })}</div>` : ''}
+                            </div>
+                            <div class="listing-mini__body">
+                                <div class="listing-mini__name">${shortName}</div>
+                                <div class="listing-mini__meta">（${data.size || ''} head/kg）</div>
+                            </div>
+                        </a>
+                    `;
+                }).join('')}</div>`;
+            }
+
+            // レビュー
+            const listEl = document.getElementById('reviews-list');
+            if (!reviewsWithComment || reviewsWithComment.length === 0) {
+                listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
+                return;
+            }
+            listEl.innerHTML = reviewsWithComment.map(r => {
+                const v = legacyToVerdict(r);
+                const reviewer = (reviewerMap && reviewerMap[r.fromUid]) || {};
+                const reviewerName = reviewer.displayName || i18next.t('profile.anonymousReviewer');
+                const reviewerAvatar = getReviewerAvatarUrl(reviewer);
+                const avatarHtml = reviewerAvatar
+                    ? `<img ${asCachedImgAttrs(reviewerAvatar)} alt="" loading="lazy">`
+                    : `<span class="material-symbols-outlined">${reviewer.role === 'farmer' ? 'person' : 'storefront'}</span>`;
+                return `
+                    <div class="review-card">
+                        <div class="review-card__reviewer">
+                            <div class="review-card__avatar">${avatarHtml}</div>
+                            <div class="review-card__reviewer-name">${escapeHtml(reviewerName)}</div>
+                        </div>
+                        <div class="review-card__head">
+                            ${verdictBadge(v)}
+                            <div class="review-card__date">${fmtDate(r.createdAt)}</div>
+                        </div>
+                        <div class="review-card__comment">${escapeHtml(r.comment)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function load({ silent = false } = {}) {
+            if (!silent) loading.classList.add('show');
             try {
-                const userSnap = await getDoc(doc(db, 'users', targetUid));
-                if (!userSnap.exists()) { history.back(); return; }
-                const user = userSnap.data();
-
-                document.getElementById('name').textContent = user.displayName || '-';
-                // 5/11 #65 + 拡張: province は i18n ラベル、district は UI 言語に応じて km/en 切替
-                const loc = formatLocation(user) || '-';
-                document.getElementById('location').textContent = loc;
-
-                if (user.avatarUrl) {
-                    document.getElementById('avatar').innerHTML = `<img src="${user.avatarUrl}" alt="avatar">`;
-                }
-
-                // 「よい率」表示（0-100%）
-                const goodRate = Number(user.avgRating || 0);
-                const count = Number(user.reviewCount || 0);
-                document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
-                document.getElementById('rating-count').textContent = `（${count}${i18next.t('order.reviews')}）`;
-
-                const sub = user.subRatings || {};
-                const fmtSubRate = (s) => {
-                    if (s && typeof s === 'object' && 'good' in s && 'total' in s && s.total > 0) {
-                        return `${Math.round((s.good / s.total) * 100)}%`;
-                    }
-                    return '—';
-                };
-                document.getElementById('sub-overall').textContent = fmtSubRate(sub.overall);
-                document.getElementById('sub-quality').textContent = fmtSubRate(sub.quality);
-                document.getElementById('sub-time').textContent = fmtSubRate(sub.time);
-
-                // 農家の一言
-                if (user.farmerMessage) {
-                    document.getElementById('message-box').style.display = 'block';
-                    document.getElementById('message-text').textContent = user.farmerMessage;
-                }
-
-                // 養殖環境の写真
-                // 5/12 #72: 複数養殖環境写真（配列優先・単数互換）
-                const pondPhotos = getPondPhotos(user);
-                if (pondPhotos.length > 0) {
-                    document.getElementById('pond-photos').innerHTML = pondPhotos
-                        .map(u => `<div class="pond-photo" style="margin-bottom:10px;"><img src="${u}" alt="pond" loading="lazy"></div>`)
-                        .join('');
-                } else {
-                    document.getElementById('pond-photos').innerHTML = `<div class="pond-photo"><div class="pond-placeholder"><span class="material-symbols-outlined" style="font-size:48px;">water</span></div></div>`;
-                }
+                // 5/23 #69 Phase B: data-cache 経由
+                const user = await getCachedUser(targetUid);
+                if (!user) { history.back(); return; }
 
                 // 出品中の魚
                 const listingsQ = query(
@@ -389,36 +453,11 @@
                     where('isActive', '==', true)
                 );
                 const listSnap = await getDocs(listingsQ);
-                const container = document.getElementById('listings-container');
-                if (listSnap.empty) {
-                    container.innerHTML = `<div class="empty-small">${i18next.t('account.emptyListings')}</div>`;
-                } else {
-                    container.innerHTML = `<div class="listings-grid">${listSnap.docs.map(d => {
-                        const data = d.data();
-                        const name = i18next.exists(`fish.${data.fishType}`) ? i18next.t(`fish.${data.fishType}`) : (data.fishType || '');
-                        const shortName = name.trim();
-                        const img = data.photoUrl
-                            ? `<img src="${data.photoUrl}" alt="${shortName}">`
-                            : `<div style="display:flex; align-items:center; justify-content:center; height:100%;"><span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span></div>`;
-                        const price = (data.price || 0) + (data.gutPrice || 0);
-                        return `
-                            <a class="listing-mini" href="/pages/restaurant/order.html?id=${d.id}">
-                                <div class="listing-mini__img">
-                                    ${img}
-                                    <div class="listing-mini__price">${fmtKhr(price)}/kg</div>
-                                    ${data.stock > 0 ? `<div class="listing-mini__stock">${i18next.t('restaurant.stock', { kg: data.stock })}</div>` : ''}
-                                </div>
-                                <div class="listing-mini__body">
-                                    <div class="listing-mini__name">${shortName}</div>
-                                    <div class="listing-mini__meta">（${data.size || ''} head/kg）</div>
-                                </div>
-                            </a>
-                        `;
-                    }).join('')}</div>`;
-                }
+                const listings = listSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-                // レビュー（5/7 #56: コメントがあるレビューのみ表示。コメントがない場合のみ空表示）
-                // 5/11 #64: レビュー者（レストラン）の displayName と avatarUrl を一括取得して表示
+                // レビュー
+                let reviewsWithComment = [];
+                let reviewerMap = {};
                 try {
                     const rq = query(
                         collectionGroup(db, 'reviews'),
@@ -426,61 +465,60 @@
                         orderBy('createdAt', 'desc')
                     );
                     const reviewSnap = await getDocs(rq);
-                    const listEl = document.getElementById('reviews-list');
                     const reviews = [];
                     reviewSnap.forEach(d => { reviews.push({ id: d.id, ...d.data() }); });
-                    const reviewsWithComment = reviews.filter(r => r.comment && String(r.comment).trim() !== '');
-                    if (reviewsWithComment.length === 0) {
-                        listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
-                        return;
-                    }
-
-                    // レビュー者プロフィールを一括取得（重複排除）
+                    reviewsWithComment = reviews.filter(r => r.comment && String(r.comment).trim() !== '');
                     const reviewerIds = [...new Set(reviewsWithComment.map(r => r.fromUid).filter(Boolean))];
-                    const reviewerMap = {};
                     await Promise.all(reviewerIds.map(async (uid) => {
-                        try {
-                            const s = await getDoc(doc(db, 'users', uid));
-                            reviewerMap[uid] = s.exists() ? s.data() : {};
-                        } catch (e) { reviewerMap[uid] = {}; }
+                        try { reviewerMap[uid] = (await getCachedUser(uid)) || {}; }
+                        catch (e) { reviewerMap[uid] = {}; }
                     }));
-
-                    listEl.innerHTML = reviewsWithComment.map(r => {
-                        const v = legacyToVerdict(r);
-                        const reviewer = reviewerMap[r.fromUid] || {};
-                        const reviewerName = reviewer.displayName || i18next.t('profile.anonymousReviewer');
-                        // 5/12 #71: ロール別の登録済み画像をアイコンとして表示
-                        //   restaurant: restaurantPhotoUrl || avatarUrl, farmer: avatarUrl || pondPhotoUrl
-                        const reviewerAvatar = getReviewerAvatarUrl(reviewer);
-                        const avatarHtml = reviewerAvatar
-                            ? `<img src="${reviewerAvatar}" alt="" loading="lazy">`
-                            : `<span class="material-symbols-outlined">${reviewer.role === 'farmer' ? 'person' : 'storefront'}</span>`;
-                        return `
-                            <div class="review-card">
-                                <div class="review-card__reviewer">
-                                    <div class="review-card__avatar">${avatarHtml}</div>
-                                    <div class="review-card__reviewer-name">${escapeHtml(reviewerName)}</div>
-                                </div>
-                                <div class="review-card__head">
-                                    ${verdictBadge(v)}
-                                    <div class="review-card__date">${fmtDate(r.createdAt)}</div>
-                                </div>
-                                <div class="review-card__comment">${escapeHtml(r.comment)}</div>
-                            </div>
-                        `;
-                    }).join('');
                 } catch (err) {
                     console.warn('reviews query failed:', err);
-                    document.getElementById('reviews-list').innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
                 }
+
+                renderFarmerPage(user, listings, reviewsWithComment, reviewerMap);
+
+                // 5/23 #69 Phase J: 次回訪問用に cache 保存
+                try {
+                    // Timestamp 等の非シリアライズ可能オブジェクトは取り除く
+                    const reviewsForCache = reviewsWithComment.map(r => ({
+                        ...r,
+                        createdAt: r.createdAt?.toMillis?.() || r.createdAt || null,
+                    }));
+                    saveRenderState(`farmer:${targetUid}`, {
+                        user, listings,
+                        reviewsWithComment: reviewsForCache,
+                        reviewerMap,
+                    });
+                } catch (e) { /* ignore */ }
             } catch (err) {
                 console.error(err);
             } finally {
-                loading.classList.remove('show');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
         }
 
-        load();
+        // 5/23 #69 Phase J: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState(`farmer:${targetUid}`);
+            if (cached?.user) {
+                renderFarmerPage(
+                    cached.user,
+                    cached.listings || [],
+                    cached.reviewsWithComment || [],
+                    cached.reviewerMap || {}
+                );
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) {
+            console.warn('cached farmer render failed:', e);
+        }
+
+        load({ silent: cachedRendered });
     </script>
 </body>
 
