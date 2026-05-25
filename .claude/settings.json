@@ -20,7 +20,8 @@
       "Bash(git check-attr *)",
       "Bash(ls \"C:\\\\Users\\\\t_shitamichi\\\\.claude\\\\\" 2>&1 | head -30)",
       "Read(//c/Users/t_shitamichi/**)",
-      "Bash(node --input-type=module -e ' *)"
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/ja.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/en.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/km.json','utf8'\\)\\);console.log\\('ok'\\)\")"
     ]
   }
 }

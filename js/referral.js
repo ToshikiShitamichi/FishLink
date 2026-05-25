@@ -1,12 +1,15 @@
-// 5/23 #82 Phase 1: 紹介クーポン機能の共通ユーティリティ
+// 5/23 #82: 紹介クーポン機能の共通ユーティリティ
 //
-// Phase 1 スコープ：
-//   - 招待コードの生成（[A-Za-z0-9] 8桁）
+// Phase 1（完了）：
+//   - 紹介コードの生成（[A-Za-z0-9] 8桁）
 //   - 既存ユーザー向けの遅延バックフィル（account.html 表示時）
-//   - 注文時のコード入力 → 形式・存在・自己コード排除を検証
-//   - order doc に appliedReferralCode を記録するだけ（クーポン適用なし）
-// Phase 2: 実際のクーポン適用・農家ボーナス
-// Phase 3: 運営設定・不正対策
+// Phase 2 Chunk 1（完了・5/24）：
+//   - register.html での紹介コード入力時に検証（形式・存在）→ pendingReferralCode 保存
+//     ※ 旧 Phase 1 の「cart.html 注文時入力」は 5/24 仕様変更で廃止
+// Phase 2 Chunk 2 以降：
+//   - クーポン発行・農家ボーナス・referredBy 昇格・FCM 通知
+// Phase 3：
+//   - 運営設定・不正対策
 
 import { db } from '/js/firebase-config.js';
 import {
@@ -84,4 +87,40 @@ export async function validateReferralCode(code, myUid) {
         return { ok: false, error: 'referral.errorSelf' };
     }
     return { ok: true, ownerUid: ownerDoc.id };
+}
+
+/**
+ * クーポンコード入力を検証：形式 → 存在 → 所有者一致 → 未使用 → 期限内。
+ * coupons/{couponCode} の doc ID = コード文字列なので直接 getDoc。
+ *
+ * @param {string} code 入力されたクーポンコード
+ * @param {string} restaurantUid 入力したレストランの uid
+ * @returns {Promise<{ok: boolean, amountKhr?: number, expiresAt?: Date, error?: string}>}
+ *    error は i18n キー（'coupon.invalidFormat' / 'coupon.notFound' / 'coupon.notOwned' /
+ *    'coupon.alreadyUsed' / 'coupon.expired' / 'coupon.errorGeneric'）
+ */
+export async function validateCouponCode(code, restaurantUid) {
+    if (!isValidReferralCode(code)) {
+        return { ok: false, error: 'coupon.invalidFormat' };
+    }
+    const snap = await getDoc(doc(db, 'coupons', code));
+    if (!snap.exists()) {
+        return { ok: false, error: 'coupon.notFound' };
+    }
+    const data = snap.data();
+    if (data.ownerUid !== restaurantUid) {
+        return { ok: false, error: 'coupon.notOwned' };
+    }
+    if (data.usedAt || data.usedOrderId) {
+        return { ok: false, error: 'coupon.alreadyUsed' };
+    }
+    const expiresAtMs = data.expiresAt?.toMillis?.() ?? (data.expiresAt instanceof Date ? data.expiresAt.getTime() : null);
+    if (expiresAtMs !== null && expiresAtMs < Date.now()) {
+        return { ok: false, error: 'coupon.expired' };
+    }
+    return {
+        ok: true,
+        amountKhr: Number(data.amountKhr || 0),
+        expiresAt: expiresAtMs ? new Date(expiresAtMs) : null,
+    };
 }

@@ -421,6 +421,20 @@
                     </select>
                 </div>
 
+                <!-- ⑦ 紹介コード（任意・5/24 #82 Phase 2 Step A） -->
+                <div class="form-group">
+                    <label for="referral-code-input">
+                        <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle; margin-right:4px; color:#0d6e4c;">card_giftcard</span>
+                        <span data-i18n="referral.codeInputLabel"></span>
+                    </label>
+                    <input type="text" id="referral-code-input" maxlength="8"
+                        autocapitalize="off" autocomplete="off" spellcheck="false"
+                        data-i18n="[placeholder]referral.codeInputPlaceholder"
+                        style="font-family:monospace; letter-spacing:1px;">
+                    <div class="input-hint" data-i18n="referral.codeInputHelp"></div>
+                    <div id="referral-code-status" style="font-size:12px; margin-top:6px; min-height:14px;"></div>
+                </div>
+
                 <!-- 登録ボタン -->
                 <button class="btn btn-primary" id="register-btn" style="margin-top:8px;"
                     data-i18n="register.submit"></button>
@@ -438,6 +452,7 @@
     <script type="module">
         import { initI18n, initLangSelector, saveLang } from '/js/i18n.js';
         import { register, watchAuthState } from '/js/auth.js';
+        import { validateReferralCode, isValidReferralCode } from '/js/referral.js';
 
         // PWA Service Worker 登録
         // 5/11: 新バージョンの SW を検出したら自動リロード（未ログインユーザー向け）
@@ -490,6 +505,40 @@
                 : '<span class="material-symbols-outlined">visibility</span>';
         });
 
+        // 5/24 #82 Phase 2 Step A: 紹介コードの blur 時インライン検証
+        // 未入力は OK（任意項目）。形式 NG・存在しない・の場合のみエラー表示。
+        // 自己コードチェックは register 前なのでスキップ可（自身がまだ uid を持たない）。
+        (function setupReferralValidation() {
+            const input = document.getElementById('referral-code-input');
+            const statusEl = document.getElementById('referral-code-status');
+            if (!input || !statusEl) return;
+            input.addEventListener('blur', async () => {
+                const raw = (input.value || '').trim();
+                if (!raw) { statusEl.textContent = ''; return; }
+                if (!isValidReferralCode(raw)) {
+                    statusEl.textContent = i18next.t('referral.errorFormat');
+                    statusEl.style.color = '#dc2626';
+                    return;
+                }
+                statusEl.textContent = i18next.t('referral.checking');
+                statusEl.style.color = 'var(--color-text-sub)';
+                try {
+                    const result = await validateReferralCode(raw, null);
+                    if (!result.ok) {
+                        statusEl.textContent = i18next.t(result.error);
+                        statusEl.style.color = '#dc2626';
+                    } else {
+                        statusEl.textContent = i18next.t('referral.codeOk');
+                        statusEl.style.color = '#047857';
+                    }
+                } catch (e) {
+                    console.error('referral validation failed:', e);
+                    statusEl.textContent = i18next.t('referral.errorGeneric');
+                    statusEl.style.color = '#dc2626';
+                }
+            });
+        })();
+
         registerBtn.addEventListener('click', async () => {
             errorMsg.classList.remove('show');
 
@@ -500,11 +549,34 @@
             const roleEl = document.querySelector('input[name="role"]:checked');
             const role = roleEl ? roleEl.value : '';
             const langPref = document.getElementById('lang-pref').value;
+            const referralCodeRaw = (document.getElementById('referral-code-input').value || '').trim();
 
             // 電話番号の必須チェック（数字7桁以上）
             if (!phone || !/^[0-9+\-\s()]{7,}$/.test(phone)) {
                 showError(i18next.t('register.errorPhone') || 'Phone number is required');
                 return;
+            }
+
+            // 5/24 #82 Phase 2: 紹介コードが入力されている場合は登録前に最終検証
+            // 検証 OK ならそのまま register() に渡し pendingReferralCode として保存。
+            // 検証 NG なら登録自体は止めずに pendingReferralCode を空で続行（ユーザーへ警告だけ）。
+            let pendingReferralCode = null;
+            if (referralCodeRaw) {
+                if (!isValidReferralCode(referralCodeRaw)) {
+                    showError(i18next.t('referral.errorFormat'));
+                    return;
+                }
+                try {
+                    const result = await validateReferralCode(referralCodeRaw, null);
+                    if (!result.ok) {
+                        showError(i18next.t(result.error));
+                        return;
+                    }
+                    pendingReferralCode = referralCodeRaw;
+                } catch (e) {
+                    // 検証失敗時は登録を続行（ネット不調などで阻害しないため）。
+                    console.warn('referral validation failed at submit:', e);
+                }
             }
 
             registerBtn.disabled = true;
@@ -520,7 +592,7 @@
                     ]);
                 }
 
-                await register({ loginId, displayName, phone, password, role, location: window.selectedLocation, province: window.selectedProvince, district: window.selectedDistrict, districtKm: window.selectedDistrictKm, lang: langPref });
+                await register({ loginId, displayName, phone, password, role, location: window.selectedLocation, province: window.selectedProvince, district: window.selectedDistrict, districtKm: window.selectedDistrictKm, lang: langPref, pendingReferralCode });
                 saveLang(langPref);
                 // 登録成功 → ダッシュボードへ遷移
                 const dest = role === 'farmer' ? '/pages/farmer/dashboard.html' : '/pages/restaurant/dashboard.html';

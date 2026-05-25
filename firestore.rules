@@ -82,6 +82,24 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // 5/24 #82 Phase 2 Chunk 2: 紹介クーポン
+    //   create:  Cloud Functions のみ（クライアントからの直接 create は禁止）
+    //   read:    所有者または admin（マイページ表示 + admin/referral.html の発行統計）
+    //   update:  所有者が usedAt/usedOrderId のみ更新可、かつ usedOrderId が未設定（=未使用）のときのみ
+    //   delete:  禁止
+    match /coupons/{couponCode} {
+      allow read: if request.auth != null
+        && (resource.data.ownerUid == request.auth.uid
+         || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow create: if false;
+      allow update: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid
+        && resource.data.usedOrderId == null
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['usedAt', 'usedOrderId']);
+      allow delete: if false;
+    }
+
     match /todos/{uid}/items/{id} {
       allow read: if request.auth.uid == uid;
       allow write: if false;

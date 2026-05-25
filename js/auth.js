@@ -93,7 +93,7 @@ function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRe
 }
 
 // ── 新規登録 ──────────────────────────────────────────────────
-async function register({ loginId, displayName, phone, password, role, location, province, district, districtKm, lang }) {
+async function register({ loginId, displayName, phone, password, role, location, province, district, districtKm, lang, pendingReferralCode }) {
     const id = loginId.toLowerCase().trim();
 
     // バリデーション
@@ -122,13 +122,15 @@ async function register({ loginId, displayName, phone, password, role, location,
     // 表示時に i18n の province.{key} で 3言語ラベルに変換
     const normalizedProvince = normalizeProvince(province) || province || null;
 
-    // 5/23 #82 Phase 1: 招待コード（[A-Za-z0-9]×8）を生成して登録時に書き込む
+    // 5/23 #82 Phase 1: 自身の紹介コード（[A-Za-z0-9]×8）を生成して登録時に書き込む
     // dedup なしでよい（衝突確率 ≈ 1/2.18e14）。
     const { generateReferralCode } = await import('/js/referral.js');
     const referralCode = generateReferralCode();
 
-    // Firestore に users ドキュメントを作成
-    await setDoc(doc(db, 'users', uid), {
+    // 5/24 #82 Phase 2 Step A: 紹介コード入力（被紹介者として登録）
+    // 検証は呼び出し側（register.html）で済ませてある前提。
+    // ここでは保存するだけ。pendingReferralCode は初回取引完了時に referredBy に昇格される。
+    const userDoc = {
         loginId: id,
         displayName: displayName.trim(),
         phone: String(phone).trim(),
@@ -143,10 +145,16 @@ async function register({ loginId, displayName, phone, password, role, location,
         fcmToken: null,
         avgRating: 0,
         reviewCount: 0,
-        referralCode,            // 5/23 #82: 自身の招待コード（Phase 1 から書き込み）
-        referralCount: 0,        // 5/23 #82 Phase 2 で増分予定
+        referralCode,            // 5/23 #82: 自身の紹介コード（Phase 1 から書き込み）
+        referralCount: 0,        // 5/23 #82 Phase 2 で増分予定（紹介者として）
         createdAt: serverTimestamp(),
-    });
+    };
+    if (pendingReferralCode && /^[A-Za-z0-9]{8}$/.test(pendingReferralCode)) {
+        // 5/24 #82 Phase 2: 初回取引完了時に referredBy に昇格 + 特典付与
+        userDoc.pendingReferralCode = pendingReferralCode;
+    }
+    // Firestore に users ドキュメントを作成
+    await setDoc(doc(db, 'users', uid), userDoc);
 
     return uid;
 }

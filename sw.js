@@ -116,7 +116,77 @@ self.addEventListener('notificationclick', (event) => {
 //   - CLAUDE.md の #81（ボイスメッセージ）/ #82（紹介クーポン）の完了・未完了範囲を
 //     クライアント要望ベースで再整理。ソース変更なし・PRECACHE 変更なし。
 //   - 既存セッションへの再配信を促すため版番号のみバンプ（旧 SW 強制更新）。
-const CACHE_NAME = 'fishlink-v99';
+// 5/24 #82 Phase 3 枠組み先行 → v100
+//   - pages/admin/referral.html（運営設定画面）新設。settings/referral ドキュメントの
+//     enabled / restaurantCouponKhr / farmerBonusKhr / couponValidDays /
+//     maxReferralsPerUser / couponPriority を編集可能に。
+//   - 各 admin ページの navigation に navReferral リンク追加。
+//   - i18n に admin.navReferral / admin.referral.* キーを 3 言語追加。
+//   - Phase 2（特典自動付与）実装前の枠組みのみ。クーポン発行・農家ボーナス計算は未実装。
+// 5/24 #82 Phase 2 Chunk 1 完了 → v101
+//   - 5/24 クライアント仕様確定：紹介コード入力場所を cart.html → register.html に移管
+//   - cart.html から referral input block / appliedReferralCode 変数 / setupReferralInput
+//     IIFE / order doc への appliedReferralCode 書き込み / validateReferralCode import を削除
+//   - register.html に「紹介コード（任意）」入力欄を追加。blur 時インライン検証 +
+//     submit 時の最終検証で users/{uid}.pendingReferralCode を保存
+//   - js/auth.js register() に pendingReferralCode パラメータ追加
+//   - pages/admin/referral.html から couponPriority セクションを削除
+//     （5/24 仕様確定：クーポン優先固定のため設定不要）
+//   - i18n 3 言語：referral.codeInput* / codeOk 追加、cart 専用キー削除、
+//     admin.referral.priority* / ruleSection 削除、文言を register 入力前提に更新
+// 5/24 #82 Phase 2 Chunk 2 完了 → v102
+//   - functions/index.js に紹介クーポン処理を追加：
+//     - MESSAGES に referralCouponIssued / referralBonusEarned / referralBonusApplied 追加
+//     - generateCouponCode / issueCouponToRestaurant（衝突回避 5 回リトライ）
+//     - grantReferralReward（受け取る側のロール → クーポン or pendingFarmerBonus++）
+//     - confirmReferralForUser（pendingReferralCode → referredBy 昇格 + referralCount++・冪等）
+//     - consumeFarmerBonusForOrder（取引完了時に pendingFarmerBonus を 1 消費 + order に上乗せ）
+//     - processReferralAndBonus（エントリーポイント）
+//   - onOrderUpdated の status='completed' 分岐内で processReferralAndBonus を呼び出し
+//   - firestore.rules に match /coupons/{couponCode} 追加：
+//     - read: 所有者 or admin / create: false（CF のみ）
+//     - update: 所有者の usedAt + usedOrderId のみ・未使用時のみ / delete: false
+//   - SW PRECACHE 変更なし（バックエンド変更のみ）。版番号バンプは旧 SW 強制更新用
+// 5/24 #82 Phase 2 Chunk 3 完了 → v103
+//   - js/referral.js に validateCouponCode を追加（doc ID = code 文字列で直接 getDoc・
+//     形式・存在・所有者・未使用・期限内をチェック）
+//   - pages/restaurant/cart.html confirm ステージに「クーポンコード」入力欄を追加
+//   - renderConfirm: クーポン適用時に effectiveCampaignActive=false でレストラン側
+//     キャンペーン割引を抑制 + grand total から discount を差し引き表示
+//     + 「キャンペーン無効」注意書きを条件表示
+//   - placeOrders: クーポンは最大 totalAmount の order draft に集約して適用
+//     （usedOrderId 単一性確保 + 差額破棄ルールで cap）。同一 batch 内で
+//     coupons/{code}.usedAt + usedOrderId を書き込み（Rules で二重使用ガード）
+//   - i18n 3 言語に coupon.* キー 14 個追加
+//   - SW PRECACHE 変更なし（既存 referral.js は既に PRECACHE 済）
+// 5/24 #82 Phase 2 Chunk 4 完了 → v104
+//   - pages/restaurant/account.html に「使えるクーポン一覧」セクション追加
+//     where ownerUid==self + クライアント側で未使用 / 期限内フィルタ
+//     コード文字列・割引額・有効期限・発行元（紹介者 or 被紹介）表示 + コピーボタン
+//   - pages/farmer/account.html に「紹介ボーナス枠」カード追加
+//     settings/referral.enabled+farmerBonusKhr>0 のときのみ表示
+//     pendingFarmerBonus の残数 + 1 チケットあたりの金額を案内
+//   - i18n 3 言語に myCoupons.* + bonus.farmer* キー追加（合計約 16 個）
+//   - SW PRECACHE 変更なし（HTML 変更のみ・no-cache 配信で即反映）
+// 5/24 #82 Phase 3 不正対策 enforcement 完了 → v105
+//   - functions/index.js confirmReferralForUser に 3 つのガードを追加：
+//     1. maxReferralsPerUser enforcement（settings.maxReferralsPerUser > 0 のとき
+//        紹介者の referralCount が上限到達済みなら付与スキップ + pendingReferralCode クリア）
+//     2. 招待ネットワーク循環検知（1-hop A→B→A · 多段は Phase 3 対象外）
+//     3. トランザクション内で並行確定時の上限再チェック
+//   - 構造化ログ「[referral-skip] {reason, uid, code, ...extra}」を導入
+//     reason 語彙: orphan_code / self_code / max_referrals_exceeded /
+//     max_referrals_race / cycle_1hop
+//   - SW PRECACHE 変更なし（functions 変更のみ・バックエンドデプロイで反映）
+// 5/24 #82 Phase 2 Chunk 4 hot-fix → v106
+//   - pages/restaurant/account.html loadCoupons から orderBy を撤去
+//     where('ownerUid','==',uid) のみで取得し、issuedAt 降順は client-side sort で実施
+//   - 理由: where + orderBy の組み合わせは複合 index が必要となり、
+//     初回アクセス時に「インデックスを作成してください」エラーで停止するため
+//   - 件数は通常 数件〜数十件 オーダーで client sort で十分
+//   - 併せて firestore.rules に追加した coupons ルールは Firebase Console で
+//     手動反映が必要（本プロジェクトの運用：Console が source of truth）
+const CACHE_NAME = 'fishlink-v106';
 
 const PRECACHE_URLS = [
     '/',

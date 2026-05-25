@@ -136,6 +136,39 @@
             margin-top: 8px;
             font-style: italic;
         }
+
+        /* 5/24 #82 Phase 2 Chunk 4: 紹介ボーナス枠カード（農家側） */
+        .bonus-card {
+            background: linear-gradient(135deg, #fff7ed, #fed7aa);
+            border: 1px solid #fdba74;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .bonus-card__head {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 13px; font-weight: 700; color: #9a3412;
+            margin-bottom: 8px;
+        }
+        .bonus-card__head .material-symbols-outlined { font-size: 18px; }
+        .bonus-card__body {
+            font-size: 12px; color: #7c2d12; line-height: 1.5;
+        }
+        .bonus-card__count {
+            display: inline-block;
+            background: #c2410c;
+            color: #fff;
+            border-radius: 999px;
+            padding: 2px 10px;
+            font-size: 16px;
+            font-weight: 700;
+            margin-right: 6px;
+        }
+        .bonus-card__note {
+            font-size: 10px; color: #9a3412;
+            margin-top: 6px;
+            font-style: italic;
+        }
     </style>
 </head>
 
@@ -206,6 +239,16 @@
                     </button>
                 </div>
                 <div class="referral-card__phase-note" data-i18n="referral.phase1Note"></div>
+            </div>
+
+            <!-- 5/24 #82 Phase 2 Chunk 4: 紹介ボーナス枠（未消費チケット） -->
+            <div class="bonus-card" id="bonus-card" style="display:none;">
+                <div class="bonus-card__head">
+                    <span class="material-symbols-outlined">military_tech</span>
+                    <span data-i18n="bonus.farmerCardTitle"></span>
+                </div>
+                <div class="bonus-card__body" id="bonus-card-body"></div>
+                <div class="bonus-card__note" data-i18n="bonus.farmerDescNote"></div>
             </div>
 
             <div class="acc-menu-list">
@@ -289,7 +332,7 @@
         import { subscribeTodos } from '/js/todos.js';
         import { subscribeNotifications } from '/js/notifications.js';
         import {
-            collection, query, where, onSnapshot
+            collection, query, where, onSnapshot, doc, getDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 5/23 #82 Phase 1: 紹介コード
         import { ensureUserReferralCode } from '/js/referral.js';
@@ -388,6 +431,44 @@
             });
         }
 
+        // 5/24 #82 Phase 2 Chunk 4: 紹介ボーナス枠（未消費チケット）の表示
+        async function showFarmerBonus() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            const card = document.getElementById('bonus-card');
+            const body = document.getElementById('bonus-card-body');
+            if (!card || !body) return;
+            try {
+                // settings/referral から金額・enabled を読む
+                const settingsSnap = await getDoc(doc(db, 'settings', 'referral'));
+                const settings = settingsSnap.exists() ? settingsSnap.data() : null;
+                const amountKhr = Number(settings?.farmerBonusKhr || 0);
+                // settings 未設定 / OFF / 金額 0 → カード自体を表示しない（情報の混乱を避ける）
+                if (!settings || settings.enabled !== true || amountKhr <= 0) {
+                    card.style.display = 'none';
+                    return;
+                }
+                const count = Number(window.currentUserData?.pendingFarmerBonus || 0);
+                if (count > 0) {
+                    body.innerHTML = `<span class="bonus-card__count">${count}</span>` +
+                        `<span>${escapeHtml(i18next.t('bonus.farmerHasTickets', { count, amount: amountKhr.toLocaleString() }))}</span>`;
+                } else {
+                    body.innerHTML = escapeHtml(i18next.t('bonus.farmerEmpty'));
+                }
+                card.style.display = 'block';
+            } catch (e) {
+                console.warn('showFarmerBonus failed:', e);
+                card.style.display = 'none';
+            }
+        }
+
+        // ローカル escapeHtml（他ファイル同様にインライン定義）
+        function escapeHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
         waitForUserData(() => {
             renderHead();
             watchOrderBadge();
@@ -400,6 +481,8 @@
                 if (link) link.href = `/pages/restaurant/farmer.html?id=${window.currentUser.uid}`;
                 // 5/23 #82 Phase 1: 紹介コード表示
                 showReferralCode();
+                // 5/24 #82 Phase 2 Chunk 4: 紹介ボーナス枠表示
+                showFarmerBonus();
             }
             // 5/23 #69 Phase C: 初期スピナー解除
             document.body.classList.add('app-ready');

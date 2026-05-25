@@ -460,23 +460,24 @@
         </div>
         <div id="confirm-container"></div>
 
-        <!-- 5/23 #82 Phase 1: 紹介コード入力欄。
-             形式・存在・自己コード排除のみ検証し order.appliedReferralCode に記録（実際の割引・ボーナスは Phase 2）。 -->
-        <div class="referral-input-block" style="margin:14px 16px; padding:14px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:14px;">
+        <!-- 5/24 #82 Phase 2 Chunk 3: クーポンコード入力欄。
+             所有者・未使用・期限内を検証し、適用時は注文金額から差し引く。
+             キャンペーン割引と併用不可（クーポン優先固定）。 -->
+        <div class="coupon-input-block" style="margin:14px 16px; padding:14px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:14px;">
             <div style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--color-text); margin-bottom:6px;">
                 <span class="material-symbols-outlined" style="font-size:16px; color:#0d6e4c;">card_giftcard</span>
-                <span data-i18n="referral.inputTitle"></span>
+                <span data-i18n="coupon.inputLabel"></span>
             </div>
             <div style="display:flex; gap:8px;">
-                <input type="text" id="referral-input" maxlength="8" autocapitalize="off" autocomplete="off" spellcheck="false"
-                    data-i18n="[placeholder]referral.inputPlaceholder"
-                    style="flex:1; border:1px solid var(--color-border); border-radius:10px; padding:10px 12px; font-size:14px; font-family:monospace; letter-spacing:1px; text-transform:none; box-sizing:border-box;">
-                <button type="button" id="referral-apply" style="border:none; background:#0d6e4c; color:#fff; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;">
-                    <span data-i18n="referral.apply"></span>
+                <input type="text" id="coupon-input" maxlength="8" autocapitalize="off" autocomplete="off" spellcheck="false"
+                    data-i18n="[placeholder]coupon.inputPlaceholder"
+                    style="flex:1; border:1px solid var(--color-border); border-radius:10px; padding:10px 12px; font-size:14px; font-family:monospace; letter-spacing:1px; box-sizing:border-box;">
+                <button type="button" id="coupon-apply" style="border:none; background:#0d6e4c; color:#fff; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;">
+                    <span data-i18n="coupon.apply"></span>
                 </button>
             </div>
-            <div id="referral-status" style="font-size:11px; margin-top:6px; min-height:14px;"></div>
-            <div style="font-size:10px; color:var(--color-text-sub); margin-top:4px; font-style:italic;" data-i18n="referral.phase1Note"></div>
+            <div id="coupon-status" style="font-size:12px; margin-top:6px; min-height:14px;"></div>
+            <div style="font-size:11px; color:var(--color-text-sub); margin-top:4px;" data-i18n="coupon.inputHelp"></div>
         </div>
     </div>
 
@@ -494,6 +495,12 @@
     </div>
 
     <div class="grand-total-bar" id="grand-total-bar" style="display:none;">
+        <!-- 5/24 #82 Phase 2 Chunk 3: クーポン適用時のみ表示。confirm ステージで renderConfirm から制御。 -->
+        <div id="coupon-discount-row" style="display:none; font-size:13px; color:#dc2626; margin-bottom:6px; justify-content:space-between; align-items:center;">
+            <span><span data-i18n="coupon.totalLineLabel"></span> <span id="coupon-discount-code" style="font-family:monospace; font-size:11px; color:var(--color-text-sub); margin-left:4px;"></span></span>
+            <span id="coupon-discount-value">0 KHR</span>
+        </div>
+        <div id="coupon-disable-campaign-note" style="display:none; font-size:11px; color:#92400e; background:#fef3c7; border:1px solid #fde68a; border-radius:8px; padding:6px 10px; margin-bottom:8px;" data-i18n="coupon.disableCampaign"></div>
         <div class="grand-total-row">
             <span class="grand-total-row__label" data-i18n="cart.grandTotal"></span>
             <span class="grand-total-row__value" id="grand-total">0 KHR</span>
@@ -518,8 +525,8 @@
         } from '/js/order-utils.js';
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
         import { formatProvince, formatDistrict } from '/js/province-utils.js';
-        // 5/23 #82 Phase 1: 紹介コード検証
-        import { validateReferralCode } from '/js/referral.js';
+        // 5/24 #82 Phase 2 Chunk 3: クーポンコード検証
+        import { validateCouponCode } from '/js/referral.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
@@ -543,9 +550,10 @@
         let serviceRate = 0.05, campaignActive = false, campaignDiscountRate = 0;
         let farmerRate = 0.05, farmerCampaignActive = false, farmerCampaignDiscountRate = 0;
 
-        // 5/23 #82 Phase 1: 適用済みの紹介コード（confirm ステージで入力 → placeOrders で order docs に記録）
-        // Phase 1 では割引適用なし・記録のみ。
-        let appliedReferralCode = null;
+        // 5/24 #82 Phase 2 Chunk 3: 適用済みクーポン
+        // { code: '...', amountKhr: 5000 } / 未適用なら null
+        // 適用時はキャンペーン割引（レストラン側）を無効化し、注文金額から差し引く。
+        let appliedCoupon = null;
 
         // ── Google Maps ready 待ち ──
         function waitForGoogleMaps() {
@@ -1161,6 +1169,9 @@
 
         async function renderConfirm() {
             const container = document.getElementById('confirm-container');
+            // 5/24 #82 Phase 2 Chunk 3: クーポン適用時はレストラン側キャンペーン割引を無効化
+            // （農家側のキャンペーンは継続・農家受取額に影響）
+            const effectiveCampaignActive = appliedCoupon ? false : campaignActive;
             // render と同じロジックで最終内訳を算出
             const groups = groupByFarmer(cartItems);
             let html = '';
@@ -1173,7 +1184,7 @@
                     if (!listing) return null;
                     const prices = calcItemPrices({
                         listing, quantity: item.quantity, gutProcessing: item.gutProcessing,
-                        serviceRate, campaignActive, campaignDiscountRate,
+                        serviceRate, campaignActive: effectiveCampaignActive, campaignDiscountRate,
                         farmerRate, farmerCampaignActive, farmerCampaignDiscountRate,
                     });
                     return { listing, item, prices };
@@ -1205,7 +1216,7 @@
                             <span style="font-size:11px; color:var(--color-text-sub);">${i18next.t('cart.distance', { km: dist.toFixed(1) })}</span>
                         </div>
                         ${rows}
-                        ${campaignActive && itemsSum.campaignDiscount > 0 ? `<div class="confirm-group__row" style="color:#dc2626;"><span>${i18next.t('cart.campaignDiscount')}</span><span class="v">-${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
+                        ${effectiveCampaignActive && itemsSum.campaignDiscount > 0 ? `<div class="confirm-group__row" style="color:#dc2626;"><span>${i18next.t('cart.campaignDiscount')}</span><span class="v">-${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
                         <div class="confirm-group__row"><span>${i18next.t('cart.deliveryFee')}</span><span class="v">${fmtKhr(deliveryFee)}</span></div>
                         <div class="confirm-group__row confirm-group__total"><span>${i18next.t('cart.groupTotal')}</span><span class="v">${fmtKhr(groupTotal)}</span></div>
                         ${delivPickHtml}
@@ -1214,12 +1225,33 @@
             }
 
             container.innerHTML = html;
-            document.getElementById('grand-total').textContent = fmtKhr(grandTotal);
+
+            // 5/24 #82 Phase 2 Chunk 3: クーポン適用時の表示更新
+            // - grand total から couponDiscount を差し引き（grandTotal 以下に capping）
+            // - クーポン割引行・「キャンペーン無効」注意書きを表示
+            const couponDiscountRow = document.getElementById('coupon-discount-row');
+            const couponDisableNote = document.getElementById('coupon-disable-campaign-note');
+            let effectiveDiscount = 0;
+            if (appliedCoupon) {
+                effectiveDiscount = Math.min(appliedCoupon.amountKhr, grandTotal);
+                document.getElementById('coupon-discount-code').textContent = `(${appliedCoupon.code})`;
+                document.getElementById('coupon-discount-value').textContent = `-${fmtKhr(effectiveDiscount)}`;
+                couponDiscountRow.style.display = 'flex';
+                // 元々キャンペーンが有効だった場合のみ「無効化されました」注意を表示
+                couponDisableNote.style.display = (campaignActive && campaignDiscountRate > 0) ? 'block' : 'none';
+            } else {
+                couponDiscountRow.style.display = 'none';
+                couponDisableNote.style.display = 'none';
+            }
+            document.getElementById('grand-total').textContent = fmtKhr(grandTotal - effectiveDiscount);
         }
 
         // 注文確定処理（旧インライン実装を関数化）
         async function placeOrders() {
             const uid = window.currentUser.uid;
+
+            // 5/24 #82 Phase 2 Chunk 3: クーポン適用時はレストラン側キャンペーン割引を無効化
+            const effectiveCampaignActive = appliedCoupon ? false : campaignActive;
 
             // 最新の在庫をチェック
             for (const it of cartItems) {
@@ -1232,92 +1264,146 @@
                 }
             }
 
+            // 5/24 #82 Phase 2 Chunk 3: クーポン適用時は再検証
+            // confirm 滞在中に別タブで使用された等を防ぐ。
+            if (appliedCoupon) {
+                const result = await validateCouponCode(appliedCoupon.code, uid);
+                if (!result.ok) {
+                    throw new Error(i18next.t(result.error) || 'Coupon invalid');
+                }
+                // 念のため最新金額に追従
+                appliedCoupon.amountKhr = result.amountKhr;
+            }
+
             const batch = writeBatch(db);
             const groups = groupByFarmer(cartItems);
 
+            // 5/24 #82 Phase 2 Chunk 3: 全 order の totalAmount を先に算出し、
+            // クーポン適用先の order（最大 totalAmount を持つもの）を 1 つ選ぶ。
+            //   - usedOrderId は coupon doc に 1 つしか記録できないため
+            //   - 「最大」を選ぶことで discount が cap されにくくする
+            const orderDrafts = [];
             for (const [farmerId, items] of groups.entries()) {
-                    const pick = deliveryPick.get(farmerId);
-                    if (!pick?.dateIso || !pick?.time) {
-                        throw new Error(i18next.t('cart.errorDelivery'));
-                    }
+                const pick = deliveryPick.get(farmerId);
+                if (!pick?.dateIso || !pick?.time) {
+                    throw new Error(i18next.t('cart.errorDelivery'));
+                }
 
-                    const dist = distanceCache.get(farmerId) || 0;
-                    const firstListing = listingCache.get(items[0].listingId);
-                    const deliveryFee = calcDeliveryFee(
-                        firstListing?.deliveryRate, firstListing?.freeDeliveryDistance, dist
-                    );
+                const dist = distanceCache.get(farmerId) || 0;
+                const firstListing = listingCache.get(items[0].listingId);
+                const deliveryFee = calcDeliveryFee(
+                    firstListing?.deliveryRate, firstListing?.freeDeliveryDistance, dist
+                );
 
-                    // 各item の料金計算＋snap
-                    const itemDocs = [];
-                    for (const it of items) {
-                        const listing = listingCache.get(it.listingId);
-                        if (!listing) continue;
-                        const prices = calcItemPrices({
-                            listing, quantity: it.quantity, gutProcessing: it.gutProcessing,
-                            serviceRate, campaignActive, campaignDiscountRate,
-                            farmerRate, farmerCampaignActive, farmerCampaignDiscountRate,
-                        });
-                        itemDocs.push({
-                            listingId: it.listingId,
-                            quantity: it.quantity,
-                            gutProcessing: !!it.gutProcessing,
-                            ...prices,
-                            snapFishType: listing.fishType || null,
-                            snapSize: listing.size || null,
-                            snapPhotoUrl: listing.photoUrl || null,
-                            snapPrice: listing.price ?? null,
-                            snapGutPrice: listing.gutPrice ?? null,
-                        });
-                    }
-
-                    const itemsSum = sumItems(itemDocs);
-                    const total = calcOrderTotal(itemsSum, deliveryFee);
-                    const first = itemDocs[0];
-
-                    // M/D 形式
-                    const [y, m, d] = pick.dateIso.split('-').map(Number);
-                    const deliveryDate = `${m}/${d}`;
-
-                    const orderRef = doc(collection(db, 'orders'));
-                    batch.set(orderRef, {
-                        restaurantId: uid,
-                        farmerId,
-                        // order-level
-                        deliveryDate,
-                        deliveryDateIso: pick.dateIso,
-                        deliveryTime: pick.time,
-                        deliveryFee,
-                        // 5/23 #82 Phase 1: 適用された紹介コード（記録のみ・割引適用なし）
-                        appliedReferralCode: appliedReferralCode || null,
-                        // items[] 新方式
-                        items: itemDocs,
-                        // legacy: 合計値（fishPrice/serviceFee/... は items合計）
-                        fishPrice: itemsSum.fishPrice,
-                        serviceFee: itemsSum.serviceFee,
-                        campaignDiscount: itemsSum.campaignDiscount,
-                        totalAmount: total,
-                        serviceRateUsed: serviceRate,
-                        farmerCommission: itemsSum.farmerCommission,
-                        farmerCommissionGross: itemsSum.farmerCommissionGross,
-                        farmerCampaignDiscount: itemsSum.farmerCampaignDiscount,
-                        farmerRateUsed: farmerRate,
-                        farmerReceiveAmount: itemsSum.farmerReceiveAmount + deliveryFee,
-                        // legacy: 先頭item由来（既存表示・通知向け）
-                        listingId: first.listingId,
-                        quantity: first.quantity,
-                        gutProcessing: first.gutProcessing,
-                        snapFishType: first.snapFishType,
-                        snapSize: first.snapSize,
-                        snapPhotoUrl: first.snapPhotoUrl,
-                        snapPrice: first.snapPrice,
-                        snapGutPrice: first.snapGutPrice,
-                        // ステータス
-                        status: 'pending',
-                        declineReason: null,
-                        paymentStatus: 'pending',
-                        createdAt: serverTimestamp(),
+                // 各item の料金計算＋snap
+                const itemDocs = [];
+                for (const it of items) {
+                    const listing = listingCache.get(it.listingId);
+                    if (!listing) continue;
+                    const prices = calcItemPrices({
+                        listing, quantity: it.quantity, gutProcessing: it.gutProcessing,
+                        serviceRate, campaignActive: effectiveCampaignActive, campaignDiscountRate,
+                        farmerRate, farmerCampaignActive, farmerCampaignDiscountRate,
+                    });
+                    itemDocs.push({
+                        listingId: it.listingId,
+                        quantity: it.quantity,
+                        gutProcessing: !!it.gutProcessing,
+                        ...prices,
+                        snapFishType: listing.fishType || null,
+                        snapSize: listing.size || null,
+                        snapPhotoUrl: listing.photoUrl || null,
+                        snapPrice: listing.price ?? null,
+                        snapGutPrice: listing.gutPrice ?? null,
                     });
                 }
+
+                const itemsSum = sumItems(itemDocs);
+                const total = calcOrderTotal(itemsSum, deliveryFee);
+                orderDrafts.push({ farmerId, pick, deliveryFee, itemDocs, itemsSum, total });
+            }
+
+            // クーポン適用先（最大 totalAmount の draft）を選択
+            let couponTargetIdx = -1;
+            if (appliedCoupon) {
+                let maxTotal = -1;
+                orderDrafts.forEach((d, i) => {
+                    if (d.total > maxTotal) { maxTotal = d.total; couponTargetIdx = i; }
+                });
+            }
+
+            const orderRefs = []; // coupon doc update 時に usedOrderId を埋めるため
+            orderDrafts.forEach((draft, idx) => {
+                const { farmerId, pick, deliveryFee, itemDocs, itemsSum, total } = draft;
+                const first = itemDocs[0];
+
+                // M/D 形式
+                const [y, m, d] = pick.dateIso.split('-').map(Number);
+                const deliveryDate = `${m}/${d}`;
+
+                // クーポン適用：差額破棄ルール（discount > total なら total で cap）
+                let appliedCouponCode = null;
+                let referralDiscountAmount = 0;
+                let totalAmount = total;
+                if (appliedCoupon && idx === couponTargetIdx) {
+                    referralDiscountAmount = Math.min(appliedCoupon.amountKhr, total);
+                    totalAmount = total - referralDiscountAmount;
+                    appliedCouponCode = appliedCoupon.code;
+                }
+
+                const orderRef = doc(collection(db, 'orders'));
+                orderRefs[idx] = orderRef;
+                batch.set(orderRef, {
+                    restaurantId: uid,
+                    farmerId,
+                    // order-level
+                    deliveryDate,
+                    deliveryDateIso: pick.dateIso,
+                    deliveryTime: pick.time,
+                    deliveryFee,
+                    // items[] 新方式
+                    items: itemDocs,
+                    // legacy: 合計値（fishPrice/serviceFee/... は items合計）
+                    fishPrice: itemsSum.fishPrice,
+                    serviceFee: itemsSum.serviceFee,
+                    campaignDiscount: itemsSum.campaignDiscount,
+                    totalAmount,
+                    serviceRateUsed: serviceRate,
+                    farmerCommission: itemsSum.farmerCommission,
+                    farmerCommissionGross: itemsSum.farmerCommissionGross,
+                    farmerCampaignDiscount: itemsSum.farmerCampaignDiscount,
+                    farmerRateUsed: farmerRate,
+                    farmerReceiveAmount: itemsSum.farmerReceiveAmount + deliveryFee,
+                    // 5/24 #82 Phase 2 Chunk 3: クーポン適用結果（適用先の order にのみ記録）
+                    appliedCouponCode,
+                    referralDiscountAmount,
+                    // legacy: 先頭item由来（既存表示・通知向け）
+                    listingId: first.listingId,
+                    quantity: first.quantity,
+                    gutProcessing: first.gutProcessing,
+                    snapFishType: first.snapFishType,
+                    snapSize: first.snapSize,
+                    snapPhotoUrl: first.snapPhotoUrl,
+                    snapPrice: first.snapPrice,
+                    snapGutPrice: first.snapGutPrice,
+                    // ステータス
+                    status: 'pending',
+                    declineReason: null,
+                    paymentStatus: 'pending',
+                    createdAt: serverTimestamp(),
+                });
+            });
+
+            // 5/24 #82 Phase 2 Chunk 3: クーポン使用済みマーク（同一 batch 内）
+            // Rules: 所有者のみ + usedOrderId が null のときのみ + usedAt/usedOrderId のみ書き換え
+            // → 二重使用ガード（同時に別タブで使われたら Rules で reject）
+            if (appliedCoupon && couponTargetIdx >= 0) {
+                const couponRef = doc(db, 'coupons', appliedCoupon.code);
+                batch.update(couponRef, {
+                    usedAt: serverTimestamp(),
+                    usedOrderId: orderRefs[couponTargetIdx].id,
+                });
+            }
 
             await batch.commit();
             await clearCart(uid);
@@ -1326,11 +1412,11 @@
             location.replace('/pages/restaurant/orders.html');
         }
 
-        // ── 5/23 #82 Phase 1: 紹介コード入力の検証＆適用 ──
-        (function setupReferralInput() {
-            const input = document.getElementById('referral-input');
-            const applyBtn = document.getElementById('referral-apply');
-            const statusEl = document.getElementById('referral-status');
+        // ── 5/24 #82 Phase 2 Chunk 3: クーポンコード入力の検証＆適用 ──
+        (function setupCouponInput() {
+            const input = document.getElementById('coupon-input');
+            const applyBtn = document.getElementById('coupon-apply');
+            const statusEl = document.getElementById('coupon-status');
             if (!input || !applyBtn || !statusEl) return;
             const btnLabel = applyBtn.querySelector('[data-i18n]');
 
@@ -1338,45 +1424,49 @@
                 statusEl.textContent = text;
                 statusEl.style.color = color;
             }
-            function setBtn(key) {
+            function setBtnLabel(key) {
                 btnLabel.setAttribute('data-i18n', key);
                 btnLabel.textContent = i18next.t(key);
             }
             function release() {
-                appliedReferralCode = null;
+                appliedCoupon = null;
                 input.value = '';
                 input.disabled = false;
                 setStatus('', '');
-                setBtn('referral.apply');
+                setBtnLabel('coupon.apply');
                 applyBtn.disabled = false;
+                // confirm ステージで適用解除した場合は即座に表示更新
+                if (stage === 'confirm') renderConfirm();
             }
 
             applyBtn.addEventListener('click', async () => {
                 // 適用済み状態なら「解除」として動く
-                if (appliedReferralCode) { release(); return; }
+                if (appliedCoupon) { release(); return; }
                 const raw = (input.value || '').trim();
                 if (!raw) { setStatus('', ''); return; }
                 applyBtn.disabled = true;
                 input.disabled = true;
-                setStatus(i18next.t('referral.checking'), 'var(--color-text-sub)');
+                setStatus(i18next.t('coupon.checking'), 'var(--color-text-sub)');
                 try {
                     const myUid = window.currentUser?.uid;
-                    const result = await validateReferralCode(raw, myUid);
+                    const result = await validateCouponCode(raw, myUid);
                     if (!result.ok) {
-                        appliedReferralCode = null;
+                        appliedCoupon = null;
                         setStatus(i18next.t(result.error), '#dc2626');
                         applyBtn.disabled = false;
                         input.disabled = false;
                         return;
                     }
-                    appliedReferralCode = raw;
-                    setStatus(i18next.t('referral.applied'), '#047857');
-                    setBtn('referral.remove');
+                    appliedCoupon = { code: raw, amountKhr: result.amountKhr };
+                    setStatus(i18next.t('coupon.applied', { amount: result.amountKhr.toLocaleString() }), '#047857');
+                    setBtnLabel('coupon.remove');
                     applyBtn.disabled = false;
+                    // confirm ステージなら即座に再描画して grand total を反映
+                    if (stage === 'confirm') renderConfirm();
                 } catch (e) {
-                    console.error('validateReferralCode failed:', e);
-                    appliedReferralCode = null;
-                    setStatus(i18next.t('referral.errorGeneric'), '#dc2626');
+                    console.error('validateCouponCode failed:', e);
+                    appliedCoupon = null;
+                    setStatus(i18next.t('coupon.errorGeneric'), '#dc2626');
                     applyBtn.disabled = false;
                     input.disabled = false;
                 }

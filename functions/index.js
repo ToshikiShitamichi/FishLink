@@ -295,6 +295,24 @@ const MESSAGES = {
     en: { title: "Reply from {{farmer}}", body: "{{text}}" },
     km: { title: "ចម្លើយពី {{farmer}}", body: "{{text}}" },
   },
+  // 5/24 #82 Phase 2 Chunk 2: 紹介クーポン発行通知
+  referralCouponIssued: {
+    ja: { title: "紹介クーポンを獲得しました", body: "{{amount}} KHR 割引クーポン（コード: {{code}}・{{validDays}}日有効）" },
+    en: { title: "Referral coupon earned", body: "{{amount}} KHR off (code: {{code}}, valid {{validDays}} days)" },
+    km: { title: "បានទទួលគូប៉ុងណែនាំ", body: "បញ្ចុះ {{amount}} KHR (កូដ: {{code}} · មានសុពលភាព {{validDays}} ថ្ងៃ)" },
+  },
+  // 5/24 #82 Phase 2 Chunk 2: 農家ボーナス枠獲得通知（チケット数+1）
+  referralBonusEarned: {
+    ja: { title: "紹介ボーナス枠を獲得", body: "次回以降の取引で {{amount}} KHR が上乗せされます" },
+    en: { title: "Referral bonus credit earned", body: "Your next transaction will include a {{amount}} KHR bonus" },
+    km: { title: "បានទទួលប្រាក់រង្វាន់ណែនាំ", body: "ប្រតិបត្តិការបន្ទាប់នឹងរួមបញ្ចូលប្រាក់រង្វាន់ {{amount}} KHR" },
+  },
+  // 5/24 #82 Phase 2 Chunk 2: 農家ボーナス消費通知（取引完了時に上乗せ適用）
+  referralBonusApplied: {
+    ja: { title: "紹介ボーナス適用", body: "今回の取引に {{amount}} KHR の紹介ボーナスが上乗せされました" },
+    en: { title: "Referral bonus applied", body: "{{amount}} KHR referral bonus added to this transaction" },
+    km: { title: "បានអនុវត្តប្រាក់រង្វាន់ណែនាំ", body: "បានបន្ថែមប្រាក់រង្វាន់ {{amount}} KHR លើប្រតិបត្តិការនេះ" },
+  },
 };
 
 const REPORT_TYPE_LABELS = {
@@ -320,6 +338,336 @@ function getMessage(type, lang, vars) {
     body = body.replace(`{{${key}}}`, val);
   }
   return { title, body };
+}
+
+// ──────────────────────────────────────────────────────────────
+// 5/24 #82 Phase 2 Chunk 2: 紹介クーポン・農家ボーナス処理
+// ──────────────────────────────────────────────────────────────
+
+const COUPON_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+const COUPON_CODE_LEN = 8;
+
+function generateCouponCode() {
+  let s = "";
+  for (let i = 0; i < COUPON_CODE_LEN; i++) {
+    s += COUPON_CODE_CHARS[Math.floor(Math.random() * COUPON_CODE_CHARS.length)];
+  }
+  return s;
+}
+
+/**
+ * 衝突回避付きでレストランへクーポンを発行。
+ * 5 回リトライしても衝突したら null を返す（実用上ほぼ起こらない・62^8 ≈ 2.18e14）。
+ *
+ * @param {string} toUid 発行先 uid（レストラン）
+ * @param {string} sourceUid 紹介相手側 uid
+ * @param {string} sourceReferralCode 元の紹介コード
+ * @param {'referrer' | 'referred'} issuedReason
+ * @param {number} amountKhr 割引額
+ * @param {number} validDays 有効期限（日数）
+ * @returns {Promise<string | null>} 発行されたコード文字列
+ */
+async function issueCouponToRestaurant(toUid, sourceUid, sourceReferralCode, issuedReason, amountKhr, validDays) {
+  const admin = require("firebase-admin/firestore");
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + validDays * 24 * 60 * 60 * 1000);
+
+  let code = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = generateCouponCode();
+    const couponRef = db.doc(`coupons/${candidate}`);
+    try {
+      // トランザクションで存在チェック → 作成（同時並行でも衝突しない）
+      const ok = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(couponRef);
+        if (snap.exists) return false;
+        tx.set(couponRef, {
+          ownerUid: toUid,
+          amountKhr,
+          issuedAt: admin.FieldValue.serverTimestamp(),
+          expiresAt,
+          usedAt: null,
+          usedOrderId: null,
+          issuedReason,
+          sourceReferralCode,
+          sourceUid,
+        });
+        return true;
+      });
+      if (ok) {
+        code = candidate;
+        break;
+      }
+    } catch (e) {
+      console.warn("issueCouponToRestaurant tx attempt failed:", attempt, e.message);
+    }
+  }
+  if (!code) {
+    console.error("issueCouponToRestaurant: failed to generate unique code after 5 retries");
+    return null;
+  }
+  console.log("Coupon issued:", code, "to", toUid, "reason:", issuedReason, "amount:", amountKhr);
+
+  // FCM 通知（受信者の言語で）
+  try {
+    const userSnap = await db.doc(`users/${toUid}`).get();
+    const lang = userSnap.data()?.lang || "en";
+    const vars = { code, amount: amountKhr.toLocaleString(), validDays: String(validDays) };
+    const { title, body } = getMessage("referralCouponIssued", lang, vars);
+    await notifyUser(toUid, {
+      type: "referral_coupon_issued",
+      title, body,
+      msgKey: "referralCouponIssued", vars,
+      url: "/pages/restaurant/account.html",
+    });
+  } catch (e) {
+    console.warn("referralCouponIssued FCM failed:", e.message);
+  }
+  return code;
+}
+
+/**
+ * 紹介関係確定時に「受け取る側」のロールに応じた特典を付与。
+ *  - レストラン → クーポン発行
+ *  - 農家       → pendingFarmerBonus += 1（チケット式）
+ */
+async function grantReferralReward(toUid, toRole, sourceUid, sourceReferralCode, issuedReason, settings) {
+  const admin = require("firebase-admin/firestore");
+  if (toRole === "restaurant") {
+    const amountKhr = Number(settings.restaurantCouponKhr || 0);
+    if (amountKhr <= 0) {
+      console.log("grantReferralReward skipped (restaurantCouponKhr=0):", toUid);
+      return;
+    }
+    const validDays = Number(settings.couponValidDays || 30);
+    await issueCouponToRestaurant(toUid, sourceUid, sourceReferralCode, issuedReason, amountKhr, validDays);
+  } else if (toRole === "farmer") {
+    const amountKhr = Number(settings.farmerBonusKhr || 0);
+    if (amountKhr <= 0) {
+      console.log("grantReferralReward skipped (farmerBonusKhr=0):", toUid);
+      return;
+    }
+    await db.doc(`users/${toUid}`).update({
+      pendingFarmerBonus: admin.FieldValue.increment(1),
+    });
+    console.log("pendingFarmerBonus +1 for farmer:", toUid);
+
+    // FCM 通知
+    try {
+      const userSnap = await db.doc(`users/${toUid}`).get();
+      const lang = userSnap.data()?.lang || "en";
+      const vars = { amount: amountKhr.toLocaleString() };
+      const { title, body } = getMessage("referralBonusEarned", lang, vars);
+      await notifyUser(toUid, {
+        type: "referral_bonus_earned",
+        title, body,
+        msgKey: "referralBonusEarned", vars,
+        url: "/pages/farmer/account.html",
+      });
+    } catch (e) {
+      console.warn("referralBonusEarned FCM failed:", e.message);
+    }
+  }
+}
+
+/**
+ * 1 ユーザーについて、pendingReferralCode → referredBy 昇格 + 双方特典付与。
+ * 既に referredBy が確定済み、または pendingReferralCode が無い場合はスキップ（冪等）。
+ *
+ * @param {string} uid 被紹介者の uid
+ * @param {object} settings settings/referral のデータ
+ */
+async function confirmReferralForUser(uid, settings) {
+  const admin = require("firebase-admin/firestore");
+  const userRef = db.doc(`users/${uid}`);
+  const snap = await userRef.get();
+  if (!snap.exists) return;
+  const data = snap.data();
+
+  if (data.referredBy) return; // 既に確定済み
+  const code = data.pendingReferralCode;
+  if (!code) return; // 入力なし
+
+  // 5/24 #82 Phase 3: 不正検知ヘルパー — 処理スキップ時の pendingReferralCode クリア + 構造化ログ
+  // reason は telemetry 検索しやすいよう固定の小語彙にする
+  const skipAndClear = async (reason, extra = {}) => {
+    try { await userRef.update({ pendingReferralCode: admin.FieldValue.delete() }); } catch (_) { /* ignore */ }
+    console.warn("[referral-skip]", JSON.stringify({ reason, uid, code, ...extra }));
+  };
+
+  // 紹介者を探す
+  const referrerSnap = await db.collection("users")
+    .where("referralCode", "==", code)
+    .limit(1)
+    .get();
+  if (referrerSnap.empty) {
+    await skipAndClear("orphan_code");
+    return;
+  }
+  const referrerDoc = referrerSnap.docs[0];
+  const referrerUid = referrerDoc.id;
+  if (referrerUid === uid) {
+    // 自己コード（通常 register 検証で弾かれるが防御的に）
+    await skipAndClear("self_code");
+    return;
+  }
+  const referrerData = referrerDoc.data();
+
+  // 5/24 #82 Phase 3: maxReferralsPerUser enforcement
+  // settings.maxReferralsPerUser > 0 で上限あり / 0 = 無制限
+  // 紹介者の referralCount が上限到達済みなら付与をスキップして pendingReferralCode をクリア
+  // （被紹介者は将来コードを差し替えできないため、ここで永久にスキップとなる点はトレードオフ）
+  const maxReferrals = Number(settings.maxReferralsPerUser || 0);
+  if (maxReferrals > 0 && Number(referrerData.referralCount || 0) >= maxReferrals) {
+    await skipAndClear("max_referrals_exceeded", {
+      referrerUid,
+      currentCount: referrerData.referralCount || 0,
+      max: maxReferrals,
+    });
+    return;
+  }
+
+  // 5/24 #82 Phase 3: 招待ネットワーク循環検知（1-hop A→B→A）
+  // 紹介者 referrer の referredBy がこのユーザーの紹介コードと一致するなら循環。
+  // 多段の循環（A→B→C→A 等）は実用上発生しにくく、検知コスト高いため Phase 3 では skip。
+  if (data.referralCode && referrerData.referredBy === data.referralCode) {
+    await skipAndClear("cycle_1hop", {
+      referrerUid,
+      referrerReferredBy: referrerData.referredBy,
+      myReferralCode: data.referralCode,
+    });
+    return;
+  }
+
+  // referredBy 確定 + 紹介者 referralCount +1 をアトミックに
+  // トランザクション内で上限を再チェック（並行確定でも上限を超えないようにする）
+  let exceeded = false;
+  await db.runTransaction(async (tx) => {
+    const freshUserSnap = await tx.get(userRef);
+    const fresh = freshUserSnap.data() || {};
+    if (fresh.referredBy) {
+      // 別経路で同時確定された場合は何もしない
+      return;
+    }
+    const freshReferrerSnap = await tx.get(referrerDoc.ref);
+    const freshReferrer = freshReferrerSnap.data() || {};
+    if (maxReferrals > 0 && Number(freshReferrer.referralCount || 0) >= maxReferrals) {
+      // 並行登録で上限を超えそう → このユーザーを諦める（pendingReferralCode はトランザクション外で消す）
+      exceeded = true;
+      return;
+    }
+    tx.update(userRef, {
+      referredBy: code,
+      pendingReferralCode: admin.FieldValue.delete(),
+    });
+    tx.update(referrerDoc.ref, {
+      referralCount: admin.FieldValue.increment(1),
+    });
+  });
+
+  if (exceeded) {
+    await skipAndClear("max_referrals_race", { referrerUid });
+    return;
+  }
+
+  console.log("Referral confirmed:", uid, "<-", referrerUid, "code:", code);
+
+  // 双方に特典付与（受け取る側のロールで決定）
+  await grantReferralReward(uid, data.role, referrerUid, code, "referred", settings);
+  await grantReferralReward(referrerUid, referrerData.role, uid, code, "referrer", settings);
+}
+
+/**
+ * 農家側の order 完了時に pendingFarmerBonus を 1 消費して order に referralBonusAmount を記録。
+ * 既に referralBonusAmount がセットされていればスキップ（冪等）。
+ *
+ * @param {string} orderId
+ * @param {object} order order doc データ
+ * @param {object} settings settings/referral のデータ
+ */
+async function consumeFarmerBonusForOrder(orderId, order, settings) {
+  const admin = require("firebase-admin/firestore");
+  if (order.referralBonusAmount && order.referralBonusAmount > 0) {
+    // 既に消費済み
+    return;
+  }
+  const farmerUid = order.farmerId;
+  if (!farmerUid) return;
+  const amountKhr = Number(settings.farmerBonusKhr || 0);
+  if (amountKhr <= 0) return;
+
+  // トランザクション：pendingFarmerBonus > 0 を確認しつつ -1 + order に記録
+  const result = await db.runTransaction(async (tx) => {
+    const farmerRef = db.doc(`users/${farmerUid}`);
+    const orderRef = db.doc(`orders/${orderId}`);
+    const farmerSnap = await tx.get(farmerRef);
+    const fresh = farmerSnap.data() || {};
+    const remaining = Number(fresh.pendingFarmerBonus || 0);
+    if (remaining <= 0) return { consumed: false };
+    const orderSnap = await tx.get(orderRef);
+    if (orderSnap.data()?.referralBonusAmount > 0) return { consumed: false }; // 2 重防止
+    tx.update(farmerRef, {
+      pendingFarmerBonus: admin.FieldValue.increment(-1),
+    });
+    tx.update(orderRef, {
+      referralBonusAmount: amountKhr,
+      // 既存 farmerReceiveAmount にも上乗せ
+      farmerReceiveAmount: admin.FieldValue.increment(amountKhr),
+    });
+    return { consumed: true };
+  });
+
+  if (!result.consumed) return;
+  console.log("Farmer bonus consumed:", farmerUid, "order:", orderId, "amount:", amountKhr);
+
+  // FCM 通知
+  try {
+    const userSnap = await db.doc(`users/${farmerUid}`).get();
+    const lang = userSnap.data()?.lang || "en";
+    const vars = { amount: amountKhr.toLocaleString() };
+    const { title, body } = getMessage("referralBonusApplied", lang, vars);
+    await notifyUser(farmerUid, {
+      type: "referral_bonus_applied",
+      title, body,
+      msgKey: "referralBonusApplied", vars,
+      url: "/pages/farmer/payment.html?id=" + orderId,
+      orderId,
+    });
+  } catch (e) {
+    console.warn("referralBonusApplied FCM failed:", e.message);
+  }
+}
+
+/**
+ * 取引完了時に呼ばれるエントリーポイント。
+ *  - settings/referral.enabled が false なら全スキップ
+ *  - farmer / restaurant それぞれの pendingReferralCode を referredBy に昇格＆特典付与
+ *  - farmer の pendingFarmerBonus を 1 消費して order に上乗せ
+ */
+async function processReferralAndBonus(orderId, order) {
+  try {
+    const settingsSnap = await db.doc("settings/referral").get();
+    const settings = settingsSnap.exists ? settingsSnap.data() : null;
+    if (!settings || settings.enabled !== true) {
+      console.log("processReferralAndBonus skipped (settings disabled):", orderId);
+      return;
+    }
+
+    // 双方の referredBy 昇格（順次・トランザクションは内部で）
+    if (order.farmerId) {
+      await confirmReferralForUser(order.farmerId, settings);
+    }
+    if (order.restaurantId) {
+      await confirmReferralForUser(order.restaurantId, settings);
+    }
+
+    // 農家ボーナス消費（毎回・referredBy 確定後のチケットを消費可能）
+    if (order.farmerId) {
+      await consumeFarmerBonusForOrder(orderId, order, settings);
+    }
+  } catch (e) {
+    console.error("processReferralAndBonus failed:", orderId, e);
+  }
 }
 
 // ── 取引番号採番（カンボジア時間 UTC+7 ベースの YYMMDD で日次カウンター）──
@@ -476,6 +824,12 @@ exports.onOrderUpdated = onDocumentUpdated(
         await clearTodo(after.farmerId, 'farmer_reply', orderId);
         await clearTodo(after.restaurantId, 'rest_reply', orderId);
         await createTodo(after.restaurantId, 'rest_pay', orderId);
+
+        // 5/24 #82 Phase 2 Chunk 2: 紹介関係の確定 + 双方特典付与 + 農家ボーナス消費
+        // - referredBy 未確定の場合は pendingReferralCode を referredBy に昇格 + 双方に特典発行
+        // - 農家側は毎回 pendingFarmerBonus を 1 消費して order に上乗せ
+        // - settings/referral.enabled が false なら全スキップ（冪等・失敗してもログのみ）
+        await processReferralAndBonus(orderId, after);
 
         // paymentDeadline = 配送完了時刻 + 10分（既にセット済みならスキップ）
         if (!after.paymentDeadline) {

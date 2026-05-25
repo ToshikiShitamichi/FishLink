@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
+    <title>FishLink Admin</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        body { background: #f8fafc; }
+
+        .admin-shell { max-width: 1280px; margin: 0 auto; padding: 24px; }
+        .settings-content { max-width: 880px; margin: 0 auto; }
+
+        .admin-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
+        }
+        .admin-brand { font-size: 13px; color: #64748b; }
+        .admin-title { font-size: 26px; font-weight: 700; color: #0f172a; margin-top: 2px; }
+        .admin-subtitle { font-size: 13px; color: #475569; margin-top: 4px; }
+
+        .admin-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+        .admin-nav a {
+            text-decoration: none; color: #475569; padding: 8px 14px;
+            border-radius: 999px; background: #fff; border: 1px solid #e2e8f0;
+            font-size: 13px; font-weight: 600; white-space: nowrap;
+        }
+        .admin-nav a.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+        .admin-nav a:hover:not(.active) { background: #f1f5f9; }
+
+        #lang-selector {
+            width: auto; font-size: 13px; padding: 6px 10px;
+            border: 1px solid #e2e8f0; border-radius: 20px; background: #fff; color: #475569;
+        }
+
+        .card {
+            background: #fff; border-radius: 20px; border: 1px solid #e2e8f0;
+            padding: 24px; margin-bottom: 16px;
+        }
+
+        .section-heading {
+            font-size: 16px; font-weight: 700; color: #0f172a;
+            padding-bottom: 12px; margin-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .form-row {
+            padding: 14px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .form-row:last-child { border-bottom: none; }
+
+        .form-row__header {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px;
+        }
+
+        .form-row__label { font-size: 14px; font-weight: 600; color: #0f172a; }
+        .form-row__hint { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.6; }
+
+        .num-input {
+            width: 160px; border: 1.5px solid #cbd5e1; border-radius: 12px;
+            padding: 8px 12px; font-size: 15px; font-weight: 600;
+            text-align: right; background: #fff;
+        }
+        .num-input:focus { outline: none; border-color: #0f172a; }
+        .num-unit { font-size: 14px; color: #475569; margin-left: 6px; }
+
+        .select-input {
+            border: 1.5px solid #cbd5e1; border-radius: 12px;
+            padding: 8px 12px; font-size: 14px; font-weight: 600;
+            background: #fff; color: #0f172a; cursor: pointer;
+            min-width: 200px;
+        }
+        .select-input:focus { outline: none; border-color: #0f172a; }
+
+        .toggle {
+            position: relative; width: 48px; height: 26px;
+            background: #cbd5e1; border-radius: 20px; cursor: pointer;
+            transition: background .2s;
+        }
+        .toggle.on { background: #16a34a; }
+        .toggle__knob {
+            position: absolute; top: 3px; left: 3px;
+            width: 20px; height: 20px; background: #fff;
+            border-radius: 50%; transition: left .2s;
+        }
+        .toggle.on .toggle__knob { left: 25px; }
+
+        .save-row {
+            display: flex; justify-content: flex-end; gap: 10px;
+            align-items: center; margin-top: 20px;
+        }
+        .save-note { font-size: 13px; color: #16a34a; opacity: 0; transition: opacity .3s; }
+        .save-note.show { opacity: 1; }
+        .save-error { font-size: 13px; color: #ef4444; opacity: 0; transition: opacity .3s; }
+        .save-error.show { opacity: 1; }
+
+        .save-btn {
+            border: none; background: #0f172a; color: #fff;
+            font-weight: 700; font-size: 14px; padding: 10px 24px;
+            border-radius: 12px; cursor: pointer;
+        }
+        .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .admin-header__right {
+            display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .phase-note {
+            background: #fef3c7; border: 1px solid #fcd34d; color: #854d0e;
+            padding: 12px 16px; border-radius: 12px; font-size: 13px;
+            line-height: 1.6; margin-bottom: 16px;
+        }
+
+        .stats-grid {
+            display: grid; gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            margin-top: 6px;
+        }
+        .stats-cell {
+            padding: 12px 14px; background: #f8fafc;
+            border-radius: 12px; border: 1px solid #e2e8f0;
+        }
+        .stats-cell__label { font-size: 12px; color: #64748b; }
+        .stats-cell__value {
+            font-size: 18px; font-weight: 700; color: #0f172a;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 1024px) {
+            .admin-shell { padding: 20px; }
+            .admin-title { font-size: 24px; }
+        }
+        @media (max-width: 720px) {
+            .admin-shell { padding: 14px; }
+            .admin-header { flex-direction: column; align-items: stretch; gap: 12px; }
+            .admin-header__right { justify-content: flex-start; }
+            .admin-title { font-size: 20px; }
+            .admin-subtitle { font-size: 12px; }
+            .admin-nav a { padding: 7px 12px; font-size: 12px; }
+
+            .card { padding: 16px; }
+            .form-row__header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .form-row__header > div:last-child { align-self: flex-end; }
+            .num-input { width: 140px; }
+            .select-input { width: 100%; min-width: 0; }
+            .save-row { flex-wrap: wrap; justify-content: stretch; }
+            .save-btn { width: 100%; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="admin-shell">
+        <div class="admin-header">
+            <div>
+                <div class="admin-brand" data-i18n="admin.brand"></div>
+                <div class="admin-title" data-i18n="admin.referral.title"></div>
+                <div class="admin-subtitle" data-i18n="admin.referral.subtitle"></div>
+            </div>
+            <div class="admin-header__right">
+                <nav class="admin-nav">
+                    <a href="/pages/admin/index.html" data-i18n="admin.navTransactions"></a>
+                    <a href="/pages/admin/users.html" data-i18n="admin.navUsers"></a>
+                    <a href="/pages/admin/settings.html" data-i18n="admin.navSettings"></a>
+                    <a href="/pages/admin/referral.html" class="active" data-i18n="admin.navReferral"></a>
+                    <a href="/pages/admin/caa.html" data-i18n="admin.navCaa"></a>
+                    <a href="/pages/admin/reports.html" data-i18n="admin.navReports"></a>
+                    <a href="#" id="logout-btn" data-i18n="admin.navLogout"></a>
+                </nav>
+                <select id="lang-selector">
+                    <option value="km">ខ្មែរ</option><option value="en">ENGLISH</option><option value="ja">日本語</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="settings-content">
+            <div class="phase-note" data-i18n="admin.referral.statsPending"></div>
+
+            <div class="card">
+                <div class="section-heading" data-i18n="admin.referral.campaignSection"></div>
+
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.referral.enabledLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.referral.enabledHint"></div>
+                        </div>
+                        <div class="toggle" id="enabled-toggle"><div class="toggle__knob"></div></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.referral.restaurantCouponLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.referral.restaurantCouponHint"></div>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <input type="number" id="restaurant-coupon" class="num-input" step="500" min="0">
+                            <span class="num-unit">KHR</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.referral.farmerBonusLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.referral.farmerBonusHint"></div>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <input type="number" id="farmer-bonus" class="num-input" step="500" min="0">
+                            <span class="num-unit">KHR</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.referral.validDaysLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.referral.validDaysHint"></div>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <input type="number" id="valid-days" class="num-input" step="1" min="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.referral.maxReferralsLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.referral.maxReferralsHint"></div>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <input type="number" id="max-referrals" class="num-input" step="1" min="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-heading" data-i18n="admin.referral.statsSection"></div>
+                <div class="stats-grid">
+                    <div class="stats-cell">
+                        <div class="stats-cell__label" data-i18n="admin.referral.statsIssued"></div>
+                        <div class="stats-cell__value" id="stats-issued">-</div>
+                    </div>
+                    <div class="stats-cell">
+                        <div class="stats-cell__label" data-i18n="admin.referral.statsUsed"></div>
+                        <div class="stats-cell__value" id="stats-used">-</div>
+                    </div>
+                    <div class="stats-cell">
+                        <div class="stats-cell__label" data-i18n="admin.referral.statsUsageRate"></div>
+                        <div class="stats-cell__value" id="stats-usage-rate">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="save-row" style="margin-top:0;">
+                    <span class="save-note" id="save-note" data-i18n="admin.referral.saved"></span>
+                    <span class="save-error" id="save-error" data-i18n="admin.referral.errorSave"></span>
+                    <button class="save-btn" id="save-btn" data-i18n="admin.referral.save"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { watchAuthState, logout } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import { initAdminReportBadge } from '/js/admin-report-badge.js';
+        import {
+            doc, getDoc, setDoc, collection, getCountFromServer, query, where
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+        initAdminReportBadge();
+
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logout();
+        });
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        const enabledToggle = document.getElementById('enabled-toggle');
+        enabledToggle.addEventListener('click', () => enabledToggle.classList.toggle('on'));
+
+        async function loadStats() {
+            try {
+                const issuedSnap = await getCountFromServer(collection(db, 'coupons'));
+                const usedSnap = await getCountFromServer(
+                    query(collection(db, 'coupons'), where('usedAt', '!=', null))
+                );
+                const issued = issuedSnap.data().count;
+                const used = usedSnap.data().count;
+                document.getElementById('stats-issued').textContent = issued.toLocaleString();
+                document.getElementById('stats-used').textContent = used.toLocaleString();
+                const rate = issued > 0 ? Math.round((used / issued) * 100) : 0;
+                document.getElementById('stats-usage-rate').textContent = `${rate} %`;
+            } catch (err) {
+                // coupons コレクションが存在しない（Phase 2 未実装時）など
+                document.getElementById('stats-issued').textContent = '0';
+                document.getElementById('stats-used').textContent = '0';
+                document.getElementById('stats-usage-rate').textContent = '- %';
+            }
+        }
+
+        waitForUserData(async () => {
+            if (window.currentUserData?.role !== 'admin') {
+                alert('Admin access required');
+                location.href = '/index.html';
+                return;
+            }
+            loading.classList.add('show');
+            try {
+                const snap = await getDoc(doc(db, 'settings', 'referral'));
+                const data = snap.exists() ? snap.data() : {};
+                document.getElementById('restaurant-coupon').value = Number(data.restaurantCouponKhr ?? 0);
+                document.getElementById('farmer-bonus').value = Number(data.farmerBonusKhr ?? 0);
+                document.getElementById('valid-days').value = Number(data.couponValidDays ?? 30);
+                document.getElementById('max-referrals').value = Number(data.maxReferralsPerUser ?? 0);
+                enabledToggle.classList.toggle('on', data.enabled === true);
+
+                await loadStats();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('save-error').textContent = i18next.t('admin.referral.errorLoad');
+                document.getElementById('save-error').classList.add('show');
+            } finally {
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
+            }
+        });
+
+        document.getElementById('save-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('save-btn');
+            const note = document.getElementById('save-note');
+            const errEl = document.getElementById('save-error');
+            note.classList.remove('show');
+            errEl.classList.remove('show');
+            btn.disabled = true;
+
+            const enabled = enabledToggle.classList.contains('on');
+            const restaurantCouponKhr = Math.max(0, parseInt(document.getElementById('restaurant-coupon').value, 10) || 0);
+            const farmerBonusKhr = Math.max(0, parseInt(document.getElementById('farmer-bonus').value, 10) || 0);
+            const couponValidDays = Math.max(1, parseInt(document.getElementById('valid-days').value, 10) || 30);
+            const maxReferralsPerUser = Math.max(0, parseInt(document.getElementById('max-referrals').value, 10) || 0);
+
+            try {
+                await setDoc(doc(db, 'settings', 'referral'), {
+                    enabled,
+                    restaurantCouponKhr,
+                    farmerBonusKhr,
+                    couponValidDays,
+                    maxReferralsPerUser,
+                }, { merge: true });
+                note.classList.add('show');
+                setTimeout(() => note.classList.remove('show'), 1800);
+            } catch (err) {
+                console.error(err);
+                errEl.textContent = i18next.t('admin.referral.errorSave');
+                errEl.classList.add('show');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+    </script>
+</body>
+</html>

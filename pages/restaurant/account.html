@@ -113,6 +113,75 @@
             margin-top: 8px;
             font-style: italic;
         }
+
+        /* 5/24 #82 Phase 2 Chunk 4: 使えるクーポン一覧カード */
+        .coupons-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .coupons-card__head {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 13px; font-weight: 700; color: var(--color-text);
+            margin-bottom: 10px;
+        }
+        .coupons-card__head .material-symbols-outlined {
+            font-size: 18px; color: #0d6e4c;
+        }
+        .coupons-card__empty {
+            font-size: 12px; color: var(--color-text-sub);
+            text-align: center;
+            padding: 14px 4px;
+            line-height: 1.5;
+        }
+        .coupon-item {
+            background: linear-gradient(135deg, #fff7ed, #fed7aa);
+            border: 1px solid #fdba74;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+        }
+        .coupon-item:last-child { margin-bottom: 0; }
+        .coupon-item__amount {
+            font-size: 18px; font-weight: 700; color: #9a3412;
+        }
+        .coupon-item__meta {
+            font-size: 11px; color: #7c2d12; margin-top: 2px;
+        }
+        .coupon-item__code-row {
+            display: flex; align-items: center; gap: 8px;
+            margin-top: 8px;
+        }
+        .coupon-item__code {
+            flex: 1;
+            background: #fff;
+            border: 1px solid #fdba74;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #9a3412;
+            text-align: center;
+            user-select: all;
+        }
+        .coupon-item__copy {
+            background: #c2410c;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            display: flex; align-items: center; gap: 4px;
+            white-space: nowrap;
+        }
+        .coupon-item__copy .material-symbols-outlined { font-size: 14px; }
     </style>
 </head>
 
@@ -181,6 +250,17 @@
                     </button>
                 </div>
                 <div class="referral-card__phase-note" data-i18n="referral.phase1Note"></div>
+            </div>
+
+            <!-- 5/24 #82 Phase 2 Chunk 4: 使えるクーポン一覧 -->
+            <div class="coupons-card">
+                <div class="coupons-card__head">
+                    <span class="material-symbols-outlined">redeem</span>
+                    <span data-i18n="myCoupons.title"></span>
+                </div>
+                <div id="coupons-container">
+                    <div class="coupons-card__empty" data-i18n="myCoupons.loading"></div>
+                </div>
             </div>
 
             <div class="acc-menu-list">
@@ -271,10 +351,17 @@
         import { subscribeNotifications } from '/js/notifications.js';
         import { subscribeCart } from '/js/cart.js';
         import {
-            collection, query, where, onSnapshot
+            collection, query, where, onSnapshot, getDocs, getDoc, doc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 5/23 #82 Phase 1: 紹介コード
         import { ensureUserReferralCode } from '/js/referral.js';
+
+        // 5/24 #82 Phase 2 Chunk 4: クーポン一覧描画用（他ファイル同様にローカル定義）
+        function escapeHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -370,6 +457,96 @@
             });
         }
 
+        // 5/24 #82 Phase 2 Chunk 4: 使えるクーポン一覧を取得・描画
+        // ・where ownerUid==uid のみ（複合 index 不要）
+        // ・usedAt==null / expiresAt > now / 並び順は すべてクライアント側で処理
+        //   （件数は最大でも紹介人数 × 2 のオーダーなので OK）
+        async function loadCoupons() {
+            const container = document.getElementById('coupons-container');
+            const uid = window.currentUser?.uid;
+            if (!uid || !container) return;
+            try {
+                const snap = await getDocs(query(
+                    collection(db, 'coupons'),
+                    where('ownerUid', '==', uid)
+                ));
+                const now = Date.now();
+                const usable = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .filter(c => !c.usedAt && !c.usedOrderId)
+                    .filter(c => {
+                        const exp = c.expiresAt?.toMillis?.();
+                        return !exp || exp > now;
+                    })
+                    .sort((a, b) => (b.issuedAt?.toMillis?.() || 0) - (a.issuedAt?.toMillis?.() || 0));
+
+                if (usable.length === 0) {
+                    container.innerHTML = `<div class="coupons-card__empty">${escapeHtml(i18next.t('myCoupons.empty'))}</div>`;
+                    return;
+                }
+
+                // sourceUid のユーザー名を一括取得（N+1 抑止）
+                const sourceUids = [...new Set(usable.map(c => c.sourceUid).filter(Boolean))];
+                const sourceNames = {};
+                await Promise.all(sourceUids.map(async (suid) => {
+                    try {
+                        const us = await getDoc(doc(db, 'users', suid));
+                        sourceNames[suid] = us.data()?.displayName || '';
+                    } catch (e) { /* ignore */ }
+                }));
+
+                container.innerHTML = usable.map(c => {
+                    const expMs = c.expiresAt?.toMillis?.();
+                    const expStr = expMs
+                        ? new Date(expMs).toLocaleDateString(i18next.language || 'en', { year: 'numeric', month: 'short', day: 'numeric' })
+                        : '';
+                    const sourceName = c.sourceUid ? (sourceNames[c.sourceUid] || '') : '';
+                    let sourceText;
+                    if (!sourceName) {
+                        sourceText = i18next.t('myCoupons.sourceUnknown');
+                    } else if (c.issuedReason === 'referrer') {
+                        sourceText = i18next.t('myCoupons.sourceReferrer', { name: sourceName });
+                    } else {
+                        sourceText = i18next.t('myCoupons.sourceReferred', { name: sourceName });
+                    }
+                    return `
+                        <div class="coupon-item">
+                            <div class="coupon-item__amount">${i18next.t('myCoupons.amountUnit', { amount: Number(c.amountKhr || 0).toLocaleString() })}</div>
+                            <div class="coupon-item__meta">${escapeHtml(sourceText)}${expStr ? ' · ' + escapeHtml(i18next.t('myCoupons.expiresAt', { date: expStr })) : ''}</div>
+                            <div class="coupon-item__code-row">
+                                <div class="coupon-item__code">${escapeHtml(c.id)}</div>
+                                <button type="button" class="coupon-item__copy" data-coupon-code="${escapeHtml(c.id)}">
+                                    <span class="material-symbols-outlined">content_copy</span>
+                                    <span data-i18n="myCoupons.copyCode"></span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // コピーボタンのバインド
+                container.querySelectorAll('.coupon-item__copy').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        const code = btn.getAttribute('data-coupon-code');
+                        try {
+                            await navigator.clipboard.writeText(code);
+                        } catch (_) {
+                            const ta = document.createElement('textarea');
+                            ta.value = code;
+                            document.body.appendChild(ta);
+                            ta.select();
+                            try { document.execCommand('copy'); } catch (__) { /* ignore */ }
+                            ta.remove();
+                        }
+                        alert(i18next.t('myCoupons.copied'));
+                    });
+                });
+            } catch (e) {
+                console.warn('loadCoupons failed:', e);
+                container.innerHTML = `<div class="coupons-card__empty">${escapeHtml(i18next.t('myCoupons.errorLoad'))}</div>`;
+            }
+        }
+
         waitForUserData(() => {
             renderHead();
             watchOrderBadge();
@@ -386,6 +563,8 @@
                 if (link) link.href = `/pages/farmer/restaurant.html?id=${window.currentUser.uid}`;
                 // 5/23 #82 Phase 1: 紹介コード表示
                 showReferralCode();
+                // 5/24 #82 Phase 2 Chunk 4: クーポン一覧読み込み
+                loadCoupons();
             }
             // 5/23 #69 Phase C: 初期スピナー解除
             document.body.classList.add('app-ready');
