@@ -336,6 +336,8 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 5/23 #82 Phase 1: 紹介コード
         import { ensureUserReferralCode } from '/js/referral.js';
+        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ（紹介コード・ボーナス枠など非同期描画分）
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -352,6 +354,35 @@
             const d = window.currentUserData || {};
             document.getElementById('display-name').textContent = d.displayName || '-';
             document.getElementById('login-id').textContent = d.loginId ? `@${d.loginId}` : '';
+        }
+
+        // 5/25 #91/#92 拡張: 紹介コード・ボーナスカードの HTML を即時復元
+        (function applyAccountCache() {
+            try {
+                const cached = loadRenderState('farmer_account');
+                if (!cached) return;
+                if (cached.referralCode) {
+                    const el = document.getElementById('referral-code');
+                    if (el) el.textContent = cached.referralCode;
+                }
+                if (cached.bonusHtml) {
+                    const body = document.getElementById('bonus-card-body');
+                    const card = document.getElementById('bonus-card');
+                    if (body && card) {
+                        body.innerHTML = cached.bonusHtml;
+                        card.style.display = cached.bonusVisible ? 'block' : 'none';
+                    }
+                }
+            } catch (e) { /* ignore */ }
+        })();
+        function saveAccountRender() {
+            try {
+                saveRenderState('farmer_account', {
+                    referralCode: document.getElementById('referral-code')?.textContent || '',
+                    bonusHtml: document.getElementById('bonus-card-body')?.innerHTML || '',
+                    bonusVisible: document.getElementById('bonus-card')?.style.display === 'block',
+                });
+            } catch (e) { /* ignore */ }
         }
 
         function watchOrderBadge() {
@@ -480,9 +511,9 @@
                 const link = document.getElementById('public-page-link');
                 if (link) link.href = `/pages/restaurant/farmer.html?id=${window.currentUser.uid}`;
                 // 5/23 #82 Phase 1: 紹介コード表示
-                showReferralCode();
+                showReferralCode().then(saveAccountRender);   // 5/25 #91/#92 拡張: 完了後にキャッシュ更新
                 // 5/24 #82 Phase 2 Chunk 4: 紹介ボーナス枠表示
-                showFarmerBonus();
+                showFarmerBonus().then(saveAccountRender);
             }
             // 5/23 #69 Phase C: 初期スピナー解除
             document.body.classList.add('app-ready');

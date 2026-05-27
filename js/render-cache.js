@@ -72,6 +72,48 @@ export function loadRenderState(key) {
     }
 }
 
+// ── Firestore Timestamp ←→ JSON 変換ヘルパー（5/25 #91/#92 拡張） ──
+// render-cache は JSON.stringify を使うため Firestore Timestamp が落ちる。
+// 保存前に serializeTimestamps、復元後に reviveTimestamps を呼ぶことで、
+// cached render 側でも .toMillis() / .toDate() を使う既存コードを変更せずに済む。
+
+/**
+ * 値の中の Firestore Timestamp（toMillis を持つオブジェクト）を { __ts: ms } マーカーに変換。
+ * 配列・オブジェクトを再帰的に走査。
+ */
+export function serializeTimestamps(v) {
+    if (v == null) return v;
+    if (Array.isArray(v)) return v.map(serializeTimestamps);
+    if (typeof v === 'object') {
+        if (typeof v.toMillis === 'function') {
+            return { __ts: v.toMillis() };
+        }
+        const out = {};
+        for (const k of Object.keys(v)) out[k] = serializeTimestamps(v[k]);
+        return out;
+    }
+    return v;
+}
+
+/**
+ * { __ts: ms } マーカーを {toMillis(), toDate()} を持つ最小限の Timestamp 互換オブジェクトに復元。
+ * 配列・オブジェクトを再帰的に走査。
+ */
+export function reviveTimestamps(v) {
+    if (v == null) return v;
+    if (Array.isArray(v)) return v.map(reviveTimestamps);
+    if (typeof v === 'object') {
+        if (typeof v.__ts === 'number' && Object.keys(v).length === 1) {
+            const ms = v.__ts;
+            return { toMillis: () => ms, toDate: () => new Date(ms) };
+        }
+        const out = {};
+        for (const k of Object.keys(v)) out[k] = reviveTimestamps(v[k]);
+        return out;
+    }
+    return v;
+}
+
 /**
  * 描画状態をクリア。
  * key を省略すると全 fishlink_render:* キーを削除。

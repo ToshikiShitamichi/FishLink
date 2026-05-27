@@ -462,6 +462,8 @@
         import { uploadImageResized } from '/js/image-resize.js';
         // 5/23 #69 Phase F: CAA 価格データはほぼ静的なので data-cache 経由で再読込抑止
         import { getCachedDoc } from '/js/data-cache.js';
+        // 5/25 #91/#92 拡張: CAA 表示のみ render-cache 化（フォーム本体は編集を壊さないようキャッシュ対象外）
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -593,6 +595,36 @@
         // 農家の州名（登録時にFirestoreに保存済み）
         let farmerProvince = null;
 
+        // 5/25 #91/#92 拡張: CAA カードのスナップショットを localStorage に保存・復元
+        //   フォーム本体（fish-type 選択など）は編集中の値を壊さないようキャッシュ対象外。
+        function saveCaaCache(fishTypeValue) {
+            try {
+                saveRenderState('farmer_post_caa', {
+                    fishTypeValue,
+                    regionHtml: document.getElementById('caa-region')?.innerHTML || '',
+                    regionColor: document.getElementById('caa-region')?.style.color || '',
+                    valueHtml: document.getElementById('caa-value')?.innerHTML || '',
+                    valueDisplay: document.getElementById('caa-value')?.style.display || 'none',
+                    sizeHtml: document.getElementById('caa-size')?.innerHTML || '',
+                    sizeDisplay: document.getElementById('caa-size')?.style.display || 'none',
+                });
+            } catch (e) { /* ignore */ }
+        }
+        (function applyCaaCache() {
+            try {
+                const cached = loadRenderState('farmer_post_caa');
+                if (!cached) return;
+                // 編集モードでは「既存出品の魚種」が優先されるためキャッシュは適用しない
+                if (new URLSearchParams(location.search).get('id')) return;
+                const r = document.getElementById('caa-region');
+                const v = document.getElementById('caa-value');
+                const s = document.getElementById('caa-size');
+                if (r && cached.regionHtml) { r.innerHTML = cached.regionHtml; r.style.color = cached.regionColor; }
+                if (v) { v.innerHTML = cached.valueHtml || ''; v.style.display = cached.valueDisplay; }
+                if (s) { s.innerHTML = cached.sizeHtml || ''; s.style.display = cached.sizeDisplay; }
+            } catch (e) { /* ignore */ }
+        })();
+
         // CAA価格表示の更新
         function updateCaaDisplay(fishTypeValue) {
             const regionEl = document.getElementById('caa-region');
@@ -661,6 +693,8 @@
                 valueEl.style.display = 'none';
                 sizeEl.style.display = 'none';
             }
+            // 5/25 #91/#92 拡張: 描画後にキャッシュ更新
+            saveCaaCache(fishTypeValue);
         }
 
         // 魚種プルダウン変更時
@@ -701,6 +735,11 @@
 
             const currentVal = document.getElementById('fish-type').value;
             if (currentVal) updateCaaDisplay(currentVal);
+
+            // 5/25 #91: 初回ロード時の spinner を解除（CAA データは別 Promise で非同期。
+            //   従来は loadCaaData の完了も待たず、loading.classList.remove も呼ばれず、
+            //   i18n の 10 秒 failsafe で初めて画面が見える状態だった）
+            loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
 
         // CAA参考価格データを Firestore から非同期ロード（完了後に再描画）

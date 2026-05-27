@@ -198,6 +198,8 @@
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
+        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
         import {
             doc, getDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -222,8 +224,35 @@
         // 5/3: 言語切替時に再描画できるよう必要な情報を保持
         let pageState = { fishTypeKey: '', size: '', restName: '', place: '' };
 
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState(`farmer_payment:${orderId}`);
+            if (cached) {
+                if (cached.orderInfoHtml) document.getElementById('order-info').innerHTML = cached.orderInfoHtml;
+                if (cached.breakdownHtml) document.getElementById('breakdown').innerHTML = cached.breakdownHtml;
+                if (cached.statusHtml) document.getElementById('status-box').innerHTML = cached.statusHtml;
+                if (cached.receiveAmount) document.getElementById('receive-amount').textContent = cached.receiveAmount;
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { console.warn('cached farmer_payment render failed:', e); }
+
+        // 5/25 #91/#92 拡張: 描画後に最新状態をキャッシュへ保存するヘルパー
+        function saveCurrentPaymentRender() {
+            try {
+                saveRenderState(`farmer_payment:${orderId}`, {
+                    orderInfoHtml: document.getElementById('order-info')?.innerHTML || '',
+                    breakdownHtml: document.getElementById('breakdown')?.innerHTML || '',
+                    statusHtml: document.getElementById('status-box')?.innerHTML || '',
+                    receiveAmount: document.getElementById('receive-amount')?.textContent || '',
+                });
+            } catch (e) { /* ignore */ }
+        }
+
         waitForUserData(async () => {
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             myUid = window.currentUser.uid;
 
             const orderSnap = await getDoc(doc(db, 'orders', orderId));
@@ -261,6 +290,7 @@
                 const d = snap.data();
                 orderData = d;
                 renderStatus(d.adminStatus ?? null, d.paymentStatus || 'pending');
+                saveCurrentPaymentRender();
             });
 
             // 5/7 #55: レビュー済みかリアルタイム監視

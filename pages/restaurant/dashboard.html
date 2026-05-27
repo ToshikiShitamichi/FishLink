@@ -16,6 +16,8 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <!-- 5/25 #85: 道路距離（Distance Matrix）を fish-list.html / order.html / cart.html と統一するため追加 -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer></script>
     <style>
         .nav-badge {
             position: absolute; top: 6px; right: 50%;
@@ -341,6 +343,8 @@
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase J: 画面描画状態の sessionStorage キャッシュ（stale-while-revalidate）
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // 5/25 #85: 道路距離キャッシュ（fish-list.html / order.html / cart.html と共有 → 全画面で距離値統一）
+        import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -364,7 +368,9 @@
             else setTimeout(() => waitForUserData(cb), 200);
         }
 
-        // 距離計算（簡易：Haversine。Distance Matrix は重いのでホーム画面ではスキップ）
+        // 5/25 #85: 距離計算（道路距離を fish-list / order / cart と統一）
+        // - 表示用: getCachedDistance（90日キャッシュ）→ なければ calcRoadDistances（Distance Matrix 一括）
+        // - haversine はキャッシュ未ヒット+API失敗時のフォールバックのみ
         function haversine(a, b) {
             if (!a || !b) return Infinity;
             const R = 6371;
@@ -372,6 +378,91 @@
             const dLng = (b.lng - a.lng) * Math.PI / 180;
             const x = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
             return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+        }
+
+        // 起点1つ＋終点複数で Distance Matrix を一括叩く（fish-list.html と同型）
+        // 戻り値: [{ km, ok }] の配列。ok=true なら道路距離成功（キャッシュ対象）。
+        async function calcRoadDistances(originLat, originLng, destinations) {
+            return new Promise((resolve) => {
+                if (typeof google === 'undefined' || !google.maps) {
+                    resolve(destinations.map(d => ({ km: haversine({lat:originLat,lng:originLng}, {lat:d.lat,lng:d.lng}), ok: false })));
+                    return;
+                }
+                const service = new google.maps.DistanceMatrixService();
+                const origin = new google.maps.LatLng(originLat, originLng);
+                const dests = destinations.map(d => new google.maps.LatLng(d.lat, d.lng));
+                service.getDistanceMatrix({
+                    origins: [origin],
+                    destinations: dests,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                    unitSystem: google.maps.UnitSystem.METRIC,
+                }, (response, status) => {
+                    if (status !== 'OK' || !response.rows[0]) {
+                        resolve(destinations.map(d => ({ km: haversine({lat:originLat,lng:originLng}, {lat:d.lat,lng:d.lng}), ok: false })));
+                        return;
+                    }
+                    const results = response.rows[0].elements.map((el, idx) => {
+                        if (el.status === 'OK') return { km: el.distance.value / 1000, ok: true };
+                        const dest = destinations[idx];
+                        return { km: haversine({lat:originLat,lng:originLng}, {lat:dest.lat,lng:dest.lng}), ok: false };
+                    });
+                    resolve(results);
+                });
+            });
+        }
+
+        // Google Maps API のロード待ち（dashboard では Distance Matrix 初回呼び出し前に呼ぶ）
+        function waitForGoogleMaps(cb) {
+            if (typeof google !== 'undefined' && google.maps) { cb(); }
+            else { setTimeout(() => waitForGoogleMaps(cb), 200); }
+        }
+
+        // farmerId → 道路距離(km) の Map を構築。
+        // - localStorage キャッシュにあれば即時返す
+        // - なければ Distance Matrix で一括取得（25件ずつチャンク）し、成功分のみキャッシュ
+        async function buildFarmerDistanceMap(uid, myLoc, farmerMap) {
+            const distMap = new Map();
+            if (!myLoc) return distMap;
+            const farmerLocs = [];
+            for (const [fid, f] of farmerMap) {
+                if (!f?.location) continue;
+                const loc = f.location;
+                const locs = { rLat: myLoc.lat, rLng: myLoc.lng, fLat: loc.lat, fLng: loc.lng };
+                const cached = getCachedDistance(uid, fid, locs);
+                if (cached !== null) {
+                    distMap.set(fid, cached);
+                } else {
+                    farmerLocs.push({ fid, loc, locs });
+                }
+            }
+            if (farmerLocs.length === 0) return distMap;
+
+            // Google Maps API 待ち（async defer 読み込みなので Distance Matrix 利用時のみ待つ）
+            await new Promise((resolve) => waitForGoogleMaps(resolve));
+
+            // Distance Matrix は1リクエストあたり最大25 destinations。25件ずつチャンクして並列実行。
+            const CHUNK = 25;
+            const chunks = [];
+            for (let i = 0; i < farmerLocs.length; i += CHUNK) {
+                chunks.push(farmerLocs.slice(i, i + CHUNK));
+            }
+            await Promise.all(chunks.map(async (chunk) => {
+                try {
+                    const dests = chunk.map(c => c.loc);
+                    const results = await calcRoadDistances(myLoc.lat, myLoc.lng, dests);
+                    chunk.forEach((c, j) => {
+                        const r = results[j];
+                        distMap.set(c.fid, r.km);
+                        if (r.ok) setCachedDistance(uid, c.fid, r.km, c.locs);
+                    });
+                } catch (e) {
+                    // チャンク失敗時は haversine フォールバック
+                    chunk.forEach(c => {
+                        distMap.set(c.fid, haversine(myLoc, c.loc));
+                    });
+                }
+            }));
+            return distMap;
         }
 
         // 魚種カテゴリ描画
@@ -396,6 +487,7 @@
         // 5/23 #79: 農家表示部分を fish-list.html と同型のブロック（アバター丸 + 名前 + ⭐%（件）） に変更。
         // カード全体は横スクロール棚向けの 168px 縦長レイアウトを維持。
         // 5/23 Phase I: isPriority=true なら fetchpriority="high" + loading="eager" で LCP 候補をブースト
+        // 5/25 #85: distanceKm は道路距離（buildFarmerDistanceMap 経由・キャッシュ優先）
         function renderCard(listing, farmer, distanceKm, serviceRate, isPriority = false) {
             const fishType = listing.fishType || '';
             const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
@@ -452,7 +544,9 @@
             `;
         }
 
-        function renderShelf(elId, listings, farmerMap, myLoc, serviceRate, emptyMsg) {
+        // 5/25 #85: distanceMap（farmerId → 道路距離km）を渡す形に変更。
+        // 旧来の haversine 直接呼びは廃止。distanceMap 未指定/未ヒット時は Infinity 表示。
+        function renderShelf(elId, listings, farmerMap, distanceMap, serviceRate, emptyMsg) {
             const row = document.getElementById(elId);
             if (!listings || listings.length === 0) {
                 row.innerHTML = `<div class="shelf__empty" style="margin:0; flex:1;">${emptyMsg}</div>`;
@@ -462,9 +556,9 @@
             const isPriorityShelf = (elId === 'shelf-newest');
             row.innerHTML = listings.map((l, idx) => {
                 const farmer = farmerMap.get(l.farmerId) || null;
-                const dist = farmer?.location ? haversine(myLoc, farmer.location) : Infinity;
+                const dist = distanceMap?.get(l.farmerId);
                 const isPriority = isPriorityShelf && idx === 0;
-                return renderCard(l, farmer, dist, serviceRate, isPriority);
+                return renderCard(l, farmer, Number.isFinite(dist) ? dist : Infinity, serviceRate, isPriority);
             }).join('');
         }
 
@@ -512,26 +606,38 @@
                 } catch (e) { /* ignore */ }
             }));
 
-            // 棚①：近くの農家（haversine 距離で昇順）
-            const nearest = [...listings]
-                .filter(l => farmerMap.get(l.farmerId)?.location && myLoc)
-                .sort((a, b) => {
-                    const da = haversine(myLoc, farmerMap.get(a.farmerId).location);
-                    const db_ = haversine(myLoc, farmerMap.get(b.farmerId).location);
-                    return da - db_;
-                })
+            // 5/25 #85: 道路距離マップを構築（キャッシュ優先、なければ Distance Matrix 一括）
+            //   全画面で同じ距離値を表示するため。
+            const distanceMap = await buildFarmerDistanceMap(uid, myLoc, farmerMap);
+
+            // 5/25 #86: 配送範囲外（farmer.maxDistance < restaurant までの道路距離）は除外。
+            //   fish-list.html と同じフィルタを掛けることで「新着の魚」が両画面で一致する。
+            //   距離不明（distanceMap 未ヒット）はフォールバックで表示。
+            const inRange = (l) => {
+                const max = l.maxDistance;
+                if (!max) return true;
+                const d = distanceMap.get(l.farmerId);
+                if (!Number.isFinite(d)) return true;
+                return d <= max;
+            };
+            const eligibleListings = listings.filter(inRange);
+
+            // 棚①：近くの農家（道路距離で昇順）
+            const nearest = [...eligibleListings]
+                .filter(l => Number.isFinite(distanceMap.get(l.farmerId)))
+                .sort((a, b) => distanceMap.get(a.farmerId) - distanceMap.get(b.farmerId))
                 .slice(0, 10);
 
             // 棚②：評価が高い農家
-            const topRated = [...listings]
+            const topRated = [...eligibleListings]
                 .sort((a, b) => (farmerMap.get(b.farmerId)?.avgRating || 0) - (farmerMap.get(a.farmerId)?.avgRating || 0))
                 .slice(0, 10);
 
             // 棚③：新着（既に createdAt desc で取れているので先頭から）
-            const newest = listings.slice(0, 10);
+            const newest = eligibleListings.slice(0, 10);
 
             // 棚④：安い魚（サービス料込み単価で昇順）
-            const cheapest = [...listings]
+            const cheapest = [...eligibleListings]
                 .sort((a, b) => ((a.price || 0) + (a.gutPrice || 0)) - ((b.price || 0) + (b.gutPrice || 0)))
                 .slice(0, 10);
 
@@ -586,21 +692,23 @@
 
             // 描画
             const emptyMsg = i18next.t('restaurant.noResults');
-            renderShelf('shelf-nearest', nearest, farmerMap, myLoc, serviceRate, emptyMsg);
-            renderShelf('shelf-rated', topRated, farmerMap, myLoc, serviceRate, emptyMsg);
-            renderShelf('shelf-newest', newest, farmerMap, myLoc, serviceRate, emptyMsg);
-            renderShelf('shelf-cheapest', cheapest, farmerMap, myLoc, serviceRate, emptyMsg);
-            renderShelf('shelf-history', history, farmerMap, myLoc, serviceRate, i18next.t('restaurant.shelfHistoryEmpty'));
+            renderShelf('shelf-nearest', nearest, farmerMap, distanceMap, serviceRate, emptyMsg);
+            renderShelf('shelf-rated', topRated, farmerMap, distanceMap, serviceRate, emptyMsg);
+            renderShelf('shelf-newest', newest, farmerMap, distanceMap, serviceRate, emptyMsg);
+            renderShelf('shelf-cheapest', cheapest, farmerMap, distanceMap, serviceRate, emptyMsg);
+            renderShelf('shelf-history', history, farmerMap, distanceMap, serviceRate, i18next.t('restaurant.shelfHistoryEmpty'));
 
             // 5/23 #69 Phase J: render-cache に保存。次回訪問時に即時表示できるように。
             //   - listings は Firestore docs から `{ id, ...data() }` の形に変換済（JSON 化可能）
             //   - farmerMap は Map なので Object.fromEntries で plain object に変換
             //   - serviceRate も保存（価格表示に使う）
             //   - 5/23 改2：myLoc も保存することで、次回 cached render が currentUserData 待ち不要に
+            //   - 5/25 #85: distanceMap も保存（farmerId → km）。次回訪問時に同じ距離値で即時表示。
             try {
                 saveRenderState('dashboard_shelves', {
                     nearest, topRated, newest, cheapest, history,
                     farmers: Object.fromEntries(farmerMap),
+                    distances: Object.fromEntries(distanceMap),
                     serviceRate,
                     myLoc,
                 });
@@ -652,14 +760,15 @@
             if (cachedShelves) {
                 renderCategories();
                 const fmap = new Map(Object.entries(cachedShelves.farmers || {}));
+                // 5/25 #85: distances（farmerId → km）も復元。古いキャッシュには無いため空マップでフォールバック。
+                const dmap = new Map(Object.entries(cachedShelves.distances || {}));
                 const sRate = cachedShelves.serviceRate ?? 0.05;
-                const myLoc = cachedShelves.myLoc || null;
                 const emptyMsg = i18next.t('restaurant.noResults');
-                renderShelf('shelf-nearest', cachedShelves.nearest || [], fmap, myLoc, sRate, emptyMsg);
-                renderShelf('shelf-rated', cachedShelves.topRated || [], fmap, myLoc, sRate, emptyMsg);
-                renderShelf('shelf-newest', cachedShelves.newest || [], fmap, myLoc, sRate, emptyMsg);
-                renderShelf('shelf-cheapest', cachedShelves.cheapest || [], fmap, myLoc, sRate, emptyMsg);
-                renderShelf('shelf-history', cachedShelves.history || [], fmap, myLoc, sRate, i18next.t('restaurant.shelfHistoryEmpty'));
+                renderShelf('shelf-nearest', cachedShelves.nearest || [], fmap, dmap, sRate, emptyMsg);
+                renderShelf('shelf-rated', cachedShelves.topRated || [], fmap, dmap, sRate, emptyMsg);
+                renderShelf('shelf-newest', cachedShelves.newest || [], fmap, dmap, sRate, emptyMsg);
+                renderShelf('shelf-cheapest', cachedShelves.cheapest || [], fmap, dmap, sRate, emptyMsg);
+                renderShelf('shelf-history', cachedShelves.history || [], fmap, dmap, sRate, i18next.t('restaurant.shelfHistoryEmpty'));
                 // スピナー解除（fresh fetch は裏で続行）
                 loading.classList.remove('show');
                 document.body.classList.add('app-ready');

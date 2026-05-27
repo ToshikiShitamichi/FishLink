@@ -193,6 +193,15 @@
         .chat-msg.admin { background: #0f172a; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
         .chat-msg.user { background: #fff; color: #0f172a; align-self: flex-start; border: 1px solid #e2e8f0; border-bottom-left-radius: 4px; }
         .chat-msg__time { font-size: 10px; opacity: 0.7; margin-top: 4px; }
+        /* 5/25 #90: ユーザー側問い合わせカテゴリのバッジ */
+        .chat-msg__category {
+            display: inline-block;
+            font-size: 10px; font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: #fef3c7; color: #92400e;
+            margin-bottom: 4px;
+        }
 
         .chat-empty { text-align: center; color: #94a3b8; padding: 30px 0; font-size: 12px; }
 
@@ -281,6 +290,8 @@
             collection, query, where, orderBy, onSnapshot, getDocs, doc, getDoc,
             addDoc, serverTimestamp, updateDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         const functions = getFunctions(undefined, 'asia-southeast1');
@@ -330,8 +341,20 @@
             });
         }
 
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元（fresh fetch が後で上書き）
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState('admin_users');
+            if (cached?.usersListHtml) {
+                document.getElementById('users-list').innerHTML = cached.usersListHtml;
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { /* ignore */ }
+
         async function loadUsers() {
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             try {
                 const snap = await getDocs(query(
                     collection(db, 'users'),
@@ -423,6 +446,11 @@
             list.querySelectorAll('.user-row').forEach(row => {
                 row.addEventListener('click', () => selectUser(row.dataset.uid));
             });
+
+            // 5/25 #91/#92 拡張: 次回訪問用に user-list HTML をキャッシュ保存
+            try {
+                saveRenderState('admin_users', { usersListHtml: list.innerHTML });
+            } catch (e) { /* ignore */ }
         }
 
         function escapeHtml(s) {
@@ -619,9 +647,16 @@
                     const m = d.data();
                     const cls = m.senderRole === 'admin' ? 'admin' : 'user';
                     const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString() : '';
+                    // 5/25 #90: ユーザー側カテゴリのバッジを表示（運営側分類の手がかり）
+                    let catBadge = '';
+                    if (cls === 'user' && m.category) {
+                        const key = `adminChat.category${m.category.charAt(0).toUpperCase()}${m.category.slice(1)}`;
+                        const label = i18next.exists(key) ? i18next.t(key) : m.category;
+                        catBadge = `<div class="chat-msg__category">${escapeHtml(label)}</div>`;
+                    }
                     return `
                         <div class="chat-msg ${cls}">
-                            ${escapeHtml(m.text || '')}
+                            ${catBadge}${escapeHtml(m.text || '')}
                             <div class="chat-msg__time">${time}</div>
                         </div>
                     `;

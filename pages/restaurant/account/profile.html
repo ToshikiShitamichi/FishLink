@@ -91,6 +91,8 @@
         import { invalidate as invalidateDataCache } from '/js/data-cache.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/25 #91/#92 拡張: 表示パートを render-cache 化
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -154,7 +156,23 @@
 
         function renderView() {
             renderViewGrid(readRestaurantPhotos(userData));
+            // 5/25 #91/#92 拡張: 次回訪問用にキャッシュ保存
+            try {
+                saveRenderState('restaurant_account_profile', {
+                    gridHtml: document.getElementById('v-photos-grid')?.innerHTML || '',
+                });
+            } catch (e) { /* ignore */ }
         }
+
+        // 5/25 #91/#92 拡張: ページ初期化前にキャッシュから即時復元
+        (function applyCache() {
+            try {
+                const cached = loadRenderState('restaurant_account_profile');
+                if (!cached) return;
+                const g = document.getElementById('v-photos-grid');
+                if (g && cached.gridHtml) g.innerHTML = cached.gridHtml;
+            } catch (e) { /* ignore */ }
+        })();
 
         document.getElementById('btn-edit').addEventListener('click', () => {
             editState = { photos: readRestaurantPhotos(userData).map(url => ({ url })) };

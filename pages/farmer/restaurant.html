@@ -171,7 +171,8 @@
         </div>
 
         <div class="section">
-            <div class="section__title" data-i18n="profile.summary"></div>
+            <!-- 5/25 #84: 「評価サマリー」→「レビュー（N件）」形式に変更（renderRestaurantPage で動的セット） -->
+            <div class="section__title" id="summary-title" data-i18n="profile.summary"></div>
             <div class="subrating-grid">
                 <div class="subrating-card subrating-card--orange">
                     <div class="subrating-card__label" data-i18n="profile.ratingOverall"></div>
@@ -193,8 +194,9 @@
 
         <div class="section" id="reviews-section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <div class="section__title" style="margin:0;" data-i18n="profile.reviewComments"></div>
-                <div id="review-count-label" style="font-size:12px; color:var(--color-text-sub);"></div>
+                <!-- 5/25 #84: 「レビューコメント」→「レビューコメント（N件）」形式に変更（renderRestaurantPage で動的セット） -->
+                <div class="section__title" id="reviews-section-title" style="margin:0;" data-i18n="profile.reviewComments"></div>
+                <div id="review-count-label" style="font-size:12px; color:var(--color-text-sub); display:none;"></div>
             </div>
             <div id="reviews-list"></div>
         </div>
@@ -298,7 +300,11 @@
             const count = Number(user.reviewCount || 0);
             document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
             document.getElementById('rating-count').textContent = `${count}${i18next.t('order.reviews')}`;
-            document.getElementById('review-count-label').textContent = i18next.t('profile.reviewsCount', { count });
+            // 5/25 #84: 「レビュー（N件）」「レビューコメント（N件）」形式でタイトルに件数を併記
+            const summaryTitleEl = document.getElementById('summary-title');
+            if (summaryTitleEl) summaryTitleEl.textContent = i18next.t('profile.reviewsTitleWithCount', { count });
+            const reviewsTitleEl = document.getElementById('reviews-section-title');
+            if (reviewsTitleEl) reviewsTitleEl.textContent = i18next.t('profile.reviewCommentsTitleWithCount', { count });
 
             const sub = user.subRatings || {};
             const fmtSubRate = (s) => {

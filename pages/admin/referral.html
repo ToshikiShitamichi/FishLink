@@ -290,6 +290,8 @@
         import {
             doc, getDoc, setDoc, collection, getCountFromServer, query, where
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 5/25 #91/#92 拡張: 設定値・統計を即時復元
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -330,13 +332,32 @@
             }
         }
 
+        // 5/25 #91/#92 拡張: 設定値・統計を即時復元
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState('admin_referral');
+            if (cached) {
+                if (cached.restaurantCoupon != null) document.getElementById('restaurant-coupon').value = cached.restaurantCoupon;
+                if (cached.farmerBonus != null) document.getElementById('farmer-bonus').value = cached.farmerBonus;
+                if (cached.validDays != null) document.getElementById('valid-days').value = cached.validDays;
+                if (cached.maxReferrals != null) document.getElementById('max-referrals').value = cached.maxReferrals;
+                if (cached.enabled != null) enabledToggle.classList.toggle('on', cached.enabled);
+                if (cached.statsIssued != null) document.getElementById('stats-issued').textContent = cached.statsIssued;
+                if (cached.statsUsed != null) document.getElementById('stats-used').textContent = cached.statsUsed;
+                if (cached.statsUsageRate != null) document.getElementById('stats-usage-rate').textContent = cached.statsUsageRate;
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { /* ignore */ }
+
         waitForUserData(async () => {
             if (window.currentUserData?.role !== 'admin') {
                 alert('Admin access required');
                 location.href = '/index.html';
                 return;
             }
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             try {
                 const snap = await getDoc(doc(db, 'settings', 'referral'));
                 const data = snap.exists() ? snap.data() : {};
@@ -347,6 +368,19 @@
                 enabledToggle.classList.toggle('on', data.enabled === true);
 
                 await loadStats();
+                // 5/25 #91/#92 拡張: 次回訪問用にキャッシュ
+                try {
+                    saveRenderState('admin_referral', {
+                        restaurantCoupon: Number(data.restaurantCouponKhr ?? 0),
+                        farmerBonus: Number(data.farmerBonusKhr ?? 0),
+                        validDays: Number(data.couponValidDays ?? 30),
+                        maxReferrals: Number(data.maxReferralsPerUser ?? 0),
+                        enabled: data.enabled === true,
+                        statsIssued: document.getElementById('stats-issued')?.textContent || '',
+                        statsUsed: document.getElementById('stats-used')?.textContent || '',
+                        statsUsageRate: document.getElementById('stats-usage-rate')?.textContent || '',
+                    });
+                } catch (e) { /* ignore */ }
             } catch (err) {
                 console.error(err);
                 document.getElementById('save-error').textContent = i18next.t('admin.referral.errorLoad');

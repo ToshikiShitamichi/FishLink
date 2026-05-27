@@ -215,6 +215,8 @@
         import {
             doc, getDoc, setDoc, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 5/25 #91/#92 拡張: 対象注文情報を render-cache 化
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -226,6 +228,20 @@
         if (!orderId) { location.href = '/pages/restaurant/orders.html'; }
 
         document.getElementById('report-link').href = `/pages/restaurant/report.html?id=${orderId}`;
+
+        // 5/25 #91/#92 拡張: 対象注文の表示部を render-cache から即時復元
+        (function applyCache() {
+            try {
+                const cached = loadRenderState(`restaurant_review:${orderId}`);
+                if (!cached) return;
+                const nameEl = document.getElementById('target-name');
+                const fishEl = document.getElementById('target-fish');
+                const dateEl = document.getElementById('target-date');
+                if (nameEl && cached.targetName) nameEl.textContent = cached.targetName;
+                if (fishEl && cached.targetFish) fishEl.textContent = cached.targetFish;
+                if (dateEl && cached.targetDate) dateEl.textContent = cached.targetDate;
+            } catch (e) { /* ignore */ }
+        })();
 
         // 2段階評価（よい / 残念だった）ボタン生成
         function initVerdict(group) {
@@ -286,11 +302,21 @@
                 const farmerSnap = await getDoc(doc(db, 'users', orderData.farmerId));
                 const farmer = farmerSnap.data() || {};
                 document.getElementById('target-name').textContent = farmer.displayName || '-';
+                // 5/25 #91/#92 拡張: 表示部キャッシュ更新（fish-name と date は後続行で設定済み）
+                // 実際の保存は最終行（target-date）設定後に行う（このブロック末尾参照）
                 const fishTypeKey = orderData.snapFishType || '';
                 const fishName = i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey;
                 const shortName = fishName ? fishName.trim() : '';
                 document.getElementById('target-fish').textContent = `${shortName} ${orderData.quantity || 0}kg`;
                 document.getElementById('target-date').textContent = i18next.t('review.orderOn', { date: orderData.deliveryDate || '' });
+                // 5/25 #91/#92 拡張: 次回訪問用に表示部をキャッシュ
+                try {
+                    saveRenderState(`restaurant_review:${orderId}`, {
+                        targetName: document.getElementById('target-name')?.textContent || '',
+                        targetFish: document.getElementById('target-fish')?.textContent || '',
+                        targetDate: document.getElementById('target-date')?.textContent || '',
+                    });
+                } catch (e) { /* ignore */ }
             } catch (err) {
                 console.error(err);
             } finally {

@@ -65,6 +65,34 @@
         .order-row__status.delivered { background: #ede9fe; color: #6d28d9; }
         .order-row__status.completed { background: #fef3c7; color: #854d0e; }
         .order-row__status.declined { background: #fee2e2; color: #991b1b; }
+
+        /* 5/25 #88: 承認期限の緊急度に応じた強調 — カードのボーダーを警告色/危険色に */
+        .order-card.deadline-warn { border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, .15); }
+        .order-card.deadline-danger {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, .2);
+            animation: deadlinePulse 1.6s ease-in-out infinite;
+        }
+        @keyframes deadlinePulse {
+            0%, 100% { box-shadow: 0 0 0 2px rgba(239, 68, 68, .2); }
+            50%      { box-shadow: 0 0 0 4px rgba(239, 68, 68, .35); }
+        }
+        .deadline-text {
+            font-weight: 700; font-size: 13px;
+            margin-bottom: 8px;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .deadline-text .material-symbols-outlined { font-size: 16px; }
+        .deadline-text--normal { color: #ea580c; }
+        .deadline-text--warn { color: #d97706; }
+        .deadline-text--danger { color: #b91c1c; }
+
+        /* 5/25 #89: 農家の手数料表示でキャンペーン割引を強調（緑系で「お得」感を伝える） */
+        .price-line--discount {
+            color: #047857;
+            font-weight: 700;
+        }
+        .price-line--discount .material-symbols-outlined { font-size: 16px; vertical-align: middle; margin-right: 2px; }
         .order-row__chev {
             color: #cbd5e1; flex-shrink: 0;
             transition: transform 0.2s;
@@ -524,6 +552,8 @@
             collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { getOrderNumber } from '/js/order-utils.js';
+        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ（stale-while-revalidate）
+        import { saveRenderState, loadRenderState, serializeTimestamps, reviveTimestamps } from '/js/render-cache.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
 
@@ -565,9 +595,10 @@
         let ordersLoadingMore = false;
         let allOrders = [];
 
-        async function loadOrdersPage({ append = false } = {}) {
+        // 5/25 #91/#92 拡張: silent=true で spinner を出さない（cached 描画後の裏側 fresh fetch 用）
+        async function loadOrdersPage({ append = false, silent = false } = {}) {
             if (!append) {
-                loading.classList.add('show');
+                if (!silent) loading.classList.add('show');
                 ordersLastDoc = null;
                 allOrders = [];
             }
@@ -666,6 +697,16 @@
 
                 renderOrders();
                 document.getElementById('load-more-wrap').style.display = ordersHasMore ? 'block' : 'none';
+
+                // 5/25 #91/#92 拡張: 初回ページのみ render-cache に保存（追記分は保存しない）
+                if (!append) {
+                    try {
+                        saveRenderState('farmer_orders', {
+                            items: serializeTimestamps(allOrders),
+                            hasMore: ordersHasMore,
+                        });
+                    } catch (e) { /* ignore */ }
+                }
             } catch (err) {
                 console.error(err);
             } finally {
@@ -674,10 +715,28 @@
             }
         }
 
+        // 5/25 #91/#92 拡張: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState('farmer_orders');
+            if (cached?.items?.length) {
+                allOrders = reviveTimestamps(cached.items);
+                ordersHasMore = !!cached.hasMore;
+                renderOrders();
+                const lm = document.getElementById('load-more-wrap');
+                if (lm) lm.style.display = ordersHasMore ? 'block' : 'none';
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) {
+            console.warn('cached farmer_orders render failed:', e);
+        }
+
         // ── データ取得 & 描画 ──
         waitForUserData(async () => {
             localStorage.setItem('fishlink_orders_seen', String(Date.now()));
-            await loadOrdersPage();
+            await loadOrdersPage({ silent: cachedRendered });
         });
 
         document.getElementById('load-more-btn').addEventListener('click', async () => {
@@ -731,16 +790,27 @@
             const imgHtml = `<div style="position:relative;">${imgInner}${photoCountBadge}</div>`;
 
             // 承認期限（注文時刻 + 1時間）
+            // 5/25 #88: 残り時間に応じた緊急度（残 30 分以下: 警告 / 10 分以下: 危険）
             let deadlineHtml = '';
+            let deadlineCardClass = '';
             const isExpiredPending = order.status === 'pending' && isOrderExpired(order);
             if (order.status === 'pending' && order.createdAt && !isExpiredPending) {
                 const createdMs = order.createdAt.toMillis ? order.createdAt.toMillis() : 0;
                 const deadlineMs = createdMs + 60 * 60 * 1000;
                 const deadlineDate = new Date(deadlineMs);
                 const timeStr = `${deadlineDate.getHours()}:${String(deadlineDate.getMinutes()).padStart(2, '0')}`;
-                deadlineHtml = `<div style="color:#ea580c; font-weight:600; font-size:13px; margin-bottom:8px;">${i18next.t('orders.deadline', { time: timeStr })}</div>`;
+                const remainMin = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 60000));
+                let level = 'normal';
+                if (remainMin <= 10) { level = 'danger'; deadlineCardClass = ' deadline-danger'; }
+                else if (remainMin <= 30) { level = 'warn'; deadlineCardClass = ' deadline-warn'; }
+                deadlineHtml = `
+                    <div class="deadline-text deadline-text--${level}">
+                        <span class="material-symbols-outlined">schedule</span>
+                        ${i18next.t('orders.deadline', { time: timeStr })}
+                        ・${i18next.t('orders.deadlineRemain', { min: remainMin })}
+                    </div>`;
             } else if (isExpiredPending) {
-                deadlineHtml = `<div style="color:#ef4444; font-weight:700; font-size:14px; margin-bottom:8px;">${i18next.t('orders.expired')}</div>`;
+                deadlineHtml = `<div class="deadline-text deadline-text--danger" style="font-size:14px;">${i18next.t('orders.expired')}</div>`;
             }
 
             const fishTotal = order.fishPrice || (price * order.quantity);
@@ -755,6 +825,10 @@
             const receiveAmount = (order.farmerReceiveAmount != null)
                 ? order.farmerReceiveAmount
                 : (fishTotal - commission + deliveryFee);
+            // 5/25 #89: キャンペーン割引額 = 通常手数料(5%) - 実際の手数料。正の値のときだけ「お得」行を表示。
+            //   ※計算式は変更せず、表示用に通常との差額を可視化するのみ。
+            const baselineCommission = Math.round(fishTotal * 0.05);
+            const farmerCampaignDiscount = Math.max(0, baselineCommission - commission);
 
             let statusBadge = '';
             if (order.status === 'approved') {
@@ -801,7 +875,7 @@
             const restWithPlace = restPlaceShort ? `${restName} (${restPlaceShort})` : restName;
 
             let html = `
-                <div class="order-card${expandedClass}" id="order-${order.id}">
+                <div class="order-card${expandedClass}${deadlineCardClass}" id="order-${order.id}">
                     <div class="order-row" data-toggle="${order.id}">
                         <div class="order-row__img">${rowThumb}</div>
                         <div class="order-row__body">
@@ -847,13 +921,18 @@
                         <div class="order-card__row">${i18next.t('orders.deliveryDate')} ${order.deliveryDate}</div>
                         <div class="order-card__row">${i18next.t('orders.deliveryTime')} ${order.deliveryTime}</div>
                         <div class="order-card__divider"></div>
-                        <div class="order-card__row">${restName}　<span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span> ${restRating.toFixed(1)}（${restReviews}）</div>
+                        <div class="order-card__row">${restName}　<span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span> ${restRating.toFixed(1)}%（${i18next.t('orders.reviewCount', { count: restReviews })}）</div>
                         <div class="order-card__row"><a class="order-card__link" href="/pages/farmer/restaurant.html?id=${order.restaurantId}">${i18next.t('orders.viewReviews')}</a></div>
                         <div class="order-card__row"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span> ${restPlace}　${dist} km</div>
                         <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
                         <div class="order-card__divider"></div>
                         <div class="price-line"><span>${i18next.t('orders.fishTotal')}</span><span>${fishTotal.toLocaleString()} KHR</span></div>
                         <div class="price-line"><span>${i18next.t('orders.commission', { rate: commissionRate })}</span><span>-${commission.toLocaleString()} KHR</span></div>
+                        ${farmerCampaignDiscount > 0 ? `
+                            <div class="price-line price-line--discount">
+                                <span><span class="material-symbols-outlined">local_offer</span>${i18next.t('orders.farmerCampaignDiscount')}</span>
+                                <span>${i18next.t('orders.farmerCampaignDiscountValue', { amount: farmerCampaignDiscount.toLocaleString() })}</span>
+                            </div>` : ''}
                         <div class="price-line"><span>${i18next.t('orders.deliveryFee')}</span><span>+${deliveryFee.toLocaleString()} KHR</span></div>
                         <div class="price-line__note">${i18next.t('orders.deliveryNote')}</div>
                         <div class="receive-section">

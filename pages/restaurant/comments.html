@@ -240,6 +240,8 @@
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
         import { getCachedUser, getCachedListing } from '/js/data-cache.js';
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
         import {
             doc, getDoc, updateDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -282,8 +284,22 @@
             return `<span class="material-symbols-outlined">person</span>`;
         }
 
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元（onSnapshot 初回到達で qa-list は上書きされる）
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState(`restaurant_comments:${listingId}`);
+            if (cached) {
+                if (cached.fishName) document.getElementById('fish-name').textContent = cached.fishName;
+                if (cached.fishMeta) document.getElementById('fish-meta').textContent = cached.fishMeta;
+                if (cached.qaListHtml) document.getElementById('qa-list').innerHTML = cached.qaListHtml;
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { /* ignore */ }
+
         waitForUserData(async () => {
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             try {
                 // 5/23 #69 Phase B: data-cache 経由
                 const listing = await getCachedListing(listingId);
@@ -421,6 +437,14 @@
                             </div>
                         `;
                     }).join('');
+                    // 5/25 #91/#92 拡張: 次回訪問用に画面 HTML をキャッシュ保存
+                    try {
+                        saveRenderState(`restaurant_comments:${listingId}`, {
+                            fishName: document.getElementById('fish-name')?.textContent || '',
+                            fishMeta: document.getElementById('fish-meta')?.textContent || '',
+                            qaListHtml: listEl.innerHTML,
+                        });
+                    } catch (e) { /* ignore */ }
 
                     // 質問取り消し
                     listEl.querySelectorAll('[data-action="del-q"]').forEach(btn => {

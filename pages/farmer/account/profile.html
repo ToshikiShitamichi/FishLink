@@ -137,6 +137,8 @@
         import { invalidate as invalidateDataCache } from '/js/data-cache.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/25 #91/#92 拡張: 表示パートを render-cache 化
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -218,7 +220,32 @@
             document.getElementById('v-message').textContent = userData.farmerMessage || '-';
             renderViewPondGrid(readPondPhotos(userData));
             showAvatar('v-avatar', userData.avatarUrl || null);
+            // 5/25 #91/#92 拡張: 表示部キャッシュ保存
+            try {
+                saveRenderState('farmer_account_profile', {
+                    messageText: document.getElementById('v-message')?.textContent || '',
+                    pondGridHtml: document.querySelector('#view-mode .photos-grid')?.innerHTML
+                        || document.querySelector('.photos-grid')?.innerHTML || '',
+                    avatarHtml: document.getElementById('v-avatar')?.innerHTML || '',
+                });
+            } catch (e) { /* ignore */ }
         }
+
+        // 5/25 #91/#92 拡張: ページ初期化前にキャッシュから即時復元
+        (function applyCache() {
+            try {
+                const cached = loadRenderState('farmer_account_profile');
+                if (!cached) return;
+                const m = document.getElementById('v-message');
+                const a = document.getElementById('v-avatar');
+                if (m && cached.messageText) m.textContent = cached.messageText;
+                if (a && cached.avatarHtml) a.innerHTML = cached.avatarHtml;
+                if (cached.pondGridHtml) {
+                    const g = document.querySelector('#view-mode .photos-grid') || document.querySelector('.photos-grid');
+                    if (g) g.innerHTML = cached.pondGridHtml;
+                }
+            } catch (e) { /* ignore */ }
+        })();
 
         document.getElementById('btn-edit').addEventListener('click', () => {
             document.getElementById('in-message').value = userData.farmerMessage || '';

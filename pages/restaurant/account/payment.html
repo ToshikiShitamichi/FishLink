@@ -114,6 +114,8 @@
         import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { uploadImageResized } from '/js/image-resize.js';
+        // 5/25 #91/#92 拡張: 表示パートを render-cache 化
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -146,7 +148,29 @@
                 linkEl.textContent = '-';
             }
             showQr('v-qrImage', userData.qrImageUrl || null);
+            // 5/25 #91/#92 拡張: 次回訪問用にキャッシュ保存
+            try {
+                saveRenderState('restaurant_account_payment', {
+                    accountName: document.getElementById('v-accountName')?.textContent || '',
+                    qrLinkHtml: document.getElementById('v-qrLink')?.innerHTML || '',
+                    qrImageHtml: document.getElementById('v-qrImage')?.innerHTML || '',
+                });
+            } catch (e) { /* ignore */ }
         }
+
+        // 5/25 #91/#92 拡張: ページ初期化前にキャッシュから即時復元
+        (function applyCache() {
+            try {
+                const cached = loadRenderState('restaurant_account_payment');
+                if (!cached) return;
+                const an = document.getElementById('v-accountName');
+                const ql = document.getElementById('v-qrLink');
+                const qi = document.getElementById('v-qrImage');
+                if (an && cached.accountName) an.textContent = cached.accountName;
+                if (ql && cached.qrLinkHtml) ql.innerHTML = cached.qrLinkHtml;
+                if (qi && cached.qrImageHtml) qi.innerHTML = cached.qrImageHtml;
+            } catch (e) { /* ignore */ }
+        })();
 
         document.getElementById('btn-edit').addEventListener('click', () => {
             document.getElementById('in-accountName').value = userData.accountName || '';

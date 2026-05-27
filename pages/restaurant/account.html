@@ -355,6 +355,8 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 5/23 #82 Phase 1: 紹介コード
         import { ensureUserReferralCode } from '/js/referral.js';
+        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         // 5/24 #82 Phase 2 Chunk 4: クーポン一覧描画用（他ファイル同様にローカル定義）
         function escapeHtml(s) {
@@ -378,6 +380,30 @@
             const d = window.currentUserData || {};
             document.getElementById('display-name').textContent = d.displayName || '-';
             document.getElementById('login-id').textContent = d.loginId ? `@${d.loginId}` : '';
+        }
+
+        // 5/25 #91/#92 拡張: 紹介コード・クーポン一覧の HTML を即時復元
+        (function applyAccountCache() {
+            try {
+                const cached = loadRenderState('restaurant_account');
+                if (!cached) return;
+                if (cached.referralCode) {
+                    const el = document.getElementById('referral-code');
+                    if (el) el.textContent = cached.referralCode;
+                }
+                if (cached.couponsHtml) {
+                    const c = document.getElementById('coupons-container');
+                    if (c) c.innerHTML = cached.couponsHtml;
+                }
+            } catch (e) { /* ignore */ }
+        })();
+        function saveAccountRender() {
+            try {
+                saveRenderState('restaurant_account', {
+                    referralCode: document.getElementById('referral-code')?.textContent || '',
+                    couponsHtml: document.getElementById('coupons-container')?.innerHTML || '',
+                });
+            } catch (e) { /* ignore */ }
         }
 
         function watchOrderBadge() {
@@ -562,9 +588,9 @@
                 const link = document.getElementById('public-page-link');
                 if (link) link.href = `/pages/farmer/restaurant.html?id=${window.currentUser.uid}`;
                 // 5/23 #82 Phase 1: 紹介コード表示
-                showReferralCode();
+                showReferralCode().then(saveAccountRender);   // 5/25 #91/#92 拡張: 完了後にキャッシュ更新
                 // 5/24 #82 Phase 2 Chunk 4: クーポン一覧読み込み
-                loadCoupons();
+                loadCoupons().then(saveAccountRender);
             }
             // 5/23 #69 Phase C: 初期スピナー解除
             document.body.classList.add('app-ready');

@@ -258,6 +258,8 @@
         import {
             doc, getDoc, updateDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -279,8 +281,37 @@
         // 5/4: 言語切替で再描画できるよう状態を保持
         let pageState = { fishTypeKey: '', size: '', farmerName: '', place: '' };
 
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState(`restaurant_payment:${orderId}`);
+            if (cached) {
+                if (cached.orderInfoHtml) document.getElementById('order-info').innerHTML = cached.orderInfoHtml;
+                if (cached.breakdownHtml) document.getElementById('breakdown').innerHTML = cached.breakdownHtml;
+                if (cached.totalAmount) document.getElementById('total-amount').textContent = cached.totalAmount;
+                if (cached.deadlineHtml) {
+                    const b = document.getElementById('payment-deadline-banner');
+                    if (b) { b.style.display = ''; document.getElementById('deadline-line').textContent = cached.deadlineHtml; }
+                }
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { console.warn('cached restaurant_payment render failed:', e); }
+
+        function saveCurrentPaymentRender() {
+            try {
+                saveRenderState(`restaurant_payment:${orderId}`, {
+                    orderInfoHtml: document.getElementById('order-info')?.innerHTML || '',
+                    breakdownHtml: document.getElementById('breakdown')?.innerHTML || '',
+                    totalAmount: document.getElementById('total-amount')?.textContent || '',
+                    deadlineHtml: document.getElementById('deadline-line')?.textContent || '',
+                });
+            } catch (e) { /* ignore */ }
+        }
+
         waitForUserData(async () => {
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             myUid = window.currentUser.uid;
 
             const orderSnap = await getDoc(doc(db, 'orders', orderId));
@@ -317,6 +348,7 @@
             renderDeadlineBanner();
             renderOrderInfo();
             renderBreakdown();
+            saveCurrentPaymentRender();   // 5/25 #91/#92 拡張: fresh 描画後に最新状態をキャッシュ
 
             // 支払い済みの場合
             updatePaidState(orderData.paymentStatus);

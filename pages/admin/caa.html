@@ -498,6 +498,8 @@
             query, orderBy, limit, getDocs, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-functions.js';
+        // 5/25 #91/#92 拡張: マトリクス HTML を即時復元（編集系のためフォーム入力中の上書きに注意）
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -548,13 +550,28 @@
 
         let allData = {}; // { fishType: { provinceName: { range, size } } }
 
+        // 5/25 #91/#92 拡張: マトリクス HTML を即時復元（fresh fetch が後で上書き）
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState('admin_caa');
+            if (cached?.matrixBodyHtml) {
+                const h = document.getElementById('matrix-header');
+                const b = document.getElementById('matrix-body');
+                if (h && cached.matrixHeaderHtml) h.innerHTML = cached.matrixHeaderHtml;
+                if (b) b.innerHTML = cached.matrixBodyHtml;
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { /* ignore */ }
+
         waitForUserData(async () => {
             if (window.currentUserData?.role !== 'admin') {
                 alert('Admin access required');
                 location.href = '/index.html';
                 return;
             }
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             try {
                 await Promise.all(FISH_TYPES.map(async ft => {
                     const snap = await getDoc(doc(db, 'caaPrice', ft));
@@ -612,6 +629,13 @@
                 }).join('');
                 return `<tr><td class="col-prov">${p}</td>${cells}</tr>`;
             }).join('');
+            // 5/25 #91/#92 拡張: 次回訪問用にマトリクス HTML をキャッシュ
+            try {
+                saveRenderState('admin_caa', {
+                    matrixHeaderHtml: header.innerHTML,
+                    matrixBodyHtml: body.innerHTML,
+                });
+            } catch (e) { /* ignore */ }
         }
 
         // ── 一括クリア（保存前の入力リセット）─────────

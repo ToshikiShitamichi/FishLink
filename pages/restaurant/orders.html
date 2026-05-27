@@ -231,6 +231,8 @@
         import { subscribeNotifications } from '/js/notifications.js';
         import { subscribeCart } from '/js/cart.js';
         import { getOrderNumber } from '/js/order-utils.js';
+        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
+        import { saveRenderState, loadRenderState, serializeTimestamps, reviveTimestamps } from '/js/render-cache.js';
         import {
             collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -422,9 +424,146 @@
         let ordersLoadingMore = false;
         let allOrdersCache = [];
 
-        async function loadOrders({ append = false } = {}) {
+        // 5/25 #91/#92 拡張: 描画ロジックを fetch から分離。cached / fresh 両方から呼ぶ。
+        //   allOrdersCache の各要素は { d:{id}, order, fishName, hasReview } 形式（d は Firestore doc snap 互換）
+        function renderAllOrders() {
+            const listEl = document.getElementById('orders-list');
+            if (!listEl) return;
+            const allOrders = allOrdersCache;
+
+            const isCompletedStatus = (s) => s === 'completed' || s === 'delivered';
+            const isInProgress = (s) => ['pending', 'approved', 'preparing', 'delivering'].includes(s);
+
+            const sortByPaymentDeadline = (a, b) => {
+                const da = a.order.paymentDeadline?.toMillis?.() || 0;
+                const dbb = b.order.paymentDeadline?.toMillis?.() || 0;
+                return da - dbb;
+            };
+            const sortByDelivery = (a, b) => {
+                const da = a.order.deliveryDateIso || '';
+                const dbb = b.order.deliveryDateIso || '';
+                if (da !== dbb) return da.localeCompare(dbb);
+                return (a.order.deliveryTime || '').localeCompare(b.order.deliveryTime || '');
+            };
+
+            const awaitingPayment = allOrders
+                .filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus !== 'paid')
+                .sort(sortByPaymentDeadline);
+            const inProgress = allOrders
+                .filter(o => isInProgress(o.order.status))
+                .sort(sortByDelivery);
+            const today = todayIsoKHM();
+            const inProgressToday = inProgress
+                .filter(o => (o.order.deliveryDateIso || '') && (o.order.deliveryDateIso || '') <= today);
+            const inProgressFuture = inProgress
+                .filter(o => (o.order.deliveryDateIso || '') > today || !o.order.deliveryDateIso);
+            const sortByCreatedDesc = (a, b) =>
+                (b.order.createdAt?.toMillis?.() || 0) - (a.order.createdAt?.toMillis?.() || 0);
+            const completed = allOrders
+                .filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus === 'paid')
+                .sort(sortByCreatedDesc);
+            const declined = allOrders
+                .filter(o => o.order.status === 'declined')
+                .sort(sortByCreatedDesc);
+
+            listEl.innerHTML = '';
+
+            if (awaitingPayment.length > 0) {
+                listEl.innerHTML += `<div class="section-label payment-label">${i18next.t('orders.awaitingPaymentSection', { count: awaitingPayment.length })}</div>`;
+                awaitingPayment.forEach(o => {
+                    listEl.innerHTML += renderPayNowItem(o.d, o.order, o.fishName);
+                });
+            }
+
+            if (inProgressToday.length > 0) {
+                listEl.innerHTML += `<div class="section-label">${i18next.t('orders.todaySection', { count: inProgressToday.length })}</div>`;
+                inProgressToday.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName, o.hasReview); });
+            }
+
+            if (inProgressFuture.length > 0) {
+                listEl.innerHTML += `<div class="section-label">${i18next.t('orders.futureSection', { count: inProgressFuture.length })}</div>`;
+                inProgressFuture.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName, o.hasReview); });
+            }
+
+            const TRUNCATE_INITIAL = 3;
+            function renderTruncated(items, restId) {
+                if (items.length <= TRUNCATE_INITIAL) {
+                    return items.map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
+                }
+                const initial = items.slice(0, TRUNCATE_INITIAL).map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
+                const rest = items.slice(TRUNCATE_INITIAL).map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
+                const remainCount = items.length - TRUNCATE_INITIAL;
+                return `
+                    ${initial}
+                    <div id="${restId}" style="display:none;">${rest}</div>
+                    <button type="button" class="show-more-btn" data-target="${restId}"
+                        style="display:block; width:100%; padding:10px; margin-top:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; color:#475569; font-weight:600; font-size:13px; cursor:pointer; font-family:inherit;">
+                        ${i18next.t('orders.showMore', { count: remainCount })}
+                    </button>
+                `;
+            }
+
+            if (completed.length > 0) {
+                listEl.innerHTML += `
+                    <div class="accordion-header" id="acc-completed">${i18next.t('orders.approvedSectionClosed', { count: completed.length })}</div>
+                    <div class="accordion-body" id="acc-completed-body">${renderTruncated(completed, 'completed-rest')}</div>`;
+            }
+
+            if (declined.length > 0) {
+                listEl.innerHTML += `
+                    <div class="accordion-header" id="acc-declined">${i18next.t('orders.declinedSectionClosed', { count: declined.length })}</div>
+                    <div class="accordion-body" id="acc-declined-body">${renderTruncated(declined, 'declined-rest')}</div>`;
+            }
+
+            document.getElementById('acc-completed')?.addEventListener('click', function() {
+                const body = document.getElementById('acc-completed-body');
+                body.classList.toggle('open');
+                this.textContent = body.classList.contains('open')
+                    ? i18next.t('orders.approvedSectionOpen', { count: completed.length })
+                    : i18next.t('orders.approvedSectionClosed', { count: completed.length });
+            });
+            document.getElementById('acc-declined')?.addEventListener('click', function() {
+                const body = document.getElementById('acc-declined-body');
+                body.classList.toggle('open');
+                this.textContent = body.classList.contains('open')
+                    ? i18next.t('orders.declinedSectionOpen', { count: declined.length })
+                    : i18next.t('orders.declinedSectionClosed', { count: declined.length });
+            });
+
+            document.querySelectorAll('.show-more-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.dataset.target;
+                    const target = document.getElementById(targetId);
+                    if (target) target.style.display = 'block';
+                    btn.style.display = 'none';
+                });
+            });
+
+            if (location.hash) {
+                let target;
+                try { target = document.querySelector(location.hash); } catch (e) { target = null; }
+                if (target) {
+                    const accBody = target.closest('.accordion-body');
+                    if (accBody && !accBody.classList.contains('open')) {
+                        const hdrId = accBody.id.replace('-body', '');
+                        document.getElementById(hdrId)?.click();
+                    }
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            target.style.transition = 'box-shadow 0.4s';
+                            target.style.boxShadow = '0 0 0 3px #fbbf24';
+                            setTimeout(() => { target.style.boxShadow = ''; }, 2500);
+                        });
+                    });
+                }
+            }
+        }
+
+        // 5/25 #91/#92 拡張: silent=true で spinner を出さない（cached 描画後の裏側 fresh fetch 用）
+        async function loadOrders({ append = false, silent = false } = {}) {
             if (!append) {
-                loading.classList.add('show');
+                if (!silent) loading.classList.add('show');
                 ordersLastDoc = null;
                 allOrdersCache = [];
             }
@@ -492,150 +631,22 @@
                 // 既存と結合（重複除去）
                 const seen = new Set(allOrdersCache.map(o => o.d.id));
                 newOrders.forEach(o => { if (!seen.has(o.d.id)) allOrdersCache.push(o); });
-                const allOrders = allOrdersCache;
 
-                // グループ分け（4/28: 大グループ「お支払い待ち」 / 中グループ「対応中」 / トグル）
-                const isCompletedStatus = (s) => s === 'completed' || s === 'delivered';
-                const isInProgress = (s) => ['pending', 'approved', 'preparing', 'delivering'].includes(s);
-
-                // ソート関数
-                const sortByPaymentDeadline = (a, b) => {
-                    const da = a.order.paymentDeadline?.toMillis?.() || 0;
-                    const dbb = b.order.paymentDeadline?.toMillis?.() || 0;
-                    return da - dbb;
-                };
-                const sortByDelivery = (a, b) => {
-                    const da = a.order.deliveryDateIso || '';
-                    const dbb = b.order.deliveryDateIso || '';
-                    if (da !== dbb) return da.localeCompare(dbb);
-                    return (a.order.deliveryTime || '').localeCompare(b.order.deliveryTime || '');
-                };
-
-                const awaitingPayment = allOrders
-                    .filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus !== 'paid')
-                    .sort(sortByPaymentDeadline);
-                const inProgress = allOrders
-                    .filter(o => isInProgress(o.order.status))
-                    .sort(sortByDelivery);
-                // 5/1: 対応中を「本日の納品」「明日以降の納品」に分割（農家側と同じ仕様）
-                const today = todayIsoKHM();
-                const inProgressToday = inProgress
-                    .filter(o => (o.order.deliveryDateIso || '') && (o.order.deliveryDateIso || '') <= today);
-                const inProgressFuture = inProgress
-                    .filter(o => (o.order.deliveryDateIso || '') > today || !o.order.deliveryDateIso);
-                // 5/4: 履歴系（完了済み・辞退済み）は新しい順（createdAt DESC）
-                const sortByCreatedDesc = (a, b) =>
-                    (b.order.createdAt?.toMillis?.() || 0) - (a.order.createdAt?.toMillis?.() || 0);
-                const completed = allOrders
-                    .filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus === 'paid')
-                    .sort(sortByCreatedDesc);
-                const declined = allOrders
-                    .filter(o => o.order.status === 'declined')
-                    .sort(sortByCreatedDesc);
-
-                listEl.innerHTML = '';
-
-                // 大グループ：お支払い待ち（強調表示・期限昇順）
-                if (awaitingPayment.length > 0) {
-                    listEl.innerHTML += `<div class="section-label payment-label">${i18next.t('orders.awaitingPaymentSection', { count: awaitingPayment.length })}</div>`;
-                    awaitingPayment.forEach(o => {
-                        listEl.innerHTML += renderPayNowItem(o.d, o.order, o.fishName);
-                    });
-                }
-
-                // 中グループ①：対応中・本日の納品（納品日時の昇順）
-                if (inProgressToday.length > 0) {
-                    listEl.innerHTML += `<div class="section-label">${i18next.t('orders.todaySection', { count: inProgressToday.length })}</div>`;
-                    inProgressToday.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName, o.hasReview); });
-                }
-
-                // 中グループ②：対応中・明日以降の納品
-                if (inProgressFuture.length > 0) {
-                    listEl.innerHTML += `<div class="section-label">${i18next.t('orders.futureSection', { count: inProgressFuture.length })}</div>`;
-                    inProgressFuture.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName, o.hasReview); });
-                }
-
-                // 5/4: 履歴系は最新N件のみ初期表示し「もっと見る」で展開
-                const TRUNCATE_INITIAL = 3;
-                function renderTruncated(items, restId) {
-                    if (items.length <= TRUNCATE_INITIAL) {
-                        return items.map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
-                    }
-                    const initial = items.slice(0, TRUNCATE_INITIAL).map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
-                    const rest = items.slice(TRUNCATE_INITIAL).map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
-                    const remainCount = items.length - TRUNCATE_INITIAL;
-                    return `
-                        ${initial}
-                        <div id="${restId}" style="display:none;">${rest}</div>
-                        <button type="button" class="show-more-btn" data-target="${restId}"
-                            style="display:block; width:100%; padding:10px; margin-top:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; color:#475569; font-weight:600; font-size:13px; cursor:pointer; font-family:inherit;">
-                            ${i18next.t('orders.showMore', { count: remainCount })}
-                        </button>
-                    `;
-                }
-
-                // トグル：完了済み
-                if (completed.length > 0) {
-                    listEl.innerHTML += `
-                        <div class="accordion-header" id="acc-completed">${i18next.t('orders.approvedSectionClosed', { count: completed.length })}</div>
-                        <div class="accordion-body" id="acc-completed-body">${renderTruncated(completed, 'completed-rest')}</div>`;
-                }
-
-                // トグル：辞退済み
-                if (declined.length > 0) {
-                    listEl.innerHTML += `
-                        <div class="accordion-header" id="acc-declined">${i18next.t('orders.declinedSectionClosed', { count: declined.length })}</div>
-                        <div class="accordion-body" id="acc-declined-body">${renderTruncated(declined, 'declined-rest')}</div>`;
-                }
-
-                // アコーディオンイベント
-                document.getElementById('acc-completed')?.addEventListener('click', function() {
-                    const body = document.getElementById('acc-completed-body');
-                    body.classList.toggle('open');
-                    this.textContent = body.classList.contains('open')
-                        ? i18next.t('orders.approvedSectionOpen', { count: completed.length })
-                        : i18next.t('orders.approvedSectionClosed', { count: completed.length });
-                });
-                document.getElementById('acc-declined')?.addEventListener('click', function() {
-                    const body = document.getElementById('acc-declined-body');
-                    body.classList.toggle('open');
-                    this.textContent = body.classList.contains('open')
-                        ? i18next.t('orders.declinedSectionOpen', { count: declined.length })
-                        : i18next.t('orders.declinedSectionClosed', { count: declined.length });
-                });
-
-                // 5/4: 「もっと見る」ボタン
-                document.querySelectorAll('.show-more-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const targetId = btn.dataset.target;
-                        const target = document.getElementById(targetId);
-                        if (target) target.style.display = 'block';
-                        btn.style.display = 'none';
-                    });
-                });
-
-                // 通知からの遷移時に該当注文までスクロール
-                if (location.hash) {
-                    let target;
-                    try { target = document.querySelector(location.hash); } catch (e) { target = null; }
-                    if (target) {
-                        const accBody = target.closest('.accordion-body');
-                        if (accBody && !accBody.classList.contains('open')) {
-                            const hdrId = accBody.id.replace('-body', '');
-                            document.getElementById(hdrId)?.click();
-                        }
-                        requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                target.style.transition = 'box-shadow 0.4s';
-                                target.style.boxShadow = '0 0 0 3px #fbbf24';
-                                setTimeout(() => { target.style.boxShadow = ''; }, 2500);
-                            });
-                        });
-                    }
-                }
-
+                renderAllOrders();
                 document.getElementById('load-more-wrap').style.display = ordersHasMore ? 'block' : 'none';
+
+                // 5/25 #91/#92 拡張: 初回ページのみ render-cache に保存（次回訪問用）
+                if (!append) {
+                    try {
+                        const cacheItems = allOrdersCache.map(o => ({
+                            id: o.d.id,
+                            order: serializeTimestamps(o.order),
+                            fishName: o.fishName,
+                            hasReview: !!o.hasReview,
+                        }));
+                        saveRenderState('restaurant_orders', { items: cacheItems, hasMore: ordersHasMore });
+                    } catch (e) { /* ignore */ }
+                }
 
             } catch (err) {
                 console.error(err);
@@ -660,6 +671,30 @@
         });
 
         onLanguageChange(() => loadOrders());
+
+        // 5/25 #91/#92 拡張: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState('restaurant_orders');
+            if (cached?.items?.length) {
+                allOrdersCache = cached.items.map(it => ({
+                    d: { id: it.id },
+                    order: reviveTimestamps(it.order),
+                    fishName: it.fishName,
+                    hasReview: !!it.hasReview,
+                }));
+                ordersHasMore = !!cached.hasMore;
+                renderAllOrders();
+                const lm = document.getElementById('load-more-wrap');
+                if (lm) lm.style.display = ordersHasMore ? 'block' : 'none';
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) {
+            console.warn('cached restaurant_orders render failed:', e);
+        }
+
         waitForUserData(() => {
             localStorage.setItem('fishlink_rest_orders_seen', String(Date.now()));
             if (window.currentUser?.uid) {
@@ -670,7 +705,7 @@
                     if (badge) badge.style.display = items.length > 0 ? 'block' : 'none';
                 });
             }
-            loadOrders();
+            loadOrders({ silent: cachedRendered });
         });
     </script>
 </body>

@@ -239,6 +239,12 @@ const MESSAGES = {
     en: { title: "Order from {{restaurant}} auto-declined (expired)", body: "{{fish}} {{qty}}kg" },
     km: { title: "បញ្ជាទិញពី {{restaurant}} ហួសកំណត់ពេល", body: "{{fish}} {{qty}}kg" },
   },
+  // 5/25 #88: 承認期限 10 分前リマインド（農家向け）
+  approveDeadlineReminder: {
+    ja: { title: "承認期限まであと10分", body: "{{restaurant}} {{fish}} {{qty}}kg\n承認しないと自動で辞退になります" },
+    en: { title: "10 minutes left to approve", body: "{{restaurant}} {{fish}} {{qty}}kg\nThe order will be auto-declined if not approved in time" },
+    km: { title: "នៅសល់ 10 នាទីដើម្បីយល់ព្រម", body: "{{restaurant}} {{fish}} {{qty}}kg\nបញ្ជាទិញនឹងត្រូវបដិសេធដោយស្វ័យប្រវត្តិបើមិនយល់ព្រម" },
+  },
   expiredDeclinedRestaurant: {
     ja: { title: "承認期限切れで注文が辞退されました", body: "{{farmer}} {{fish}} {{qty}}kg\n別の魚を選んで再注文してください" },
     en: { title: "Your order was auto-declined (expired)", body: "{{farmer}} {{fish}} {{qty}}kg\nPlease choose another fish and order again" },
@@ -1193,6 +1199,73 @@ exports.autoDeclineExpiredOrders = onSchedule(
 
     for (const doc of snap.docs) {
       await autoDeclineOrder(doc);
+    }
+  }
+);
+
+// 5/25 #88: 承認期限 10 分前リマインド（毎分実行）
+//   pending 注文で createdAt が 50 分前以前（= 残り 10 分以下）かつ approvalReminderSent != true を対象。
+//   通知後は approvalReminderSent=true をセットして 1 回しか発火させない。
+//   autoDeclineExpiredOrders は 5 分間隔なので、最大で deadline 後 5 分まで辞退されずに通知が走る可能性
+//   があるが、辞退時の expired 通知が別途送られるため UX 上の問題はない。
+exports.remindApproveDeadline = onSchedule(
+  { schedule: "every 1 minutes", region: "asia-southeast1" },
+  async () => {
+    const fiftyMinAgo = new Date(Date.now() - 50 * 60 * 1000);
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    let snap;
+    try {
+      // status=pending かつ createdAt < 50分前 を取得（インデックス: status + createdAt 既存）
+      snap = await db.collection("orders")
+        .where("status", "==", "pending")
+        .where("createdAt", "<", fiftyMinAgo)
+        .get();
+    } catch (e) {
+      console.warn("remindApproveDeadline query failed:", e.message);
+      return;
+    }
+    if (snap.empty) return;
+
+    const admin = require("firebase-admin/firestore");
+    for (const docSnap of snap.docs) {
+      const order = docSnap.data();
+      // 既に通知済 or 既に期限切れ（autoDecline に任せる）はスキップ
+      if (order.approvalReminderSent === true) continue;
+      const createdMs = order.createdAt?.toMillis?.() || 0;
+      if (createdMs && createdMs < oneHourAgo.getTime()) continue;
+
+      const orderId = docSnap.id;
+      try {
+        // farmer の言語で通知
+        const farmerSnap = await db.doc(`users/${order.farmerId}`).get();
+        const lang = farmerSnap.data()?.lang || "ja";
+        const restSnap = await db.doc(`users/${order.restaurantId}`).get();
+        const restaurant = restSnap.data()?.displayName || "";
+        const fishTypeKey = order.snapFishType || "";
+        // i18n 化された魚種ラベル（getMessage の vars に渡す前にこちらで解決）
+        const fishLabel = fishTypeKey
+          ? (lang === "ja" ? fishTypeKey : (lang === "km" ? fishTypeKey : fishTypeKey))
+          : "";
+        const vars = {
+          restaurant,
+          fish: fishLabel,
+          qty: order.quantity || 0,
+        };
+        const { title, body } = getMessage("approveDeadlineReminder", lang, vars);
+        await notifyUser(order.farmerId, {
+          type: "approve_deadline_reminder",
+          title, body,
+          msgKey: "approveDeadlineReminder", vars,
+          url: "/pages/farmer/orders.html",
+          orderId,
+        });
+        // 通知済みフラグをセット（次回ループでスキップ）
+        await docSnap.ref.update({ approvalReminderSent: true, approvalReminderSentAt: admin.FieldValue.serverTimestamp() });
+        console.log("Approve deadline reminder sent for order:", orderId);
+      } catch (e) {
+        console.warn("remindApproveDeadline failed for", orderId, ":", e.message);
+      }
     }
   }
 );

@@ -190,6 +190,8 @@
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
         import { getCachedUser, getCachedListing } from '/js/data-cache.js';
+        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -208,8 +210,25 @@
             else setTimeout(() => waitForUserData(cb), 300);
         }
 
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState(`restaurant_delivery:${orderId}`);
+            if (cached) {
+                if (cached.summaryHtml) document.getElementById('order-summary').innerHTML = cached.summaryHtml;
+                if (cached.timelineHtml) document.getElementById('timeline').innerHTML = cached.timelineHtml;
+                if (cached.callHref) {
+                    const cb = document.getElementById('call-btn');
+                    if (cb) { cb.href = cached.callHref; cb.dataset.phone = cached.callPhone || ''; }
+                }
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { console.warn('cached restaurant_delivery render failed:', e); }
+
         waitForUserData(async () => {
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             myUid = window.currentUser.uid;
 
             const orderSnap = await getDoc(doc(db, 'orders', orderId));
@@ -284,6 +303,15 @@
                         </div>`;
                 });
                 timeline.scrollTop = timeline.scrollHeight;
+                // 5/25 #91/#92 拡張: 次回訪問用に最新の summary + timeline HTML を保存
+                try {
+                    saveRenderState(`restaurant_delivery:${orderId}`, {
+                        summaryHtml: document.getElementById('order-summary').innerHTML,
+                        timelineHtml: timeline.innerHTML,
+                        callHref: callBtn?.href || '',
+                        callPhone: callBtn?.dataset?.phone || '',
+                    });
+                } catch (e) { /* ignore */ }
             });
 
             // 5/23 #81: マイクボタンを chat-input に組み込む

@@ -182,6 +182,8 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 5/23 #69 Phase F: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -374,7 +376,32 @@
                     }).catch(e => console.warn('mark report read failed:', id, e.message));
                 });
             }
+
+            // 5/25 #91/#92 拡張: 次回訪問用に画面 HTML をキャッシュ保存
+            try {
+                saveRenderState('admin_reports', {
+                    containerHtml: container.innerHTML,
+                    tabRowHtml: document.getElementById('tab-row')?.innerHTML || '',
+                });
+            } catch (e) { /* ignore */ }
         }
+
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元（onSnapshot 初回到達で上書きされる）
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState('admin_reports');
+            if (cached) {
+                const c = document.getElementById('report-container');
+                const t = document.getElementById('tab-row');
+                if (c && cached.containerHtml) c.innerHTML = cached.containerHtml;
+                if (t && cached.tabRowHtml) t.innerHTML = cached.tabRowHtml;
+                if (cached.containerHtml) {
+                    loading.classList.remove('show');
+                    document.body.classList.add('app-ready');
+                    cachedRendered = true;
+                }
+            }
+        } catch (e) { /* ignore */ }
 
         waitForUserData(() => {
             if (window.currentUserData?.role !== 'admin') {
@@ -383,7 +410,7 @@
                 return;
             }
             currentAdminUid = window.currentUser?.uid || null;
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
             onSnapshot(q, async (snap) => {
                 allReports = snap.docs.map(d => ({ id: d.id, ...d.data() }));

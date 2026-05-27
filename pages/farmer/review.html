@@ -158,6 +158,8 @@
         import {
             doc, getDoc, setDoc, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 5/25 #91/#92 拡張: 対象注文情報を render-cache 化（フォーム入力は対象外）
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -169,6 +171,20 @@
         if (!orderId) { location.href = '/pages/farmer/orders.html'; }
 
         document.getElementById('report-link').href = `/pages/farmer/report.html?id=${orderId}`;
+
+        // 5/25 #91/#92 拡張: 対象注文の表示部を render-cache から即時復元
+        (function applyCache() {
+            try {
+                const cached = loadRenderState(`farmer_review:${orderId}`);
+                if (!cached) return;
+                const nameEl = document.getElementById('target-name');
+                const fishEl = document.getElementById('target-fish');
+                const dateEl = document.getElementById('target-date');
+                if (nameEl && cached.targetName) nameEl.textContent = cached.targetName;
+                if (fishEl && cached.targetFish) fishEl.textContent = cached.targetFish;
+                if (dateEl && cached.targetDate) dateEl.textContent = cached.targetDate;
+            } catch (e) { /* ignore */ }
+        })();
 
         // 2段階評価（よい / 残念だった）
         function initVerdict(group) {
@@ -230,6 +246,14 @@
                 const shortName = fishName ? fishName.trim() : '';
                 document.getElementById('target-fish').textContent = `${shortName} ${orderData.quantity || 0}kg`;
                 document.getElementById('target-date').textContent = i18next.t('review.orderOn', { date: orderData.deliveryDate || '' });
+                // 5/25 #91/#92 拡張: 次回訪問用に表示部キャッシュ
+                try {
+                    saveRenderState(`farmer_review:${orderId}`, {
+                        targetName: document.getElementById('target-name')?.textContent || '',
+                        targetFish: document.getElementById('target-fish')?.textContent || '',
+                        targetDate: document.getElementById('target-date')?.textContent || '',
+                    });
+                } catch (e) { /* ignore */ }
             } catch (err) {
                 console.error(err);
             } finally {

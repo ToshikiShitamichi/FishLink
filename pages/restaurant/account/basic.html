@@ -13,12 +13,48 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <!-- 5/25 #83: 位置情報の編集 UI で Google Maps + Geocoder を利用 -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer></script>
     <style>
         .sub-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
         .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
         .acc-row { background: #f8fafc; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
         .acc-row__label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 4px; }
-        .acc-row__value { font-size: 15px; font-weight: 600; word-break: break-all; }
+        .acc-row__value-line {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        .acc-row__value { font-size: 15px; font-weight: 600; word-break: break-all; flex: 1; }
+        .acc-row__edit-btn {
+            display: inline-flex; align-items: center; gap: 3px;
+            background: transparent; border: 1px solid var(--color-border);
+            border-radius: 999px; padding: 4px 10px;
+            font-size: 12px; font-weight: 600; color: var(--color-text-sub);
+            cursor: pointer; font-family: inherit; flex-shrink: 0;
+        }
+        .acc-row__edit-btn:hover { background: #fff; color: var(--color-text); }
+        .acc-row__edit-btn .material-symbols-outlined { font-size: 14px; }
+
+        .acc-edit { margin-top: 10px; }
+        .acc-edit input[type="text"] {
+            width: 100%; padding: 10px 12px;
+            border: 1px solid var(--color-border); border-radius: 10px;
+            font-size: 16px; font-family: inherit; background: #fff;
+            box-sizing: border-box;
+        }
+        .acc-edit__actions { display: flex; gap: 8px; margin-top: 10px; }
+        .acc-edit__btn {
+            flex: 1; padding: 10px 14px;
+            border-radius: 10px; font-size: 14px; font-weight: 700;
+            cursor: pointer; font-family: inherit;
+        }
+        .acc-edit__btn--primary { background: var(--color-primary); color: #fff; border: none; }
+        .acc-edit__btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .acc-edit__btn--secondary { background: #fff; color: var(--color-text-sub); border: 1px solid var(--color-border); }
+
+        #loc-map { width: 100%; height: 280px; border-radius: 12px; background: #f1f5f9; margin-top: 8px; }
+        .loc-status { font-size: 12px; color: var(--color-text-sub); margin-top: 6px; padding: 8px 10px; background: #fff; border-radius: 8px; border: 1px solid var(--color-border); }
+        .loc-status.set { color: #047857; border-color: #a7f3d0; background: #ecfdf5; }
+        .loc-help { font-size: 12px; color: var(--color-text-sub); margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -41,15 +77,45 @@
         <div class="sub-page">
             <div class="acc-row">
                 <div class="acc-row__label" data-i18n="account.loginId"></div>
-                <div class="acc-row__value" id="v-loginId">-</div>
+                <div class="acc-row__value-line">
+                    <div class="acc-row__value" id="v-loginId">-</div>
+                </div>
             </div>
-            <div class="acc-row">
+
+            <div class="acc-row" id="row-displayName">
                 <div class="acc-row__label" data-i18n="account.displayName"></div>
-                <div class="acc-row__value" id="v-displayName">-</div>
+                <div class="acc-row__value-line" id="view-displayName">
+                    <div class="acc-row__value" id="v-displayName">-</div>
+                    <button class="acc-row__edit-btn" type="button" data-act="edit-name">
+                        <span class="material-symbols-outlined">edit</span><span data-i18n="account.edit"></span>
+                    </button>
+                </div>
+                <div class="acc-edit" id="edit-displayName" style="display:none;">
+                    <input id="input-displayName" type="text" maxlength="40" autocomplete="off">
+                    <div class="acc-edit__actions">
+                        <button class="acc-edit__btn acc-edit__btn--secondary" type="button" data-act="cancel-name" data-i18n="account.cancel"></button>
+                        <button class="acc-edit__btn acc-edit__btn--primary" type="button" data-act="save-name" data-i18n="account.save"></button>
+                    </div>
+                </div>
             </div>
-            <div class="acc-row">
+
+            <div class="acc-row" id="row-location">
                 <div class="acc-row__label" data-i18n="account.location"></div>
-                <div class="acc-row__value" id="v-location">-</div>
+                <div class="acc-row__value-line" id="view-location">
+                    <div class="acc-row__value" id="v-location">-</div>
+                    <button class="acc-row__edit-btn" type="button" data-act="edit-loc">
+                        <span class="material-symbols-outlined">edit</span><span data-i18n="account.edit"></span>
+                    </button>
+                </div>
+                <div class="acc-edit" id="edit-location" style="display:none;">
+                    <div class="loc-help" data-i18n="account.locationEditHelp"></div>
+                    <div id="loc-map"></div>
+                    <div class="loc-status" id="loc-status" data-i18n="account.locationCurrent"></div>
+                    <div class="acc-edit__actions">
+                        <button class="acc-edit__btn acc-edit__btn--secondary" type="button" data-act="cancel-loc" data-i18n="account.cancel"></button>
+                        <button class="acc-edit__btn acc-edit__btn--primary" type="button" data-act="save-loc" id="save-loc-btn" data-i18n="account.save"></button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -57,7 +123,12 @@
     <script type="module">
         import { initI18n, initLangSelector } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
-        import { formatLocation } from '/js/province-utils.js';
+        import { db } from '/js/firebase-config.js';
+        import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { formatLocation, normalizeProvince } from '/js/province-utils.js';
+        import { invalidate as invalidateDataCache } from '/js/data-cache.js';
+        import { clearRenderState, saveRenderState, loadRenderState } from '/js/render-cache.js';
+
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
         await initI18n();
@@ -68,13 +139,182 @@
             else setTimeout(() => waitForUserData(cb), 200);
         }
 
+        function showView(name) {
+            document.getElementById(`view-${name}`).style.display = '';
+            document.getElementById(`edit-${name}`).style.display = 'none';
+        }
+        function showEdit(name) {
+            document.getElementById(`view-${name}`).style.display = 'none';
+            document.getElementById(`edit-${name}`).style.display = '';
+        }
+
+        function bindNameEdit() {
+            const editBtn = document.querySelector('[data-act="edit-name"]');
+            const cancelBtn = document.querySelector('[data-act="cancel-name"]');
+            const saveBtn = document.querySelector('[data-act="save-name"]');
+            const input = document.getElementById('input-displayName');
+            editBtn.addEventListener('click', () => {
+                input.value = window.currentUserData?.displayName || '';
+                showEdit('displayName');
+                input.focus();
+            });
+            cancelBtn.addEventListener('click', () => showView('displayName'));
+            saveBtn.addEventListener('click', async () => {
+                const newName = input.value.trim();
+                if (!newName) { alert(i18next.t('account.nameRequired')); return; }
+                if (newName === window.currentUserData?.displayName) { showView('displayName'); return; }
+                saveBtn.disabled = true;
+                try {
+                    const uid = window.currentUser.uid;
+                    await updateDoc(doc(db, 'users', uid), { displayName: newName });
+                    window.currentUserData.displayName = newName;
+                    invalidateDataCache('users', uid);
+                    clearRenderState();
+                    document.getElementById('v-displayName').textContent = newName;
+                    showView('displayName');
+                } catch (err) {
+                    console.error('save displayName failed:', err);
+                    alert(i18next.t('account.saveFailed'));
+                } finally {
+                    saveBtn.disabled = false;
+                }
+            });
+        }
+
+        let editMap = null;
+        let editMarker = null;
+        let pendingLocation = null;
+        let pendingProvince = null;
+        let pendingDistrict = null;
+        let pendingDistrictKm = null;
+
+        function waitForGoogleMaps(cb) {
+            if (typeof google !== 'undefined' && google.maps) cb();
+            else setTimeout(() => waitForGoogleMaps(cb), 200);
+        }
+
+        async function reverseGeocode(latLng) {
+            const geocodeWithLang = (lang) => new Promise((resolve) => {
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ location: latLng, language: lang }, (results, status) => {
+                    if (status === 'OK' && results[0]) {
+                        const prov = results[0].address_components.find(c => c.types.includes('administrative_area_level_1'));
+                        const dist = results[0].address_components.find(c => c.types.includes('administrative_area_level_2'));
+                        resolve({ province: prov?.long_name || null, district: dist?.long_name || null, formatted: results[0].formatted_address || '' });
+                    } else {
+                        resolve({ province: null, district: null, formatted: '' });
+                    }
+                });
+            });
+            const [en, km] = await Promise.all([geocodeWithLang('en'), geocodeWithLang('km')]);
+            pendingProvince = en.province;
+            pendingDistrict = en.district;
+            pendingDistrictKm = km.district;
+            const useKm = (i18next.language === 'km');
+            const formatted = useKm ? (km.formatted || en.formatted) : (en.formatted || km.formatted);
+            const statusEl = document.getElementById('loc-status');
+            statusEl.classList.add('set');
+            statusEl.textContent = formatted || i18next.t('account.locationSet');
+        }
+
+        function placePin(latLng) {
+            if (editMarker) editMarker.setMap(null);
+            editMarker = new google.maps.Marker({ position: latLng, map: editMap, animation: google.maps.Animation.DROP });
+            pendingLocation = { lat: latLng.lat(), lng: latLng.lng() };
+            reverseGeocode(latLng);
+        }
+
+        function initEditMap() {
+            if (editMap) return;
+            const current = window.currentUserData?.location;
+            const center = current?.lat ? { lat: current.lat, lng: current.lng } : { lat: 11.5564, lng: 104.9282 };
+            editMap = new google.maps.Map(document.getElementById('loc-map'), {
+                center, zoom: current?.lat ? 14 : 7,
+                mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
+            });
+            if (current?.lat) {
+                editMarker = new google.maps.Marker({ position: center, map: editMap });
+                pendingLocation = { lat: current.lat, lng: current.lng };
+                pendingProvince = window.currentUserData.province || null;
+                pendingDistrict = window.currentUserData.district || null;
+                pendingDistrictKm = window.currentUserData.districtKm || null;
+            }
+            editMap.addListener('click', (e) => placePin(e.latLng));
+        }
+
+        function bindLocationEdit() {
+            const editBtn = document.querySelector('[data-act="edit-loc"]');
+            const cancelBtn = document.querySelector('[data-act="cancel-loc"]');
+            const saveBtn = document.getElementById('save-loc-btn');
+
+            editBtn.addEventListener('click', () => {
+                showEdit('location');
+                waitForGoogleMaps(() => {
+                    initEditMap();
+                    setTimeout(() => google.maps.event.trigger(editMap, 'resize'), 100);
+                });
+            });
+            cancelBtn.addEventListener('click', () => showView('location'));
+
+            saveBtn.addEventListener('click', async () => {
+                if (!pendingLocation) { alert(i18next.t('account.locationRequired')); return; }
+                saveBtn.disabled = true;
+                try {
+                    const uid = window.currentUser.uid;
+                    const provinceKey = normalizeProvince(pendingProvince) || pendingProvince || null;
+                    await updateDoc(doc(db, 'users', uid), {
+                        location: pendingLocation,
+                        province: provinceKey,
+                        district: pendingDistrict || null,
+                        districtKm: pendingDistrictKm || null,
+                    });
+                    Object.assign(window.currentUserData, {
+                        location: pendingLocation,
+                        province: provinceKey,
+                        district: pendingDistrict,
+                        districtKm: pendingDistrictKm,
+                    });
+                    invalidateDataCache('users', uid);
+                    clearRenderState();
+                    document.getElementById('v-location').textContent = formatLocation(window.currentUserData) || '-';
+                    showView('location');
+                } catch (err) {
+                    console.error('save location failed:', err);
+                    alert(i18next.t('account.saveFailed'));
+                } finally {
+                    saveBtn.disabled = false;
+                }
+            });
+        }
+
+        // 5/25 #91/#92 拡張: 表示値を即時復元
+        (function applyCache() {
+            try {
+                const cached = loadRenderState('restaurant_account_basic');
+                if (!cached) return;
+                if (cached.loginId) document.getElementById('v-loginId').textContent = cached.loginId;
+                if (cached.displayName) document.getElementById('v-displayName').textContent = cached.displayName;
+                if (cached.location) document.getElementById('v-location').textContent = cached.location;
+            } catch (e) { /* ignore */ }
+        })();
+
         waitForUserData(() => {
             const d = window.currentUserData || {};
             document.getElementById('v-loginId').textContent = d.loginId || '-';
             document.getElementById('v-displayName').textContent = d.displayName || '-';
             const loc = formatLocation(d) || i18next.t('account.locationUnset');
             document.getElementById('v-location').textContent = loc;
+            bindNameEdit();
+            bindLocationEdit();
             loading.classList.remove('show'); document.body.classList.add('app-ready');
+            // 5/25 #91/#92 拡張: 次回訪問用に表示値をキャッシュ
+            try {
+                saveRenderState('restaurant_account_basic', {
+                    loginId: document.getElementById('v-loginId')?.textContent || '',
+                    displayName: document.getElementById('v-displayName')?.textContent || '',
+                    location: document.getElementById('v-location')?.textContent || '',
+                });
+            } catch (e) { /* ignore */ }
         });
     </script>
 </body>

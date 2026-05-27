@@ -113,16 +113,32 @@
             -webkit-appearance: none; margin: 0;
         }
 
+        /* 5/25 #87: 内臓処理 あり/なし の判別を明確化。チェックアイコン + 状態別文言で
+           色だけでない視認性を確保。 */
         .gut-chip {
             display: inline-flex; align-items: center; gap: 4px;
-            font-size: 11px; padding: 3px 8px; border-radius: 12px;
+            font-size: 12px; padding: 5px 10px; border-radius: 14px;
             background: #f1f5f9; color: var(--color-text-sub);
-            border: 1px solid transparent; cursor: pointer;
-            font-family: inherit;
+            border: 1px solid #e2e8f0; cursor: pointer;
+            font-family: inherit; font-weight: 600;
         }
         .gut-chip.active {
             background: #ecfdf5; color: #047857;
-            border-color: #a7f3d0; font-weight: 600;
+            border-color: #6ee7b7;
+        }
+        .gut-chip .material-symbols-outlined { font-size: 14px; }
+
+        /* 5/25 #87: キャンペーン割引を明確に強調（薄い緑バナー + ラベル太字） */
+        .group-breakdown__row.discount {
+            color: #dc2626; font-weight: 700;
+            background: #fff7ed;
+            padding: 6px 8px;
+            margin: 4px -8px;
+            border-radius: 8px;
+            border: 1px dashed #fed7aa;
+        }
+        .group-breakdown__row.discount .material-symbols-outlined {
+            font-size: 14px; vertical-align: middle; margin-right: 3px;
         }
 
         .remove-btn {
@@ -531,6 +547,8 @@
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
         import { getCachedUser, getCachedListing } from '/js/data-cache.js';
+        // 5/25 #91/#92 拡張: カート画面の HTML を即時復元（subscribeCart 初回到達で上書きされる）
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         const errEl = document.getElementById('err-msg');
@@ -651,9 +669,26 @@
             return r.km;
         }
 
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元（subscribeCart の初回到達で上書きされる）
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState('restaurant_cart');
+            if (cached) {
+                if (cached.containerHtml) document.getElementById('cart-container').innerHTML = cached.containerHtml;
+                if (typeof cached.grandTotal === 'string') document.getElementById('grand-total').textContent = cached.grandTotal;
+                if (typeof cached.barVisible === 'boolean') {
+                    document.getElementById('grand-total-bar').style.display = cached.barVisible ? 'block' : 'none';
+                    document.getElementById('cart-empty').style.display = cached.barVisible ? 'none' : 'block';
+                }
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { /* ignore */ }
+
         // カート購読開始
         waitForUserData(async () => {
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             try {
                 // 料率取得
                 const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
@@ -780,7 +815,9 @@
                                     <button type="button" data-act="qty-plus" data-idx="${origIndex}">＋</button>
                                 </div>
                                 <button class="gut-chip ${c.raw.gutProcessing ? 'active' : ''}" type="button" data-act="toggle-gut" data-idx="${origIndex}">
-                                    ${i18next.t('cart.gutToggle', { price: gutDisplayPrice.toLocaleString() })}
+                                    ${c.raw.gutProcessing
+                                        ? `<span class="material-symbols-outlined">check_circle</span>${i18next.t('cart.gutChipOn', { price: gutDisplayPrice.toLocaleString() })}`
+                                        : `<span class="material-symbols-outlined">radio_button_unchecked</span>${i18next.t('cart.gutChipOff')}`}
                                 </button>
                                 <button class="remove-btn" type="button" data-act="remove" data-idx="${origIndex}">
                                     <span class="material-symbols-outlined">delete</span>
@@ -807,7 +844,7 @@
                 // 内訳
                 html += `<div class="group-breakdown">
                     <div class="group-breakdown__row"><span>${i18next.t('cart.fishTotal')}</span><span>${fmtKhr(itemsSum.fishPrice + itemsSum.serviceFee)}</span></div>
-                    ${campaignActive && itemsSum.campaignDiscount > 0 ? `<div class="group-breakdown__row discount"><span>${i18next.t('cart.campaignDiscount')}</span><span>-${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
+                    ${campaignActive && itemsSum.campaignDiscount > 0 ? `<div class="group-breakdown__row discount"><span><span class="material-symbols-outlined">local_offer</span>${i18next.t('cart.campaignDiscount')}</span><span>−${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
                     <div class="group-breakdown__row"><span>${i18next.t('cart.deliveryFee')}</span><span>${fmtKhr(deliveryFee)}</span></div>
                     <div class="group-breakdown__row total"><span>${i18next.t('cart.groupTotal')}</span><span>${fmtKhr(groupTotal)}</span></div>
                 </div>`;
@@ -818,6 +855,14 @@
             container.innerHTML = html;
             document.getElementById('grand-total').textContent = fmtKhr(grandTotal);
             bindActions();
+            // 5/25 #91/#92 拡張: render-cache 保存（次回訪問用）
+            try {
+                saveRenderState('restaurant_cart', {
+                    containerHtml: container.innerHTML,
+                    grandTotal: document.getElementById('grand-total').textContent,
+                    barVisible: bar.style.display === 'block',
+                });
+            } catch (e) { /* ignore */ }
         }
 
         function escapeHtml(s) {

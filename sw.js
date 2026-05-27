@@ -186,7 +186,12 @@ self.addEventListener('notificationclick', (event) => {
 //   - 件数は通常 数件〜数十件 オーダーで client sort で十分
 //   - 併せて firestore.rules に追加した coupons ルールは Firebase Console で
 //     手動反映が必要（本プロジェクトの運用：Console が source of truth）
-const CACHE_NAME = 'fishlink-v106';
+// 5/25 #83-#92 リリース: 基本情報編集 / レビュー件数表示 / 距離不整合修正 / 新着フィルタ統一 /
+//   カート UI 改善 / 注文承認画面強調 + 10分前通知 / post.html / 運営チャット 読込改善 +
+//   カテゴリ選択（Phase 1+運営側カテゴリ表示）
+// 5/25 #91/#92 拡張: render-cache を全 31 ページに展開（編集系・admin・cart・comments 含む）。
+//   render-cache.js に serializeTimestamps / reviveTimestamps ヘルパー追加。
+const CACHE_NAME = 'fishlink-v108';
 
 const PRECACHE_URLS = [
     '/',

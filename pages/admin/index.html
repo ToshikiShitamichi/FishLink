@@ -423,6 +423,8 @@
         import { watchAuthState, logout } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import { initAdminReportBadge } from '/js/admin-report-badge.js';
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
         import {
             collection, query, orderBy, getDocs, doc, getDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -519,7 +521,7 @@
                 location.href = '/index.html';
                 return;
             }
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             try {
                 // 全注文取得（本番ではページング推奨）
                 const snap = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
@@ -655,7 +657,41 @@
                     </a>
                 `;
             }).join('');
+            // 5/25 #91/#92 拡張: 次回訪問用にキャッシュ保存
+            try {
+                saveRenderState('admin_index', {
+                    sumCount: document.getElementById('sum-count')?.textContent || '',
+                    sumVolume: document.getElementById('sum-volume')?.textContent || '',
+                    sumFee: document.getElementById('sum-fee')?.textContent || '',
+                    tbodyHtml: tbody.innerHTML,
+                    cardsHtml: cards.innerHTML,
+                });
+            } catch (e) { /* ignore */ }
         }
+
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元（fresh fetch が後で上書き）
+        let cachedRendered = false;
+        (function applyCache() {
+            try {
+                const cached = loadRenderState('admin_index');
+                if (!cached) return;
+                const sc = document.getElementById('sum-count');
+                const sv = document.getElementById('sum-volume');
+                const sf = document.getElementById('sum-fee');
+                const tb = document.getElementById('tx-body');
+                const cd = document.getElementById('tx-cards');
+                if (sc && cached.sumCount) sc.textContent = cached.sumCount;
+                if (sv && cached.sumVolume) sv.textContent = cached.sumVolume;
+                if (sf && cached.sumFee) sf.textContent = cached.sumFee;
+                if (tb && cached.tbodyHtml) tb.innerHTML = cached.tbodyHtml;
+                if (cd && cached.cardsHtml) cd.innerHTML = cached.cardsHtml;
+                if (cached.tbodyHtml || cached.cardsHtml) {
+                    loading.classList.remove('show');
+                    document.body.classList.add('app-ready');
+                    cachedRendered = true;
+                }
+            } catch (e) { /* ignore */ }
+        })();
 
         function formatDate(d) {
             const pad = n => String(n).padStart(2, '0');

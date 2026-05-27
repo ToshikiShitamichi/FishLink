@@ -311,6 +311,8 @@
             doc, getDoc, setDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-functions.js';
+        // 5/25 #91/#92 拡張: 設定値を即時復元
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -335,13 +337,31 @@
         const bannerToggle = document.getElementById('banner-toggle');
         bannerToggle.addEventListener('click', () => bannerToggle.classList.toggle('on'));
 
+        // 5/25 #91/#92 拡張: 設定値を即時復元
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState('admin_settings');
+            if (cached) {
+                if (cached.serviceRate != null) document.getElementById('service-rate').value = cached.serviceRate;
+                if (cached.campaignDiscount != null) document.getElementById('campaign-discount').value = cached.campaignDiscount;
+                if (cached.campaignActive != null) toggle.classList.toggle('on', cached.campaignActive);
+                if (cached.farmerRate != null) document.getElementById('farmer-rate').value = cached.farmerRate;
+                if (cached.farmerCampaignDiscount != null) document.getElementById('farmer-campaign-discount').value = cached.farmerCampaignDiscount;
+                if (cached.farmerCampaignActive != null) farmerToggle.classList.toggle('on', cached.farmerCampaignActive);
+                if (cached.bannerActive != null) bannerToggle.classList.toggle('on', cached.bannerActive);
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { /* ignore */ }
+
         waitForUserData(async () => {
             if (window.currentUserData?.role !== 'admin') {
                 alert('Admin access required');
                 location.href = '/index.html';
                 return;
             }
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             try {
                 const snap = await getDoc(doc(db, 'settings', 'campaign'));
                 const data = snap.exists() ? snap.data() : {};
@@ -364,6 +384,18 @@
 
                 // バナー表示（独立フラグ・未設定時は OFF）
                 bannerToggle.classList.toggle('on', data.bannerActive === true);
+                // 5/25 #91/#92 拡張: 次回訪問用にキャッシュ
+                try {
+                    saveRenderState('admin_settings', {
+                        serviceRate: (serviceRate * 100).toFixed(1),
+                        campaignDiscount: (campaignDiscount * 100).toFixed(1),
+                        campaignActive,
+                        farmerRate: (farmerRate * 100).toFixed(1),
+                        farmerCampaignDiscount: (farmerCampaignDiscount * 100).toFixed(1),
+                        farmerCampaignActive,
+                        bannerActive: data.bannerActive === true,
+                    });
+                } catch (e) { /* ignore */ }
             } catch (err) {
                 console.error(err);
             } finally {

@@ -355,6 +355,8 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 5/23 #69 Phase F: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -381,13 +383,44 @@
             else setTimeout(() => waitForUserData(cb), 200);
         }
 
+        // 5/25 #91/#92 拡張: 画面 HTML を即時復元（onSnapshot 初回到達で上書きされる）
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState(`admin_order:${orderId}`);
+            if (cached) {
+                const setIfHtml = (id, html) => { const el = document.getElementById(id); if (el && html) el.innerHTML = html; };
+                const setIfText = (id, txt) => { const el = document.getElementById(id); if (el && txt) el.textContent = txt; };
+                setIfText('order-no-display', cached.orderNo);
+                setIfText('top-date-pill', cached.topDate);
+                setIfText('summary-status', cached.summaryStatus);
+                setIfText('summary-next-step', cached.nextStep);
+                setIfText('summary-pay', cached.summaryPay);
+                setIfText('summary-remit', cached.summaryRemit);
+                setIfHtml('basic-info', cached.basicInfoHtml);
+                setIfHtml('delivery-info', cached.deliveryInfoHtml);
+                setIfHtml('pay-breakdown', cached.payBreakdownHtml);
+                setIfHtml('payment-info', cached.paymentInfoHtml);
+                setIfHtml('remit-breakdown', cached.remitBreakdownHtml);
+                if (cached.statusChipText) {
+                    const chip = document.getElementById('top-status-chip');
+                    if (chip) {
+                        chip.textContent = cached.statusChipText;
+                        if (cached.statusChipClass) chip.className = cached.statusChipClass;
+                    }
+                }
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { /* ignore */ }
+
         waitForUserData(async () => {
             if (window.currentUserData?.role !== 'admin') {
                 alert('Admin access required');
                 location.href = '/index.html';
                 return;
             }
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             try {
                 // リアルタイム購読
                 onSnapshot(doc(db, 'orders', orderId), async (snap) => {
@@ -587,6 +620,26 @@
 
             // 内部メモ
             document.getElementById('admin-memo').value = orderData.adminMemo || '';
+
+            // 5/25 #91/#92 拡張: 次回訪問用に画面 HTML をキャッシュ保存
+            try {
+                const chip = document.getElementById('top-status-chip');
+                saveRenderState(`admin_order:${orderId}`, {
+                    orderNo: document.getElementById('order-no-display')?.textContent || '',
+                    topDate: document.getElementById('top-date-pill')?.textContent || '',
+                    summaryStatus: document.getElementById('summary-status')?.textContent || '',
+                    nextStep: document.getElementById('summary-next-step')?.textContent || '',
+                    summaryPay: document.getElementById('summary-pay')?.textContent || '',
+                    summaryRemit: document.getElementById('summary-remit')?.textContent || '',
+                    statusChipText: chip?.textContent || '',
+                    statusChipClass: chip?.className || '',
+                    basicInfoHtml: document.getElementById('basic-info')?.innerHTML || '',
+                    deliveryInfoHtml: document.getElementById('delivery-info')?.innerHTML || '',
+                    payBreakdownHtml: document.getElementById('pay-breakdown')?.innerHTML || '',
+                    paymentInfoHtml: document.getElementById('payment-info')?.innerHTML || '',
+                    remitBreakdownHtml: document.getElementById('remit-breakdown')?.innerHTML || '',
+                });
+            } catch (e) { /* ignore */ }
         }
 
         function cap(s) {

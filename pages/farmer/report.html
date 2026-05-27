@@ -200,6 +200,8 @@
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { uploadImageResized } from '/js/image-resize.js';
+        // 5/25 #91/#92 拡張: 対象注文情報を render-cache 化
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -209,6 +211,20 @@
 
         const orderId = new URLSearchParams(location.search).get('id');
         if (!orderId) { location.href = '/pages/farmer/orders.html'; }
+
+        // 5/25 #91/#92 拡張: 対象注文の表示部を render-cache から即時復元
+        (function applyCache() {
+            try {
+                const cached = loadRenderState(`farmer_report:${orderId}`);
+                if (!cached) return;
+                const n = document.getElementById('target-name');
+                const f = document.getElementById('target-fish');
+                const d = document.getElementById('target-date');
+                if (n && cached.targetName) n.textContent = cached.targetName;
+                if (f && cached.targetFish) f.textContent = cached.targetFish;
+                if (d && cached.targetDate) d.textContent = cached.targetDate;
+            } catch (e) { /* ignore */ }
+        })();
 
         let selectedType = null;
         document.getElementById('type-list').addEventListener('click', (e) => {
@@ -261,6 +277,14 @@
                 document.getElementById('target-fish').textContent = `${shortName} ${orderData.quantity || 0}kg`;
                 document.getElementById('target-date').textContent =
                     `${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}`;
+                // 5/25 #91/#92 拡張: 次回訪問用に表示部をキャッシュ
+                try {
+                    saveRenderState(`farmer_report:${orderId}`, {
+                        targetName: document.getElementById('target-name')?.textContent || '',
+                        targetFish: document.getElementById('target-fish')?.textContent || '',
+                        targetDate: document.getElementById('target-date')?.textContent || '',
+                    });
+                } catch (e) { /* ignore */ }
             } catch (err) {
                 console.error(err);
             } finally {

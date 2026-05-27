@@ -113,7 +113,41 @@
         }
         .send-btn:disabled { background: #94a3b8; cursor: not-allowed; }
         .send-btn .material-symbols-outlined { font-size: 20px; }
-    </style>
+
+        /* 5/25 #90: 問い合わせカテゴリ選択 UI（Phase 1） */
+        .chat-category-bar {
+            background: #fff;
+            border-top: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            font-size: 12px;
+        }
+        .chat-category-bar__label {
+            display: block; font-weight: 700; color: #475569;
+            margin-bottom: 6px;
+        }
+        .chat-category-bar__select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-family: inherit; font-size: 14px;
+            background: #fff;
+        }
+        .chat-category-bar__select:focus { outline: none; border-color: #0d6e4c; }
+        .chat-category-bar.unset .chat-category-bar__select {
+            border-color: #f59e0b; background: #fffbeb;
+        }
+        .chat-msg__category {
+            display: inline-block;
+            font-size: 10px; font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.85);
+            color: #0d6e4c;
+            margin-bottom: 4px;
+        }
+        .chat-msg.user .chat-msg__category { color: #0d6e4c; }
+        .chat-msg.admin .chat-msg__category { color: #475569; border: 1px solid #e2e8f0; }
 </head>
 
 <body>
@@ -144,6 +178,21 @@
             <div class="chat-empty" data-i18n="adminChat.loading"></div>
         </div>
 
+        <!-- 5/25 #90: 問い合わせカテゴリ選択（送信前に必須） -->
+        <div class="chat-category-bar unset" id="category-bar">
+            <label class="chat-category-bar__label" data-i18n="adminChat.categoryLabel" for="category-select"></label>
+            <select class="chat-category-bar__select" id="category-select">
+                <option value="" data-i18n="adminChat.categoryPlaceholder"></option>
+                <option value="order" data-i18n="adminChat.categoryOrder"></option>
+                <option value="payment" data-i18n="adminChat.categoryPayment"></option>
+                <option value="delivery" data-i18n="adminChat.categoryDelivery"></option>
+                <option value="posting" data-i18n="adminChat.categoryPosting"></option>
+                <option value="account" data-i18n="adminChat.categoryAccount"></option>
+                <option value="trouble" data-i18n="adminChat.categoryTrouble"></option>
+                <option value="other" data-i18n="adminChat.categoryOther"></option>
+            </select>
+        </div>
+
         <div class="chat-input-bar">
             <input type="text" class="chat-input" id="chat-input"
                 placeholder="" data-i18n-placeholder="adminChat.placeholder">
@@ -161,6 +210,8 @@
             collection, query, orderBy, onSnapshot,
             addDoc, serverTimestamp, getDocs, where, updateDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
+        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
 
@@ -193,6 +244,13 @@
             return d.toLocaleString();
         }
 
+        // 5/25 #90: カテゴリラベル解決
+        function categoryLabel(cat) {
+            if (!cat) return '';
+            const key = `adminChat.category${cat.charAt(0).toUpperCase()}${cat.slice(1)}`;
+            return i18next.exists(key) ? i18next.t(key) : cat;
+        }
+
         function renderThread(snap) {
             const thread = document.getElementById('chat-thread');
             if (snap.empty) {
@@ -203,9 +261,13 @@
                 const m = d.data();
                 const cls = m.senderRole === 'user' ? 'user' : 'admin';
                 const time = fmtTime(m.createdAt);
+                // 5/25 #90: 問い合わせカテゴリのバッジを表示（ユーザー側メッセージのみ）
+                const catBadge = (cls === 'user' && m.category)
+                    ? `<div class="chat-msg__category">${escapeHtml(categoryLabel(m.category))}</div>`
+                    : '';
                 return `
                     <div class="chat-msg ${cls}">
-                        ${escapeHtml(m.text || '')}
+                        ${catBadge}${escapeHtml(m.text || '')}
                         <div class="chat-msg__time">${time}</div>
                     </div>
                 `;
@@ -226,29 +288,75 @@
             } catch (e) { /* ignore */ }
         }
 
+        // 5/25 #91/#92 拡張: 過去メッセージの HTML を即時復元（onSnapshot 初回到達で上書きされる）
+        let cachedThreadShown = false;
         waitForUserData(() => {
             const uid = window.currentUser.uid;
+            try {
+                const cached = loadRenderState(`admin_chat:${uid}`);
+                if (cached?.threadHtml) {
+                    document.getElementById('chat-thread').innerHTML = cached.threadHtml;
+                    loading.classList.remove('show');
+                    document.body.classList.add('app-ready');
+                    cachedThreadShown = true;
+                }
+            } catch (e) { /* ignore */ }
+
             const q = query(
                 collection(db, `adminChats/${uid}/messages`),
                 orderBy('createdAt', 'asc')
             );
+            // 5/25 #92: 初回 snapshot で spinner 解除（旧来は解除処理が無く i18n の 10 秒 failsafe 待ち）
+            let firstSnapshot = true;
             onSnapshot(q, (snap) => {
                 renderThread(snap);
                 markAdminMessagesRead(uid);
+                if (firstSnapshot) {
+                    loading.classList.remove('show'); document.body.classList.add('app-ready');
+                    firstSnapshot = false;
+                }
+                // 5/25 #91/#92 拡張: 次回訪問用に thread HTML を保存
+                try {
+                    saveRenderState(`admin_chat:${uid}`, {
+                        threadHtml: document.getElementById('chat-thread').innerHTML,
+                    });
+                } catch (e) { /* ignore */ }
             });
+            // フォールバック：onSnapshot 初回到達前にネットワーク不調で何も来なくても 2.5s で UI を有効化
+            //   cachedThreadShown が true なら既に spinner 解除済みなのでスキップ
+            setTimeout(() => {
+                if (firstSnapshot && !cachedThreadShown) {
+                    loading.classList.remove('show'); document.body.classList.add('app-ready');
+                }
+            }, 2500);
 
             const input = document.getElementById('chat-input');
             const sendBtn = document.getElementById('send-btn');
+            // 5/25 #90: カテゴリ選択 UI のセットアップ
+            const categoryBar = document.getElementById('category-bar');
+            const categorySelect = document.getElementById('category-select');
+            categorySelect.addEventListener('change', () => {
+                if (categorySelect.value) categoryBar.classList.remove('unset');
+                else categoryBar.classList.add('unset');
+            });
 
             async function send() {
                 const text = input.value.trim();
                 if (!text) return;
+                // 5/25 #90: カテゴリ未選択時は警告して送信させない
+                const category = categorySelect.value;
+                if (!category) {
+                    alert(i18next.t('adminChat.categoryRequired'));
+                    categorySelect.focus();
+                    return;
+                }
                 sendBtn.disabled = true;
                 try {
                     await addDoc(collection(db, `adminChats/${uid}/messages`), {
                         senderId: uid,
                         senderRole: 'user',
                         text,
+                        category,                                // 5/25 #90
                         isRead: false,
                         createdAt: serverTimestamp(),
                     });

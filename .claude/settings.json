@@ -21,7 +21,13 @@
       "Bash(ls \"C:\\\\Users\\\\t_shitamichi\\\\.claude\\\\\" 2>&1 | head -30)",
       "Read(//c/Users/t_shitamichi/**)",
       "Bash(node --input-type=module -e ' *)",
-      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/ja.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/en.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/km.json','utf8'\\)\\);console.log\\('ok'\\)\")"
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/ja.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/en.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/km.json','utf8'\\)\\);console.log\\('ok'\\)\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\work\\\\FishLink\" -Directory)",
+      "Bash(Select-Object -First 20)",
+      "Bash(echo '=== __TRACKED_VAR__ ===')",
+      "Bash(wc -l c:/work/FishLink/__TRACKED_VAR__)",
+      "Bash(grep -c -E '<form|<input type=\"\\(text|number|date|email|password|tel|url|file\\)|<textarea|<select|contenteditable|subscribeCart|subscribeTodos|subscribeNotifications' c:/work/FishLink/__TRACKED_VAR__)",
+      "Bash(grep -nE '\\(loading\\\\.classList|app-ready|innerHTML|onSnapshot|waitForUserData|getElementById\\\\\\([^\\)]+\\\\\\)\\\\.\\(textContent|innerHTML\\)|^        import\\)' c:/work/FishLink/__TRACKED_VAR__)"
     ]
   }
 }

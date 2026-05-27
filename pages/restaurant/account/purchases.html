@@ -102,6 +102,8 @@
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
+        import { saveRenderState, loadRenderState, serializeTimestamps, reviveTimestamps } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -254,6 +256,10 @@
             }));
             allTrades.forEach(t => { t.farmerName = farmerMap[t.farmerId]?.displayName || ''; });
             render();
+            // 5/25 #91/#92 拡張: 次回訪問用にキャッシュ保存
+            try {
+                saveRenderState('restaurant_purchases', { trades: serializeTimestamps(allTrades) });
+            } catch (e) { /* ignore */ }
         }
 
         document.getElementById('view-more').addEventListener('click', () => { displayCount += 10; render(); });
@@ -275,8 +281,21 @@
             render();
         });
 
+        // 5/25 #91/#92 拡張: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState('restaurant_purchases');
+            if (cached?.trades?.length) {
+                allTrades = reviveTimestamps(cached.trades);
+                render();
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { console.warn('cached restaurant_purchases render failed:', e); }
+
         waitForUserData(async () => {
-            loading.classList.add('show');
+            if (!cachedRendered) loading.classList.add('show');
             try { await load(); } catch (e) { console.error(e); }
             finally { loading.classList.remove('show'); document.body.classList.add('app-ready'); }
         });

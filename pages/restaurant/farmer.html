@@ -224,7 +224,8 @@
 
         <div class="subrating-wrap">
             <div class="subrating-head">
-                <div class="subrating-head__title" data-i18n="review.title"></div>
+                <!-- 5/25 #84: タイトルに件数を含める形に変更（renderFarmerPage で動的セット） -->
+                <div class="subrating-head__title" id="subrating-title" data-i18n="review.title"></div>
                 <a class="subrating-head__link" id="reviews-link" href="#reviews-section" data-i18n-target="review-count">レビューを見る</a>
             </div>
             <div class="subrating-grid">
@@ -252,7 +253,8 @@
         </div>
 
         <div class="section" id="reviews-section">
-            <div class="section__title" data-i18n="profile.reviewComments"></div>
+            <!-- 5/25 #84: タイトルに件数を含める形に変更（renderFarmerPage で動的セット） -->
+            <div class="section__title" id="reviews-section-title" data-i18n="profile.reviewComments"></div>
             <div id="reviews-list"></div>
         </div>
     </div>
@@ -353,6 +355,11 @@
             const count = Number(user.reviewCount || 0);
             document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
             document.getElementById('rating-count').textContent = `（${count}${i18next.t('order.reviews')}）`;
+            // 5/25 #84: レビュー件数を「レビュー（11件）」「レビューコメント（11件）」形式で各タイトルに併記
+            const subTitleEl = document.getElementById('subrating-title');
+            if (subTitleEl) subTitleEl.textContent = i18next.t('profile.reviewsTitleWithCount', { count });
+            const reviewsTitleEl = document.getElementById('reviews-section-title');
+            if (reviewsTitleEl) reviewsTitleEl.textContent = i18next.t('profile.reviewCommentsTitleWithCount', { count });
 
             const sub = user.subRatings || {};
             const fmtSubRate = (s) => {
