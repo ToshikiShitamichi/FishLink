@@ -86,30 +86,43 @@
         }
         .shelf__row::-webkit-scrollbar { display: none; }
 
-        /* カード */
+        /* 5/27 #97 v2: 2段構成（上=写真+商品情報 横並び / 下=農家情報）。
+           カード幅を広げ、写真は正方形のサムネ、右側に文字情報を配置。 */
         .home-card {
-            flex-shrink: 0; width: 168px;
+            flex-shrink: 0; width: 280px;
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: 14px; overflow: hidden;
             text-decoration: none; color: inherit;
             display: flex; flex-direction: column;
         }
+        .home-card__top {
+            display: flex; gap: 10px;
+            padding: 10px;
+        }
         .home-card__img {
-            width: 100%; aspect-ratio: 1 / 1;
+            width: 96px; height: 96px;
+            flex-shrink: 0;
             background: #e2e8f0;
+            border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
             overflow: hidden;
         }
         .home-card__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .home-card__body { padding: 8px 10px 10px; flex: 1; display: flex; flex-direction: column; gap: 2px; }
-        .home-card__name { font-size: 13px; font-weight: 700; color: var(--color-text); line-height: 1.3; }
+        .home-card__body {
+            flex: 1; min-width: 0;
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .home-card__name {
+            font-size: 14px; font-weight: 700; color: var(--color-text); line-height: 1.3;
+            overflow: hidden; text-overflow: ellipsis;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
         .home-card__size { font-size: 11px; color: var(--color-text-sub); }
-        .home-card__price { font-size: 14px; font-weight: 700; color: var(--color-text); margin-top: 2px; }
+        .home-card__price { font-size: 15px; font-weight: 700; color: var(--color-text); margin-top: 2px; }
         .home-card__price-unit { font-size: 11px; font-weight: 500; color: var(--color-text-sub); margin-left: 2px; }
         .home-card__stock { font-size: 11px; color: #047857; }
         .home-card__stock--out { color: #b91c1c; }
-        /* 5/23 #79: 距離は農家ブロックの上の独立行に分離 */
         .home-card__place {
             font-size: 11px; color: var(--color-text-sub);
             display: flex; align-items: center; gap: 3px;
@@ -118,11 +131,11 @@
         }
         .home-card__place .material-symbols-outlined { font-size: 13px; }
 
-        /* 5/23 #79: 農家ブロック（fish-list.html の .fish-grid-card__farmer と同型・narrow 用に縮小） */
+        /* 下段：農家ブロック（カード全幅で 1 行表示） */
         .home-card__farmer-block {
-            display: flex; align-items: center; gap: 6px;
-            padding: 5px 8px;
-            margin-top: 4px;
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 10px;
+            margin: 0 10px 10px;
             background: #f8fafc;
             border-radius: 8px;
             border: 1px solid #e2e8f0;
@@ -133,7 +146,7 @@
         }
         .home-card__farmer-block:hover { background: #f1f5f9; }
         .home-card__farmer-avatar {
-            width: 22px; height: 22px;
+            width: 24px; height: 24px;
             border-radius: 50%;
             background: #e2e8f0;
             flex-shrink: 0;
@@ -142,19 +155,19 @@
         }
         .home-card__farmer-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .home-card__farmer-avatar .material-symbols-outlined { font-size: 14px; color: #94a3b8; }
-        .home-card__farmer-info { flex: 1; min-width: 0; }
+        .home-card__farmer-info { flex: 1; min-width: 0; line-height: 1.2; }
         .home-card__farmer-name {
-            font-size: 11px; font-weight: 600;
+            font-size: 12px; font-weight: 600;
             color: var(--color-text);
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .home-card__farmer-rating {
             display: flex; align-items: center; gap: 2px;
-            font-size: 10px; color: var(--color-text-sub);
+            font-size: 11px; color: var(--color-text-sub);
             white-space: nowrap;
         }
         .home-card__farmer-rating .material-symbols-outlined {
-            font-size: 11px; color: #f59e0b; font-variation-settings: 'FILL' 1;
+            font-size: 12px; color: #f59e0b; font-variation-settings: 'FILL' 1;
         }
 
         .shelf__empty {
@@ -498,48 +511,52 @@
             const rating = Number(farmer?.avgRating || 0);
             const reviewCount = Number(farmer?.reviewCount || 0);
             const farmerAvatarUrl = farmer ? getReviewerAvatarUrl(farmer) : null;
+            // 5/27 #96: GAqP 認証バッジ
+            const farmerGaqp = farmer?.gaqpCertified === true;
             const distText = Number.isFinite(distanceKm) ? `${distanceKm.toFixed(1)} km` : '';
             const imgAttrs = asCachedImgAttrs(photo, isPriority ? { priority: 'high' } : {});
             const loadAttr = isPriority ? '' : 'loading="lazy"';
 
             return `
                 <a class="home-card" href="/pages/restaurant/order.html?id=${listing.id}">
-                    <div class="home-card__img">
-                        ${photo
-                            ? `<img ${imgAttrs} alt="${escapeHtml(fishName)}" ${loadAttr}>`
-                            : `<span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span>`
-                        }
-                    </div>
-                    <div class="home-card__body">
-                        <div class="home-card__name">${escapeHtml(fishName)}</div>
-                        <div class="home-card__size">${listing.size || ''} head/kg</div>
-                        <div class="home-card__price">${unitPrice.toLocaleString()}<span class="home-card__price-unit">KHR/kg</span></div>
-                        <div class="home-card__stock ${stock <= 0 ? 'home-card__stock--out' : ''}">
-                            ${stock > 0 ? i18next.t('restaurant.stock', { kg: stock }) : i18next.t('order.stockUnavailable')}
+                    <div class="home-card__top">
+                        <div class="home-card__img">
+                            ${photo
+                                ? `<img ${imgAttrs} alt="${escapeHtml(fishName)}" ${loadAttr}>`
+                                : `<span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span>`
+                            }
                         </div>
-                        ${distText ? `
-                            <div class="home-card__place">
-                                <span class="material-symbols-outlined">location_on</span>
-                                <span>${escapeHtml(distText)}</span>
+                        <div class="home-card__body">
+                            <div class="home-card__name">${escapeHtml(fishName)}</div>
+                            <div class="home-card__size">${listing.size || ''} head/kg</div>
+                            <div class="home-card__price">${unitPrice.toLocaleString()}<span class="home-card__price-unit">KHR/kg</span></div>
+                            <div class="home-card__stock ${stock <= 0 ? 'home-card__stock--out' : ''}">
+                                ${stock > 0 ? i18next.t('restaurant.stock', { kg: stock }) : i18next.t('order.stockUnavailable')}
                             </div>
-                        ` : ''}
-                        ${farmerName ? `
-                            <div class="home-card__farmer-block" data-act="view-farmer" data-farmer-id="${listing.farmerId}" role="button" tabindex="0">
-                                <div class="home-card__farmer-avatar">
-                                    ${farmerAvatarUrl
-                                        ? `<img ${asCachedImgAttrs(farmerAvatarUrl)} alt="" loading="lazy">`
-                                        : `<span class="material-symbols-outlined">person</span>`}
+                            ${distText ? `
+                                <div class="home-card__place">
+                                    <span class="material-symbols-outlined">location_on</span>
+                                    <span>${escapeHtml(distText)}</span>
                                 </div>
-                                <div class="home-card__farmer-info">
-                                    <div class="home-card__farmer-name">${escapeHtml(farmerName)}</div>
-                                    <div class="home-card__farmer-rating">
-                                        <span class="material-symbols-outlined">star</span>
-                                        ${Math.round(rating)}%（${reviewCount}）
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
+                            ` : ''}
+                        </div>
                     </div>
+                    ${farmerName ? `
+                        <div class="home-card__farmer-block" data-act="view-farmer" data-farmer-id="${listing.farmerId}" role="button" tabindex="0">
+                            <div class="home-card__farmer-avatar">
+                                ${farmerAvatarUrl
+                                    ? `<img ${asCachedImgAttrs(farmerAvatarUrl)} alt="" loading="lazy">`
+                                    : `<span class="material-symbols-outlined">person</span>`}
+                            </div>
+                            <div class="home-card__farmer-info">
+                                <div class="home-card__farmer-name">${escapeHtml(farmerName)}${farmerGaqp ? ` <span style="display:inline-flex; align-items:center; gap:2px; padding:1px 6px; background:#0d6e4c; color:#fff; border-radius:8px; font-size:9px; font-weight:700; vertical-align:middle;"><span class="material-symbols-outlined" style="font-size:11px;">verified</span>${i18next.t('gaqp.badge')}</span>` : ''}</div>
+                                <div class="home-card__farmer-rating">
+                                    <span class="material-symbols-outlined">star</span>
+                                    ${Math.round(rating)}%（${reviewCount}）
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
                 </a>
             `;
         }

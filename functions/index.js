@@ -2365,7 +2365,7 @@ exports.onCommentCreated = onDocumentCreated(
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
-    const { listingId } = event.params;
+    const { listingId, commentId } = event.params;
     // 削除済みフラグ付きで作成された場合はスキップ
     if (data.isDeleted) return;
 
@@ -2374,6 +2374,64 @@ exports.onCommentCreated = onDocumentCreated(
     const listing = listingSnap.data();
     const farmerId = listing.farmerId;
     if (!farmerId) return;
+
+    // 5/27 #99: 多段スレッド対応 — parentReplyId が付いていれば返信通知ロジックへ分岐
+    if (data.parentReplyId) {
+      try {
+        // スレッド参加者（親質問者 + 全ての過去返信者）を集める
+        const commentsSnap = await db.collection(`fishListings/${listingId}/comments`).get();
+        const parentDoc = commentsSnap.docs.find((d) => d.id === data.parentReplyId);
+        // 親質問 ID を辿る（親も child の場合はその親、最終的に parentReplyId なしの質問 doc に到達）
+        let rootId = data.parentReplyId;
+        let safety = 10;
+        while (safety-- > 0) {
+          const rootDoc = commentsSnap.docs.find((d) => d.id === rootId);
+          if (!rootDoc) break;
+          const parentField = rootDoc.data().parentReplyId;
+          if (!parentField) break;
+          rootId = parentField;
+        }
+        const participants = new Set();
+        // 質問者
+        const rootDoc = commentsSnap.docs.find((d) => d.id === rootId);
+        if (rootDoc?.data().senderId) participants.add(rootDoc.data().senderId);
+        if (rootDoc?.data().replyByUid) participants.add(rootDoc.data().replyByUid);
+        // 同じスレッドの全 child の送信者
+        for (const d of commentsSnap.docs) {
+          const dd = d.data();
+          if (dd.parentReplyId && (dd.parentReplyId === rootId || dd.parentReplyId === parentDoc?.id)) {
+            if (dd.senderId) participants.add(dd.senderId);
+          }
+        }
+        // 出品農家は常に含める
+        participants.add(farmerId);
+        // 自分自身（送信者）は除外
+        participants.delete(data.senderId);
+
+        const senderSnap = await db.doc(`users/${data.senderId}`).get();
+        const senderName = senderSnap.data()?.displayName || "";
+        const truncText = (data.text || "").substring(0, 80);
+        const fishKey = listing.fishType || "";
+
+        await Promise.all([...participants].map(async (uid) => {
+          const userSnap = await db.doc(`users/${uid}`).get();
+          const lang = userSnap.data()?.lang || "en";
+          const vars = { sender: senderName, fish: fishKey, text: truncText };
+          const { title, body } = getMessage("commentReply", lang, vars);
+          await notifyUser(uid, {
+            type: "comment_reply",
+            title, body,
+            msgKey: "commentReply",
+            vars,
+            url: `/pages/restaurant/comments.html?id=${listingId}`,
+          });
+        }));
+        console.log("Thread reply notifications sent:", listingId, commentId, "participants:", [...participants]);
+      } catch (e) {
+        console.warn("thread reply notify failed:", e.message);
+      }
+      return;
+    }
 
     // 自分（farmer）が自分の商品にコメントした場合は通知しない
     if (data.senderId === farmerId) return;

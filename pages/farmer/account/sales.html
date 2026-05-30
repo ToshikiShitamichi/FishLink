@@ -219,6 +219,11 @@
                         : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
                     itemsHtml = `<div style="font-size:13px; color:var(--color-text); padding:1px 0;">${itName} ${t.quantity || 0}kg・${gutText}</div>`;
                 }
+                // 5/27 #101 ④: 紹介ボーナス行を追加（適用済みのみ表示）
+                const referralBonus = Number(t.referralBonusAmount || 0);
+                const bonusRow = referralBonus > 0
+                    ? `<div class="trade-item__row"><span class="k">${i18next.t('order.referralBonus')}</span><span style="font-weight:600; color:#0d6e4c;">+${fmtKhr(referralBonus)}</span></div>`
+                    : '';
                 return `
                     <div class="trade-item">
                         <div class="trade-item__head">
@@ -229,6 +234,7 @@
                             <span class="trade-badge ${b.cls}">${b.label}</span>
                         </div>
                         <div style="margin:4px 0 6px;">${itemsHtml}</div>
+                        ${bonusRow}
                         <div class="trade-item__row"><span class="k">${i18next.t('account.amountSales')}</span><span style="font-weight:600;">${fmtKhr(t.farmerReceiveAmount)}</span></div>
                     </div>
                 `;

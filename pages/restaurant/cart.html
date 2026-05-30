@@ -13,6 +13,11 @@
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
+    <!-- 5/27 #94: 注文カレンダー多言語対応のため flatpickr 導入（km/ja/en ロケール） -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/km.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ja.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&libraries=geometry&loading=async" async defer></script>
     <style>
@@ -115,18 +120,22 @@
 
         /* 5/25 #87: 内臓処理 あり/なし の判別を明確化。チェックアイコン + 状態別文言で
            色だけでない視認性を確保。 */
+        /* 5/27: 「+xxx KHR/kg」を改行して横幅を縮め、削除ボタンと横並びを維持 */
         .gut-chip {
             display: inline-flex; align-items: center; gap: 4px;
             font-size: 12px; padding: 5px 10px; border-radius: 14px;
             background: #f1f5f9; color: var(--color-text-sub);
             border: 1px solid #e2e8f0; cursor: pointer;
             font-family: inherit; font-weight: 600;
+            line-height: 1.2;
         }
         .gut-chip.active {
             background: #ecfdf5; color: #047857;
             border-color: #6ee7b7;
         }
         .gut-chip .material-symbols-outlined { font-size: 14px; }
+        .gut-chip__text { display: inline-flex; flex-direction: column; align-items: flex-start; }
+        .gut-chip__sub { font-size: 10px; font-weight: 500; opacity: 0.85; }
 
         /* 5/25 #87: キャンペーン割引を明確に強調（薄い緑バナー + ラベル太字） */
         .group-breakdown__row.discount {
@@ -526,7 +535,7 @@
     </div>
 
     <script type="module">
-        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import {
@@ -816,8 +825,8 @@
                                 </div>
                                 <button class="gut-chip ${c.raw.gutProcessing ? 'active' : ''}" type="button" data-act="toggle-gut" data-idx="${origIndex}">
                                     ${c.raw.gutProcessing
-                                        ? `<span class="material-symbols-outlined">check_circle</span>${i18next.t('cart.gutChipOn', { price: gutDisplayPrice.toLocaleString() })}`
-                                        : `<span class="material-symbols-outlined">radio_button_unchecked</span>${i18next.t('cart.gutChipOff')}`}
+                                        ? `<span class="material-symbols-outlined">check_circle</span><span class="gut-chip__text"><span>${i18next.t('cart.gutChipOn')}</span><span class="gut-chip__sub">${i18next.t('cart.gutChipOnPrice', { price: gutDisplayPrice.toLocaleString() })}</span></span>`
+                                        : `<span class="material-symbols-outlined">radio_button_unchecked</span><span class="gut-chip__text"><span>${i18next.t('cart.gutChipOff')}</span></span>`}
                                 </button>
                                 <button class="remove-btn" type="button" data-act="remove" data-idx="${origIndex}">
                                     <span class="material-symbols-outlined">delete</span>
@@ -855,6 +864,7 @@
             container.innerHTML = html;
             document.getElementById('grand-total').textContent = fmtKhr(grandTotal);
             bindActions();
+            initDatepickers();
             // 5/25 #91/#92 拡張: render-cache 保存（次回訪問用）
             try {
                 saveRenderState('restaurant_cart', {
@@ -867,6 +877,30 @@
 
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        // 5/27 #94: 言語切替時にカレンダーを再初期化
+        // 5/27: 動的描画されたカート本体（chip 文言・農家名以外のラベル等）も再描画しないと
+        //   旧言語のままなので render() を呼び直す。initDatepickers は render() 内で呼ばれる。
+        onLanguageChange(() => { render().catch(() => {}); });
+
+        // 5/27 #94: 配送日カレンダーを i18next 言語に合わせてローカライズ（flatpickr）
+        // ネイティブ <input type="date"> は Chrome/Safari で OS ロケール固定のため、
+        // flatpickr で UI 言語を明示制御する。
+        function initDatepickers() {
+            if (typeof flatpickr === 'undefined') return;
+            const lang = (typeof i18next !== 'undefined' && i18next.language) || 'km';
+            const locale = lang === 'ja' ? 'ja' : (lang === 'km' ? 'km' : 'default');
+            document.querySelectorAll('input[type="date"][data-act="date"]').forEach(inp => {
+                if (inp._flatpickr) inp._flatpickr.destroy();
+                flatpickr(inp, {
+                    locale: locale,
+                    dateFormat: 'Y-m-d',
+                    minDate: inp.min || undefined,
+                    defaultDate: inp.value || undefined,
+                    disableMobile: true,
+                });
+            });
         }
 
         function bindActions() {

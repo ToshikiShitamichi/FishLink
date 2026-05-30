@@ -141,6 +141,12 @@ function prefetch(url) {
                 etag = response.headers.get('etag') || response.headers.get('last-modified') || '';
             }
 
+            // 5/27 #93: 空 blob ガード（CORS opaque や Safari の IDB 不具合で発生・描画すると "?" になる）
+            if (!blob || blob.size === 0) {
+                logFetchProblem(url, new Error('empty blob'));
+                return;
+            }
+
             const blobUrl = URL.createObjectURL(blob);
             evictIfNeeded();
             const old = cache.get(url);
@@ -437,6 +443,8 @@ async function preloadFromIDB(limit = MAX_ENTRIES) {
         });
         for (const entry of entries) {
             if (cache.has(entry.url)) continue; // 既にメモリ層にある（並行 fetch）
+            // 5/27 #93: IDB から取り出した blob が空/不正なら skip（Safari で稀に発生し "?" 描画の原因に）
+            if (!(entry.blob instanceof Blob) || entry.blob.size === 0) continue;
             try {
                 const blobUrl = URL.createObjectURL(entry.blob);
                 cache.set(entry.url, {
@@ -484,3 +492,23 @@ export async function clearAll() {
 preloadFromIDB().catch(() => {});
 // 5/23 Phase E: 起動時に 1 回 quota チェック
 checkQuotaAndEvictIfHigh().catch(() => {});
+
+// 5/27 #93: Safari/iOS で blob URL の描画が失敗した場合に original URL へフォールバック。
+// 原因例: 古いセッションの IDB blob が空、または Safari 特有の blob URL ライフサイクル問題。
+// img の error イベントは bubble しないため capture 段階でグローバル捕捉する。
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    window.addEventListener('error', (e) => {
+        const t = e.target;
+        if (!t || t.tagName !== 'IMG') return;
+        const original = t.dataset?.originalUrl;
+        if (!original || t.src === original) return;
+        if (!t.src.startsWith('blob:')) return;
+        // 壊れた blob URL は cache からも除去して次回再フェッチさせる
+        const cached = cache.get(original);
+        if (cached && cached.blobUrl === t.src) {
+            URL.revokeObjectURL(cached.blobUrl);
+            cache.delete(original);
+        }
+        t.src = original;
+    }, true);
+}

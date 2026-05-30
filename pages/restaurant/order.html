@@ -448,16 +448,19 @@
         }
 
         /* 固定フッター */
+        /* 5/27: DevTools モバイル表示で left:0/right:0/margin:auto の組み合わせが
+           position:fixed の中央寄せとして機能しないケースがあるため、translateX 方式に変更。 */
         .order-footer {
             position: fixed;
             bottom: 0;
-            left: 0;
-            right: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
             max-width: 480px;
-            margin: 0 auto;
             background: rgba(255, 255, 255, .95);
             border-top: 1px solid var(--color-border);
             padding: 12px 16px 16px;
+            box-sizing: border-box;
             z-index: 10;
         }
 
@@ -1065,6 +1068,16 @@
                     <div class="fish-detail__badges">
                         <span class="${stockClass}">${stockText}</span>
                     </div>
+                    ${farmerData.gaqpCertified === true ? `
+                        <!-- 5/27 #96: GAqP 認証バッジ + 説明文 -->
+                        <div style="margin-top:10px; padding:10px 12px; background:#ecfdf5; border:1px solid #0d6e4c; border-radius:8px;">
+                            <div style="display:inline-flex; align-items:center; gap:4px; padding:3px 10px; background:#0d6e4c; color:#fff; border-radius:10px; font-size:12px; font-weight:700; margin-bottom:6px;">
+                                <span class="material-symbols-outlined" style="font-size:14px;">verified</span>
+                                ${i18next.t('gaqp.badge')}
+                            </div>
+                            <div style="font-size:12px; color:var(--color-text-sub); line-height:1.4;">${i18next.t('gaqp.description')}</div>
+                        </div>
+                    ` : ''}
                     <!-- 5/23 #80: 質問・返信プレビュー枠（食べチョク参考）。中身は loadQuestionPreview で非同期描画。 -->
                     <div class="qa-preview" id="qa-preview">
                         <div class="qa-preview__title">

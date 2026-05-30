@@ -549,7 +549,7 @@
         import { subscribeTodos } from '/js/todos.js';
         import { subscribeNotifications } from '/js/notifications.js';
         import {
-            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc
+            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { getOrderNumber } from '/js/order-utils.js';
         // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ（stale-while-revalidate）
@@ -595,6 +595,43 @@
         let ordersLoadingMore = false;
         let allOrders = [];
 
+        // 5/27: 新規注文監視（idle 時は 0 read・変化時のみ +N read）
+        //   先頭5件のメタ情報だけ onSnapshot で持ち続け、増減があれば loadOrdersPage を再実行。
+        //   重い join 処理は loadOrdersPage 側に任せる。
+        let _watchUnsub = null;
+        let _watchInitial = true;
+        let _watchKnownIds = new Set();
+        function watchForNewOrders(uid) {
+            if (_watchUnsub) return; // 多重購読防止
+            const q = query(
+                collection(db, 'orders'),
+                where('farmerId', '==', uid),
+                orderBy('createdAt', 'desc'),
+                limit(5)
+            );
+            _watchUnsub = onSnapshot(q, (snap) => {
+                const ids = new Set(snap.docs.map(d => d.id));
+                if (_watchInitial) {
+                    _watchInitial = false;
+                    _watchKnownIds = ids;
+                    return;
+                }
+                // 差分検知（新規追加 or 既存削除）
+                let changed = false;
+                for (const id of ids) if (!_watchKnownIds.has(id)) { changed = true; break; }
+                if (!changed) {
+                    for (const id of _watchKnownIds) if (!ids.has(id)) { changed = true; break; }
+                }
+                if (changed) {
+                    _watchKnownIds = ids;
+                    // silent モードで再ロード（spinner なし・既存表示を上書き）
+                    loadOrdersPage({ append: false, silent: true }).catch(() => {});
+                }
+            }, (err) => {
+                console.warn('orders watch failed:', err.message);
+            });
+        }
+
         // 5/25 #91/#92 拡張: silent=true で spinner を出さない（cached 描画後の裏側 fresh fetch 用）
         async function loadOrdersPage({ append = false, silent = false } = {}) {
             if (!append) {
@@ -608,6 +645,10 @@
                 if (!append) {
                     subscribeTodos(uid, 'farmer');
                     subscribeNotifications(uid);
+                    // 5/27: 新規注文のリアルタイム検知（先頭5件のみ監視）
+                    //   idle 時は 0 read、注文が増減した時のみ +N read。
+                    //   検知したら loadOrders を呼び直すだけのライト監視。
+                    watchForNewOrders(uid);
                 }
 
                 const myLoc = window.currentUserData?.location;
@@ -932,6 +973,11 @@
                             <div class="price-line price-line--discount">
                                 <span><span class="material-symbols-outlined">local_offer</span>${i18next.t('orders.farmerCampaignDiscount')}</span>
                                 <span>${i18next.t('orders.farmerCampaignDiscountValue', { amount: farmerCampaignDiscount.toLocaleString() })}</span>
+                            </div>` : ''}
+                        ${Number(order.referralBonusAmount || 0) > 0 ? `
+                            <div class="price-line price-line--discount">
+                                <span><span class="material-symbols-outlined">redeem</span>${i18next.t('order.referralBonus')}</span>
+                                <span>+${Number(order.referralBonusAmount).toLocaleString()} KHR</span>
                             </div>` : ''}
                         <div class="price-line"><span>${i18next.t('orders.deliveryFee')}</span><span>+${deliveryFee.toLocaleString()} KHR</span></div>
                         <div class="price-line__note">${i18next.t('orders.deliveryNote')}</div>

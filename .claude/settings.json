@@ -27,7 +27,11 @@
       "Bash(echo '=== __TRACKED_VAR__ ===')",
       "Bash(wc -l c:/work/FishLink/__TRACKED_VAR__)",
       "Bash(grep -c -E '<form|<input type=\"\\(text|number|date|email|password|tel|url|file\\)|<textarea|<select|contenteditable|subscribeCart|subscribeTodos|subscribeNotifications' c:/work/FishLink/__TRACKED_VAR__)",
-      "Bash(grep -nE '\\(loading\\\\.classList|app-ready|innerHTML|onSnapshot|waitForUserData|getElementById\\\\\\([^\\)]+\\\\\\)\\\\.\\(textContent|innerHTML\\)|^        import\\)' c:/work/FishLink/__TRACKED_VAR__)"
+      "Bash(grep -nE '\\(loading\\\\.classList|app-ready|innerHTML|onSnapshot|waitForUserData|getElementById\\\\\\([^\\)]+\\\\\\)\\\\.\\(textContent|innerHTML\\)|^        import\\)' c:/work/FishLink/__TRACKED_VAR__)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/work/FishLink/locales/ja.json','utf8'\\)\\); console.log\\('ja.json OK'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/work/FishLink/locales/en.json','utf8'\\)\\); console.log\\('en.json OK'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/work/FishLink/locales/km.json','utf8'\\)\\); console.log\\('km.json OK'\\)\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);const c=fs.readFileSync\\('c:/work/FishLink/pages/restaurant/comments.html','utf8'\\);const m=c.match\\(/<script type=\\\\\"module\\\\\">\\([\\\\s\\\\S]*?\\)<\\\\/script>/\\);if\\(!m\\){console.log\\('no script'\\);process.exit\\(1\\)}try{new Function\\(m[1]\\);console.log\\('script syntax OK'\\)}catch\\(e\\){console.log\\('SYNTAX ERROR:',e.message\\)}\")"
     ]
   }
 }

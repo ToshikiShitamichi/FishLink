@@ -56,3 +56,17 @@ export function getRestaurantPhotos(user) {
     if (user.restaurantPhotoUrl) return [user.restaurantPhotoUrl];
     return [];
 }
+
+// 5/27 #96: GAqP 認証バッジの HTML（共通スタイル）。i18next が必要。
+// size: 'sm' (一覧カード用・コンパクト) | 'md' (詳細ページ用)
+export function gaqpBadgeHtml(user, size = 'md') {
+    if (!user || user.gaqpCertified !== true) return '';
+    const isSm = size === 'sm';
+    const padding = isSm ? '1px 6px' : '3px 10px';
+    const fontSize = isSm ? '10px' : '12px';
+    const iconSize = isSm ? '12px' : '14px';
+    return `<span style="display:inline-flex; align-items:center; gap:3px; padding:${padding}; background:#0d6e4c; color:#fff; border-radius:10px; font-size:${fontSize}; font-weight:700; white-space:nowrap;">
+        <span class="material-symbols-outlined" style="font-size:${iconSize};">verified</span>
+        ${typeof i18next !== 'undefined' ? i18next.t('gaqp.badge') : 'GAqP'}
+    </span>`;
+}

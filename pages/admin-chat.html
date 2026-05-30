@@ -102,6 +102,7 @@
             outline: none;
         }
         .chat-input:focus { border-color: #0d6e4c; }
+        .chat-input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
 
         .send-btn {
             width: 44px; height: 44px;
@@ -148,6 +149,7 @@
         }
         .chat-msg.user .chat-msg__category { color: #0d6e4c; }
         .chat-msg.admin .chat-msg__category { color: #475569; border: 1px solid #e2e8f0; }
+    </style>
 </head>
 
 <body>
@@ -218,6 +220,11 @@
         watchAuthState({ requireAuth: true });
         await initI18n();
         initLangSelector();
+
+        // 5/27: 静的 HTML を即座に可視化（waitForUserData / onSnapshot が遅延・失敗しても白画面を回避）
+        // 既存ロジックは後続で再度 app-ready を付けるが冪等（class 追加は重複しても無害）。
+        loading.classList.remove('show');
+        document.body.classList.add('app-ready');
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
@@ -335,21 +342,25 @@
             // 5/25 #90: カテゴリ選択 UI のセットアップ
             const categoryBar = document.getElementById('category-bar');
             const categorySelect = document.getElementById('category-select');
-            categorySelect.addEventListener('change', () => {
-                if (categorySelect.value) categoryBar.classList.remove('unset');
+            // 5/27: カテゴリ未選択時は入力欄と送信ボタンを無効化（タイプ自体を不可に）
+            function syncInputEnabled() {
+                const has = !!categorySelect.value;
+                input.disabled = !has;
+                sendBtn.disabled = !has;
+                input.placeholder = has
+                    ? i18next.t('adminChat.placeholder')
+                    : i18next.t('adminChat.categoryLabel');
+                if (has) categoryBar.classList.remove('unset');
                 else categoryBar.classList.add('unset');
-            });
+            }
+            categorySelect.addEventListener('change', syncInputEnabled);
+            syncInputEnabled();
 
             async function send() {
                 const text = input.value.trim();
                 if (!text) return;
-                // 5/25 #90: カテゴリ未選択時は警告して送信させない
                 const category = categorySelect.value;
-                if (!category) {
-                    alert(i18next.t('adminChat.categoryRequired'));
-                    categorySelect.focus();
-                    return;
-                }
+                if (!category) { categorySelect.focus(); return; }  // 念のためのガード
                 sendBtn.disabled = true;
                 try {
                     await addDoc(collection(db, `adminChats/${uid}/messages`), {
@@ -364,7 +375,7 @@
                 } catch (err) {
                     alert(err.message || 'Failed');
                 } finally {
-                    sendBtn.disabled = false;
+                    syncInputEnabled();
                 }
             }
 

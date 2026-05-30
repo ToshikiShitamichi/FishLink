@@ -474,7 +474,8 @@
             const deliveryFee = orderData.deliveryFee || 0;
             const serviceFee = orderData.serviceFee || 0;
             const campaignDiscount = orderData.campaignDiscount || 0;
-            const total = orderData.totalAmount || (fishTotal + deliveryFee + serviceFee - campaignDiscount);
+            const referralDiscount = orderData.referralDiscountAmount || 0;
+            const total = orderData.totalAmount || (fishTotal + deliveryFee + serviceFee - campaignDiscount - referralDiscount);
 
             document.getElementById('total-amount').textContent = `${total.toLocaleString()} KHR`;
 
@@ -486,6 +487,10 @@
             if (campaignDiscount > 0) {
                 html += `<div class="pay-line"><span class="pay-line__label">${i18next.t('order.campaignDiscount')}</span><span class="pay-line__value discount">-${campaignDiscount.toLocaleString()} KHR</span></div>`;
                 document.getElementById('discount-note').style.display = 'block';
+            }
+            // 5/27 #101 ③: 紹介クーポン割引行を追加（cart で適用済みのみ表示）
+            if (referralDiscount > 0) {
+                html += `<div class="pay-line"><span class="pay-line__label">${i18next.t('order.referralCouponDiscount')}</span><span class="pay-line__value discount">-${referralDiscount.toLocaleString()} KHR</span></div>`;
             }
             document.getElementById('breakdown').innerHTML = html;
         }

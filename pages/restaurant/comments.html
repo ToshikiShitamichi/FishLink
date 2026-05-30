@@ -331,30 +331,133 @@
                     banner.textContent = i18next.t('comments.publicNoteFarmer');
                 }
 
+                // 5/27 #99: 多段スレッド化
+                //   - 既存: comments doc に text + replyText（1Q1A）
+                //   - 新: 返信は別 doc + parentReplyId フィールドで親子関係を表現
+                //   - 互換: 既存 replyText は仮想 child として扱う
+                const expandedThreads = new Set();  // 「もっと見る」展開状態（カードID）
+                // 5/27 #99 修正: snapshot で構築したツリー状態を保持し、展開クリックで再描画
+                let lastParents = [];
+                let lastChildrenByParent = new Map();
+                let lastUserMap = {};
+
                 // 質問一覧購読
                 const commentsRef = collection(db, 'fishListings', listingId, 'comments');
-                const q = query(commentsRef, orderBy('createdAt', 'desc'));
+                const q = query(commentsRef, orderBy('createdAt', 'asc'));
                 onSnapshot(q, async (snap) => {
-                    const listEl = document.getElementById('qa-list');
                     if (snap.empty) {
+                        document.getElementById('qa-list').innerHTML = `<div class="empty-small">${escapeHtml(i18next.t('comments.empty'))}</div>`;
+                        return;
+                    }
+
+                    // 1) 全 doc を取得 + ユーザー情報をプリフェッチ
+                    const allDocs = [];
+                    const userUids = new Set();
+                    for (const d of snap.docs) {
+                        const c = d.data();
+                        allDocs.push({ id: d.id, c });
+                        if (c.senderId) userUids.add(c.senderId);
+                        if (c.replyByUid) userUids.add(c.replyByUid);
+                    }
+                    const userMap = {};
+                    await Promise.all([...userUids].map(async (u) => { userMap[u] = await getUser(u); }));
+
+                    // 2) ツリー構築：parent (parentReplyId なし) と children (parentReplyId あり) を分離
+                    //    + 既存 replyText を仮想 child として展開
+                    const childrenByParent = new Map();
+                    const parents = [];
+                    for (const item of allDocs) {
+                        const { id, c } = item;
+                        if (c.parentReplyId) {
+                            if (!childrenByParent.has(c.parentReplyId)) childrenByParent.set(c.parentReplyId, []);
+                            childrenByParent.get(c.parentReplyId).push({
+                                id, c,
+                                isVirtual: false,
+                                senderId: c.senderId,
+                                text: c.text,
+                                createdAt: c.createdAt,
+                                isDeleted: c.isDeleted === true,
+                            });
+                        } else {
+                            parents.push(item);
+                            // 既存 replyText 互換: 仮想 child を作る（id は親 ID にサフィックス付加）
+                            if (c.replyText) {
+                                if (!childrenByParent.has(id)) childrenByParent.set(id, []);
+                                childrenByParent.get(id).push({
+                                    id: `${id}__legacy`,
+                                    parentId: id,
+                                    isVirtual: true,
+                                    senderId: c.replyByUid,
+                                    text: c.replyText,
+                                    createdAt: c.replyAt,
+                                    isDeleted: false,
+                                    legacyReply: true,
+                                });
+                            }
+                        }
+                    }
+                    // 各 parent の children を時系列ソート
+                    for (const arr of childrenByParent.values()) {
+                        arr.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+                    }
+                    // 親も時系列ソート（新しい順で上に表示）
+                    parents.sort((a, b) => (b.c.createdAt?.toMillis?.() || 0) - (a.c.createdAt?.toMillis?.() || 0));
+
+                    // 5/27 #99 修正: 状態を保存して renderQA() から参照
+                    lastParents = parents;
+                    lastChildrenByParent = childrenByParent;
+                    lastUserMap = userMap;
+                    renderQA();
+                });
+
+                // 5/27 #99 修正: 展開クリック等で再呼び出し可能なように関数化
+                function renderQA() {
+                    const listEl = document.getElementById('qa-list');
+                    const parents = lastParents;
+                    const childrenByParent = lastChildrenByParent;
+                    const userMap = lastUserMap;
+                    if (!parents || parents.length === 0) {
                         listEl.innerHTML = `<div class="empty-small">${escapeHtml(i18next.t('comments.empty'))}</div>`;
                         return;
                     }
 
-                    // 必要なユーザー情報を先に取得（senderId / replyByUid）
-                    const items = [];
-                    for (const d of snap.docs) {
-                        const c = d.data();
-                        const sender = await getUser(c.senderId);
-                        let replyUser = null;
-                        if (c.replyText && c.replyByUid) {
-                            replyUser = await getUser(c.replyByUid);
+                    function renderReplyBubble(child, parentId, depth = 0) {
+                        if (child.isDeleted) {
+                            return `<div class="qa-reply-section"><div class="qa-deleted-placeholder">${escapeHtml(i18next.t('comments.deleted'))}</div></div>`;
                         }
-                        items.push({ id: d.id, c, sender, replyUser });
+                        const user = userMap[child.senderId] || (child.legacyReply ? farmerData : {});
+                        const avatar = renderAvatar(user);
+                        const name = user.displayName || '';
+                        const time = relative(child.createdAt);
+                        const isFarmer = child.senderId === listing.farmerId || child.legacyReply;
+                        const badgeClass = isFarmer ? 'qa-badge--reply' : '';
+                        const badgeLabel = isFarmer ? i18next.t('comments.replyLabel') : i18next.t('comments.replyFromUser');
+                        // 削除ボタン: 仮想 legacy reply のみ owner（出品農家）限定 / 新 reply は本人のみ
+                        const canDelete = child.legacyReply ? isOwner : (child.senderId === uid);
+                        const deleteBtn = canDelete
+                            ? (child.legacyReply
+                                ? `<div class="qa-delete-row"><button class="qa-delete-btn" data-action="del-r" data-id="${parentId}" type="button">${escapeHtml(i18next.t('comments.delete'))}</button></div>`
+                                : `<div class="qa-delete-row"><button class="qa-delete-btn" data-action="del-child" data-id="${child.id}" type="button">${escapeHtml(i18next.t('comments.delete'))}</button></div>`)
+                            : '';
+                        return `
+                            <div class="qa-reply-section" style="margin-left:${depth * 16}px;">
+                                <div class="qa-header">
+                                    <div class="qa-avatar">${avatar}</div>
+                                    <div class="qa-meta">
+                                        <div class="qa-name">${escapeHtml(name)}</div>
+                                        <div class="qa-time">${escapeHtml(time)}</div>
+                                    </div>
+                                    <span class="qa-badge ${badgeClass}">${escapeHtml(badgeLabel)}</span>
+                                </div>
+                                <div class="qa-text">${escapeHtml(child.text || '')}</div>
+                                ${deleteBtn}
+                            </div>
+                        `;
                     }
 
-                    listEl.innerHTML = items.map(({ id, c, sender, replyUser }) => {
+                    listEl.innerHTML = parents.map(({ id, c }) => {
                         const isDeleted = c.isDeleted === true;
+                        const sender = userMap[c.senderId] || {};
                         const senderName = sender.displayName || '';
                         const senderAvatar = renderAvatar(sender);
                         const time = relative(c.createdAt);
@@ -374,37 +477,29 @@
                             `;
                         }
 
-                        // 質問削除ボタン（listing の farmer のみ）
-                        const deleteBtnHtml = isOwner
+                        // 5/27 #99 修正: 質問削除ボタンは listing の farmer または質問者本人（レストラン）に表示
+                        const canDelQ = isOwner || c.senderId === uid;
+                        const deleteBtnHtml = canDelQ
                             ? `<div class="qa-delete-row"><button class="qa-delete-btn" data-action="del-q" data-id="${id}" type="button">${escapeHtml(i18next.t('comments.delete'))}</button></div>`
                             : '';
 
-                        // 返信セクション
-                        let replyHtml = '';
-                        if (c.replyText) {
-                            const replyAvatar = renderAvatar(replyUser || farmerData);
-                            const replyName = (replyUser || farmerData).displayName || '';
-                            const replyTime = relative(c.replyAt);
-                            const replyDeleteBtn = isOwner
-                                ? `<div class="qa-delete-row"><button class="qa-delete-btn" data-action="del-r" data-id="${id}" type="button">${escapeHtml(i18next.t('comments.delete'))}</button></div>`
-                                : '';
-                            replyHtml = `
-                                <div class="qa-reply-section">
-                                    <div class="qa-header">
-                                        <div class="qa-avatar">${replyAvatar}</div>
-                                        <div class="qa-meta">
-                                            <div class="qa-name">${escapeHtml(replyName)}</div>
-                                            <div class="qa-time">${escapeHtml(replyTime)}</div>
-                                        </div>
-                                        <span class="qa-badge qa-badge--reply">${escapeHtml(i18next.t('comments.replyLabel'))}</span>
+                        // 子返信の取得
+                        const children = childrenByParent.get(id) || [];
+                        let repliesHtml = '';
+                        if (children.length > 0) {
+                            const expanded = expandedThreads.has(id);
+                            const visibleChildren = expanded ? children : children.slice(0, 1);
+                            repliesHtml = visibleChildren.map(ch => renderReplyBubble(ch, id, 1)).join('');
+                            if (!expanded && children.length > 1) {
+                                repliesHtml += `
+                                    <div style="text-align:center; margin-top:6px;">
+                                        <button class="qa-delete-btn" data-action="expand-thread" data-id="${id}" type="button" style="color:#0369a1; font-weight:600;">${escapeHtml(i18next.t('comments.viewMoreReplies', { count: children.length - 1 }))}</button>
                                     </div>
-                                    <div class="qa-text">${escapeHtml(c.replyText)}</div>
-                                    ${replyDeleteBtn}
-                                </div>
-                            `;
+                                `;
+                            }
                         } else if (isOwner) {
                             // 未返信 → owner（farmer）にはインライン返信フォーム
-                            replyHtml = `
+                            repliesHtml = `
                                 <div class="qa-reply-section">
                                     <form class="qa-reply-form" data-action="reply" data-id="${id}">
                                         <textarea data-role="reply-input" placeholder="${escapeHtml(i18next.t('comments.replyPlaceholder'))}" required></textarea>
@@ -414,12 +509,17 @@
                             `;
                         } else {
                             // 未返信 → owner 以外には「未返信」バッジ
-                            replyHtml = `
+                            repliesHtml = `
                                 <div class="qa-reply-section" style="padding-left:40px;">
                                     <span class="qa-badge qa-badge--noreply">${escapeHtml(i18next.t('comments.noReply'))}</span>
                                 </div>
                             `;
                         }
+
+                        // 任意の返信ターゲット（最後の返信に対して）
+                        const replyTargetBtn = children.length > 0
+                            ? `<div style="text-align:right; margin-top:6px;"><button class="qa-delete-btn" data-action="reply-to" data-parent="${id}" data-thread="${id}" type="button" style="color:#0369a1;">${escapeHtml(i18next.t('comments.replyAgain'))}</button></div>`
+                            : '';
 
                         return `
                             <div class="qa-card" data-id="${id}">
@@ -433,7 +533,8 @@
                                 </div>
                                 <div class="qa-text">${escapeHtml(c.text || '')}</div>
                                 ${deleteBtnHtml}
-                                ${replyHtml}
+                                ${repliesHtml}
+                                ${replyTargetBtn}
                             </div>
                         `;
                     }).join('');
@@ -479,7 +580,7 @@
                         });
                     });
 
-                    // 返信送信
+                    // 返信送信（既存：farmer の初回返信は親 doc の replyText に書く＝互換性維持）
                     listEl.querySelectorAll('form[data-action="reply"]').forEach(form => {
                         form.addEventListener('submit', async (e) => {
                             e.preventDefault();
@@ -502,7 +603,45 @@
                             }
                         });
                     });
-                });
+
+                    // 5/27 #99 修正: 「もっと見る」展開 → expandedThreads に追加して即時再描画
+                    listEl.querySelectorAll('[data-action="expand-thread"]').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            expandedThreads.add(btn.dataset.id);
+                            renderQA();
+                        });
+                    });
+
+                    // 5/27 #99: 多段返信送信（child doc を新規 addDoc・parentReplyId 付与）
+                    listEl.querySelectorAll('[data-action="reply-to"]').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const parentReplyId = btn.dataset.parent;
+                            // 入力欄をフッターにフォーカス（既存の comment-input を流用 + 仮想 attribute で送信先を切替）
+                            const input = document.getElementById('comment-input');
+                            const sendBtn = document.getElementById('send-btn');
+                            input.dataset.replyTo = parentReplyId;
+                            input.placeholder = i18next.t('comments.replyToPlaceholder');
+                            input.focus();
+                            sendBtn.textContent = i18next.t('comments.replySend');
+                        });
+                    });
+
+                    // 5/27 #99: child reply の削除
+                    listEl.querySelectorAll('[data-action="del-child"]').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            if (!confirm(i18next.t('comments.replyConfirmDelete'))) return;
+                            try {
+                                await updateDoc(doc(db, 'fishListings', listingId, 'comments', btn.dataset.id), {
+                                    isDeleted: true,
+                                    deletedAt: serverTimestamp(),
+                                });
+                            } catch (err) {
+                                console.error('delete child reply failed:', err);
+                                alert(i18next.t('comments.errorSubmit'));
+                            }
+                        });
+                    });
+                }
             } catch (err) {
                 console.error('comments init failed:', err);
             } finally {
@@ -510,7 +649,7 @@
             }
         });
 
-        // 新規質問送信
+        // 新規質問送信 + 5/27 #99: 多段返信送信（input.dataset.replyTo がセットされていれば child doc）
         document.getElementById('send-btn').addEventListener('click', async () => {
             const input = document.getElementById('comment-input');
             const text = input.value.trim();
@@ -520,13 +659,22 @@
             const btn = document.getElementById('send-btn');
             btn.disabled = true;
             try {
-                await addDoc(collection(db, 'fishListings', listingId, 'comments'), {
+                const payload = {
                     senderId: uid,
                     senderRole: window.currentUserData?.role || null,
                     text,
                     createdAt: serverTimestamp(),
-                });
+                };
+                const replyTo = input.dataset.replyTo;
+                if (replyTo) {
+                    // 仮想 (__legacy) は親 doc id に正規化
+                    payload.parentReplyId = replyTo.endsWith('__legacy') ? replyTo.replace('__legacy', '') : replyTo;
+                }
+                await addDoc(collection(db, 'fishListings', listingId, 'comments'), payload);
                 input.value = '';
+                delete input.dataset.replyTo;
+                input.placeholder = i18next.t('comments.inputPlaceholder');
+                btn.textContent = i18next.t('comments.send');
             } catch (err) {
                 console.error('comment submit failed:', err);
                 alert(i18next.t('comments.errorSubmit'));

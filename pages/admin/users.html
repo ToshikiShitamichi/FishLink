@@ -529,6 +529,24 @@
                             `}
                 </div>
 
+                ${u.role === 'farmer' ? `
+                    <!-- 5/27 #96: GAqP 認証バッジ付与/解除（農家のみ） -->
+                    <div style="margin-top:12px; padding:12px; border:1px solid ${u.gaqpCertified ? '#0d6e4c' : '#e2e8f0'}; border-radius:8px; background:${u.gaqpCertified ? '#ecfdf5' : '#fafafa'};">
+                        <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                            <span class="material-symbols-outlined" style="font-size:16px; color:#0d6e4c;">verified</span>
+                            ${i18next.t('admin.users.gaqpTitle')}
+                        </div>
+                        <div style="font-size:12px; color:#64748b; margin-bottom:8px;">
+                            ${u.gaqpCertified
+                                ? i18next.t('admin.users.gaqpCertifiedSince', { time: fmtTs(u.gaqpCertifiedAt) })
+                                : i18next.t('admin.users.gaqpNotCertified')}
+                        </div>
+                        <button class="ban-btn ${u.gaqpCertified ? 'ban' : 'unban'}" id="gaqp-btn">
+                            ${u.gaqpCertified ? i18next.t('admin.users.gaqpRevokeBtn') : i18next.t('admin.users.gaqpGrantBtn')}
+                        </button>
+                    </div>
+                ` : ''}
+
                 <!-- 5/2: このユーザーへのトラブル報告サマリ -->
                 <div id="reports-summary" style="margin-top:16px; padding:12px; border:1px solid #e2e8f0; border-radius:8px; background:#fafafa;">
                     <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
@@ -556,6 +574,8 @@
             // BAN/解除ボタン
             document.getElementById('ban-btn')?.addEventListener('click', () => doBan(uid, true));
             document.getElementById('unban-btn')?.addEventListener('click', () => doBan(uid, false));
+            // 5/27 #96: GAqP 認証バッジ付与/解除
+            document.getElementById('gaqp-btn')?.addEventListener('click', () => toggleGaqp(uid, !u.gaqpCertified));
 
             // 5/2: 報告サマリ（このユーザーが reportedUid の reports）
             loadReportsSummary(uid);
@@ -596,6 +616,34 @@
 
             // 開いた時点で未読を既読化
             markUserMessagesRead(uid);
+        }
+
+        // 5/27 #96: GAqP 認証バッジを付与/解除
+        // 注意: Firestore Rules で gaqpCertified / gaqpCertifiedAt は admin のみ write 可に設定する必要あり
+        async function toggleGaqp(uid, grant) {
+            const confirmMsg = grant
+                ? i18next.t('admin.users.confirmGaqpGrant')
+                : i18next.t('admin.users.confirmGaqpRevoke');
+            if (!confirm(confirmMsg)) return;
+            loading.classList.add('show');
+            try {
+                await updateDoc(doc(db, 'users', uid), {
+                    gaqpCertified: grant,
+                    gaqpCertifiedAt: grant ? serverTimestamp() : null,
+                });
+                const u = allUsers.find(x => x.uid === uid);
+                if (u) {
+                    u.gaqpCertified = grant;
+                    u.gaqpCertifiedAt = grant ? new Date() : null;
+                }
+                renderUserList();
+                selectUser(uid);
+            } catch (err) {
+                console.error(err);
+                alert(err.message || 'Failed');
+            } finally {
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
+            }
         }
 
         async function doBan(uid, banned) {

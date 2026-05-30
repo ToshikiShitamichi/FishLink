@@ -347,9 +347,15 @@
                 : (fishTotal - commission + deliveryFee);
 
             document.getElementById('receive-amount').textContent = `${receiveAmount.toLocaleString()} KHR`;
+            // 5/27 #101 ④: 紹介ボーナス行を追加（適用済みのみ表示）
+            const referralBonus = Number(orderData.referralBonusAmount || 0);
+            const bonusLine = referralBonus > 0
+                ? `<div class="amount-line"><span class="amount-line__label">${i18next.t('order.referralBonus')}</span><span class="amount-line__value plus">+${referralBonus.toLocaleString()} KHR</span></div>`
+                : '';
             document.getElementById('breakdown').innerHTML = `
                 <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.fishTotal')}</span><span class="amount-line__value">${fishTotal.toLocaleString()} KHR</span></div>
                 <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.commission', { rate: commissionRate })}</span><span class="amount-line__value minus">-${commission.toLocaleString()} KHR</span></div>
+                ${bonusLine}
                 <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.deliveryFee')}</span><span class="amount-line__value plus">+${deliveryFee.toLocaleString()} KHR</span></div>
             `;
         }

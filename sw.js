@@ -191,7 +191,28 @@ self.addEventListener('notificationclick', (event) => {
 //   カテゴリ選択（Phase 1+運営側カテゴリ表示）
 // 5/25 #91/#92 拡張: render-cache を全 31 ページに展開（編集系・admin・cart・comments 含む）。
 //   render-cache.js に serializeTimestamps / reviveTimestamps ヘルパー追加。
-const CACHE_NAME = 'fishlink-v108';
+// 5/27 #100: voice-message.js の MIME mp4 優先化 + voiceUploadStatus 追加（受信者側に再生不可状態を見せない）
+// 5/27 #93: image-cache.js に空 blob ガード + Safari 用 onerror フォールバック
+// 5/27 #94: cart.html にカレンダーローカライズ用 flatpickr 導入
+// 5/27 #96: GAqP 認証バッジ機能（profile-utils.gaqpBadgeHtml 追加・admin/users.html・farmer.html・order.html・fish-list.html・dashboard.html）
+// 5/27 #97: dashboard 農家ブロックを更に省スペース化
+// 5/27 #98: レビュー件数とコメント付きレビュー件数を別表示（farmer.html / restaurant.html）
+// 5/27 #99: 質問・返信の多段スレッド化（parentReplyId 追加・comments.html / functions onCommentCreated）
+// 5/27 #101: 紹介クーポン明細表示（restaurant/payment.html・purchases.html / farmer/orders.html・payment.html・sales.html）
+// 5/27 admin-chat: 白画面回避 defensive fix（initI18n 直後に app-ready セット）
+// 5/27 cart: 言語切替で再描画
+// 5/27 #97 v2: dashboard card を 2 段構成（上=写真+情報、下=農家）に再設計、幅 280px
+// 5/27 #99 修正: 重複返信ボタン削除、質問者本人にも取消ボタン
+// 5/27 farmer/orders: 新規注文を onSnapshot で監視
+// 5/27 fish-list: 過去注文フィルタ追加
+// 5/27 admin-chat: </style> 閉じタグ欠落の致命バグ修正（全 body コンテンツ不可視→可視化）
+//   + カテゴリ未選択時に入力欄を disabled に
+// 5/27 cart: 内臓処理チップ 2 段化（「+xxx KHR/kg」改行）で削除ボタン横並び維持
+// 5/27 order.html: フッターを translateX 方式に変更（DevTools モバイル表示で fixed が
+//   消える環境差を回避）
+// 5/27 #99 修正2: 「もっと見る」を location.reload から renderQA() 即時再描画に変更
+//   （expandedThreads がメモリ Set なので reload で消えていた）
+const CACHE_NAME = 'fishlink-v111';
 
 const PRECACHE_URLS = [
     '/',

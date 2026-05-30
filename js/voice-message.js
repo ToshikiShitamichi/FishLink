@@ -27,14 +27,17 @@ const MAX_DURATION_SEC = 90;
 const RECORD_BITRATE = 64000;   // 64 kbps (90s 約 720KB)
 const STORAGE_CACHE_CONTROL = 'public, max-age=2592000'; // 30日
 
-// MediaRecorder で実際に使える MIME を選ぶ（iOS Safari は audio/mp4 のみ・MIME 指定不可な場合あり）
+// MediaRecorder で実際に使える MIME を選ぶ
+// 5/27 #100: クロスブラウザ再生互換性のため audio/mp4 を優先（iOS Safari は webm 再生不可）
+//   - Chrome 109+ / Safari: audio/mp4 録音可・全ブラウザ再生可
+//   - 旧 Chrome: webm にフォールバック（Safari 受信者は再生不可だが従来動作）
 function pickMimeType() {
     if (typeof MediaRecorder === 'undefined') return null;
     const candidates = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
         'audio/mp4',
         'audio/mp4;codecs=mp4a.40.2',
+        'audio/webm;codecs=opus',
+        'audio/webm',
         'audio/ogg;codecs=opus',
     ];
     if (typeof MediaRecorder.isTypeSupported !== 'function') {
@@ -276,11 +279,11 @@ export function initVoiceRecorder({ chatInputContainer, getOrderId, getSenderUid
 
     // ── Storage upload + Firestore message doc 作成 ──
     // 順序:
-    //   1) addDoc でメッセージ doc を仮作成（msgId 確定のため・voiceUrl は後で update）
+    //   1) addDoc でメッセージ doc を仮作成（msgId 確定 + voiceUploadStatus='uploading'）
     //   2) Storage に voice/{orderId}/{msgId}.{ext} をアップロード
-    //   3) doc を update して voiceStoragePath / voiceUrl をセット
+    //   3) doc を update して voiceStoragePath / voiceUrl / voiceUploadStatus='ready'
     //   通知 Cloud Function (onMessageCreated) は (1) で発火する点に注意。
-    //   メッセージ doc の type==='voice' から、CF 側で「ボイスメッセージ (Nsec)」本文に切り替える。
+    //   5/27 #100: 受信者側は voiceUploadStatus='ready' になるまで bubble を表示しない（renderVoiceBubble 側で分岐）
     async function sendVoice(blob, durationSec, ext, mimeType) {
         const orderId = getOrderId();
         const senderUid = getSenderUid();
@@ -295,6 +298,7 @@ export function initVoiceRecorder({ chatInputContainer, getOrderId, getSenderUid
             voiceMimeType: mimeType || blob.type || '',
             voiceStoragePath: null,
             voiceUrl: null,
+            voiceUploadStatus: 'uploading',
             isRead: false,
             createdAt: serverTimestamp(),
         });
@@ -309,10 +313,10 @@ export function initVoiceRecorder({ chatInputContainer, getOrderId, getSenderUid
                 cacheControl: STORAGE_CACHE_CONTROL,
             });
         } catch (e) {
-            // Storage アップロード失敗 → message doc を未完成のまま残すと混乱するので
-            // text フィールドに失敗を記録（doc 削除は権限的に難しい場合あり）。
+            // Storage アップロード失敗 → voiceUploadStatus='failed' をセット
             try {
                 await updateDoc(doc(db, 'orders', orderId, 'messages', msgId), {
+                    voiceUploadStatus: 'failed',
                     text: '[voice upload failed]',
                 });
             } catch (e2) { /* ignore */ }
@@ -320,10 +324,11 @@ export function initVoiceRecorder({ chatInputContainer, getOrderId, getSenderUid
         }
         const url = await getDownloadURL(storageRef);
 
-        // 3) URL を doc に反映
+        // 3) URL を doc に反映 + status='ready' で受信者側にも表示開始
         await updateDoc(doc(db, 'orders', orderId, 'messages', msgId), {
             voiceStoragePath: storagePath,
             voiceUrl: url,
+            voiceUploadStatus: 'ready',
         });
     }
 }
@@ -352,10 +357,25 @@ export function renderVoiceBubble(msg, isSelf, timeStr) {
             </div>
         `;
     }
-    if (!msg.voiceUrl) {
-        // アップロード進行中（URL 未反映）or 失敗の場合
+    // 5/27 #100: アップロード進行中は送信者本人のみに「アップロード中」表示
+    // 受信者側は voiceUrl 反映 (status='ready') まで bubble を出さない（再生不可状態を見せない）
+    const status = msg.voiceUploadStatus || (msg.voiceUrl ? 'ready' : 'uploading');
+    if (status === 'failed') {
+        if (!isSelf) return '';
         return `
-            <div class="tl-chat ${isSelf ? 'self' : ''}">
+            <div class="tl-chat self">
+                <div style="display:flex; align-items:center; gap:6px; color:#dc2626; font-size:13px;">
+                    <span class="material-symbols-outlined">error</span>
+                    <span>${escapeHtml(i18next.t('voice.errorSend'))}</span>
+                </div>
+                <div class="tl-chat__time">${escapeHtml(timeStr)}</div>
+            </div>
+        `;
+    }
+    if (!msg.voiceUrl || status === 'uploading') {
+        if (!isSelf) return '';
+        return `
+            <div class="tl-chat self">
                 <div style="display:flex; align-items:center; gap:6px; color:#94a3b8; font-size:13px;">
                     <span class="material-symbols-outlined">graphic_eq</span>
                     <span>${escapeHtml(i18next.t('voice.uploading'))}</span>

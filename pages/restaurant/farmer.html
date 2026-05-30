@@ -209,6 +209,15 @@
                 <span class="material-symbols-outlined" style="font-size:14px;">location_on</span>
                 <span id="location">-</span>
             </div>
+            <!-- 5/27 #96: GAqP 認証バッジ（gaqpCertified === true のときのみ表示） -->
+            <div id="gaqp-badge-hero" style="margin-top:8px;"></div>
+        </div>
+
+        <!-- 5/27 #96: GAqP 認証情報セクション（認証済み時のみ表示） -->
+        <div class="section" id="gaqp-section" style="display:none;">
+            <div class="section__title" data-i18n="gaqp.certificationInfo"></div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;" id="gaqp-section-badge"></div>
+            <div style="font-size:13px; color:var(--color-text-sub); line-height:1.5;" data-i18n="gaqp.description"></div>
         </div>
 
         <div class="message-box" id="message-box" style="display:none;">
@@ -267,7 +276,7 @@
             doc, getDoc, collection, collectionGroup, query, where, orderBy, getDocs
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { formatProvince, formatLocation } from '/js/province-utils.js';
-        import { getReviewerAvatarUrl, getPondPhotos } from '/js/profile-utils.js';
+        import { getReviewerAvatarUrl, getPondPhotos, gaqpBadgeHtml } from '/js/profile-utils.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase B: 同一タブ内 users の重複取得を抑止
@@ -350,16 +359,31 @@
                 document.getElementById('avatar').innerHTML = `<img ${asCachedImgAttrs(user.avatarUrl)} alt="avatar">`;
             }
 
+            // 5/27 #96: GAqP 認証バッジ + セクション表示
+            const gaqpHero = document.getElementById('gaqp-badge-hero');
+            if (gaqpHero) gaqpHero.innerHTML = gaqpBadgeHtml(user, 'md');
+            const gaqpSection = document.getElementById('gaqp-section');
+            const gaqpSectionBadge = document.getElementById('gaqp-section-badge');
+            if (gaqpSection && gaqpSectionBadge) {
+                if (user.gaqpCertified === true) {
+                    gaqpSection.style.display = 'block';
+                    gaqpSectionBadge.innerHTML = gaqpBadgeHtml(user, 'md');
+                } else {
+                    gaqpSection.style.display = 'none';
+                }
+            }
+
             // 「よい率」表示（0-100%）
             const goodRate = Number(user.avgRating || 0);
             const count = Number(user.reviewCount || 0);
             document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
             document.getElementById('rating-count').textContent = `（${count}${i18next.t('order.reviews')}）`;
-            // 5/25 #84: レビュー件数を「レビュー（11件）」「レビューコメント（11件）」形式で各タイトルに併記
+            // 5/25 #84 + 5/27 #98: レビュー欄は全件数、コメント欄はコメント付きレビュー件数を別々に表示
+            const commentCount = Array.isArray(reviewsWithComment) ? reviewsWithComment.length : 0;
             const subTitleEl = document.getElementById('subrating-title');
             if (subTitleEl) subTitleEl.textContent = i18next.t('profile.reviewsTitleWithCount', { count });
             const reviewsTitleEl = document.getElementById('reviews-section-title');
-            if (reviewsTitleEl) reviewsTitleEl.textContent = i18next.t('profile.reviewCommentsTitleWithCount', { count });
+            if (reviewsTitleEl) reviewsTitleEl.textContent = i18next.t('profile.reviewCommentsTitleWithCount', { count: commentCount });
 
             const sub = user.subRatings || {};
             const fmtSubRate = (s) => {

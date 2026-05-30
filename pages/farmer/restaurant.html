@@ -300,11 +300,12 @@
             const count = Number(user.reviewCount || 0);
             document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
             document.getElementById('rating-count').textContent = `${count}${i18next.t('order.reviews')}`;
-            // 5/25 #84: 「レビュー（N件）」「レビューコメント（N件）」形式でタイトルに件数を併記
+            // 5/25 #84 + 5/27 #98: レビュー欄は全件数、コメント欄はコメント付きレビュー件数を別々に表示
+            const commentCount = Array.isArray(reviewsWithComment) ? reviewsWithComment.length : 0;
             const summaryTitleEl = document.getElementById('summary-title');
             if (summaryTitleEl) summaryTitleEl.textContent = i18next.t('profile.reviewsTitleWithCount', { count });
             const reviewsTitleEl = document.getElementById('reviews-section-title');
-            if (reviewsTitleEl) reviewsTitleEl.textContent = i18next.t('profile.reviewCommentsTitleWithCount', { count });
+            if (reviewsTitleEl) reviewsTitleEl.textContent = i18next.t('profile.reviewCommentsTitleWithCount', { count: commentCount });
 
             const sub = user.subRatings || {};
             const fmtSubRate = (s) => {

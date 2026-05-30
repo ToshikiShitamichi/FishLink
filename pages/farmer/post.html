@@ -664,11 +664,13 @@
                 regionEl.textContent = `${provinceName}・${fishLabel}`;
                 regionEl.style.color = '#555';
                 // 新形式（rangeMin/Max, sizeMin/Max）優先、旧形式（range/size 文字列）フォールバック
+                // 5/27 #95: 表示時のみ +1000 KHR を加算（参考販売価格・元データは Farm Gate のまま）
+                const SELL_MARKUP_KHR = 1000;
                 let rangeText = '';
                 let sizeText = '';
                 if ('rangeMin' in priceData || 'rangeMax' in priceData) {
-                    const rMin = priceData.rangeMin;
-                    const rMax = priceData.rangeMax;
+                    const rMin = priceData.rangeMin != null ? priceData.rangeMin + SELL_MARKUP_KHR : null;
+                    const rMax = priceData.rangeMax != null ? priceData.rangeMax + SELL_MARKUP_KHR : null;
                     if (rMin != null && rMax != null) rangeText = `${rMin.toLocaleString()}–${rMax.toLocaleString()} KHR/kg`;
                     else if (rMin != null) rangeText = `${rMin.toLocaleString()} KHR/kg`;
                     else if (rMax != null) rangeText = `${rMax.toLocaleString()} KHR/kg`;
