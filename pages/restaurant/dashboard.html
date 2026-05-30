@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="km">
-<!-- 5/12 #74: 新ダッシュボード（UberEats型）。
-     旧ダッシュボード（魚一覧）は /pages/restaurant/fish-list.html に退避済み。
-     「もっと見る」遷移は URL パラメータ（?sort=..., ?filter=..., ?fishType=...）で旧ダッシュへ。 -->
+<!-- 5/30 #102: Home 画面 デザインリニューアル（docs/design/fishlink-home-mockup.html + fishlink-home-spec.md が正本）。
+     既存 #74/#75/#76/#79/#97 を包含・置換。構成/データ/状態/遷移=spec 遵守、色/装飾=既存DS（css/style.css）に準拠、寸法=モック正本。
+     セクション順：①進行中の注文（ゼロなら非表示）②魚から探す（10種固定）③近くの農家の魚 ④新着の魚 ⑤おすすめ農家（評価順）。 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
-    <!-- 5/25 #85: 道路距離（Distance Matrix）を fish-list.html / order.html / cart.html と統一するため追加 -->
+    <!-- #85: 道路距離（Distance Matrix）を fish-list / order / cart と統一 -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer></script>
     <style>
         .nav-badge {
@@ -25,10 +25,11 @@
             background: #ef4444; width: 10px; height: 10px; border-radius: 50%;
         }
 
+        /* ── 検索バー ── */
         .home-search {
             display: flex; align-items: center; gap: 8px;
             background: #f1f5f9; border-radius: 999px;
-            padding: 10px 16px; margin: 0 16px 16px;
+            padding: 10px 16px; margin: 0 16px 4px;
         }
         .home-search input {
             flex: 1; border: none; background: transparent;
@@ -37,164 +38,245 @@
         }
         .home-search .material-symbols-outlined { color: var(--color-text-sub); }
 
-        /* 魚種カテゴリ：横スクロール */
-        .category-row {
+        /* ── セクション共通 ── */
+        .section { margin-top: 18px; }
+        .section__head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 16px 10px;
+        }
+        .section__title {
+            display: flex; align-items: center; gap: 7px;
+            font-size: 16px; font-weight: 700; color: var(--color-text);
+        }
+        .section__title .material-symbols-outlined { font-size: 18px; color: var(--color-primary); }
+        .section__more {
+            font-size: 12px; font-weight: 600; color: var(--color-primary);
+            text-decoration: none; display: inline-flex; align-items: center; gap: 2px;
+            white-space: nowrap;
+        }
+        .section__more .material-symbols-outlined { font-size: 16px; }
+        .hscroll {
             display: flex; gap: 12px; overflow-x: auto;
-            padding: 0 16px 4px; margin-bottom: 18px;
+            padding: 2px 16px 4px;
+            scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
             scrollbar-width: none; -ms-overflow-style: none;
         }
-        .category-row::-webkit-scrollbar { display: none; }
-        .category-item {
-            flex-shrink: 0; width: 72px;
+        .hscroll::-webkit-scrollbar { display: none; }
+
+        /* ── ① 進行中の注文カード（300px・モック正本） ── */
+        .order-card {
+            scroll-snap-align: start; flex: 0 0 300px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border); border-radius: var(--radius);
+            padding: 14px; text-decoration: none; color: inherit; display: block;
+        }
+        .order-card__top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .order-card__thumb {
+            width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+            background: var(--color-primary-lt); overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .order-card__thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .order-card__thumb .material-symbols-outlined { font-size: 22px; color: var(--color-primary); }
+        .order-card__hd { min-width: 0; flex: 1; }
+        .order-card__name { font-weight: 700; font-size: 14px; line-height: 1.3; }
+        .order-card__name .sz { font-weight: 500; font-size: 12px; color: var(--color-text-sub); }
+        .order-card__sub {
+            font-size: 12px; color: var(--color-text-sub); margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .order-card__amt { margin-left: auto; text-align: right; flex-shrink: 0; }
+        .order-card__amt b { color: var(--color-primary); font-size: 15px; font-weight: 800; }
+        .order-card__amt .u { font-size: 11px; color: var(--color-text-sub); }
+
+        .stepper { display: flex; align-items: flex-start; margin: 4px 2px 10px; }
+        .step { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .step__dot {
+            width: 14px; height: 14px; border-radius: 50%;
+            background: #d7dee4; border: 2px solid #d7dee4; z-index: 2; position: relative;
+        }
+        .step.done .step__dot { background: var(--color-primary); border-color: var(--color-primary); }
+        .step.current .step__dot {
+            background: #fff; border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(13, 110, 76, .18);
+        }
+        .step.declined .step__dot { background: var(--color-danger); border-color: var(--color-danger); }
+        .step.declined .step__dot::after {
+            content: "✕"; position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 9px; font-weight: 900; line-height: 1;
+        }
+        .step__lb { font-size: 10px; color: var(--color-text-sub); margin-top: 5px; white-space: nowrap; }
+        .step.done .step__lb, .step.current .step__lb { color: var(--color-text); font-weight: 700; }
+        .step.declined .step__lb { color: var(--color-danger); font-weight: 700; }
+        .step__bar { position: absolute; top: 6px; left: -50%; width: 100%; height: 2px; background: #d7dee4; z-index: 1; }
+        .step.done .step__bar, .step.current .step__bar { background: var(--color-primary); }
+        .step:first-child .step__bar { display: none; }
+
+        .order-eta {
+            font-size: 12px; color: var(--color-text);
+            background: var(--color-primary-lt); border-radius: 8px;
+            padding: 7px 10px; display: flex; align-items: center; gap: 6px;
+        }
+        .order-eta .material-symbols-outlined { font-size: 15px; color: var(--color-primary-dk); }
+        .order-eta b { color: var(--color-primary-dk); }
+
+        .order-card.declined { border-color: #f3c9c9; }
+        .order-alert {
+            font-size: 12px; color: var(--color-danger); background: #fceced;
+            border-radius: 8px; padding: 7px 10px; display: flex; align-items: center; gap: 6px;
+            margin-bottom: 8px; line-height: 1.35;
+        }
+        .order-alert .material-symbols-outlined { font-size: 15px; flex-shrink: 0; }
+        .order-find {
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+            width: 100%; background: var(--color-primary); color: #fff;
+            border: none; border-radius: 10px; padding: 11px;
+            font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+            text-decoration: none;
+        }
+        .order-find .material-symbols-outlined { font-size: 16px; }
+
+        /* ── ② 魚タイル（10種固定・モック .tile） ── */
+        .tiles {
+            display: flex; gap: 14px; overflow-x: auto; padding: 2px 16px 4px;
+            scrollbar-width: none; -ms-overflow-style: none;
+        }
+        .tiles::-webkit-scrollbar { display: none; }
+        .tile {
+            flex: 0 0 auto; width: 66px;
             display: flex; flex-direction: column; align-items: center; gap: 6px;
             text-decoration: none; color: inherit;
         }
-        .category-item__icon {
-            width: 64px; height: 64px;
-            border-radius: 50%;
+        .tile__circle {
+            width: 66px; height: 66px; border-radius: 50%; overflow: hidden;
+            background: var(--color-primary-lt);
             display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
-            background: transparent;
         }
-        .category-item__icon > img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .category-item__label {
-            font-size: 11px; font-weight: 600;
-            color: var(--color-text); text-align: center;
-            line-height: 1.2; word-break: break-word;
-        }
+        .tile__circle img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .tile__nm { font-size: 11px; color: var(--color-text); text-align: center; line-height: 1.25; font-weight: 600; word-break: break-word; }
 
-        /* テーマ別棚 */
-        .shelf { margin-bottom: 24px; }
-        .shelf__head {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 16px; margin-bottom: 10px;
-        }
-        .shelf__title {
-            font-size: 16px; font-weight: 700; color: var(--color-text);
-            display: flex; align-items: center; gap: 6px;
-        }
-        .shelf__title .material-symbols-outlined { font-size: 18px; color: #0d6e4c; }
-        .shelf__more {
-            font-size: 12px; font-weight: 600; color: #0d6e4c;
-            text-decoration: none;
-            display: inline-flex; align-items: center; gap: 2px;
-        }
-        .shelf__more .material-symbols-outlined { font-size: 16px; }
-        .shelf__row {
-            display: flex; gap: 12px; overflow-x: auto;
-            padding: 0 16px 4px; scrollbar-width: none; -ms-overflow-style: none;
-        }
-        .shelf__row::-webkit-scrollbar { display: none; }
-
-        /* 5/27 #97 v2: 2段構成（上=写真+商品情報 横並び / 下=農家情報）。
-           カード幅を広げ、写真は正方形のサムネ、右側に文字情報を配置。 */
-        .home-card {
-            flex-shrink: 0; width: 280px;
+        /* ── ③④ 商品カード（220px・モック .pcard） ── */
+        .pcard {
+            scroll-snap-align: start; flex: 0 0 220px;
             background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 14px; overflow: hidden;
-            text-decoration: none; color: inherit;
-            display: flex; flex-direction: column;
+            border: 1px solid var(--color-border); border-radius: var(--radius);
+            overflow: hidden; text-decoration: none; color: inherit; display: block;
         }
-        .home-card__top {
-            display: flex; gap: 10px;
-            padding: 10px;
-        }
-        .home-card__img {
-            width: 96px; height: 96px;
-            flex-shrink: 0;
-            background: #e2e8f0;
-            border-radius: 10px;
+        .pcard__img {
+            position: relative; width: 100%; height: 130px;
+            background: var(--color-primary-lt);
             display: flex; align-items: center; justify-content: center;
             overflow: hidden;
         }
-        .home-card__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .home-card__body {
-            flex: 1; min-width: 0;
-            display: flex; flex-direction: column; gap: 2px;
+        .pcard__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .pcard__img .material-symbols-outlined { font-size: 34px; color: #9dbed4; }
+        .gaqp-badge {
+            position: absolute; top: 8px; left: 8px;
+            background: var(--color-primary); color: #fff;
+            font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 8px;
+            display: inline-flex; align-items: center; gap: 2px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .15); white-space: nowrap;
         }
-        .home-card__name {
-            font-size: 14px; font-weight: 700; color: var(--color-text); line-height: 1.3;
-            overflow: hidden; text-overflow: ellipsis;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        .gaqp-badge .material-symbols-outlined { font-size: 12px; color: #fff; }
+        .pcard__body { padding: 10px 11px 0; }
+        .pcard__nm {
+            font-size: 14px; font-weight: 700; line-height: 1.3; color: var(--color-text);
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
         }
-        .home-card__size { font-size: 11px; color: var(--color-text-sub); }
-        .home-card__price { font-size: 15px; font-weight: 700; color: var(--color-text); margin-top: 2px; }
-        .home-card__price-unit { font-size: 11px; font-weight: 500; color: var(--color-text-sub); margin-left: 2px; }
-        .home-card__stock { font-size: 11px; color: #047857; }
-        .home-card__stock--out { color: #b91c1c; }
-        .home-card__place {
-            font-size: 11px; color: var(--color-text-sub);
-            display: flex; align-items: center; gap: 3px;
-            margin-top: 2px;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        .pcard__sz { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
+        .pcard__price { margin-top: 7px; display: flex; align-items: baseline; gap: 4px; }
+        .pcard__price b { font-size: 22px; font-weight: 800; color: var(--color-primary); line-height: 1; }
+        .pcard__price span { font-size: 12px; color: var(--color-text-sub); font-weight: 600; }
+        .pcard__meta {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 12px; color: var(--color-text-sub); margin-top: 7px;
         }
-        .home-card__place .material-symbols-outlined { font-size: 13px; }
-
-        /* 下段：農家ブロック（カード全幅で 1 行表示） */
-        .home-card__farmer-block {
-            display: flex; align-items: center; gap: 8px;
-            padding: 8px 10px;
-            margin: 0 10px 10px;
-            background: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            min-width: 0;
+        .pcard__meta .d { display: flex; align-items: center; gap: 3px; }
+        .pcard__meta .material-symbols-outlined { font-size: 13px; }
+        .pcard__farmer {
+            display: flex; align-items: center; gap: 8px; margin-top: 10px;
+            border-top: 1px solid var(--color-border); padding: 9px 11px; background: #fafcfd;
             cursor: pointer;
-            transition: background .12s;
-            text-decoration: none; color: inherit;
         }
-        .home-card__farmer-block:hover { background: #f1f5f9; }
-        .home-card__farmer-avatar {
-            width: 24px; height: 24px;
-            border-radius: 50%;
-            background: #e2e8f0;
-            flex-shrink: 0;
-            overflow: hidden;
+        .pcard__farmer:hover { background: #f1f5f9; }
+        .pcard__avatar {
+            width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+            background: var(--color-primary-lt);
             display: flex; align-items: center; justify-content: center;
         }
-        .home-card__farmer-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .home-card__farmer-avatar .material-symbols-outlined { font-size: 14px; color: #94a3b8; }
-        .home-card__farmer-info { flex: 1; min-width: 0; line-height: 1.2; }
-        .home-card__farmer-name {
-            font-size: 12px; font-weight: 600;
-            color: var(--color-text);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        .pcard__avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .pcard__avatar .material-symbols-outlined { font-size: 14px; color: #94a3b8; }
+        .pcard__fn {
+            font-size: 12px; font-weight: 700; line-height: 1.2; color: var(--color-text);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1;
         }
-        .home-card__farmer-rating {
-            display: flex; align-items: center; gap: 2px;
-            font-size: 11px; color: var(--color-text-sub);
-            white-space: nowrap;
+        .pcard__rt {
+            margin-left: auto; font-size: 11px; color: #f59e0b; font-weight: 700;
+            display: flex; align-items: center; gap: 2px; white-space: nowrap; flex-shrink: 0;
         }
-        .home-card__farmer-rating .material-symbols-outlined {
-            font-size: 12px; color: #f59e0b; font-variation-settings: 'FILL' 1;
-        }
+        .pcard__rt .material-symbols-outlined { font-size: 12px; color: #f59e0b; font-variation-settings: 'FILL' 1; }
+        .pcard__rt span { color: var(--color-text-sub); font-weight: 600; }
 
-        .shelf__empty {
+        /* ── ⑤ 農家カード（240px・モック .fcard） ── */
+        .fcard {
+            scroll-snap-align: start; flex: 0 0 240px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border); border-radius: var(--radius);
+            overflow: hidden; text-decoration: none; color: inherit; display: block;
+        }
+        .fcard__cover {
+            position: relative; height: 96px;
+            background: linear-gradient(135deg, #cfe0ec, var(--color-primary-lt));
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        .fcard__cover img { width: 100%; height: 100%; object-fit: cover; }
+        .fcard__cover .material-symbols-outlined { font-size: 30px; color: #7fa6c2; }
+        .fcard__body { padding: 34px 13px 13px; position: relative; }
+        .fcard__avatar {
+            position: absolute; top: -24px; left: 13px;
+            width: 48px; height: 48px; border-radius: 50%;
+            background: #fff; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
+            overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
+        .fcard__avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .fcard__avatar .material-symbols-outlined { font-size: 22px; color: #94a3b8; }
+        .fcard__name { font-size: 15px; font-weight: 800; color: var(--color-text); }
+        .fcard__loc { font-size: 12px; color: var(--color-text-sub); margin-top: 3px; }
+        .fcard__rate { font-size: 12px; margin-top: 2px; color: var(--color-text-sub); display: flex; align-items: center; gap: 3px; }
+        .fcard__rate .material-symbols-outlined { font-size: 13px; color: #f59e0b; font-variation-settings: 'FILL' 1; }
+        .fcard__rate b { color: #f59e0b; font-weight: 700; }
+        .fcard__tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+        .fcard__tag { font-size: 11px; background: var(--color-primary-lt); color: var(--color-primary-dk); padding: 3px 8px; border-radius: 6px; font-weight: 600; }
+        .fcard__btn {
+            margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 4px;
+            border: 1.5px solid var(--color-primary); color: var(--color-primary);
+            border-radius: 10px; padding: 9px; font-size: 13px; font-weight: 700; cursor: pointer;
+        }
+        .fcard__btn .material-symbols-outlined { font-size: 16px; }
+
+        /* ── 空・スケルトン ── */
+        .section__empty {
             padding: 14px; margin: 0 16px;
             background: #f8fafc; border-radius: 12px;
-            color: var(--color-text-sub); font-size: 13px;
-            text-align: center;
+            color: var(--color-text-sub); font-size: 13px; text-align: center;
         }
-        .shelf__skeleton {
-            flex-shrink: 0; width: 168px; height: 220px;
+        .skel {
+            flex: 0 0 220px; height: 230px; scroll-snap-align: start;
             background: linear-gradient(90deg, #f1f5f9, #e2e8f0, #f1f5f9);
-            background-size: 200% 100%;
-            border-radius: 14px;
+            background-size: 200% 100%; border-radius: var(--radius);
             animation: shimmer 1.4s infinite;
         }
-        @keyframes shimmer {
-            from { background-position: 200% 0; }
-            to { background-position: -200% 0; }
-        }
+        @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
     </style>
 </head>
 <body>
     <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
-    <div class="page" style="padding-bottom: 120px; max-width:480px; margin:0 auto;">
+    <div class="page" style="padding: 0; padding-bottom: 120px; max-width:480px; margin:0 auto;">
 
-        <div class="page-header" style="align-items:center;">
+        <!-- ヘッダー（sticky） -->
+        <div class="page-header" style="align-items:center; padding:16px; margin-bottom:0; position:sticky; top:0; z-index:30; background:var(--color-surface); border-bottom:1px solid var(--color-border);">
             <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
@@ -230,87 +312,82 @@
         </div>
 
         <!-- 検索バー -->
-        <div style="padding: 12px 0;">
+        <div style="padding: 12px 0 0;">
             <form class="home-search" id="search-form" action="/pages/restaurant/fish-list.html" method="get">
                 <span class="material-symbols-outlined">search</span>
                 <input type="search" name="q" id="search-input" data-i18n="[placeholder]restaurant.searchPlaceholder">
             </form>
         </div>
 
-        <!-- 魚種カテゴリ -->
-        <div class="category-row" id="category-row"></div>
-
-        <!-- テーマ別棚 -->
-        <!-- 5/23 #75: 棚順を「新着 → 評価が高い農家 → 近くの農家」に並び替え。
-             開いた瞬間に新しい出品を見せる / 新しい農家を見つけやすくする目的。 -->
-        <div class="shelf">
-            <div class="shelf__head">
-                <span class="shelf__title">
-                    <span class="material-symbols-outlined">new_releases</span>
-                    <span data-i18n="restaurant.shelfNewest"></span>
+        <!-- ① 進行中の注文（進行中ゼロならセクションごと非表示） -->
+        <div class="section" id="sec-orders" style="display:none;">
+            <div class="section__head">
+                <span class="section__title">
+                    <span class="material-symbols-outlined">local_shipping</span>
+                    <span data-i18n="home.sectionOrders"></span>
                 </span>
-                <a class="shelf__more" href="/pages/restaurant/fish-list.html?sort=newest">
-                    <span data-i18n="restaurant.loadMore"></span>
+                <a class="section__more" href="/pages/restaurant/orders.html">
+                    <span data-i18n="delivery.myOrders"></span>
                     <span class="material-symbols-outlined">chevron_right</span>
                 </a>
             </div>
-            <div class="shelf__row" id="shelf-newest"></div>
+            <div class="hscroll" id="orders-row"></div>
         </div>
 
-        <div class="shelf">
-            <div class="shelf__head">
-                <span class="shelf__title">
-                    <span class="material-symbols-outlined">star</span>
-                    <span data-i18n="restaurant.shelfTopRated"></span>
+        <!-- ② 魚から探す（10種固定・常に全表示） -->
+        <div class="section">
+            <div class="section__head">
+                <span class="section__title">
+                    <span class="material-symbols-outlined">set_meal</span>
+                    <span data-i18n="home.sectionFish"></span>
                 </span>
-                <a class="shelf__more" href="/pages/restaurant/fish-list.html?sort=rating">
-                    <span data-i18n="restaurant.loadMore"></span>
-                    <span class="material-symbols-outlined">chevron_right</span>
-                </a>
             </div>
-            <div class="shelf__row" id="shelf-rated"></div>
+            <div class="tiles" id="fish-tiles"></div>
         </div>
 
-        <div class="shelf">
-            <div class="shelf__head">
-                <span class="shelf__title">
+        <!-- ③ 近くの農家の魚 -->
+        <div class="section">
+            <div class="section__head">
+                <span class="section__title">
                     <span class="material-symbols-outlined">near_me</span>
-                    <span data-i18n="restaurant.shelfNearest"></span>
+                    <span data-i18n="home.sectionNearby"></span>
                 </span>
-                <a class="shelf__more" href="/pages/restaurant/fish-list.html?sort=distance">
-                    <span data-i18n="restaurant.loadMore"></span>
+                <a class="section__more" href="/pages/restaurant/fish-list.html?sort=distance">
+                    <span data-i18n="home.more"></span>
                     <span class="material-symbols-outlined">chevron_right</span>
                 </a>
             </div>
-            <div class="shelf__row" id="shelf-nearest"></div>
+            <div class="hscroll" id="row-nearby"></div>
         </div>
 
-        <div class="shelf">
-            <div class="shelf__head">
-                <span class="shelf__title">
-                    <span class="material-symbols-outlined">payments</span>
-                    <span data-i18n="restaurant.shelfCheapest"></span>
+        <!-- ④ 新着の魚 -->
+        <div class="section">
+            <div class="section__head">
+                <span class="section__title">
+                    <span class="material-symbols-outlined">new_releases</span>
+                    <span data-i18n="home.sectionNewest"></span>
                 </span>
-                <a class="shelf__more" href="/pages/restaurant/fish-list.html?sort=price">
-                    <span data-i18n="restaurant.loadMore"></span>
+                <a class="section__more" href="/pages/restaurant/fish-list.html?sort=newest">
+                    <span data-i18n="home.more"></span>
                     <span class="material-symbols-outlined">chevron_right</span>
                 </a>
             </div>
-            <div class="shelf__row" id="shelf-cheapest"></div>
+            <div class="hscroll" id="row-newest"></div>
         </div>
 
-        <div class="shelf">
-            <div class="shelf__head">
-                <span class="shelf__title">
-                    <span class="material-symbols-outlined">history</span>
-                    <span data-i18n="restaurant.shelfHistory"></span>
+        <!-- ⑤ おすすめ農家（評価順） -->
+        <div class="section">
+            <div class="section__head">
+                <span class="section__title">
+                    <span class="material-symbols-outlined">star</span>
+                    <span data-i18n="home.sectionFarmers"></span>
                 </span>
-                <a class="shelf__more" href="/pages/restaurant/fish-list.html?filter=history">
-                    <span data-i18n="restaurant.loadMore"></span>
+                <a class="section__more" href="/pages/restaurant/fish-list.html?sort=rating">
+                    <span data-i18n="home.more"></span>
                     <span class="material-symbols-outlined">chevron_right</span>
                 </a>
             </div>
-            <div class="shelf__row" id="shelf-history"></div>
+            <div class="hscroll" id="row-farmers"></div>
         </div>
 
     </div>
@@ -338,7 +415,7 @@
     </nav>
 
     <script type="module">
-        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import { initHeaderPopovers } from '/js/header-actions.js';
@@ -348,16 +425,12 @@
             collection, query, where, orderBy, limit, getDocs, doc, getDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { subscribeCart } from '/js/cart.js';
-        // 5/12 #69 追補：同一タブ内で users/{uid} を再利用してリクエスト数を削減
         import { getCachedUser, getCachedDoc } from '/js/data-cache.js';
-        // 5/23 #79: 農家ブロックのアバター解決
         import { getReviewerAvatarUrl } from '/js/profile-utils.js';
-        // 5/23 #69 改善: メモリ画像キャッシュ（フラッシュ解消）
         import { asCachedImgAttrs } from '/js/image-cache.js';
-        // 5/23 #69 Phase J: 画面描画状態の sessionStorage キャッシュ（stale-while-revalidate）
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
-        // 5/25 #85: 道路距離キャッシュ（fish-list.html / order.html / cart.html と共有 → 全画面で距離値統一）
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
+        import { formatProvince } from '/js/province-utils.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -365,7 +438,7 @@
         initLangSelector();
         initHeaderPopovers();
 
-        // 5/12 #74: 魚種カテゴリは CAA 参考価格の 10 種を流用（CLAUDE.md 参照）
+        // #102: 魚種は CAA 参考価格の 10 種固定（CLAUDE.md 参照）
         const FISH_CATEGORIES = [
             'striped_snakehead', 'walking_catfish', 'red_tilapia', 'nile_tilapia',
             'silver_barb', 'spot_pangasius', 'pangasius', 'giant_snakehead',
@@ -373,66 +446,67 @@
         ];
 
         function escapeHtml(s) {
-            return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
-
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
             else setTimeout(() => waitForUserData(cb), 200);
         }
+        function fishName(key) {
+            if (!key) return '';
+            return i18next.exists(`fish.${key}`) ? i18next.t(`fish.${key}`) : key;
+        }
+        // 評価表記（spec §9-1）= ★ N% (件数)
+        function ratingHtml(pct, count, cls) {
+            return `<span class="${cls}"><span class="material-symbols-outlined">star</span>${Math.round(pct || 0)}% <span>(${count || 0})</span></span>`;
+        }
+        // GAqP バッジ（spec §9-2）= 画像左上の緑 ✓ GAqP
+        function gaqpBadge(on) {
+            return on
+                ? `<span class="gaqp-badge"><span class="material-symbols-outlined">verified</span>${i18next.t('gaqp.badge')}</span>`
+                : '';
+        }
 
-        // 5/25 #85: 距離計算（道路距離を fish-list / order / cart と統一）
-        // - 表示用: getCachedDistance（90日キャッシュ）→ なければ calcRoadDistances（Distance Matrix 一括）
-        // - haversine はキャッシュ未ヒット+API失敗時のフォールバックのみ
+        // ── 距離計算（#85: 道路距離を fish-list / order / cart と統一） ──
         function haversine(a, b) {
             if (!a || !b) return Infinity;
             const R = 6371;
             const dLat = (b.lat - a.lat) * Math.PI / 180;
             const dLng = (b.lng - a.lng) * Math.PI / 180;
-            const x = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
-            return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+            const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
         }
-
-        // 起点1つ＋終点複数で Distance Matrix を一括叩く（fish-list.html と同型）
-        // 戻り値: [{ km, ok }] の配列。ok=true なら道路距離成功（キャッシュ対象）。
         async function calcRoadDistances(originLat, originLng, destinations) {
             return new Promise((resolve) => {
                 if (typeof google === 'undefined' || !google.maps) {
-                    resolve(destinations.map(d => ({ km: haversine({lat:originLat,lng:originLng}, {lat:d.lat,lng:d.lng}), ok: false })));
+                    resolve(destinations.map(d => ({ km: haversine({ lat: originLat, lng: originLng }, { lat: d.lat, lng: d.lng }), ok: false })));
                     return;
                 }
                 const service = new google.maps.DistanceMatrixService();
                 const origin = new google.maps.LatLng(originLat, originLng);
                 const dests = destinations.map(d => new google.maps.LatLng(d.lat, d.lng));
                 service.getDistanceMatrix({
-                    origins: [origin],
-                    destinations: dests,
+                    origins: [origin], destinations: dests,
                     travelMode: google.maps.TravelMode.DRIVING,
                     unitSystem: google.maps.UnitSystem.METRIC,
                 }, (response, status) => {
                     if (status !== 'OK' || !response.rows[0]) {
-                        resolve(destinations.map(d => ({ km: haversine({lat:originLat,lng:originLng}, {lat:d.lat,lng:d.lng}), ok: false })));
+                        resolve(destinations.map(d => ({ km: haversine({ lat: originLat, lng: originLng }, { lat: d.lat, lng: d.lng }), ok: false })));
                         return;
                     }
                     const results = response.rows[0].elements.map((el, idx) => {
                         if (el.status === 'OK') return { km: el.distance.value / 1000, ok: true };
                         const dest = destinations[idx];
-                        return { km: haversine({lat:originLat,lng:originLng}, {lat:dest.lat,lng:dest.lng}), ok: false };
+                        return { km: haversine({ lat: originLat, lng: originLng }, { lat: dest.lat, lng: dest.lng }), ok: false };
                     });
                     resolve(results);
                 });
             });
         }
-
-        // Google Maps API のロード待ち（dashboard では Distance Matrix 初回呼び出し前に呼ぶ）
         function waitForGoogleMaps(cb) {
             if (typeof google !== 'undefined' && google.maps) { cb(); }
             else { setTimeout(() => waitForGoogleMaps(cb), 200); }
         }
-
-        // farmerId → 道路距離(km) の Map を構築。
-        // - localStorage キャッシュにあれば即時返す
-        // - なければ Distance Matrix で一括取得（25件ずつチャンク）し、成功分のみキャッシュ
         async function buildFarmerDistanceMap(uid, myLoc, farmerMap) {
             const distMap = new Map();
             if (!myLoc) return distMap;
@@ -442,23 +516,14 @@
                 const loc = f.location;
                 const locs = { rLat: myLoc.lat, rLng: myLoc.lng, fLat: loc.lat, fLng: loc.lng };
                 const cached = getCachedDistance(uid, fid, locs);
-                if (cached !== null) {
-                    distMap.set(fid, cached);
-                } else {
-                    farmerLocs.push({ fid, loc, locs });
-                }
+                if (cached !== null) distMap.set(fid, cached);
+                else farmerLocs.push({ fid, loc, locs });
             }
             if (farmerLocs.length === 0) return distMap;
-
-            // Google Maps API 待ち（async defer 読み込みなので Distance Matrix 利用時のみ待つ）
             await new Promise((resolve) => waitForGoogleMaps(resolve));
-
-            // Distance Matrix は1リクエストあたり最大25 destinations。25件ずつチャンクして並列実行。
             const CHUNK = 25;
             const chunks = [];
-            for (let i = 0; i < farmerLocs.length; i += CHUNK) {
-                chunks.push(farmerLocs.slice(i, i + CHUNK));
-            }
+            for (let i = 0; i < farmerLocs.length; i += CHUNK) chunks.push(farmerLocs.slice(i, i + CHUNK));
             await Promise.all(chunks.map(async (chunk) => {
                 try {
                     const dests = chunk.map(c => c.loc);
@@ -469,141 +534,259 @@
                         if (r.ok) setCachedDistance(uid, c.fid, r.km, c.locs);
                     });
                 } catch (e) {
-                    // チャンク失敗時は haversine フォールバック
-                    chunk.forEach(c => {
-                        distMap.set(c.fid, haversine(myLoc, c.loc));
-                    });
+                    chunk.forEach(c => distMap.set(c.fid, haversine(myLoc, c.loc)));
                 }
             }));
             return distMap;
         }
 
-        // 魚種カテゴリ描画
-        // 5/23 #76: クライアント提供の魚種画像（images/{fishType}.png）に差し替え。
-        // 画像自体が円形背景を持つため、CSS 側の背景円は撤去済み。
-        function renderCategories() {
-            const row = document.getElementById('category-row');
-            row.innerHTML = FISH_CATEGORIES.map(key => {
-                const label = i18next.exists(`fish.${key}`) ? i18next.t(`fish.${key}`) : key;
-                return `
-                    <a class="category-item" href="/pages/restaurant/fish-list.html?fishType=${encodeURIComponent(key)}">
-                        <div class="category-item__icon">
-                            <img src="/images/${encodeURIComponent(key)}.png" alt="" loading="lazy">
-                        </div>
-                        <div class="category-item__label">${escapeHtml(label)}</div>
-                    </a>
-                `;
-            }).join('');
+        // ── ② 魚タイル（10種固定） ──
+        function renderFishTiles() {
+            const row = document.getElementById('fish-tiles');
+            row.innerHTML = FISH_CATEGORIES.map(key => `
+                <a class="tile" href="/pages/restaurant/fish-list.html?fishType=${encodeURIComponent(key)}">
+                    <div class="tile__circle"><img src="/images/${encodeURIComponent(key)}.png" alt="" loading="lazy"></div>
+                    <div class="tile__nm">${escapeHtml(fishName(key))}</div>
+                </a>
+            `).join('');
         }
 
-        // 共通カード描画
-        // 5/23 #79: 農家表示部分を fish-list.html と同型のブロック（アバター丸 + 名前 + ⭐%（件）） に変更。
-        // カード全体は横スクロール棚向けの 168px 縦長レイアウトを維持。
-        // 5/23 Phase I: isPriority=true なら fetchpriority="high" + loading="eager" で LCP 候補をブースト
-        // 5/25 #85: distanceKm は道路距離（buildFarmerDistanceMap 経由・キャッシュ優先）
-        function renderCard(listing, farmer, distanceKm, serviceRate, isPriority = false) {
-            const fishType = listing.fishType || '';
-            const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
+        // ── ③④ 商品カード（220px） ──
+        function productCard(listing, farmer, distanceKm, serviceRate, isPriority = false) {
+            const name = fishName(listing.fishType || '');
             const unitPrice = Math.round(((listing.price || 0) + (listing.gutPrice || 0)) * (1 + serviceRate));
             const photo = listing.photoUrl || (listing.photos?.[0]);
             const stock = Number(listing.stock || 0);
             const farmerName = farmer?.displayName || '';
-            const rating = Number(farmer?.avgRating || 0);
+            const pct = Number(farmer?.avgRating || 0);
             const reviewCount = Number(farmer?.reviewCount || 0);
-            const farmerAvatarUrl = farmer ? getReviewerAvatarUrl(farmer) : null;
-            // 5/27 #96: GAqP 認証バッジ
-            const farmerGaqp = farmer?.gaqpCertified === true;
+            const farmerAvatar = farmer ? getReviewerAvatarUrl(farmer) : null;
+            const gaqp = farmer?.gaqpCertified === true;
             const distText = Number.isFinite(distanceKm) ? `${distanceKm.toFixed(1)} km` : '';
             const imgAttrs = asCachedImgAttrs(photo, isPriority ? { priority: 'high' } : {});
             const loadAttr = isPriority ? '' : 'loading="lazy"';
-
             return `
-                <a class="home-card" href="/pages/restaurant/order.html?id=${listing.id}">
-                    <div class="home-card__top">
-                        <div class="home-card__img">
-                            ${photo
-                                ? `<img ${imgAttrs} alt="${escapeHtml(fishName)}" ${loadAttr}>`
-                                : `<span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span>`
-                            }
-                        </div>
-                        <div class="home-card__body">
-                            <div class="home-card__name">${escapeHtml(fishName)}</div>
-                            <div class="home-card__size">${listing.size || ''} head/kg</div>
-                            <div class="home-card__price">${unitPrice.toLocaleString()}<span class="home-card__price-unit">KHR/kg</span></div>
-                            <div class="home-card__stock ${stock <= 0 ? 'home-card__stock--out' : ''}">
-                                ${stock > 0 ? i18next.t('restaurant.stock', { kg: stock }) : i18next.t('order.stockUnavailable')}
-                            </div>
-                            ${distText ? `
-                                <div class="home-card__place">
-                                    <span class="material-symbols-outlined">location_on</span>
-                                    <span>${escapeHtml(distText)}</span>
-                                </div>
-                            ` : ''}
+                <a class="pcard" href="/pages/restaurant/order.html?id=${listing.id}">
+                    <div class="pcard__img">
+                        ${photo
+                            ? `<img ${imgAttrs} alt="${escapeHtml(name)}" ${loadAttr}>`
+                            : `<span class="material-symbols-outlined">set_meal</span>`}
+                        ${gaqpBadge(gaqp)}
+                    </div>
+                    <div class="pcard__body">
+                        <div class="pcard__nm">${escapeHtml(name)}</div>
+                        <div class="pcard__sz">${escapeHtml(listing.size || '')} head/kg</div>
+                        <div class="pcard__price"><b>${unitPrice.toLocaleString()}</b><span>KHR/kg</span></div>
+                        <div class="pcard__meta">
+                            <div class="d">${stock > 0 ? i18next.t('restaurant.stock', { kg: stock }) : i18next.t('order.stockUnavailable')}</div>
+                            ${distText ? `<div class="d"><span class="material-symbols-outlined">location_on</span>${escapeHtml(distText)}</div>` : ''}
                         </div>
                     </div>
                     ${farmerName ? `
-                        <div class="home-card__farmer-block" data-act="view-farmer" data-farmer-id="${listing.farmerId}" role="button" tabindex="0">
-                            <div class="home-card__farmer-avatar">
-                                ${farmerAvatarUrl
-                                    ? `<img ${asCachedImgAttrs(farmerAvatarUrl)} alt="" loading="lazy">`
-                                    : `<span class="material-symbols-outlined">person</span>`}
+                        <div class="pcard__farmer" data-act="view-farmer" data-farmer-id="${listing.farmerId}" role="button" tabindex="0">
+                            <div class="pcard__avatar">
+                                ${farmerAvatar ? `<img ${asCachedImgAttrs(farmerAvatar)} alt="" loading="lazy">` : `<span class="material-symbols-outlined">person</span>`}
                             </div>
-                            <div class="home-card__farmer-info">
-                                <div class="home-card__farmer-name">${escapeHtml(farmerName)}${farmerGaqp ? ` <span style="display:inline-flex; align-items:center; gap:2px; padding:1px 6px; background:#0d6e4c; color:#fff; border-radius:8px; font-size:9px; font-weight:700; vertical-align:middle;"><span class="material-symbols-outlined" style="font-size:11px;">verified</span>${i18next.t('gaqp.badge')}</span>` : ''}</div>
-                                <div class="home-card__farmer-rating">
-                                    <span class="material-symbols-outlined">star</span>
-                                    ${Math.round(rating)}%（${reviewCount}）
-                                </div>
-                            </div>
-                        </div>
-                    ` : ''}
-                </a>
-            `;
+                            <div class="pcard__fn">${escapeHtml(farmerName)}</div>
+                            ${ratingHtml(pct, reviewCount, 'pcard__rt')}
+                        </div>` : ''}
+                </a>`;
         }
 
-        // 5/25 #85: distanceMap（farmerId → 道路距離km）を渡す形に変更。
-        // 旧来の haversine 直接呼びは廃止。distanceMap 未指定/未ヒット時は Infinity 表示。
-        function renderShelf(elId, listings, farmerMap, distanceMap, serviceRate, emptyMsg) {
+        function renderProductRow(elId, listings, farmerMap, distanceMap, serviceRate, priorityFirst = false) {
             const row = document.getElementById(elId);
             if (!listings || listings.length === 0) {
-                row.innerHTML = `<div class="shelf__empty" style="margin:0; flex:1;">${emptyMsg}</div>`;
+                row.innerHTML = `<div class="section__empty" style="margin:0; flex:1;">${i18next.t('restaurant.noResults')}</div>`;
                 return;
             }
-            // 5/23 Phase I: 最上段棚（shelf-newest）の最初の 1 枚のみ LCP 候補として優先ロード
-            const isPriorityShelf = (elId === 'shelf-newest');
             row.innerHTML = listings.map((l, idx) => {
                 const farmer = farmerMap.get(l.farmerId) || null;
                 const dist = distanceMap?.get(l.farmerId);
-                const isPriority = isPriorityShelf && idx === 0;
-                return renderCard(l, farmer, Number.isFinite(dist) ? dist : Infinity, serviceRate, isPriority);
+                return productCard(l, farmer, Number.isFinite(dist) ? dist : Infinity, serviceRate, priorityFirst && idx === 0);
             }).join('');
         }
 
-        function setSkeletons(elIds) {
-            for (const id of elIds) {
-                const el = document.getElementById(id);
-                if (el) el.innerHTML = '<div class="shelf__skeleton"></div><div class="shelf__skeleton"></div><div class="shelf__skeleton"></div>';
+        // ── ⑤ 農家カード（240px） ──
+        function farmerCard(farmer, distanceKm, fishTags) {
+            const name = farmer.displayName || '';
+            const pct = Number(farmer.avgRating || 0);
+            const count = Number(farmer.reviewCount || 0);
+            const gaqp = farmer.gaqpCertified === true;
+            const avatar = getReviewerAvatarUrl(farmer);
+            const cover = (Array.isArray(farmer.pondPhotos) && farmer.pondPhotos[0]) || farmer.pondPhotoUrl || null;
+            const provText = farmer.province ? formatProvince(farmer.province) : '';
+            const distText = Number.isFinite(distanceKm) ? `${distanceKm.toFixed(1)} km` : '';
+            const locParts = [provText, distText].filter(Boolean).join(' ・ ');
+            const tagsHtml = (fishTags || []).slice(0, 3).map(t => `<span class="fcard__tag">${escapeHtml(t)}</span>`).join('');
+            return `
+                <a class="fcard" href="/pages/restaurant/farmer.html?id=${farmer.id}">
+                    <div class="fcard__cover">
+                        ${cover ? `<img ${asCachedImgAttrs(cover)} alt="" loading="lazy">` : `<span class="material-symbols-outlined">landscape</span>`}
+                        ${gaqpBadge(gaqp)}
+                    </div>
+                    <div class="fcard__body">
+                        <div class="fcard__avatar">
+                            ${avatar ? `<img ${asCachedImgAttrs(avatar)} alt="" loading="lazy">` : `<span class="material-symbols-outlined">person</span>`}
+                        </div>
+                        <div class="fcard__name">${escapeHtml(name)}</div>
+                        ${locParts ? `<div class="fcard__loc">${escapeHtml(locParts)}</div>` : ''}
+                        <div class="fcard__rate"><span class="material-symbols-outlined">star</span><b>${Math.round(pct)}%</b> (${count})</div>
+                        ${tagsHtml ? `<div class="fcard__tags">${tagsHtml}</div>` : ''}
+                        <div class="fcard__btn"><span data-i18n-skip>${i18next.t('home.viewFarmer')}</span><span class="material-symbols-outlined">arrow_forward</span></div>
+                    </div>
+                </a>`;
+        }
+
+        function renderFarmerRow(farmers, distanceMap, fishTagsMap) {
+            const row = document.getElementById('row-farmers');
+            if (!farmers || farmers.length === 0) {
+                row.innerHTML = `<div class="section__empty" style="margin:0; flex:1;">${i18next.t('restaurant.noResults')}</div>`;
+                return;
+            }
+            row.innerHTML = farmers.map(f => farmerCard(f, distanceMap?.get(f.id), fishTagsMap?.[f.id])).join('');
+        }
+
+        // ── ① 進行中の注文カード（300px） ──
+        // 実ステータス → spec 5段ステッパー（注文済→農家確認中→出荷→配達中→完了）+ 辞退 にマップ
+        const STEP_LABELS = ['home.stepOrdered', 'home.stepConfirming', 'home.stepShipped', 'home.stepDelivering', 'home.stepDone'];
+        function stepStates(status) {
+            // 返り値: 各段の class（''|'done'|'current'|'declined'）
+            if (status === 'declined') return ['done', 'declined', '', '', ''];
+            if (status === 'pending') return ['done', 'current', '', '', ''];
+            if (status === 'approved' || status === 'preparing') return ['done', 'done', 'current', '', ''];
+            if (status === 'delivering') return ['done', 'done', 'done', 'current', ''];
+            if (status === 'completed' || status === 'delivered') return ['done', 'done', 'done', 'done', 'done'];
+            return ['done', 'current', '', '', '']; // 不明は確認中扱い
+        }
+        function orderQty(order) {
+            const items = Array.isArray(order.items) ? order.items : null;
+            if (items && items.length) return items.reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+            return Number(order.quantity) || 0;
+        }
+        function orderPrimaryItem(order) {
+            const items = Array.isArray(order.items) ? order.items : null;
+            if (items && items.length) return items[0];
+            return { snapFishType: order.snapFishType, snapSize: order.snapSize, snapPhotoUrl: order.snapPhotoUrl };
+        }
+        function orderCard(o) {
+            const order = o.order;
+            const status = order.status === 'delivered' ? 'completed' : order.status;
+            const it = orderPrimaryItem(order);
+            const name = fishName(it.snapFishType || '');
+            const size = it.snapSize || '';
+            const itemCount = Array.isArray(order.items) ? order.items.length : 1;
+            const moreItems = itemCount > 1 ? ` +${itemCount - 1}` : '';
+            const photo = it.snapPhotoUrl || null;
+            const qty = orderQty(order);
+            const total = (order.totalAmount || 0).toLocaleString();
+            const states = stepStates(status);
+            const isDeclined = status === 'declined';
+
+            const stepperHtml = states.map((cls, i) => `
+                <div class="step ${cls}"><span class="step__bar"></span><span class="step__dot"></span><span class="step__lb">${i18next.t(STEP_LABELS[i])}</span></div>
+            `).join('');
+
+            let footerHtml;
+            if (isDeclined) {
+                footerHtml = `
+                    <div class="order-alert"><span class="material-symbols-outlined">warning</span>${escapeHtml(i18next.t('home.declinedAlert', { farmer: o.farmerName || '' }))}</div>
+                    <a class="order-find" href="/pages/restaurant/fish-list.html?fishType=${encodeURIComponent(it.snapFishType || '')}">
+                        ${i18next.t('home.findOtherFarmer')}<span class="material-symbols-outlined">arrow_forward</span>
+                    </a>`;
+            } else if (status === 'pending') {
+                footerHtml = `<div class="order-eta"><span class="material-symbols-outlined">hourglass_top</span>${i18next.t('home.confirmingEta')}</div>`;
+            } else {
+                const when = [order.deliveryDate || '', order.deliveryTime || ''].filter(Boolean).join(' ');
+                footerHtml = `<div class="order-eta"><span class="material-symbols-outlined">local_shipping</span>${when ? i18next.t('home.etaArrive', { when }) : i18next.t('delivery.' + status)}</div>`;
+            }
+
+            return `
+                <div class="order-card ${isDeclined ? 'declined' : ''}" data-href="/pages/restaurant/orders.html#order-${o.id}" role="button" tabindex="0">
+                    <div class="order-card__top">
+                        <div class="order-card__thumb">
+                            ${photo ? `<img ${asCachedImgAttrs(photo)} alt="" loading="lazy">` : `<span class="material-symbols-outlined">set_meal</span>`}
+                        </div>
+                        <div class="order-card__hd">
+                            <div class="order-card__name">${escapeHtml(name)}${moreItems}${size ? ` <span class="sz">${escapeHtml(size)} head/kg</span>` : ''}</div>
+                            <div class="order-card__sub">${escapeHtml(o.farmerName || '')}${qty ? ` ・ ${qty}kg` : ''}</div>
+                        </div>
+                        <div class="order-card__amt"><b>${total}</b><div class="u">KHR</div></div>
+                    </div>
+                    <div class="stepper">${stepperHtml}</div>
+                    ${footerHtml}
+                </div>`;
+        }
+
+        function renderOrders(orders) {
+            const sec = document.getElementById('sec-orders');
+            const row = document.getElementById('orders-row');
+            if (!orders || orders.length === 0) {
+                sec.style.display = 'none';
+                row.innerHTML = '';
+                return;
+            }
+            sec.style.display = 'block';
+            row.innerHTML = orders.map(orderCard).join('');
+        }
+
+        // ── 進行中の注文を取得（declined は先頭固定） ──
+        const IN_PROGRESS = ['pending', 'approved', 'preparing', 'delivering'];
+        async function loadOrders(uid) {
+            try {
+                const q = query(
+                    collection(db, 'orders'),
+                    where('restaurantId', '==', uid),
+                    orderBy('createdAt', 'desc'),
+                    limit(20)
+                );
+                const snap = await getDocs(q);
+                const raw = snap.docs.map(d => ({ id: d.id, order: d.data() }));
+                // done(completed/delivered) は進行中から即消す。pending/approved/preparing/delivering + declined のみ。
+                const active = raw.filter(r => {
+                    const s = r.order.status;
+                    return IN_PROGRESS.includes(s) || s === 'declined';
+                });
+                // 農家名を補完
+                const farmerIds = [...new Set(active.map(r => r.order.farmerId).filter(Boolean))];
+                const fmap = new Map();
+                await Promise.all(farmerIds.map(async fid => {
+                    try { const f = await getCachedUser(fid); if (f) fmap.set(fid, f); } catch (e) { /* ignore */ }
+                }));
+                active.forEach(r => { r.farmerName = fmap.get(r.order.farmerId)?.displayName || ''; });
+                // declined を先頭固定 → 残りは createdAt desc（取得順）
+                active.sort((a, b) => {
+                    const da = a.order.status === 'declined' ? 0 : 1;
+                    const dbb = b.order.status === 'declined' ? 0 : 1;
+                    return da - dbb;
+                });
+                renderOrders(active);
+                try {
+                    saveRenderState('home_orders', {
+                        orders: active.map(r => ({ id: r.id, order: r.order, farmerName: r.farmerName })),
+                    });
+                } catch (e) { /* ignore */ }
+            } catch (e) {
+                console.warn('loadOrders failed:', e);
             }
         }
 
-        // データ取得
-        // 5/23 #69 Phase J: skipSkeleton=true で skeleton 描画をスキップ。
-        //   render-cache から既に内容が描画されている場合に呼ぶことで、フラッシュを防ぐ。
-        async function loadShelves({ skipSkeleton = false } = {}) {
-            const shelfIds = ['shelf-nearest', 'shelf-rated', 'shelf-newest', 'shelf-cheapest', 'shelf-history'];
-            if (!skipSkeleton) setSkeletons(shelfIds);
+        // ── 商品・農家セクションのデータ取得 ──
+        async function loadCatalog({ skipSkeleton = false } = {}) {
+            const rowIds = ['row-nearby', 'row-newest', 'row-farmers'];
+            if (!skipSkeleton) rowIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+            });
 
             const uid = window.currentUser?.uid;
             const myLoc = window.currentUserData?.location || null;
 
-            // サービス料率
             let serviceRate = 0.05;
             try {
                 const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
                 if (campSnap.exists()) serviceRate = campSnap.data().serviceRate ?? 0.05;
             } catch (e) { /* ignore */ }
 
-            // 一度に最新の出品を多めに取得（クライアント側で各棚に振り分け）
             const baseQ = query(
                 collection(db, 'fishListings'),
                 where('isActive', '==', true),
@@ -613,23 +796,15 @@
             const snap = await getDocs(baseQ);
             const listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-            // 農家データ一括取得（5/12 #69：data-cache 経由でセッション内重複を抑止）
             const farmerIds = [...new Set(listings.map(l => l.farmerId).filter(Boolean))];
             const farmerMap = new Map();
             await Promise.all(farmerIds.map(async (fid) => {
-                try {
-                    const data = await getCachedUser(fid);
-                    if (data) farmerMap.set(fid, data);
-                } catch (e) { /* ignore */ }
+                try { const data = await getCachedUser(fid); if (data) farmerMap.set(fid, data); } catch (e) { /* ignore */ }
             }));
 
-            // 5/25 #85: 道路距離マップを構築（キャッシュ優先、なければ Distance Matrix 一括）
-            //   全画面で同じ距離値を表示するため。
             const distanceMap = await buildFarmerDistanceMap(uid, myLoc, farmerMap);
 
-            // 5/25 #86: 配送範囲外（farmer.maxDistance < restaurant までの道路距離）は除外。
-            //   fish-list.html と同じフィルタを掛けることで「新着の魚」が両画面で一致する。
-            //   距離不明（distanceMap 未ヒット）はフォールバックで表示。
+            // 配送圏外（farmer.maxDistance 超過）は除外（#86: 両画面一致）
             const inRange = (l) => {
                 const max = l.maxDistance;
                 if (!max) return true;
@@ -637,179 +812,146 @@
                 if (!Number.isFinite(d)) return true;
                 return d <= max;
             };
-            const eligibleListings = listings.filter(inRange);
+            const eligible = listings.filter(inRange);
+            // 在庫>0 の商品のみ Home の棚に出す（売切れは魚一覧で末尾表示）
+            const inStock = eligible.filter(l => Number(l.stock || 0) > 0);
 
-            // 棚①：近くの農家（道路距離で昇順）
-            const nearest = [...eligibleListings]
+            // ③ 近くの農家の魚（道路距離 昇順）
+            const nearby = [...inStock]
                 .filter(l => Number.isFinite(distanceMap.get(l.farmerId)))
                 .sort((a, b) => distanceMap.get(a.farmerId) - distanceMap.get(b.farmerId))
                 .slice(0, 10);
+            // ④ 新着（createdAt desc で取得済み）
+            const newest = inStock.slice(0, 10);
 
-            // 棚②：評価が高い農家
-            const topRated = [...eligibleListings]
-                .sort((a, b) => (farmerMap.get(b.farmerId)?.avgRating || 0) - (farmerMap.get(a.farmerId)?.avgRating || 0))
+            // ⑤ おすすめ農家（評価順・同率は件数多い順）。出品のある農家から。
+            const fishTagsMap = {};
+            for (const l of eligible) {
+                if (!l.farmerId || !l.fishType) continue;
+                (fishTagsMap[l.farmerId] = fishTagsMap[l.farmerId] || new Set()).add(fishName(l.fishType));
+            }
+            const farmerTagArr = {};
+            Object.keys(fishTagsMap).forEach(fid => { farmerTagArr[fid] = [...fishTagsMap[fid]]; });
+            const farmers = [...new Set(eligible.map(l => l.farmerId).filter(Boolean))]
+                .map(fid => { const f = farmerMap.get(fid); return f ? { ...f, id: fid } : null; })
+                .filter(Boolean)
+                .sort((a, b) => {
+                    const r = (Number(b.avgRating || 0)) - (Number(a.avgRating || 0));
+                    if (r !== 0) return r;
+                    return (Number(b.reviewCount || 0)) - (Number(a.reviewCount || 0));
+                })
                 .slice(0, 10);
 
-            // 棚③：新着（既に createdAt desc で取れているので先頭から）
-            const newest = eligibleListings.slice(0, 10);
+            renderProductRow('row-nearby', nearby, farmerMap, distanceMap, serviceRate, true);
+            renderProductRow('row-newest', newest, farmerMap, distanceMap, serviceRate, false);
+            renderFarmerRow(farmers, distanceMap, farmerTagArr);
 
-            // 棚④：安い魚（サービス料込み単価で昇順）
-            const cheapest = [...eligibleListings]
-                .sort((a, b) => ((a.price || 0) + (a.gutPrice || 0)) - ((b.price || 0) + (b.gutPrice || 0)))
-                .slice(0, 10);
-
-            // 棚⑤：過去注文した商品
-            let history = [];
             try {
-                const hq = query(
-                    collection(db, 'orders'),
-                    where('restaurantId', '==', uid),
-                    orderBy('createdAt', 'desc'),
-                    limit(30)
-                );
-                const hSnap = await getDocs(hq);
-                const seenIds = new Set();
-                const historyIds = [];
-                hSnap.forEach(d => {
-                    const data = d.data();
-                    const items = Array.isArray(data.items) ? data.items : [];
-                    for (const it of items) {
-                        if (it?.listingId && !seenIds.has(it.listingId)) {
-                            seenIds.add(it.listingId);
-                            historyIds.push(it.listingId);
-                        }
-                    }
-                    // legacy 単品 order
-                    if (data.listingId && !seenIds.has(data.listingId)) {
-                        seenIds.add(data.listingId);
-                        historyIds.push(data.listingId);
-                    }
-                });
-                // 履歴 ID から既に取得済みの listings を引く + 不足分は追加取得（data-cache 経由）
-                const inListings = new Map(listings.map(l => [l.id, l]));
-                const stillNeeded = historyIds.filter(id => !inListings.has(id)).slice(0, 10);
-                if (stillNeeded.length > 0) {
-                    await Promise.all(stillNeeded.map(async (id) => {
-                        try {
-                            const data = await getCachedDoc('fishListings', id);
-                            if (data) inListings.set(id, { id, ...data });
-                        } catch (e) { /* ignore */ }
-                    }));
-                }
-                history = historyIds.map(id => inListings.get(id)).filter(Boolean).slice(0, 10);
-                // 履歴に必要な農家データも補完（data-cache 経由）
-                const extraFarmerIds = history.map(l => l.farmerId).filter(fid => fid && !farmerMap.has(fid));
-                await Promise.all(extraFarmerIds.map(async (fid) => {
-                    try {
-                        const data = await getCachedUser(fid);
-                        if (data) farmerMap.set(fid, data);
-                    } catch (e) { /* ignore */ }
-                }));
-            } catch (e) { console.warn('history shelf failed:', e); }
-
-            // 描画
-            const emptyMsg = i18next.t('restaurant.noResults');
-            renderShelf('shelf-nearest', nearest, farmerMap, distanceMap, serviceRate, emptyMsg);
-            renderShelf('shelf-rated', topRated, farmerMap, distanceMap, serviceRate, emptyMsg);
-            renderShelf('shelf-newest', newest, farmerMap, distanceMap, serviceRate, emptyMsg);
-            renderShelf('shelf-cheapest', cheapest, farmerMap, distanceMap, serviceRate, emptyMsg);
-            renderShelf('shelf-history', history, farmerMap, distanceMap, serviceRate, i18next.t('restaurant.shelfHistoryEmpty'));
-
-            // 5/23 #69 Phase J: render-cache に保存。次回訪問時に即時表示できるように。
-            //   - listings は Firestore docs から `{ id, ...data() }` の形に変換済（JSON 化可能）
-            //   - farmerMap は Map なので Object.fromEntries で plain object に変換
-            //   - serviceRate も保存（価格表示に使う）
-            //   - 5/23 改2：myLoc も保存することで、次回 cached render が currentUserData 待ち不要に
-            //   - 5/25 #85: distanceMap も保存（farmerId → km）。次回訪問時に同じ距離値で即時表示。
-            try {
-                saveRenderState('dashboard_shelves', {
-                    nearest, topRated, newest, cheapest, history,
-                    farmers: Object.fromEntries(farmerMap),
+                saveRenderState('home_catalog', {
+                    nearby, newest,
+                    farmers,
+                    farmerTagArr,
+                    farmerMap: Object.fromEntries(farmerMap),
                     distances: Object.fromEntries(distanceMap),
                     serviceRate,
-                    myLoc,
                 });
-            } catch (e) { /* 保存失敗は無視 */ }
+            } catch (e) { /* ignore */ }
         }
 
-        // 検索 → fish-list.html に q を渡す
+        // ── 検索 → fish-list.html に q を渡す ──
         document.getElementById('search-form').addEventListener('submit', (e) => {
-            // デフォルト動作（GET 遷移）を使う。q が空のときは無視。
             const q = document.getElementById('search-input').value.trim();
-            if (!q) { e.preventDefault(); }
+            if (!q) e.preventDefault();
         });
 
-        // 5/23 #79: 農家ブロック（data-act="view-farmer"）タップで生産者ページへ。
-        // 外側の <a class="home-card"> による order.html 遷移を防ぐため preventDefault + stopPropagation。
+        // ── 農家ブロックタップ（商品カード内）→ 生産者ページ ──
         document.addEventListener('click', (e) => {
             const farmerEl = e.target.closest('[data-act="view-farmer"]');
-            if (!farmerEl) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const farmerId = farmerEl.dataset.farmerId;
-            if (farmerId) location.href = `/pages/restaurant/farmer.html?id=${farmerId}`;
+            if (farmerEl) {
+                e.preventDefault();
+                e.stopPropagation();
+                const farmerId = farmerEl.dataset.farmerId;
+                if (farmerId) location.href = `/pages/restaurant/farmer.html?id=${farmerId}`;
+                return;
+            }
+            // 注文カード（div）→ 注文状況一覧。内側のリンク（他の農家を探す等）が優先。
+            const orderEl = e.target.closest('.order-card[data-href]');
+            if (orderEl && !e.target.closest('a')) {
+                location.href = orderEl.dataset.href;
+            }
         });
 
-        // 通知バッジ・カートバッジ・注文バッジ（既存 dashboard 同様）
+        // ── バッジ監視 ──
         function watchBadges() {
             const uid = window.currentUser?.uid;
             if (!uid) return;
-            // 注文バッジ
             const lastSeen = parseInt(localStorage.getItem('fishlink_orders_seen') || '0');
             const oq = query(collection(db, 'orders'), where('restaurantId', '==', uid));
             onSnapshot(oq, (snap) => {
                 const hasNew = snap.docs.some(d => (d.data().createdAt?.toMillis?.() || 0) > lastSeen);
                 document.getElementById('order-badge').style.display = hasNew ? 'block' : 'none';
             });
-            // カートバッジ
             subscribeCart(uid, (items) => {
                 document.getElementById('cart-badge').style.display = items.length > 0 ? 'block' : 'none';
             });
         }
 
-        // 5/23 #69 Phase J 改2: 描画キャッシュ確認 → HIT すれば waitForUserData を待たずに即時表示
-        //   - initI18n は既に完了済み（モジュール冒頭で await 済）
-        //   - myLoc も cache に保存されているため currentUserData を待たなくて良い
-        //   - これにより spinner 表示時間が ~1500ms → ~200-300ms（initI18n のみ）に短縮
+        // 言語切替: 動的描画部を作り直す（applyTranslations は data-i18n 要素のみ対象のため）
+        onLanguageChange(() => {
+            renderFishTiles();
+            const cat = loadRenderState('home_catalog');
+            if (cat) {
+                const fmap = new Map(Object.entries(cat.farmerMap || {}));
+                const dmap = new Map(Object.entries(cat.distances || {}));
+                const sRate = cat.serviceRate ?? 0.05;
+                renderProductRow('row-nearby', cat.nearby || [], fmap, dmap, sRate, true);
+                renderProductRow('row-newest', cat.newest || [], fmap, dmap, sRate, false);
+                renderFarmerRow(cat.farmers || [], dmap, cat.farmerTagArr || {});
+            }
+            const ord = loadRenderState('home_orders');
+            if (ord?.orders) renderOrders(ord.orders);
+        });
+
+        // ── 描画キャッシュ確認 → HIT すれば即時表示（#69 stale-while-revalidate） ──
         let cachedRendered = false;
         try {
-            const cachedShelves = loadRenderState('dashboard_shelves');
-            if (cachedShelves) {
-                renderCategories();
-                const fmap = new Map(Object.entries(cachedShelves.farmers || {}));
-                // 5/25 #85: distances（farmerId → km）も復元。古いキャッシュには無いため空マップでフォールバック。
-                const dmap = new Map(Object.entries(cachedShelves.distances || {}));
-                const sRate = cachedShelves.serviceRate ?? 0.05;
-                const emptyMsg = i18next.t('restaurant.noResults');
-                renderShelf('shelf-nearest', cachedShelves.nearest || [], fmap, dmap, sRate, emptyMsg);
-                renderShelf('shelf-rated', cachedShelves.topRated || [], fmap, dmap, sRate, emptyMsg);
-                renderShelf('shelf-newest', cachedShelves.newest || [], fmap, dmap, sRate, emptyMsg);
-                renderShelf('shelf-cheapest', cachedShelves.cheapest || [], fmap, dmap, sRate, emptyMsg);
-                renderShelf('shelf-history', cachedShelves.history || [], fmap, dmap, sRate, i18next.t('restaurant.shelfHistoryEmpty'));
-                // スピナー解除（fresh fetch は裏で続行）
+            renderFishTiles();
+            const cat = loadRenderState('home_catalog');
+            const ord = loadRenderState('home_orders');
+            if (cat) {
+                const fmap = new Map(Object.entries(cat.farmerMap || {}));
+                const dmap = new Map(Object.entries(cat.distances || {}));
+                const sRate = cat.serviceRate ?? 0.05;
+                renderProductRow('row-nearby', cat.nearby || [], fmap, dmap, sRate, true);
+                renderProductRow('row-newest', cat.newest || [], fmap, dmap, sRate, false);
+                renderFarmerRow(cat.farmers || [], dmap, cat.farmerTagArr || {});
+                if (ord?.orders) renderOrders(ord.orders);
                 loading.classList.remove('show');
                 document.body.classList.add('app-ready');
                 cachedRendered = true;
             }
         } catch (e) {
-            console.warn('cached shelves render failed:', e);
+            console.warn('cached home render failed:', e);
         }
 
         waitForUserData(async () => {
-            if (!cachedRendered) renderCategories();
-
-            if (window.currentUser?.uid) {
-                subscribeTodos(window.currentUser.uid, 'restaurant');
-                subscribeNotifications(window.currentUser.uid);
+            if (!cachedRendered) renderFishTiles();
+            const uid = window.currentUser?.uid;
+            if (uid) {
+                subscribeTodos(uid, 'restaurant');
+                subscribeNotifications(uid);
             }
             watchBadges();
             try {
-                // cached があれば skeleton スキップ（フラッシュ防止）
-                await loadShelves({ skipSkeleton: cachedRendered });
+                await Promise.all([
+                    loadOrders(uid),
+                    loadCatalog({ skipSkeleton: cachedRendered }),
+                ]);
             } catch (e) {
-                console.error('loadShelves failed:', e);
+                console.error('home load failed:', e);
             } finally {
-                loading.classList.remove('show'); document.body.classList.add('app-ready');
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
             }
         });
     </script>

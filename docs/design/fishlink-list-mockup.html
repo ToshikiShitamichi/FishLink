@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 魚一覧 V2 - ボトムシート デモ</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #ECEEF0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 12px 60px;
+    color: #1A1A1A;
+  }
+  .intro {
+    max-width: 420px;
+    margin-bottom: 20px;
+    background: #FFF;
+    padding: 16px 18px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .intro h1 { margin: 0 0 8px; font-size: 17px; color: #0B5FB0; }
+  .intro p { margin: 4px 0; color: #4A4A4A; }
+  .intro b { color: #0B5FB0; }
+
+  /* ===== スマホ枠 ===== */
+  .phone {
+    width: 390px;
+    max-width: 100%;
+    height: 780px;
+    background: #FFF;
+    border-radius: 36px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== ヘッダー ===== */
+  .header {
+    flex: 0 0 auto;
+    background: #FFF;
+    padding: 12px 16px 8px;
+    border-bottom: 1px solid #EEF1F4;
+    z-index: 2;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .logo {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0B5FB0;
+    letter-spacing: -0.5px;
+  }
+  .logo::before { content: "🐟 "; }
+  .header-icons { display: flex; gap: 14px; align-items: center; font-size: 18px; }
+  .lang {
+    background: #F0F4F8;
+    border: 1px solid #DDE3E9;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1A1A1A;
+  }
+  .bell { position: relative; }
+  .bell-dot {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #E5453F;
+    color: #FFF;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 8px;
+  }
+
+  /* 検索バー */
+  .search {
+    background: #F4F6F8;
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #9AA3B0;
+  }
+
+  /* タイトル＆フィルター */
+  .page-title {
+    padding: 14px 16px 8px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .filter-row {
+    padding: 0 16px 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .sort-btn, .filter-btn {
+    flex: 0 0 auto;
+    background: #FFF;
+    border: 1px solid #DDE3E9;
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #1A1A1A;
+    transition: all 0.15s;
+  }
+  .sort-btn:active, .filter-btn:active { background: #F4F6F8; transform: scale(0.97); }
+  .filter-btn.active {
+    background: #E8F1FA;
+    border-color: #0B5FB0;
+    color: #0B5FB0;
+  }
+  .filter-btn .badge {
+    background: #0B5FB0;
+    color: #FFF;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 2px;
+  }
+  .view-toggle {
+    margin-left: auto;
+    background: #FFF;
+    border: 1px solid #DDE3E9;
+    border-radius: 10px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #5A6470;
+  }
+
+  .count {
+    padding: 0 16px 8px;
+    font-size: 12px;
+    color: #5A6470;
+  }
+
+  /* ===== カード一覧（1列横長カード） ===== */
+  .list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 4px 12px 80px;
+    background: #F7F9FB;
+  }
+  .grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .card {
+    background: #FFF;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform 0.15s;
+    position: relative;
+  }
+  .card:active { transform: scale(0.99); }
+  .card-top {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+  }
+  .card-img {
+    width: 110px;
+    height: 110px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .heart {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255,255,255,0.92);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    z-index: 2;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .card-info {
+    flex: 1;
+    min-width: 0;
+    padding-right: 36px; /* heart の分 */
+  }
+  .card-row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .card-name {
+    font-size: 15px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  .card-size {
+    font-size: 11px;
+    color: #5A6470;
+    flex-shrink: 0;
+  }
+  .card-price {
+    margin-top: 8px;
+    color: #0B5FB0;
+  }
+  .card-price .num {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .card-price .unit {
+    font-size: 12px;
+    color: #5A6470;
+    font-weight: 500;
+    margin-left: 3px;
+  }
+  .card-meta {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #5A6470;
+  }
+  .card-footer {
+    background: #F7F9FB;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid #EEF1F4;
+  }
+  .avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #DDE3E9, #B8C2CC);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #FFF;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .farmer-name {
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 110px;
+  }
+  .rating {
+    font-size: 12px;
+    color: #5A6470;
+    flex-shrink: 0;
+  }
+  .rating .star { color: #F5A623; }
+  .gaqp-img-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: #2E7D32;
+    color: #FFF;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 10px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    letter-spacing: 0.2px;
+  }
+
+  /* ===== 2列モード ===== */
+  .grid.cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .cols-2 .card-top {
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+  }
+  .cols-2 .card-img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1/1;
+    border-radius: 0;
+  }
+  .cols-2 .card-info {
+    flex: none;
+    padding: 10px 12px 8px;
+    padding-right: 12px;
+  }
+  .cols-2 .heart { top: 8px; right: 8px; width: 28px; height: 28px; font-size: 13px; }
+  .cols-2 .card-name { font-size: 14px; }
+  .cols-2 .card-size { font-size: 10px; }
+  .cols-2 .card-price { margin-top: 6px; }
+  .cols-2 .card-price .num { font-size: 18px; }
+  .cols-2 .card-price .unit { font-size: 11px; }
+  .cols-2 .card-meta { font-size: 12px; margin-top: 4px; }
+  .cols-2 .card-footer { padding: 6px 10px; gap: 6px; }
+  .cols-2 .avatar { width: 22px; height: 22px; font-size: 10px; }
+  .cols-2 .farmer-name { font-size: 11px; max-width: 60px; }
+  .cols-2 .rating { font-size: 10px; }
+  .cols-2 .gaqp-img-badge { font-size: 9px; padding: 2px 6px; top: 8px; left: 8px; }
+  .cols-2 .img-fish::after { font-size: 56px; }
+  .view-toggle.active { background: #E8F1FA; border-color: #0B5FB0; color: #0B5FB0; }
+
+  /* ===== ボトムナビ ===== */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #FFF;
+    border-top: 1px solid #EEF1F4;
+    display: flex;
+    padding: 8px 0 18px;
+    z-index: 2;
+  }
+  .nav-item {
+    flex: 1;
+    text-align: center;
+    font-size: 10px;
+    color: #9AA3B0;
+  }
+  .nav-item .icon { font-size: 20px; display: block; margin-bottom: 2px; }
+  .nav-item.active { color: #0B5FB0; font-weight: 700; }
+
+  /* ===== ボトムシート ===== */
+  .backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    z-index: 10;
+  }
+  .backdrop.show { opacity: 1; pointer-events: auto; }
+
+  .sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #FFF;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 11;
+    max-height: 85%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.12);
+  }
+  .sheet.show { transform: translateY(0); }
+
+  .handle {
+    width: 40px;
+    height: 4px;
+    background: #DDE3E9;
+    border-radius: 2px;
+    margin: 10px auto 4px;
+    cursor: pointer;
+  }
+  .sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 20px 14px;
+    border-bottom: 1px solid #EEF1F4;
+  }
+  .sheet-title { font-size: 16px; font-weight: 700; }
+  .reset-btn {
+    background: none;
+    border: none;
+    color: #0B5FB0;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .sheet-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px 20px 20px;
+  }
+  .sheet-section { margin-bottom: 20px; }
+  .sheet-section h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1A1A1A;
+    margin: 0 0 10px;
+  }
+  .chip-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    background: #FFF;
+    border: 1.5px solid #DDE3E9;
+    border-radius: 16px;
+    padding: 7px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #1A1A1A;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .chip:hover { background: #F4F6F8; }
+  .chip.selected {
+    background: #E8F1FA;
+    border-color: #0B5FB0;
+    color: #0B5FB0;
+    font-weight: 600;
+  }
+  .chip.selected::before { content: "✓ "; }
+
+  .slider-wrap {
+    padding: 4px 4px 0;
+  }
+  .slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #5A6470;
+    margin-bottom: 6px;
+  }
+  .slider-value {
+    color: #0B5FB0;
+    font-weight: 700;
+  }
+  input[type="range"] {
+    width: 100%;
+    accent-color: #0B5FB0;
+  }
+
+  .sheet-footer {
+    flex: 0 0 auto;
+    padding: 12px 20px 24px;
+    background: #FFF;
+    border-top: 1px solid #EEF1F4;
+    display: flex;
+    gap: 10px;
+  }
+  .apply-btn {
+    flex: 1;
+    background: #0B5FB0;
+    color: #FFF;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .apply-btn:active { opacity: 0.85; }
+
+  /* ===== Sort ドロップダウン ===== */
+  .sort-popup {
+    position: absolute;
+    background: #FFF;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    padding: 8px;
+    min-width: 160px;
+    z-index: 12;
+    display: none;
+  }
+  .sort-popup.show { display: block; }
+  .sort-popup .opt {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #1A1A1A;
+  }
+  .sort-popup .opt:hover { background: #F4F6F8; }
+  .sort-popup .opt.active { background: #E8F1FA; color: #0B5FB0; font-weight: 700; }
+
+  /* 画像プレースホルダ（実際は画像URLで上書き） */
+  .img-1 { background: linear-gradient(135deg, #8B6F47, #5D4A30); }
+  .img-2 { background: linear-gradient(135deg, #2C5F7F, #1A3D52); }
+  .img-3 { background: linear-gradient(135deg, #B89F73, #8A7551); }
+  .img-4 { background: linear-gradient(135deg, #4A6B5C, #2E4A3C); }
+  .img-5 { background: linear-gradient(135deg, #7B6E5A, #5A5240); }
+  .img-6 { background: linear-gradient(135deg, #C49B6C, #8A6A45); }
+  .img-fish::after {
+    content: "🐟";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 36px;
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 魚一覧 V2 — ボトムシート デモ</h1>
+  <p><b>① 右上の「絞り込み」ボタン</b>をタップしてください</p>
+  <p>② 下からシートがスーッとせり上がります</p>
+  <p>③ チップで条件を選択 → 「この条件で表示」をタップ</p>
+  <p>④ ボタンに「⚙3」のように <b>適用数バッジ</b> が表示されます</p>
+</div>
+
+<div class="phone">
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">FISHLINK</div>
+      <div class="header-icons">
+        <div class="lang">🌐 日本語</div>
+        <div class="bell">🔔<span class="bell-dot">5</span></div>
+        <div>👤</div>
+      </div>
+    </div>
+    <div class="search">🔍 魚種・農家を探す</div>
+  </div>
+
+  <div class="page-title">魚一覧</div>
+
+  <div class="filter-row">
+    <button class="sort-btn" onclick="toggleSort(event)">
+      <span id="sort-label">距離が近い順</span>
+      <span>▼</span>
+    </button>
+    <button class="filter-btn" id="filter-btn" onclick="openSheet()">
+      <span>⚙</span>
+      <span>絞り込み</span>
+      <span class="badge" id="filter-badge" style="display:none">0</span>
+    </button>
+  </div>
+
+  <div class="sort-popup" id="sort-popup">
+    <div class="opt active" onclick="setSort('距離が近い順')">距離が近い順</div>
+    <div class="opt" onclick="setSort('評価が高い順')">評価が高い順</div>
+    <div class="opt" onclick="setSort('価格が安い順')">価格が安い順</div>
+    <div class="opt" onclick="setSort('新着順')">新着順</div>
+  </div>
+
+  <div class="count" id="count">12件の魚</div>
+
+  <!-- リスト -->
+  <div class="list">
+    <div class="grid cols-2">
+      <!-- カード1 -->
+      <div class="card">
+        <div class="heart">♡</div>
+        <div class="card-top">
+          <div class="card-img img-1 img-fish"><div class="gaqp-img-badge">✓ GAqP</div></div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">ヒレナマズ</div>
+              <div class="card-size">10 head/kg</div>
+            </div>
+            <div class="card-price">
+              <span class="num">5,775</span><span class="unit">KHR /kg</span>
+            </div>
+            <div class="card-meta">在庫 200kg · 5.5 km</div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="avatar">R</div>
+          <div class="farmer-name">Ryosuke4</div>
+          <div class="rating"><span class="star">★</span> 62% (37)</div>
+        </div>
+      </div>
+
+      <!-- カード2 -->
+      <div class="card">
+        <div class="heart">♡</div>
+        <div class="card-top">
+          <div class="card-img img-2 img-fish"><div class="gaqp-img-badge">✓ GAqP</div></div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">ライギョ</div>
+              <div class="card-size">1 head/kg</div>
+            </div>
+            <div class="card-price">
+              <span class="num">6,300</span><span class="unit">KHR /kg</span>
+            </div>
+            <div class="card-meta">在庫 40kg · 39.4 km</div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="avatar">S</div>
+          <div class="farmer-name">Sokkun</div>
+          <div class="rating"><span class="star">★</span> 100% (1)</div>
+        </div>
+      </div>
+
+      <!-- カード3 -->
+      <div class="card">
+        <div class="heart">♡</div>
+        <div class="card-top">
+          <div class="card-img img-3 img-fish"></div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">ヒレナマズ</div>
+              <div class="card-size">10 head/kg</div>
+            </div>
+            <div class="card-price">
+              <span class="num">6,300</span><span class="unit">KHR /kg</span>
+            </div>
+            <div class="card-meta">在庫 95kg · 10.9 km</div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="avatar">t</div>
+          <div class="farmer-name">test_farmer_intro</div>
+          <div class="rating"><span class="star">★</span> 100% (1)</div>
+        </div>
+      </div>
+
+      <!-- カード4 -->
+      <div class="card">
+        <div class="heart">♡</div>
+        <div class="card-top">
+          <div class="card-img img-4 img-fish"><div class="gaqp-img-badge">✓ GAqP</div></div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">5/26 MTG2</div>
+              <div class="card-size">6-8 head/kg</div>
+            </div>
+            <div class="card-price">
+              <span class="num">6,300</span><span class="unit">KHR /kg</span>
+            </div>
+            <div class="card-meta">在庫 50kg · 27.2 km</div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="avatar">テ</div>
+          <div class="farmer-name">テスト農家</div>
+          <div class="rating"><span class="star">★</span> 80% (5)</div>
+        </div>
+      </div>
+
+      <!-- カード5 -->
+      <div class="card">
+        <div class="heart">♡</div>
+        <div class="card-top">
+          <div class="card-img img-5 img-fish"><div class="gaqp-img-badge">✓ GAqP</div></div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">パンガシウス</div>
+              <div class="card-size">1-2 head/kg</div>
+            </div>
+            <div class="card-price">
+              <span class="num">6,300</span><span class="unit">KHR /kg</span>
+            </div>
+            <div class="card-meta">在庫 50kg · 5.5 km</div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="avatar">R</div>
+          <div class="farmer-name">Ryosuke4</div>
+          <div class="rating"><span class="star">★</span> 62% (37)</div>
+        </div>
+      </div>
+
+      <!-- カード6 -->
+      <div class="card">
+        <div class="heart">♡</div>
+        <div class="card-top">
+          <div class="card-img img-6 img-fish"><div class="gaqp-img-badge">✓ GAqP</div></div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">ヒレナマズ</div>
+              <div class="card-size">6-8 head/kg</div>
+            </div>
+            <div class="card-price">
+              <span class="num">6,825</span><span class="unit">KHR /kg</span>
+            </div>
+            <div class="card-meta">在庫 25kg · 5.5 km</div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="avatar">R</div>
+          <div class="farmer-name">Ryosuke4</div>
+          <div class="rating"><span class="star">★</span> 62% (37)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ボトムシート（オーバーレイ） -->
+  <div class="backdrop" id="backdrop" onclick="closeSheet()"></div>
+  <div class="sheet" id="sheet">
+    <div class="handle" onclick="closeSheet()"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">絞り込み</div>
+      <button class="reset-btn" onclick="resetFilters()">リセット</button>
+    </div>
+    <div class="sheet-body">
+
+      <div class="sheet-section">
+        <h3>魚種</h3>
+        <div class="chip-group" data-group="species">
+          <div class="chip" onclick="toggleChip(this)">ライギョ</div>
+          <div class="chip" onclick="toggleChip(this)">ヒレナマズ</div>
+          <div class="chip" onclick="toggleChip(this)">レッドティラピア</div>
+          <div class="chip" onclick="toggleChip(this)">ナイルティラピア</div>
+          <div class="chip" onclick="toggleChip(this)">シルバーバーブ</div>
+          <div class="chip" onclick="toggleChip(this)">スポットパンガシウス</div>
+          <div class="chip" onclick="toggleChip(this)">パンガシウス</div>
+          <div class="chip" onclick="toggleChip(this)">ジャイアントスネークヘッド</div>
+          <div class="chip" onclick="toggleChip(this)">キノボリウオ</div>
+          <div class="chip" onclick="toggleChip(this)">カエル</div>
+        </div>
+      </div>
+
+      <div class="sheet-section">
+        <h3>地域</h3>
+        <div class="chip-group" data-group="region">
+          <div class="chip" onclick="toggleChip(this)">タケオ州</div>
+          <div class="chip" onclick="toggleChip(this)">プノンペン</div>
+          <div class="chip" onclick="toggleChip(this)">カンダル州</div>
+          <div class="chip" onclick="toggleChip(this)">バッタンバン州</div>
+        </div>
+      </div>
+
+      <div class="sheet-section">
+        <h3>価格帯（KHR/kg）</h3>
+        <div class="slider-wrap">
+          <div class="slider-labels">
+            <span>0</span>
+            <span class="slider-value" id="price-val">〜 上限なし</span>
+          </div>
+          <input type="range" min="0" max="10000" step="500" value="10000" oninput="updatePrice(this.value)">
+        </div>
+      </div>
+
+      <div class="sheet-section">
+        <h3>距離</h3>
+        <div class="slider-wrap">
+          <div class="slider-labels">
+            <span>0km</span>
+            <span class="slider-value" id="distance-val">上限なし</span>
+          </div>
+          <input type="range" min="0" max="100" step="5" value="100" oninput="updateDistance(this.value)">
+        </div>
+      </div>
+
+      <div class="sheet-section">
+        <h3>その他</h3>
+        <div class="chip-group" data-group="other">
+          <div class="chip" onclick="toggleChip(this)">♡ お気に入り</div>
+          <div class="chip" onclick="toggleChip(this)">⏱ 過去注文</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="sheet-footer">
+      <button class="apply-btn" onclick="applyFilters()">この条件で表示</button>
+    </div>
+  </div>
+
+  <!-- ボトムナビ -->
+  <div class="bottom-nav">
+    <div class="nav-item">
+      <div class="icon">🏠</div>
+      ホーム
+    </div>
+    <div class="nav-item active">
+      <div class="icon">🐟</div>
+      魚一覧
+    </div>
+    <div class="nav-item">
+      <div class="icon">🛒</div>
+      カート
+    </div>
+    <div class="nav-item">
+      <div class="icon">🚚</div>
+      注文状況
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function openSheet() {
+    document.getElementById('backdrop').classList.add('show');
+    document.getElementById('sheet').classList.add('show');
+    document.getElementById('sort-popup').classList.remove('show');
+  }
+  function closeSheet() {
+    document.getElementById('backdrop').classList.remove('show');
+    document.getElementById('sheet').classList.remove('show');
+  }
+  function toggleChip(el) {
+    el.classList.toggle('selected');
+  }
+  function resetFilters() {
+    document.querySelectorAll('.chip.selected').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('input[type="range"]').forEach(r => r.value = r.max);
+    document.getElementById('price-val').textContent = '〜 上限なし';
+    document.getElementById('distance-val').textContent = '上限なし';
+  }
+  function applyFilters() {
+    const selected = document.querySelectorAll('.chip.selected').length;
+    const priceRange = document.querySelector('input[type="range"]').value;
+    const sliders = document.querySelectorAll('input[type="range"]');
+    let extra = 0;
+    sliders.forEach(s => { if (s.value < s.max) extra++; });
+    const count = selected + extra;
+    const badge = document.getElementById('filter-badge');
+    const btn = document.getElementById('filter-btn');
+    if (count > 0) {
+      badge.textContent = count;
+      badge.style.display = 'inline-block';
+      btn.classList.add('active');
+    } else {
+      badge.style.display = 'none';
+      btn.classList.remove('active');
+    }
+    // 件数ダミー更新
+    const newCount = Math.max(1, 12 - count * 2);
+    document.getElementById('count').textContent = `${newCount}件の魚`;
+    closeSheet();
+  }
+  function updatePrice(val) {
+    const el = document.getElementById('price-val');
+    el.textContent = val == 10000 ? '〜 上限なし' : `〜 ${parseInt(val).toLocaleString()} KHR`;
+  }
+  function updateDistance(val) {
+    const el = document.getElementById('distance-val');
+    el.textContent = val == 100 ? '上限なし' : `${val}km 以内`;
+  }
+  function toggleSort(e) {
+    e.stopPropagation();
+    const p = document.getElementById('sort-popup');
+    p.classList.toggle('show');
+    // 位置調整
+    const btn = e.currentTarget.getBoundingClientRect();
+    const phone = document.querySelector('.phone').getBoundingClientRect();
+    p.style.top = (btn.bottom - phone.top + 4) + 'px';
+    p.style.left = (btn.left - phone.left) + 'px';
+  }
+  function setSort(label) {
+    document.getElementById('sort-label').textContent = label;
+    document.querySelectorAll('.sort-popup .opt').forEach(o => o.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('sort-popup').classList.remove('show');
+  }
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.sort-btn') && !e.target.closest('.sort-popup')) {
+      document.getElementById('sort-popup').classList.remove('show');
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -212,7 +212,12 @@ self.addEventListener('notificationclick', (event) => {
 //   消える環境差を回避）
 // 5/27 #99 修正2: 「もっと見る」を location.reload から renderQA() 即時再描画に変更
 //   （expandedThreads がメモリ Set なので reload で消えていた）
-const CACHE_NAME = 'fishlink-v111';
+// 5/30 #102/#103: Home / 魚一覧 デザインリニューアル → v112
+//   - dashboard.html（#102 5セクション構成・注文ステッパー・横スクロール棚）刷新
+//   - fish-list.html（#103 2列グリッド・絞り込みボトムシート・ソートDD・検索サジェスト・売切れ末尾固定・戻り時状態保持）刷新
+//   - locales 3言語に home.* / fishlist.* 名前空間を追加 → PRECACHE 再取得のため版番号バンプ
+//   - 色は既存DS（css/style.css）に準拠、寸法はモック正本。構成/状態/遷移は spec 遵守
+const CACHE_NAME = 'fishlink-v112';
 
 const PRECACHE_URLS = [
     '/',

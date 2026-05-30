@@ -31,7 +31,15 @@
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/work/FishLink/locales/ja.json','utf8'\\)\\); console.log\\('ja.json OK'\\)\")",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/work/FishLink/locales/en.json','utf8'\\)\\); console.log\\('en.json OK'\\)\")",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/work/FishLink/locales/km.json','utf8'\\)\\); console.log\\('km.json OK'\\)\")",
-      "Bash(node -e \"const fs=require\\('fs'\\);const c=fs.readFileSync\\('c:/work/FishLink/pages/restaurant/comments.html','utf8'\\);const m=c.match\\(/<script type=\\\\\"module\\\\\">\\([\\\\s\\\\S]*?\\)<\\\\/script>/\\);if\\(!m\\){console.log\\('no script'\\);process.exit\\(1\\)}try{new Function\\(m[1]\\);console.log\\('script syntax OK'\\)}catch\\(e\\){console.log\\('SYNTAX ERROR:',e.message\\)}\")"
+      "Bash(node -e \"const fs=require\\('fs'\\);const c=fs.readFileSync\\('c:/work/FishLink/pages/restaurant/comments.html','utf8'\\);const m=c.match\\(/<script type=\\\\\"module\\\\\">\\([\\\\s\\\\S]*?\\)<\\\\/script>/\\);if\\(!m\\){console.log\\('no script'\\);process.exit\\(1\\)}try{new Function\\(m[1]\\);console.log\\('script syntax OK'\\)}catch\\(e\\){console.log\\('SYNTAX ERROR:',e.message\\)}\")",
+      "Bash(git check-ignore *)",
+      "PowerShell(\"===CSS===\")",
+      "PowerShell(\"===JS===\")",
+      "PowerShell(\"OK-PS\")",
+      "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\); console.log\\('\\\\''OK'\\\\'', '\\\\''__TRACKED_VAR__'\\\\''\\)')",
+      "Bash(echo 'FAIL __TRACKED_VAR__')",
+      "Bash(node -e 'console.log\\(\"JSON ja\", !!JSON.parse\\(require\\(\"fs\"\\).readFileSync\\(\"locales/ja.json\",\"utf8\"\\)\\).home.sectionOrders\\); console.log\\(\"JSON en\", !!JSON.parse\\(require\\(\"fs\"\\).readFileSync\\(\"locales/en.json\",\"utf8\"\\)\\).fishlist.filter\\); console.log\\(\"JSON km\", !!JSON.parse\\(require\\(\"fs\"\\).readFileSync\\(\"locales/km.json\",\"utf8\"\\)\\).home.viewFarmer\\);')",
+      "Bash(node -e 'const c=require\\(\"fs\"\\).readFileSync\\(\"pages/restaurant/fish-list.html\",\"utf8\"\\); console.log\\(\"len\",c.length\\); console.log\\(\"has #103 marker:\", c.includes\\(\"#103\"\\)\\); console.log\\(\"has fl-grid:\", c.includes\\(\"fl-grid\"\\)\\); console.log\\(\"has fl-sheet:\", c.includes\\(\"filter-sheet\"\\)\\);')"
     ]
   }
 }

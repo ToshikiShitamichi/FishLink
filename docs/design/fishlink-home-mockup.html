@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK Home</title>
+<style>
+  :root{
+    --blue:#0B6FB8;        /* primary */
+    --blue-deep:#075A95;
+    --ink:#1A2733;
+    --sub:#6B7A88;
+    --line:#E6EBEF;
+    --bg:#F4F7F9;
+    --green:#1FA463;       /* GAqP */
+    --amber:#F0A500;       /* rating star */
+    --danger:#E5484D;      /* 辞退・警告 */
+    --card:#FFFFFF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+    background:var(--bg); color:var(--ink);
+    display:flex; justify-content:center;
+  }
+  .phone{
+    width:390px; min-height:100vh; background:var(--bg);
+    position:relative; padding-bottom:78px;
+  }
+
+  /* ---------- Header ---------- */
+  .header{
+    position:sticky; top:0; z-index:30; background:#fff;
+    display:flex; align-items:center; gap:8px;
+    padding:12px 14px; border-bottom:1px solid var(--line);
+  }
+  .logo{display:flex; align-items:center; gap:6px; font-weight:800; font-size:20px; color:var(--blue); letter-spacing:.3px;}
+  .logo svg{width:24px;height:24px;}
+  .header .spacer{flex:1;}
+  .lang{
+    display:flex; align-items:center; gap:5px;
+    border:1.5px solid var(--green); color:var(--green);
+    border-radius:999px; padding:5px 12px; font-size:13px; font-weight:700;
+  }
+  .icon-btn{position:relative; width:30px;height:30px; display:flex;align-items:center;justify-content:center; color:var(--ink); font-size:19px;}
+  .badge-dot{
+    position:absolute; top:-3px; right:-4px; background:#E5484D; color:#fff;
+    font-size:10px; font-weight:700; min-width:16px;height:16px; border-radius:999px;
+    display:flex;align-items:center;justify-content:center; padding:0 3px;
+  }
+
+  /* ---------- Search ---------- */
+  .search-wrap{padding:12px 14px 4px;}
+  .search{
+    display:flex; align-items:center; gap:8px;
+    background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:11px 14px; color:var(--sub); font-size:14px;
+  }
+
+  /* ---------- Section ---------- */
+  .section{margin-top:18px;}
+  .section-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 14px 10px;
+  }
+  .section-title{display:flex; align-items:center; gap:7px; font-size:16px; font-weight:800;}
+  .section-title .ic{color:var(--blue); font-size:17px;}
+  .more{color:var(--blue); font-size:13px; font-weight:700; display:flex; align-items:center; gap:2px;}
+
+  .hscroll{
+    display:flex; gap:12px; overflow-x:auto; padding:2px 14px 4px;
+    scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
+  }
+  .hscroll::-webkit-scrollbar{display:none;}
+
+  /* ---------- 進行中の注文 ---------- */
+  .order-card{
+    scroll-snap-align:start; flex:0 0 300px; background:#fff;
+    border:1px solid var(--line); border-radius:var(--radius); padding:14px;
+  }
+  .order-top{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  .order-thumb{width:44px;height:44px;border-radius:10px;background:#E3EEF6;display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .order-name{font-weight:800; font-size:14px;}
+  .order-name .sz-inline{font-weight:600; font-size:12px; color:var(--sub);}
+  .order-sub{font-size:12px; color:var(--sub); margin-top:2px;}
+  .order-amt{margin-left:auto; text-align:right;}
+  .order-amt b{color:var(--blue); font-size:15px; font-weight:800;}
+  .stepper{display:flex; align-items:center; margin:4px 2px 8px;}
+  .step{flex:1; display:flex; flex-direction:column; align-items:center; position:relative;}
+  .step .dot{width:14px;height:14px;border-radius:50%;background:#D7DEE4; border:2px solid #D7DEE4; z-index:2;}
+  .step.done .dot{background:var(--green); border-color:var(--green);}
+  .step.current .dot{background:#fff; border-color:var(--blue); box-shadow:0 0 0 3px rgba(11,111,184,.18);}
+  .step .lb{font-size:10px; color:var(--sub); margin-top:5px; white-space:nowrap;}
+  .step.done .lb,.step.current .lb{color:var(--ink); font-weight:700;}
+  .step .bar{position:absolute; top:6px; left:-50%; width:100%; height:2px; background:#D7DEE4; z-index:1;}
+  .step.done .bar,.step.current .bar{background:var(--green);}
+  .step:first-child .bar{display:none;}
+  .eta{font-size:12px; color:var(--ink); background:#F0F6FB; border-radius:8px; padding:7px 10px; display:flex; align-items:center; gap:6px;}
+  .eta b{color:var(--blue-deep);}
+  /* 辞退状態 */
+  .order-card.declined{border-color:#F3C9C9;}
+  .step.declined .dot{background:var(--danger); border-color:var(--danger); position:relative;}
+  .step.declined .dot::after{content:"✕"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:9px; font-weight:900; line-height:1;}
+  .step.declined .lb{color:var(--danger); font-weight:700;}
+  .order-alert{font-size:12px; color:var(--danger); background:#FCEBEB; border-radius:8px; padding:7px 10px; display:flex; align-items:center; gap:6px; margin-bottom:8px; line-height:1.35;}
+  .btn-find{width:100%; background:var(--blue); color:#fff; border:none; border-radius:10px; padding:11px; font-size:13px; font-weight:700; cursor:pointer;}
+
+  /* ---------- いつもの魚 (species tiles) ---------- */
+  .tiles{display:flex; gap:14px; overflow-x:auto; padding:2px 14px 4px;}
+  .tiles::-webkit-scrollbar{display:none;}
+  .tile{flex:0 0 auto; width:66px; display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .tile .circle{
+    width:66px;height:66px;border-radius:50%; background:#DCEAF4;
+    display:flex;align-items:center;justify-content:center; font-size:30px;
+    border:1px solid #CFE0EC;
+  }
+  .tile .nm{font-size:11px; color:var(--ink); text-align:center; line-height:1.25; font-weight:600;}
+  .tile .stk{font-size:10px; color:var(--green); font-weight:700;}
+
+  /* ---------- 商品カード (FIX) ---------- */
+  .pcard{
+    scroll-snap-align:start; flex:0 0 220px; background:var(--card);
+    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+  }
+  .pcard .imgwrap{position:relative; width:100%; height:130px; background:#E3EEF6; display:flex;align-items:center;justify-content:center; font-size:34px; color:#9DBED4;}
+  .gaqp{
+    position:absolute; top:8px; left:8px; background:var(--green); color:#fff;
+    font-size:10px; font-weight:800; padding:3px 7px; border-radius:6px; letter-spacing:.3px;
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
+  }
+  .pcard .body{padding:10px 11px 0;}
+  .pcard .nm{font-size:14px; font-weight:700; line-height:1.3;}
+  .pcard .sz{font-size:12px; color:var(--sub); margin-top:2px;}
+  .pcard .price{margin-top:7px; display:flex; align-items:baseline; gap:4px;}
+  .pcard .price b{font-size:22px; font-weight:800; color:var(--blue); line-height:1;}
+  .pcard .price span{font-size:12px; color:var(--sub); font-weight:600;}
+  .pcard .meta{display:flex; align-items:center; gap:10px; font-size:12px; color:var(--sub); margin-top:7px;}
+  .pcard .meta .d{display:flex; align-items:center; gap:3px;}
+  .farmer{
+    display:flex; align-items:center; gap:8px; margin-top:10px;
+    border-top:1px solid var(--line); padding:9px 11px; background:#FAFCFD;
+  }
+  .farmer .av{width:26px;height:26px;border-radius:50%;background:#CFE0EC;display:flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 auto;}
+  .farmer .fn{font-size:12px; font-weight:700; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .farmer .fp{font-size:10px; color:var(--sub);}
+  .farmer .rt{margin-left:auto; font-size:11px; color:var(--amber); font-weight:700; display:flex; align-items:center; gap:2px; white-space:nowrap;}
+  .farmer .rt span{color:var(--sub); font-weight:600;}
+
+  /* ---------- 農家カード ---------- */
+  .fcard{
+    scroll-snap-align:start; flex:0 0 240px; background:#fff;
+    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+  }
+  .fcard .cover{position:relative; height:96px; background:linear-gradient(135deg,#CFE0EC,#E3EEF6); display:flex;align-items:center;justify-content:center;font-size:30px;color:#7FA6C2;}
+  .fcard .fbody{padding:34px 13px 13px; position:relative;}
+  .fcard .favatar{
+    position:absolute; top:-24px; left:13px; width:48px;height:48px;border-radius:50%;
+    background:#fff; border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.12);
+    display:flex;align-items:center;justify-content:center;font-size:22px;
+  }
+  .fcard .fname{font-size:15px; font-weight:800;}
+  .fcard .floc{font-size:12px; color:var(--sub); margin-top:3px;}
+  .fcard .frate{font-size:12px; margin-top:2px; color:var(--sub);}
+  .fcard .frate .star{color:var(--amber); font-weight:700;}
+  .fcard .tags{display:flex; flex-wrap:wrap; gap:5px; margin-top:10px;}
+  .fcard .tag{font-size:11px; background:#EEF4F8; color:var(--blue-deep); padding:3px 8px; border-radius:6px; font-weight:600;}
+  .fcard .fbtn{margin-top:12px; text-align:center; border:1.5px solid var(--blue); color:var(--blue); border-radius:10px; padding:9px; font-size:13px; font-weight:700;}
+
+  /* ---------- Bottom nav ---------- */
+  .nav{
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:390px; background:#fff; border-top:1px solid var(--line);
+    display:flex; padding:8px 0 12px;
+  }
+  .nav a{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; color:var(--sub); text-decoration:none; font-weight:600;}
+  .nav a.active{color:var(--blue);}
+  .nav .ni{font-size:21px;}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 12c3-5 8-6 12-6 3 0 6 2 8 6-2 4-5 6-8 6-4 0-9-1-12-6zm14-2.2a1.3 1.3 0 100 2.6 1.3 1.3 0 000-2.6z"/></svg>
+      FISHLINK
+    </div>
+    <div class="spacer"></div>
+    <div class="lang">🌐 日本語</div>
+    <div class="icon-btn">🔔<span class="badge-dot">5</span></div>
+    <div class="icon-btn">✓✓</div>
+    <div class="icon-btn">👤</div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <div class="search">🔍 魚種・農家を探す</div>
+  </div>
+
+  <!-- 1. 進行中の注文 -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title"><span class="ic">🚚</span>進行中の注文</div>
+      <div class="more">注文状況 ›</div>
+    </div>
+    <div class="hscroll">
+      <!-- 辞退カードは常に先頭固定（対処が必要なため最優先） -->
+      <div class="order-card declined">
+        <div class="order-top">
+          <div class="order-thumb">🐍</div>
+          <div>
+            <div class="order-name">ジャイアントスネークヘッド <span class="sz-inline">3 head/kg</span></div>
+            <div class="order-sub">メコン養殖 ・ 30kg</div>
+          </div>
+          <div class="order-amt"><b>282,000</b><div class="order-sub">KHR</div></div>
+        </div>
+        <div class="stepper">
+          <div class="step done"><span class="bar"></span><span class="dot"></span><span class="lb">注文済</span></div>
+          <div class="step declined"><span class="bar"></span><span class="dot"></span><span class="lb">辞退</span></div>
+          <div class="step"><span class="bar"></span><span class="dot"></span><span class="lb">出荷</span></div>
+          <div class="step"><span class="bar"></span><span class="dot"></span><span class="lb">配達中</span></div>
+          <div class="step"><span class="bar"></span><span class="dot"></span><span class="lb">完了</span></div>
+        </div>
+        <div class="order-alert">⚠️ メコン養殖が在庫切れで辞退しました</div>
+        <button class="btn-find">他の農家を探す →</button>
+      </div>
+      <div class="order-card">
+        <div class="order-top">
+          <div class="order-thumb">🐟</div>
+          <div>
+            <div class="order-name">ナイルティラピア <span class="sz-inline">6-8 head/kg</span></div>
+            <div class="order-sub">サンサン養殖場 ・ 80kg</div>
+          </div>
+          <div class="order-amt"><b>504,000</b><div class="order-sub">KHR</div></div>
+        </div>
+        <div class="stepper">
+          <div class="step done"><span class="bar"></span><span class="dot"></span><span class="lb">注文済</span></div>
+          <div class="step done"><span class="bar"></span><span class="dot"></span><span class="lb">農家確認中</span></div>
+          <div class="step done"><span class="bar"></span><span class="dot"></span><span class="lb">出荷</span></div>
+          <div class="step current"><span class="bar"></span><span class="dot"></span><span class="lb">配達中</span></div>
+          <div class="step"><span class="bar"></span><span class="dot"></span><span class="lb">完了</span></div>
+        </div>
+        <div class="eta">📦 本日 <b>16:00頃</b> 到着予定</div>
+      </div>
+      <div class="order-card">
+        <div class="order-top">
+          <div class="order-thumb">🐟</div>
+          <div>
+            <div class="order-name">ヒレナマズ <span class="sz-inline">10 head/kg</span></div>
+            <div class="order-sub">大星農場 ・ 50kg</div>
+          </div>
+          <div class="order-amt"><b>315,000</b><div class="order-sub">KHR</div></div>
+        </div>
+        <div class="stepper">
+          <div class="step done"><span class="bar"></span><span class="dot"></span><span class="lb">注文済</span></div>
+          <div class="step current"><span class="bar"></span><span class="dot"></span><span class="lb">農家確認中</span></div>
+          <div class="step"><span class="bar"></span><span class="dot"></span><span class="lb">出荷</span></div>
+          <div class="step"><span class="bar"></span><span class="dot"></span><span class="lb">配達中</span></div>
+          <div class="step"><span class="bar"></span><span class="dot"></span><span class="lb">完了</span></div>
+        </div>
+        <div class="eta">⏳ 農家の在庫確認を待っています</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. いつもの魚 -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title"><span class="ic">🐟</span>魚から探す</div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="circle">🐟</div><div class="nm">ライギョ</div></div>
+      <div class="tile"><div class="circle">🐡</div><div class="nm">ヒレナマズ</div></div>
+      <div class="tile"><div class="circle">🐠</div><div class="nm">レッド<br>ティラピア</div></div>
+      <div class="tile"><div class="circle">🐟</div><div class="nm">ナイル<br>ティラピア</div></div>
+      <div class="tile"><div class="circle">🐠</div><div class="nm">シルバー<br>バーブ</div></div>
+      <div class="tile"><div class="circle">🐟</div><div class="nm">スポット<br>パンガシウス</div></div>
+      <div class="tile"><div class="circle">🐡</div><div class="nm">パンガシウス</div></div>
+      <div class="tile"><div class="circle">🐍</div><div class="nm">ジャイアント<br>スネークヘッド</div></div>
+      <div class="tile"><div class="circle">🐟</div><div class="nm">キノボリウオ</div></div>
+      <div class="tile"><div class="circle">🐸</div><div class="nm">カエル</div></div>
+    </div>
+  </div>
+
+  <!-- 3. 近くの農家の魚 -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title"><span class="ic">📍</span>近くの農家の魚</div>
+      <div class="more">もっと見る ›</div>
+    </div>
+    <div class="hscroll">
+      <div class="pcard">
+        <div class="imgwrap">🐟<span class="gaqp">GAqP</span></div>
+        <div class="body">
+          <div class="nm">ナイルティラピア</div>
+          <div class="sz">6-8 head/kg</div>
+          <div class="price"><b>6,300</b><span>KHR/kg</span></div>
+          <div class="meta"><div class="d">在庫 120kg</div><div class="d">📍 4.2km</div></div>
+        </div>
+        <div class="farmer">
+          <div class="av">🧑‍🌾</div>
+          <div><div class="fn">サンサン養殖場</div></div>
+          <div class="rt">★96% <span>(32)</span></div>
+        </div>
+      </div>
+      <div class="pcard">
+        <div class="imgwrap">🐡<span class="gaqp">GAqP</span></div>
+        <div class="body">
+          <div class="nm">ヒレナマズ</div>
+          <div class="sz">10 head/kg</div>
+          <div class="price"><b>6,300</b><span>KHR/kg</span></div>
+          <div class="meta"><div class="d">在庫 95kg</div><div class="d">📍 5.1km</div></div>
+        </div>
+        <div class="farmer">
+          <div class="av">🧑‍🌾</div>
+          <div><div class="fn">大星農場</div></div>
+          <div class="rt">★92% <span>(18)</span></div>
+        </div>
+      </div>
+      <div class="pcard">
+        <div class="imgwrap">🐠<span class="gaqp">GAqP</span></div>
+        <div class="body">
+          <div class="nm">レッドティラピア</div>
+          <div class="sz">7 head/kg</div>
+          <div class="price"><b>7,100</b><span>KHR/kg</span></div>
+          <div class="meta"><div class="d">在庫 60kg</div><div class="d">📍 6.8km</div></div>
+        </div>
+        <div class="farmer">
+          <div class="av">🧑‍🌾</div>
+          <div><div class="fn">Sokkun Farm</div></div>
+          <div class="rt">★100% <span>(7)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 新着の魚 -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title"><span class="ic">✨</span>新着の魚</div>
+      <div class="more">もっと見る ›</div>
+    </div>
+    <div class="hscroll">
+      <div class="pcard">
+        <div class="imgwrap">🐟<span class="gaqp">GAqP</span></div>
+        <div class="body">
+          <div class="nm">シルバーバーブ</div>
+          <div class="sz">12 head/kg</div>
+          <div class="price"><b>5,800</b><span>KHR/kg</span></div>
+          <div class="meta"><div class="d">在庫 200kg</div><div class="d">📍 9.0km</div></div>
+        </div>
+        <div class="farmer">
+          <div class="av">🧑‍🌾</div>
+          <div><div class="fn">紹介農家1</div></div>
+          <div class="rt">★84% <span>(5)</span></div>
+        </div>
+      </div>
+      <div class="pcard">
+        <div class="imgwrap">🐍<span class="gaqp">GAqP</span></div>
+        <div class="body">
+          <div class="nm">ジャイアント<br>スネークヘッド</div>
+          <div class="sz">3 head/kg</div>
+          <div class="price"><b>9,400</b><span>KHR/kg</span></div>
+          <div class="meta"><div class="d">在庫 40kg</div><div class="d">📍 12km</div></div>
+        </div>
+        <div class="farmer">
+          <div class="av">🧑‍🌾</div>
+          <div><div class="fn">メコン養殖</div></div>
+          <div class="rt">★98% <span>(11)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. おすすめ農家 -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title"><span class="ic">⭐</span>おすすめ農家</div>
+      <div class="more">もっと見る ›</div>
+    </div>
+    <div class="hscroll">
+      <div class="fcard">
+        <div class="cover">🏞️<span class="gaqp">GAqP</span></div>
+        <div class="fbody">
+          <div class="favatar">🧑‍🌾</div>
+          <div class="fname">サンサン養殖場</div>
+          <div class="floc">プノンペン州 ・ 8.5km</div>
+          <div class="frate"><span class="star">★96%</span> (32)</div>
+          <div class="tags"><span class="tag">ティラピア</span><span class="tag">ナマズ</span><span class="tag">ライギョ</span></div>
+          <div class="fbtn">農家を見る →</div>
+        </div>
+      </div>
+      <div class="fcard">
+        <div class="cover">🏞️<span class="gaqp">GAqP</span></div>
+        <div class="fbody">
+          <div class="favatar">🧑‍🌾</div>
+          <div class="fname">メコン養殖</div>
+          <div class="floc">カンポット州 ・ 12km</div>
+          <div class="frate"><span class="star">★98%</span> (11)</div>
+          <div class="tags"><span class="tag">スネークヘッド</span><span class="tag">カエル</span></div>
+          <div class="fbtn">農家を見る →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="nav">
+    <a class="active"><span class="ni">🏠</span>ホーム</a>
+    <a><span class="ni">🐟</span>魚一覧</a>
+    <a><span class="ni">🛒</span>カート</a>
+    <a><span class="ni">🚚</span>注文状況</a>
+  </div>
+
+</div>
+</body>
+</html>

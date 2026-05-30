@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="km">
-
+<!-- 5/30 #103: 魚一覧画面 デザインリニューアル（docs/design/fishlink-list-mockup.html + fishlink-list-spec.md が正本）。
+     構成/データ/絞り込み・ソート/遷移=spec 遵守、色/装飾=既存DS（css/style.css）に準拠、寸法=モック正本（2列グリッド）。
+     既存の取得ロジック（ページング・道路距離・favorites・province-utils・render-cache）は維持。
+     UI を「ソートドロップダウン + 絞り込みボトムシート + 2列縦型カード + 検索サジェスト + 売切れ末尾固定 + 戻り時状態保持」に刷新。 -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,354 +19,220 @@
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
     <style>
         .nav-badge {
-            position: absolute;
-            top: 6px;
-            right: 50%;
+            position: absolute; top: 6px; right: 50%;
             transform: translateX(18px);
-            background: #ef4444;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
+            background: #ef4444; width: 10px; height: 10px; border-radius: 50%;
         }
 
-        .market-header {
-            margin-bottom: 10px;
+        /* ── 検索バー ── */
+        .fl-search-wrap { position: relative; margin: 0 0 4px; }
+        .fl-search {
+            display: flex; align-items: center; gap: 8px;
+            background: #f1f5f9; border-radius: 999px; padding: 10px 16px;
         }
-
-        .market-header__title {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--color-text);
+        .fl-search input {
+            flex: 1; border: none; background: transparent; outline: none;
+            font-size: 14px; font-family: inherit; color: var(--color-text);
         }
-
-        .market-header__sub {
-            font-size: 12px;
-            color: var(--color-text-sub);
-            margin-top: 2px;
+        .fl-search .material-symbols-outlined { color: var(--color-text-sub); }
+        .fl-search__clear {
+            border: none; background: transparent; cursor: pointer; padding: 0;
+            color: var(--color-text-sub); display: none;
         }
-
-        .chip-section {
-            margin-bottom: 10px;
+        .fl-search__clear.show { display: inline-flex; }
+        .fl-suggest {
+            display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+            background: var(--color-surface); border: 1px solid var(--color-border);
+            border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+            z-index: 40; max-height: 50vh; overflow-y: auto; padding: 4px 0;
         }
-
-        .chip-label {
-            font-size: 11px;
-            color: var(--color-text-sub);
-            font-weight: 600;
-            margin-bottom: 6px;
+        .fl-suggest.show { display: block; }
+        .fl-suggest__item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; font-size: 14px; cursor: pointer; color: var(--color-text);
         }
+        .fl-suggest__item:hover { background: #f1f5f9; }
+        .fl-suggest__item .material-symbols-outlined { font-size: 18px; color: var(--color-text-sub); }
+        .fl-suggest__type { margin-left: auto; font-size: 11px; color: var(--color-text-sub); }
 
-        .chip-row {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 2px;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-
-        .chip-row::-webkit-scrollbar {
-            display: none;
-        }
-
-        .chip {
-            flex-shrink: 0;
-            border: 1px solid var(--color-border);
-            background: var(--color-surface);
-            color: var(--color-text);
-            padding: 7px 14px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
+        /* ── タイトル・ソート/絞り込みバー ── */
+        .fl-title { font-size: 20px; font-weight: 700; padding: 14px 0 8px; }
+        .fl-bar { display: flex; gap: 8px; align-items: center; padding-bottom: 8px; position: relative; }
+        .fl-sort-btn, .fl-filter-btn {
+            flex: 0 0 auto; background: var(--color-surface);
+            border: 1px solid var(--color-border); border-radius: 20px;
+            padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 4px; color: var(--color-text);
             font-family: inherit;
-            transition: background .12s, color .12s, border-color .12s;
         }
-
-        .chip--sort.active {
-            background: #0f172a;
-            color: #fff;
-            border-color: #0f172a;
+        .fl-sort-btn:active, .fl-filter-btn:active { background: #f1f5f9; transform: scale(.97); }
+        .fl-sort-btn .material-symbols-outlined, .fl-filter-btn .material-symbols-outlined { font-size: 16px; }
+        .fl-filter-btn.active { background: var(--color-primary-lt); border-color: var(--color-primary); color: var(--color-primary); }
+        .fl-filter-btn__badge {
+            background: var(--color-primary); color: #fff; font-size: 10px; font-weight: 700;
+            padding: 1px 6px; border-radius: 8px; margin-left: 2px; display: none;
         }
+        .fl-filter-btn__badge.show { display: inline-block; }
 
-        .chip--filter.active {
-            background: #ecfdf5;
-            color: #047857;
-            border-color: #a7f3d0;
+        .fl-sort-pop {
+            display: none; position: absolute; top: calc(100% + 2px); left: 0;
+            background: var(--color-surface); border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .15); padding: 8px; min-width: 170px; z-index: 35;
         }
+        .fl-sort-pop.show { display: block; }
+        .fl-sort-pop__opt { padding: 10px 12px; font-size: 13px; border-radius: 8px; cursor: pointer; color: var(--color-text); }
+        .fl-sort-pop__opt:hover { background: #f1f5f9; }
+        .fl-sort-pop__opt.active { background: var(--color-primary-lt); color: var(--color-primary); font-weight: 700; }
 
-        /* 5/9 #59: 1列・横長リストレイアウト（画像左・情報右） */
-        .fish-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
+        .fl-count { font-size: 12px; color: var(--color-text-sub); padding-bottom: 8px; }
+
+        /* ── 2列グリッド（縦型カード・Homeとカード言語統一） ── */
+        .fl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .fl-card-wrap { position: relative; min-width: 0; }
+        .fl-card {
+            display: flex; flex-direction: column; height: 100%;
+            background: var(--color-surface); border: 1px solid var(--color-border);
+            border-radius: var(--radius); overflow: hidden;
+            text-decoration: none; color: inherit; transition: box-shadow .15s;
         }
-
-        .fish-grid > div { min-width: 0; position: relative; }
-
-        /* 5/11 #63: カード高さを固定し、写真は object-fit:cover でトリミング統一 */
-        .fish-grid-card {
-            border-radius: 16px;
-            border: 1px solid var(--color-border);
-            background: var(--color-surface);
-            overflow: hidden;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
-            cursor: pointer;
-            transition: box-shadow .15s;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            flex-direction: row;
-            min-width: 0;
-            height: 140px;
+        .fl-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, .1); }
+        .fl-card__img {
+            position: relative; width: 100%; aspect-ratio: 1/1;
+            background: var(--color-primary-lt);
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
         }
-
-        .fish-grid-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+        .fl-card__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .fl-card__img .material-symbols-outlined { font-size: 40px; color: #9dbed4; }
+        .gaqp-badge {
+            position: absolute; top: 8px; left: 8px;
+            background: var(--color-primary); color: #fff;
+            font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 8px;
+            display: inline-flex; align-items: center; gap: 2px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .15); white-space: nowrap; z-index: 2;
         }
-
-        /* 画像：固定幅 140×140 で正方形にトリミング（縦写真・横写真とも揃う） */
-        .fish-grid-card__img {
-            position: relative;
-            width: 140px;
-            height: 100%;
-            flex-shrink: 0;
-            background: linear-gradient(135deg, #d6d3d1, #f5f5f4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+        .gaqp-badge .material-symbols-outlined { font-size: 11px; color: #fff; }
+        .fl-heart {
+            position: absolute; top: 8px; right: 8px; z-index: 3;
+            width: 30px; height: 30px; border-radius: 50%;
+            background: rgba(255, 255, 255, .92); color: #94a3b8;
+            border: none; cursor: pointer; box-shadow: 0 1px 3px rgba(0, 0, 0, .12);
+            display: flex; align-items: center; justify-content: center; font-family: inherit;
         }
-
-        .fish-grid-card__img img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .fish-grid-card__img-placeholder {
-            font-size: 40px;
-        }
-
-        .fish-grid-card__price {
-            position: absolute;
-            left: 6px;
-            top: 6px;
-            background: rgba(0, 0, 0, .75);
-            color: #fff;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 20px;
-        }
-
-        .fish-grid-card__stock {
-            position: absolute;
-            right: 6px;
-            bottom: 6px;
-            background: rgba(255, 255, 255, .9);
-            color: #16a34a;
-            font-size: 10px;
-            font-weight: 600;
-            padding: 2px 7px;
-            border-radius: 20px;
-        }
-
-        /* 5/11 #66: カードのカートボタン廃止。右余白はお気に入りボタン用のみ */
-        .fish-grid-card__body {
-            flex: 1;
-            min-width: 0;
-            padding: 10px 12px 10px 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            overflow: hidden;
-        }
-
-        .fish-grid-card__name {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--color-text);
-            display: -webkit-box;
-            -webkit-line-clamp: 1;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            line-height: 1.3;
-            padding-right: 32px; /* お気に入りボタン用 */
-        }
-
-        .fish-grid-card__size {
-            font-size: 12px;
-            color: var(--color-text-sub);
-        }
-
-        .fish-grid-card__place {
-            font-size: 12px;
-            color: var(--color-text-sub);
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            min-width: 0;
-        }
-        .fish-grid-card__place > span:not(.material-symbols-outlined) {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            min-width: 0;
-        }
-
-        .fish-grid-card__cart-btn {
-            position: absolute;
-            right: 8px; bottom: 8px;
-            width: 34px; height: 34px;
-            border-radius: 50%;
-            background: var(--color-primary);
-            color: #fff;
-            border: none;
+        .fl-heart .material-symbols-outlined { font-size: 18px; font-variation-settings: 'FILL' 0; }
+        .fl-heart.active { color: #ef4444; }
+        .fl-heart.active .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+        .fl-soldout {
+            position: absolute; inset: 0; z-index: 2;
+            background: rgba(255, 255, 255, .55);
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,.2);
-            font-family: inherit;
+            font-size: 13px; font-weight: 800; color: var(--color-text-sub);
         }
-        .fish-grid-card__cart-btn:hover { background: var(--color-primary-dk); }
-        .fish-grid-card__cart-btn .material-symbols-outlined { font-size: 18px; }
-        .fish-grid-card__cart-btn.added { background: #047857; }
-
-        .fish-grid-card__fav-btn {
-            position: absolute;
-            right: 6px; top: 6px;
-            width: 30px; height: 30px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.9);
-            color: #94a3b8;
-            border: none;
+        .fl-soldout span {
+            background: rgba(26, 26, 26, .72); color: #fff;
+            padding: 4px 12px; border-radius: 999px;
+        }
+        .fl-card__body { padding: 10px 12px 8px; flex: 1; min-width: 0; }
+        .fl-card__name {
+            font-size: 14px; font-weight: 700; color: var(--color-text); line-height: 1.3;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .fl-card__sz { font-size: 11px; color: var(--color-text-sub); margin-top: 2px; }
+        .fl-card__price { margin-top: 6px; display: flex; align-items: baseline; gap: 3px; }
+        .fl-card__price b { font-size: 18px; font-weight: 800; color: var(--color-primary); line-height: 1; }
+        .fl-card__price span { font-size: 11px; color: var(--color-text-sub); font-weight: 600; }
+        .fl-card__meta { font-size: 12px; color: var(--color-text-sub); margin-top: 5px; }
+        .fl-card__farmer {
+            display: flex; align-items: center; gap: 6px;
+            border-top: 1px solid var(--color-border); padding: 7px 10px; background: #fafcfd;
+            cursor: pointer; min-width: 0;
+        }
+        .fl-card__farmer:hover { background: #f1f5f9; }
+        .fl-card__avatar {
+            width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+            background: var(--color-primary-lt);
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,.15);
-            font-family: inherit;
-            z-index: 2;
         }
-        .fish-grid-card__fav-btn:hover { background: #fff; }
-        .fish-grid-card__fav-btn .material-symbols-outlined {
-            font-size: 18px;
-            font-variation-settings: 'FILL' 0, 'wght' 500;
+        .fl-card__avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .fl-card__avatar .material-symbols-outlined { font-size: 13px; color: #94a3b8; }
+        .fl-card__fn {
+            font-size: 11px; font-weight: 600; color: var(--color-text);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1;
         }
-        .fish-grid-card__fav-btn.active {
-            background: #fff;
-            color: #ef4444;
+        .fl-card__rt {
+            font-size: 10px; color: #f59e0b; font-weight: 700; flex-shrink: 0;
+            display: flex; align-items: center; gap: 1px; white-space: nowrap;
         }
-        .fish-grid-card__fav-btn.active .material-symbols-outlined {
-            font-variation-settings: 'FILL' 1, 'wght' 500;
-        }
-        .fish-grid-card__distance {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--color-text);
-            margin-top: 2px;
+        .fl-card__rt .material-symbols-outlined { font-size: 11px; color: #f59e0b; font-variation-settings: 'FILL' 1; }
+        .fl-card__rt span { color: var(--color-text-sub); font-weight: 600; }
+        /* 売切れ：グレーアウト（画像以外） */
+        .fl-card-wrap--out .fl-card__body, .fl-card-wrap--out .fl-card__farmer { opacity: .55; }
+
+        .fl-empty { grid-column: 1 / -1; text-align: center; padding: 56px 20px; color: var(--color-text-sub); }
+        .fl-empty .material-symbols-outlined { font-size: 48px; }
+        .fl-empty__text { font-size: 15px; margin: 12px 0 16px; }
+        .fl-empty__reset {
+            display: inline-block; border: 1.5px solid var(--color-primary); color: var(--color-primary);
+            background: transparent; border-radius: 999px; padding: 9px 20px;
+            font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
         }
 
-        /* 5/5 #1: 生産者情報（顔写真・名前・レビュー） */
-        /* 5/9 #59: 1列レイアウトでは body padding-right がカートボタンを避けるので margin-right 不要 */
-        /* 5/11 #64: タップで生産者ページへ遷移可能に */
-        .fish-grid-card__farmer {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 8px;
-            margin-top: auto;
-            background: #f8fafc;
-            border-radius: 10px;
-            border: 1px solid #e2e8f0;
-            min-width: 0;
-            cursor: pointer;
-            transition: background .12s;
+        /* ── ボトムシート ── */
+        .fl-backdrop {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, .5);
+            opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 200;
         }
-        .fish-grid-card__farmer:hover {
-            background: #f1f5f9;
+        .fl-backdrop.show { opacity: 1; pointer-events: auto; }
+        .fl-sheet {
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%);
+            width: 100%; max-width: 480px; background: var(--color-surface);
+            border-radius: 20px 20px 0 0; transition: transform .3s cubic-bezier(.4, 0, .2, 1);
+            z-index: 201; max-height: 85vh; display: flex; flex-direction: column;
+            box-shadow: 0 -8px 24px rgba(0, 0, 0, .12);
         }
-
-        .fish-grid-card__farmer-avatar {
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            background: #e2e8f0;
-            flex-shrink: 0;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .fl-sheet.show { transform: translateX(-50%) translateY(0); }
+        .fl-sheet__handle { width: 40px; height: 4px; background: var(--color-border); border-radius: 2px; margin: 10px auto 4px; cursor: pointer; }
+        .fl-sheet__head {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 20px 14px; border-bottom: 1px solid var(--color-border);
         }
-
-        .fish-grid-card__farmer-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        .fl-sheet__title { font-size: 16px; font-weight: 700; }
+        .fl-sheet__reset { background: none; border: none; color: var(--color-primary); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .fl-sheet__body { flex: 1 1 auto; overflow-y: auto; padding: 16px 20px 20px; }
+        .fl-sheet__sec { margin-bottom: 20px; }
+        .fl-sheet__sec h3 { font-size: 13px; font-weight: 700; color: var(--color-text); margin: 0 0 10px; }
+        .fl-chip-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .fl-chip {
+            background: var(--color-surface); border: 1.5px solid var(--color-border);
+            border-radius: 16px; padding: 7px 14px; font-size: 12px; cursor: pointer;
+            color: var(--color-text); user-select: none; font-family: inherit;
+            display: inline-flex; align-items: center; gap: 4px;
         }
-
-        .fish-grid-card__farmer-avatar .material-symbols-outlined {
-            font-size: 18px;
-            color: #94a3b8;
+        .fl-chip:hover { background: #f1f5f9; }
+        .fl-chip.selected { background: var(--color-primary-lt); border-color: var(--color-primary); color: var(--color-primary); font-weight: 600; }
+        .fl-chip.selected .fl-chip__check { display: inline; }
+        .fl-chip__check { display: none; font-size: 14px; }
+        .fl-slider-wrap { padding: 4px 2px 0; }
+        .fl-slider-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--color-text-sub); margin-bottom: 6px; }
+        .fl-slider-val { color: var(--color-primary); font-weight: 700; }
+        input[type="range"] { width: 100%; accent-color: var(--color-primary); }
+        .fl-sheet__foot { flex: 0 0 auto; padding: 12px 20px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--color-border); }
+        .fl-apply {
+            width: 100%; background: var(--color-primary); color: #fff; border: none;
+            border-radius: 12px; padding: 14px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
         }
-
-        .fish-grid-card__farmer-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .fish-grid-card__farmer-name {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--color-text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .fish-grid-card__farmer-rating {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            font-size: 11px;
-            color: var(--color-text-sub);
-            white-space: nowrap;
-        }
-
-        .fish-grid-card__farmer-rating .material-symbols-outlined {
-            font-size: 12px;
-            color: #f59e0b;
-            font-variation-settings: 'FILL' 1;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--color-text-sub);
-        }
-
-        .empty-state__icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-        }
-
-        .empty-state__text {
-            font-size: 15px;
-        }
+        .fl-apply:active { opacity: .9; }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer></script>
 </head>
 
 <body>
 
-    <div class="loading-overlay" id="loading">
-        <div class="spinner"></div>
-    </div>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
-    <div class="page" style="padding-bottom: 120px; max-width:480px; margin:0 auto;">
+    <div class="page" style="padding: 0; padding-bottom: 120px; max-width:480px; margin:0 auto;">
 
-        <!-- ヘッダー -->
-        <div class="page-header" style="align-items:center;">
+        <!-- ヘッダー（sticky） -->
+        <div class="page-header" style="align-items:center; padding:16px; margin-bottom:0; position:sticky; top:0; z-index:50; background:var(--color-surface); border-bottom:1px solid var(--color-border);">
             <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
@@ -398,10 +267,22 @@
             </div>
         </div>
 
-        <!-- 魚一覧ヘッダー -->
         <div style="padding: 0 16px;">
-            <!-- 特別割引キャンペーンバナー（管理者の campaignActive が true のとき表示） -->
-            <div id="campaign-banner" style="display:none; margin-bottom:12px; padding:12px 14px; border-radius:14px; background:linear-gradient(135deg, #f97316, #f59e0b); color:#fff; box-shadow:0 2px 8px rgba(249,115,22,.25);">
+
+            <!-- 検索バー -->
+            <div class="fl-search-wrap" style="padding-top:12px;">
+                <div class="fl-search">
+                    <span class="material-symbols-outlined">search</span>
+                    <input type="search" id="search-input" autocomplete="off" data-i18n="[placeholder]restaurant.searchPlaceholder">
+                    <button type="button" class="fl-search__clear" id="search-clear" aria-label="clear">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="fl-suggest" id="search-suggest"></div>
+            </div>
+
+            <!-- キャンペーンバナー -->
+            <div id="campaign-banner" style="display:none; margin-top:12px; padding:12px 14px; border-radius:14px; background:linear-gradient(135deg, #f97316, #f59e0b); color:#fff; box-shadow:0 2px 8px rgba(249,115,22,.25);">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span class="material-symbols-outlined" style="font-size:22px;">local_offer</span>
                     <div>
@@ -411,74 +292,119 @@
                 </div>
             </div>
 
-            <div class="market-header">
-                <div class="market-header__title" data-i18n="restaurant.title"></div>
-                <div class="market-header__sub" data-i18n="restaurant.subtitle"></div>
-            </div>
+            <!-- タイトル -->
+            <div class="fl-title" data-i18n="restaurant.title"></div>
 
-            <!-- 並び替えチップ -->
-            <div class="chip-section">
-                <div class="chip-label" data-i18n="restaurant.sort"></div>
-                <div class="chip-row" id="sort-chips">
-                    <button type="button" class="chip chip--sort active" data-value="distance" data-i18n="restaurant.sortDistance"></button>
-                    <!-- 5/13: 新ダッシュボードのソートと揃える（評価が高い順） -->
-                    <button type="button" class="chip chip--sort" data-value="rating" data-i18n="restaurant.sortRating"></button>
-                    <button type="button" class="chip chip--sort" data-value="price" data-i18n="restaurant.sortPrice"></button>
-                    <button type="button" class="chip chip--sort" data-value="newest" data-i18n="restaurant.sortNewest"></button>
+            <!-- ソート + 絞り込みバー -->
+            <div class="fl-bar">
+                <button type="button" class="fl-sort-btn" id="sort-btn">
+                    <span id="sort-label"></span>
+                    <span class="material-symbols-outlined">expand_more</span>
+                </button>
+                <button type="button" class="fl-filter-btn" id="filter-btn">
+                    <span class="material-symbols-outlined">tune</span>
+                    <span data-i18n="fishlist.filter"></span>
+                    <span class="fl-filter-btn__badge" id="filter-badge">0</span>
+                </button>
+                <div class="fl-sort-pop" id="sort-pop">
+                    <div class="fl-sort-pop__opt" data-value="distance" data-i18n="restaurant.sortDistance"></div>
+                    <div class="fl-sort-pop__opt" data-value="rating" data-i18n="restaurant.sortRating"></div>
+                    <div class="fl-sort-pop__opt" data-value="price" data-i18n="restaurant.sortPrice"></div>
+                    <div class="fl-sort-pop__opt" data-value="newest" data-i18n="restaurant.sortNewest"></div>
                 </div>
             </div>
 
-            <!-- 魚種フィルタチップ -->
-            <div class="chip-section">
-                <div class="chip-label" data-i18n="restaurant.filter"></div>
-                <div class="chip-row" id="filter-chips"></div>
-            </div>
+            <!-- 件数 -->
+            <div class="fl-count" id="count"></div>
 
-            <!-- 州フィルタチップ -->
-            <div class="chip-section">
-                <div class="chip-label" data-i18n="restaurant.filterProvince"></div>
-                <div class="chip-row" id="province-chips"></div>
-            </div>
-
-            <!-- 魚一覧グリッド -->
-            <div class="fish-grid" id="fish-grid"></div>
+            <!-- グリッド -->
+            <div class="fl-grid" id="fish-grid"></div>
 
             <div id="load-more-wrap" style="display:none; padding:16px 0; text-align:center;">
                 <button type="button" id="load-more-btn"
-                    style="padding:10px 20px; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); border-radius:999px; font-size:13px; font-weight:600; cursor:pointer;"
+                    style="padding:10px 24px; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit;"
                     data-i18n="restaurant.loadMore"></button>
             </div>
         </div>
 
     </div>
 
+    <!-- 絞り込みボトムシート -->
+    <div class="fl-backdrop" id="sheet-backdrop"></div>
+    <div class="fl-sheet" id="filter-sheet">
+        <div class="fl-sheet__handle" id="sheet-handle"></div>
+        <div class="fl-sheet__head">
+            <div class="fl-sheet__title" data-i18n="fishlist.filter"></div>
+            <button type="button" class="fl-sheet__reset" id="sheet-reset" data-i18n="fishlist.reset"></button>
+        </div>
+        <div class="fl-sheet__body">
+            <div class="fl-sheet__sec">
+                <h3 data-i18n="fishlist.filterSpecies"></h3>
+                <div class="fl-chip-group" id="sheet-species"></div>
+            </div>
+            <div class="fl-sheet__sec">
+                <h3 data-i18n="fishlist.filterRegion"></h3>
+                <div class="fl-chip-group" id="sheet-region"></div>
+            </div>
+            <div class="fl-sheet__sec">
+                <h3 data-i18n="fishlist.filterPrice"></h3>
+                <div class="fl-slider-wrap">
+                    <div class="fl-slider-labels">
+                        <span>0</span>
+                        <span class="fl-slider-val" id="price-val"></span>
+                    </div>
+                    <input type="range" id="price-range" min="0" max="10000" step="500" value="10000">
+                </div>
+            </div>
+            <div class="fl-sheet__sec">
+                <h3 data-i18n="fishlist.filterDistance"></h3>
+                <div class="fl-slider-wrap">
+                    <div class="fl-slider-labels">
+                        <span>0km</span>
+                        <span class="fl-slider-val" id="distance-val"></span>
+                    </div>
+                    <input type="range" id="distance-range" min="0" max="100" step="5" value="100">
+                </div>
+            </div>
+            <div class="fl-sheet__sec">
+                <h3 data-i18n="fishlist.filterOther"></h3>
+                <div class="fl-chip-group">
+                    <div class="fl-chip" id="chip-fav" data-act="toggle-other" data-key="fav">
+                        <span class="material-symbols-outlined" style="font-size:14px;">favorite</span>
+                        <span data-i18n="fishlist.favorite"></span>
+                    </div>
+                    <div class="fl-chip" id="chip-history" data-act="toggle-other" data-key="history">
+                        <span class="material-symbols-outlined" style="font-size:14px;">history</span>
+                        <span data-i18n="fishlist.pastOrders"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="fl-sheet__foot">
+            <button type="button" class="fl-apply" id="sheet-apply" data-i18n="fishlist.apply"></button>
+        </div>
+    </div>
+
     <!-- 下部ナビ -->
-    <nav class="bottom-nav" style="flex-direction:column; gap:0;">
-        <div id="market-footer" style="display:none; width:100%; padding:6px 16px; display:flex; justify-content:space-between; font-size:11px; color:var(--color-text-sub); border-bottom:1px solid var(--color-border);">
-            <span id="footer-count"></span>
-            <span data-i18n="restaurant.tapHint"></span>
-        </div>
-        <!-- 5/12 #74: 4タブ構成（ホーム / 魚一覧 / カート / 配送中） -->
-        <div style="display:flex; width:100%;">
-            <a href="/pages/restaurant/dashboard.html" class="bottom-nav__item">
-                <span class="bottom-nav__icon"><span class="material-symbols-outlined">storefront</span></span>
-                <span data-i18n="restaurant.navHome"></span>
-            </a>
-            <a href="/pages/restaurant/fish-list.html" class="bottom-nav__item active">
-                <span class="bottom-nav__icon"><img src="/images/role-fish.svg" alt=""></span>
-                <span data-i18n="restaurant.title"></span>
-            </a>
-            <a href="/pages/restaurant/cart.html" class="bottom-nav__item" style="position:relative;">
-                <span class="bottom-nav__icon"><span class="material-symbols-outlined">shopping_cart</span></span>
-                <span class="nav-badge" id="cart-badge" style="display:none;"></span>
-                <span data-i18n="cart.navCart"></span>
-            </a>
-            <a href="/pages/restaurant/orders.html" class="bottom-nav__item" style="position:relative;">
-                <span class="bottom-nav__icon"><span class="material-symbols-outlined">local_shipping</span></span>
-                <span class="nav-badge" id="order-badge" style="display:none;"></span>
-                <span data-i18n="delivery.myOrders"></span>
-            </a>
-        </div>
+    <nav class="bottom-nav">
+        <a href="/pages/restaurant/dashboard.html" class="bottom-nav__item">
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">storefront</span></span>
+            <span data-i18n="restaurant.navHome"></span>
+        </a>
+        <a href="/pages/restaurant/fish-list.html" class="bottom-nav__item active">
+            <span class="bottom-nav__icon"><img src="/images/role-fish.svg" alt=""></span>
+            <span data-i18n="restaurant.title"></span>
+        </a>
+        <a href="/pages/restaurant/cart.html" class="bottom-nav__item" style="position:relative;">
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">shopping_cart</span></span>
+            <span class="nav-badge" id="cart-badge" style="display:none;"></span>
+            <span data-i18n="cart.navCart"></span>
+        </a>
+        <a href="/pages/restaurant/orders.html" class="bottom-nav__item" style="position:relative;">
+            <span class="bottom-nav__icon"><span class="material-symbols-outlined">local_shipping</span></span>
+            <span class="nav-badge" id="order-badge" style="display:none;"></span>
+            <span data-i18n="delivery.myOrders"></span>
+        </a>
     </nav>
 
     <script type="module">
@@ -494,12 +420,9 @@
         import { subscribeCart } from '/js/cart.js';
         import { subscribeFavorites, toggleFavorite } from '/js/favorites.js';
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
-        import { normalizeProvince, formatProvince, formatDistrict } from '/js/province-utils.js';
-        // 5/23 #69 改善: メモリ画像キャッシュ（フラッシュ解消）
+        import { normalizeProvince, formatProvince } from '/js/province-utils.js';
         import { asCachedImgAttrs } from '/js/image-cache.js';
-        // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
         import { getCachedUser } from '/js/data-cache.js';
-        // 5/23 #69 Phase J: 画面描画状態の永続キャッシュ（stale-while-revalidate）
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
@@ -511,191 +434,121 @@
         initLangSelector();
         initHeaderPopovers();
 
-        // ログアウトはアカウントページ内に移動
-
-        // 並び替え・絞り込みの現在値
-        // 5/12 #74: 新ダッシュボードの「もっと見る」からの URL パラメータを受け取る
-        //   ?sort=distance|price|newest|rating (rating は今のところ distance にフォールバック)
-        //   ?fishType=<key> で魚種絞り込み（魚種カテゴリーからの遷移）
-        //   ?filter=history で過去注文した商品のみ（5/27: 実装）
-        //   ?q=<text> でフリーテキスト検索（今後実装、フックのみ）
-        const _params = new URLSearchParams(location.search);
-        const _sortParam = _params.get('sort');
-        const _fishTypeParam = _params.get('fishType');
-        const _filterParam = _params.get('filter');
-        let currentSort = (['distance','price','newest','rating'].includes(_sortParam) ? _sortParam : 'distance');
-        let currentFilter = _filterParam === 'history'
-            ? '__history'
-            : ((_fishTypeParam && _fishTypeParam !== '') ? _fishTypeParam : '');
-        let currentProvince = '';
-
-        // 5/27: 過去注文した listingId 集合（__history フィルタ用に lazy load）
-        let pastOrderedListingIds = null;  // Set or null（未ロード）
-        async function ensurePastOrderedIds() {
-            if (pastOrderedListingIds !== null) return pastOrderedListingIds;
-            const uid = window.currentUser?.uid;
-            if (!uid) { pastOrderedListingIds = new Set(); return pastOrderedListingIds; }
-            try {
-                const hq = query(
-                    collection(db, 'orders'),
-                    where('restaurantId', '==', uid),
-                    orderBy('createdAt', 'desc'),
-                    limit(100)
-                );
-                const snap = await getDocs(hq);
-                const ids = new Set();
-                snap.forEach(d => {
-                    const data = d.data();
-                    const items = Array.isArray(data.items) ? data.items : [];
-                    for (const it of items) if (it?.listingId) ids.add(it.listingId);
-                    if (data.listingId) ids.add(data.listingId);  // legacy
-                });
-                pastOrderedListingIds = ids;
-            } catch (e) {
-                console.warn('past orders load failed:', e);
-                pastOrderedListingIds = new Set();
-            }
-            return pastOrderedListingIds;
-        }
-
-        // 5/12 #74 修正：URL パラメータで指定された sort をソートチップの初期 active 状態に反映
-        //   （HTML 上は distance チップに active が固定されているため、ここで張り直す）
-        document.querySelectorAll('#sort-chips .chip').forEach(c => {
-            c.classList.toggle('active', c.dataset.value === currentSort);
-        });
-
         const FISH_FILTER_KEYS = [
             'striped_snakehead', 'walking_catfish', 'red_tilapia', 'nile_tilapia',
             'silver_barb', 'spot_pangasius', 'pangasius', 'giant_snakehead',
             'climbing_perch', 'frog'
         ];
 
-        // 魚種チップを生成
-        function populateFilterChips() {
-            const row = document.getElementById('filter-chips');
-            row.innerHTML = '';
-
-            const allBtn = document.createElement('button');
-            allBtn.type = 'button';
-            allBtn.className = 'chip chip--filter' + (currentFilter === '' ? ' active' : '');
-            allBtn.dataset.value = '';
-            allBtn.textContent = i18next.t('restaurant.filterAll');
-            row.appendChild(allBtn);
-
-            // お気に入りフィルタ
-            const favBtn = document.createElement('button');
-            favBtn.type = 'button';
-            favBtn.className = 'chip chip--filter' + (currentFilter === '__favorites' ? ' active' : '');
-            favBtn.dataset.value = '__favorites';
-            favBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:-2px; color:#ef4444; font-variation-settings:'FILL' 1;">favorite</span> ${i18next.t('restaurant.filterFavorites')}`;
-            row.appendChild(favBtn);
-
-            // 5/27: 過去注文フィルタ
-            const histBtn = document.createElement('button');
-            histBtn.type = 'button';
-            histBtn.className = 'chip chip--filter' + (currentFilter === '__history' ? ' active' : '');
-            histBtn.dataset.value = '__history';
-            histBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:-2px;">history</span> ${i18next.t('restaurant.filterHistory')}`;
-            row.appendChild(histBtn);
-
-            FISH_FILTER_KEYS.forEach(key => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'chip chip--filter' + (currentFilter === key ? ' active' : '');
-                btn.dataset.value = key;
-                // "ライギョ / Striped snakehead / ត្រីរ៉ស់" のうち現在言語部分のみ抽出
-                const label = i18next.t(`fish.${key}`);
-                const lang = i18next.language;
-                const parts = label.split('/').map(s => s.trim());
-                btn.textContent = (lang === 'en' && parts[1]) ? parts[1]
-                    : (lang === 'km' && parts[2]) ? parts[2]
-                    : parts[0];
-                row.appendChild(btn);
-            });
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
-        populateFilterChips();
-
-        // 州チップを生成（allItems から現存する州を抽出）
-        // 5/11 #65: province を内部キーに正規化してから重複排除。表示時は i18n ラベル
-        function populateProvinceChips() {
-            const row = document.getElementById('province-chips');
-            row.innerHTML = '';
-
-            const allBtn = document.createElement('button');
-            allBtn.type = 'button';
-            allBtn.className = 'chip chip--filter' + (currentProvince === '' ? ' active' : '');
-            allBtn.dataset.value = '';
-            allBtn.textContent = i18next.t('restaurant.filterAll');
-            row.appendChild(allBtn);
-
-            // 自分の州（正規化済みキー）を最優先で表示
-            const myKey = normalizeProvince(window.currentUserData?.province) || '';
-            // farmerProvince を内部キーに正規化してから重複排除（同じ州の言語違いを統合）
-            // 正規化できない値は raw のまま扱う
-            const keys = [...new Set(
-                allItems.map(it => normalizeProvince(it.farmerProvince) || it.farmerProvince)
-                    .filter(Boolean)
-            )].sort((a, b) => {
-                if (a === myKey) return -1;
-                if (b === myKey) return 1;
-                return formatProvince(a).localeCompare(formatProvince(b));
-            });
-            keys.forEach(key => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'chip chip--filter' + (currentProvince === key ? ' active' : '');
-                btn.dataset.value = key;
-                btn.textContent = formatProvince(key);
-                row.appendChild(btn);
-            });
+        function fishName(key) {
+            if (!key) return '';
+            return i18next.exists(`fish.${key}`) ? i18next.t(`fish.${key}`) : key;
+        }
+        // 魚種チップ用：現在言語ラベル（"ライギョ / Striped snakehead / ..." の現在言語部分）
+        function fishLabelShort(key) {
+            const label = i18next.t(`fish.${key}`);
+            const lang = i18next.language;
+            const parts = String(label).split('/').map(s => s.trim());
+            return (lang === 'en' && parts[1]) ? parts[1] : (lang === 'km' && parts[2]) ? parts[2] : parts[0];
         }
 
-        // チップクリック：並び替え
-        document.getElementById('sort-chips').addEventListener('click', (e) => {
-            const btn = e.target.closest('button.chip');
-            if (!btn) return;
-            currentSort = btn.dataset.value;
-            document.querySelectorAll('#sort-chips .chip').forEach(c => c.classList.toggle('active', c === btn));
-            renderList();
-        });
+        // ── 絞り込み・ソート・検索の状態 ──
+        const PRICE_MAX = 10000, DIST_MAX = 100;
+        const state = {
+            sort: 'distance',
+            species: new Set(),
+            provinces: new Set(),
+            priceMax: PRICE_MAX,
+            distanceMax: DIST_MAX,
+            favOnly: false,
+            historyOnly: false,
+            q: '',
+        };
 
-        // チップクリック：魚種フィルタ
-        document.getElementById('filter-chips').addEventListener('click', async (e) => {
-            const btn = e.target.closest('button.chip');
-            if (!btn) return;
-            currentFilter = btn.dataset.value;
-            document.querySelectorAll('#filter-chips .chip').forEach(c => c.classList.toggle('active', c === btn));
-            // 5/27: 過去注文フィルタ初回ロード
-            if (currentFilter === '__history') await ensurePastOrderedIds();
-            renderList();
-        });
+        // URL パラメータ（Home からの遷移）で初期条件を上書き
+        const _params = new URLSearchParams(location.search);
+        const _sortParam = _params.get('sort');
+        if (['distance', 'price', 'newest', 'rating'].includes(_sortParam)) state.sort = _sortParam;
+        const _fishTypeParam = _params.get('fishType');
+        if (_fishTypeParam && FISH_FILTER_KEYS.includes(_fishTypeParam)) state.species.add(_fishTypeParam);
+        if (_params.get('filter') === 'history') state.historyOnly = true;
+        const _qParam = _params.get('q');
+        if (_qParam) state.q = _qParam;
 
-        // チップクリック：州フィルタ
-        document.getElementById('province-chips').addEventListener('click', (e) => {
-            const btn = e.target.closest('button.chip');
-            if (!btn) return;
-            currentProvince = btn.dataset.value;
-            document.querySelectorAll('#province-chips .chip').forEach(c => c.classList.toggle('active', c === btn));
-            renderList();
-        });
-
-        // 「もっと見る」ボタン
-        document.getElementById('load-more-btn').addEventListener('click', async () => {
-            if (isLoadingMore || !hasMoreListings) return;
-            isLoadingMore = true;
-            const btn = document.getElementById('load-more-btn');
-            btn.disabled = true;
-            btn.textContent = '...';
+        // 戻り時の状態保持（spec §7）：back/forward でのみ復元。別タブからの再入は初期化。
+        const SS_KEY = 'fishlist_state_v1';
+        function saveState() {
             try {
-                await loadFishListings({ append: true });
-            } finally {
-                btn.disabled = false;
-                btn.textContent = i18next.t('restaurant.loadMore');
-            }
-        });
+                sessionStorage.setItem(SS_KEY, JSON.stringify({
+                    sort: state.sort,
+                    species: [...state.species],
+                    provinces: [...state.provinces],
+                    priceMax: state.priceMax,
+                    distanceMax: state.distanceMax,
+                    favOnly: state.favOnly,
+                    historyOnly: state.historyOnly,
+                    q: state.q,
+                    scrollY: window.scrollY,
+                    loadedPages: loadedPages,
+                }));
+            } catch (e) { /* ignore */ }
+        }
+        let restoredScrollY = 0;
+        let restoredPages = 1;
+        (function maybeRestore() {
+            let navType = 'navigate';
+            try { navType = performance.getEntriesByType('navigation')[0]?.type || 'navigate'; } catch (e) { }
+            if (navType !== 'back_forward') { sessionStorage.removeItem(SS_KEY); return; }
+            try {
+                const s = JSON.parse(sessionStorage.getItem(SS_KEY) || 'null');
+                if (!s) return;
+                state.sort = s.sort || state.sort;
+                state.species = new Set(s.species || []);
+                state.provinces = new Set(s.provinces || []);
+                state.priceMax = typeof s.priceMax === 'number' ? s.priceMax : PRICE_MAX;
+                state.distanceMax = typeof s.distanceMax === 'number' ? s.distanceMax : DIST_MAX;
+                state.favOnly = !!s.favOnly;
+                state.historyOnly = !!s.historyOnly;
+                state.q = s.q || '';
+                restoredScrollY = s.scrollY || 0;
+                restoredPages = Math.max(1, s.loadedPages || 1);
+            } catch (e) { /* ignore */ }
+        })();
 
-        // ── 距離計算（Google Maps Distance Matrix） ──────────────
-        // 起点1つ、終点を複数渡して {km, ok}（ok=true=道路距離成功、false=haversine フォールバック）の配列を返す
+        function appliedCount() {
+            let n = state.species.size + state.provinces.size;
+            if (state.priceMax < PRICE_MAX) n++;
+            if (state.distanceMax < DIST_MAX) n++;
+            if (state.favOnly) n++;
+            if (state.historyOnly) n++;
+            return n;
+        }
+
+        // ── 過去注文 listingId 集合（履歴フィルタ用・lazy） ──
+        let pastOrderedListingIds = null;
+        async function ensurePastOrderedIds() {
+            if (pastOrderedListingIds !== null) return pastOrderedListingIds;
+            const uid = window.currentUser?.uid;
+            if (!uid) { pastOrderedListingIds = new Set(); return pastOrderedListingIds; }
+            try {
+                const hq = query(collection(db, 'orders'), where('restaurantId', '==', uid), orderBy('createdAt', 'desc'), limit(100));
+                const snap = await getDocs(hq);
+                const ids = new Set();
+                snap.forEach(d => {
+                    const data = d.data();
+                    const items = Array.isArray(data.items) ? data.items : [];
+                    for (const it of items) if (it?.listingId) ids.add(it.listingId);
+                    if (data.listingId) ids.add(data.listingId);
+                });
+                pastOrderedListingIds = ids;
+            } catch (e) { pastOrderedListingIds = new Set(); }
+            return pastOrderedListingIds;
+        }
+
+        // ── 距離計算（Distance Matrix・既存と同型） ──
         async function calcRoadDistances(originLat, originLng, destinations) {
             return new Promise((resolve) => {
                 if (typeof google === 'undefined' || !google.maps) {
@@ -705,12 +558,9 @@
                 const service = new google.maps.DistanceMatrixService();
                 const origin = new google.maps.LatLng(originLat, originLng);
                 const dests = destinations.map(d => new google.maps.LatLng(d.lat, d.lng));
-
                 service.getDistanceMatrix({
-                    origins: [origin],
-                    destinations: dests,
-                    travelMode: google.maps.TravelMode.DRIVING,
-                    unitSystem: google.maps.UnitSystem.METRIC,
+                    origins: [origin], destinations: dests,
+                    travelMode: google.maps.TravelMode.DRIVING, unitSystem: google.maps.UnitSystem.METRIC,
                 }, (response, status) => {
                     if (status !== 'OK' || !response.rows[0]) {
                         resolve(destinations.map(d => ({ km: haversine(originLat, originLng, d.lat, d.lng), ok: false })));
@@ -725,43 +575,36 @@
                 });
             });
         }
-
         function haversine(lat1, lng1, lat2, lng2) {
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLng = (lng2 - lng1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) ** 2
-                + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
-                * Math.sin(dLng / 2) ** 2;
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
-        // ── データ取得＆表示 ──────────────────────────────────────
+        // ── データ取得（ページング） ──
         let allItems = [];
         let serviceRate = 0.05;
         const PAGE_SIZE = 10;
         let lastListingDoc = null;
         let hasMoreListings = false;
         let isLoadingMore = false;
+        let loadedPages = 0;
 
-        // 5/23 #69 Phase J: silent=true で spinner を出さない（cached 描画後の裏側 fresh fetch 用）
         async function loadFishListings({ append = false, silent = false } = {}) {
             if (!append && !silent) loading.classList.add('show');
-
             try {
                 const uid = window.currentUser?.uid;
                 if (!uid) return;
-
                 const myLoc = window.currentUserData?.location;
 
-                // サービス料率＋キャンペーンバナー表示（初回のみ）
                 if (!append) {
                     try {
                         const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
                         if (campSnap.exists()) {
                             const c = campSnap.data();
                             serviceRate = c.serviceRate ?? 0.05;
-                            // 管理者の bannerActive フラグでバナー表示制御
                             if (c.bannerActive === true) {
                                 const banner = document.getElementById('campaign-banner');
                                 if (banner) banner.style.display = 'block';
@@ -770,121 +613,74 @@
                     } catch (e) { }
                 }
 
-                // 並び替え用に createdAt DESC + limit でページング取得
-                const baseConds = [
-                    collection(db, 'fishListings'),
-                    where('isActive', '==', true),
-                    orderBy('createdAt', 'desc'),
-                ];
+                const baseConds = [collection(db, 'fishListings'), where('isActive', '==', true), orderBy('createdAt', 'desc')];
                 if (append && lastListingDoc) baseConds.push(startAfter(lastListingDoc));
                 baseConds.push(limit(PAGE_SIZE));
-                const q = query(...baseConds);
-                const snap = await getDocs(q);
+                const snap = await getDocs(query(...baseConds));
                 lastListingDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : lastListingDoc;
                 hasMoreListings = snap.docs.length === PAGE_SIZE;
+                if (snap.docs.length > 0) loadedPages++;
 
-                // 5/23 #69 Phase B: 農家情報は data-cache 経由（同一タブ内なら sessionStorage / memory ヒット）
                 window._farmerCache = window._farmerCache || {};
                 const farmerCache = window._farmerCache;
                 const farmerIds = [...new Set(snap.docs.map(d => d.data().farmerId).filter(fid => !farmerCache[fid]))];
-                await Promise.all(farmerIds.map(async (fid) => {
-                    const data = await getCachedUser(fid);
-                    farmerCache[fid] = data || {};
-                }));
+                await Promise.all(farmerIds.map(async (fid) => { farmerCache[fid] = (await getCachedUser(fid)) || {}; }));
                 const farmerMap = farmerCache;
 
-                // 道路距離を一括計算
                 const itemsRaw = snap.docs.map(d => {
                     const data = d.data();
-                    const farmer = farmerMap[data.farmerId] || {};
-                    return { id: d.id, data, farmer };
+                    return { id: d.id, data, farmer: farmerMap[data.farmerId] || {} };
                 });
 
-                // 位置ありのアイテムだけ距離計算（キャッシュ優先）
                 const locsWithIndex = [];
-                itemsRaw.forEach((it, i) => {
-                    if (it.farmer.location) locsWithIndex.push({ index: i, loc: it.farmer.location, farmerId: it.data.farmerId });
-                });
+                itemsRaw.forEach((it, i) => { if (it.farmer.location) locsWithIndex.push({ index: i, loc: it.farmer.location, farmerId: it.data.farmerId }); });
 
-                const distanceMap = {}; // index → km
+                const distanceMap = {};
                 if (myLoc && locsWithIndex.length > 0) {
-                    // まずキャッシュで解決（位置変更検知つき）
                     const uncached = [];
                     locsWithIndex.forEach(l => {
-                        const cached = getCachedDistance(uid, l.farmerId, {
-                            rLat: myLoc.lat, rLng: myLoc.lng,
-                            fLat: l.loc.lat, fLng: l.loc.lng,
-                        });
-                        if (cached !== null) {
-                            distanceMap[l.index] = cached;
-                        } else {
-                            uncached.push(l);
-                        }
+                        const cached = getCachedDistance(uid, l.farmerId, { rLat: myLoc.lat, rLng: myLoc.lng, fLat: l.loc.lat, fLng: l.loc.lng });
+                        if (cached !== null) distanceMap[l.index] = cached;
+                        else uncached.push(l);
                     });
-
-                    // 未キャッシュ分のみ Distance Matrix API へ
                     if (uncached.length > 0) {
                         try {
-                            const locs = uncached.map(l => l.loc);
-                            const results = await calcRoadDistances(myLoc.lat, myLoc.lng, locs);
+                            const results = await calcRoadDistances(myLoc.lat, myLoc.lng, uncached.map(l => l.loc));
                             uncached.forEach((l, j) => {
                                 const r = results[j];
                                 distanceMap[l.index] = r.km;
-                                // 道路距離が取れたときだけキャッシュ（haversine フォールバックは保存しない）
-                                if (r.ok) setCachedDistance(uid, l.farmerId, r.km, {
-                                    rLat: myLoc.lat, rLng: myLoc.lng,
-                                    fLat: l.loc.lat, fLng: l.loc.lng,
-                                });
+                                if (r.ok) setCachedDistance(uid, l.farmerId, r.km, { rLat: myLoc.lat, rLng: myLoc.lng, fLat: l.loc.lat, fLng: l.loc.lng });
                             });
                         } catch (e) {
-                            console.warn('Distance Matrix failed, using haversine:', e);
-                            uncached.forEach(l => {
-                                distanceMap[l.index] = haversine(myLoc.lat, myLoc.lng, l.loc.lat, l.loc.lng);
-                            });
+                            uncached.forEach(l => { distanceMap[l.index] = haversine(myLoc.lat, myLoc.lng, l.loc.lat, l.loc.lng); });
                         }
                     }
                 }
 
                 const newItems = itemsRaw.map((it, i) => {
-                    const data = it.data;
-                    const farmer = it.farmer;
-                    const distanceKm = distanceMap[i] ?? null;
-                    // 一覧表示単価 = (魚代 + 内臓処理代) × (1 + サービス料率)
+                    const data = it.data, farmer = it.farmer;
                     const rawUnit = (data.price || 0) + (data.gutPrice || 0);
-                    const displayPrice = Math.round(rawUnit * (1 + serviceRate));
                     return {
-                        id: it.id,
-                        ...data,
+                        id: it.id, ...data,
                         farmerName: farmer.displayName || '',
                         farmerProvince: farmer.province || '',
-                        farmerDistrict: farmer.district || '',
-                        farmerDistrictKm: farmer.districtKm || '',
-                        farmerAvatarUrl: farmer.avatarUrl || null,
+                        farmerAvatarUrl: farmer.avatarUrl || (Array.isArray(farmer.pondPhotos) ? farmer.pondPhotos[0] : null) || farmer.pondPhotoUrl || null,
                         farmerAvgRating: Number(farmer.avgRating || 0),
                         farmerReviewCount: Number(farmer.reviewCount || 0),
                         farmerGaqpCertified: farmer.gaqpCertified === true,
-                        distanceKm,
+                        distanceKm: distanceMap[i] ?? null,
                         maxDistance: data.maxDistance || null,
-                        displayPrice,
+                        displayPrice: Math.round(rawUnit * (1 + serviceRate)),
                         createdAtMs: data.createdAt?.toMillis?.() || 0,
                     };
                 });
 
                 if (append) {
-                    // 追加分を結合して重複除去
                     const seen = new Set(allItems.map(it => it.id));
                     newItems.forEach(it => { if (!seen.has(it.id)) allItems.push(it); });
                 } else {
                     allItems = newItems;
-                    // 5/23 #69 Phase J: 初回ページ分のみ render-cache に保存（次回訪問で即時表示用）
-                    //   - 2 ページ目以降の追記分は保存しない（cold start で 1 ページ目から再描画）
-                    //   - serviceRate も保存（表示価格計算に使う）
-                    try {
-                        saveRenderState('fish-list_items', {
-                            items: newItems,
-                            serviceRate,
-                        });
-                    } catch (e) { /* ignore */ }
+                    try { saveRenderState('fish-list_items', { items: newItems, serviceRate }); } catch (e) { }
                 }
                 renderList();
             } catch (err) {
@@ -895,185 +691,330 @@
             }
         }
 
-        // ── 表示 ────────────────────────────────────────────────
-        function renderList() {
-            const sortVal = currentSort;
-            const filterVal = currentFilter;
-
+        // ── フィルタ適用＋ソート ──
+        function filteredItems() {
             let items = [...allItems];
-
-            // 配送可能距離超過を非表示（距離不明はフォールバックで表示）
+            // 配送圏外を除外（距離不明は表示）
             items = items.filter(it => {
-                if (it.distanceKm === null) return true; // 距離計算できない場合は一旦表示
+                if (it.distanceKm === null || it.distanceKm === undefined) return true;
                 if (it.maxDistance && it.distanceKm > it.maxDistance) return false;
                 return true;
             });
-
-            // 州フィルタ（5/11 #65: 正規化キー or raw で比較）
-            if (currentProvince) {
+            // 魚種（OR）
+            if (state.species.size > 0) {
                 items = items.filter(it => {
-                    const itKey = normalizeProvince(it.farmerProvince) || it.farmerProvince;
-                    return itKey === currentProvince;
+                    if (state.species.has(it.fishType)) return true;
+                    // 旧データ（日本語テキスト保存）との緩い一致
+                    for (const key of state.species) {
+                        const label = i18next.t(`fish.${key}`);
+                        if (it.fishType === label || (label && it.fishType?.includes(String(label).split('/')[0].trim()))) return true;
+                    }
+                    return false;
                 });
             }
-
-            // お気に入りフィルタ
-            if (filterVal === '__favorites') {
-                items = items.filter(it => favoriteIds.has(it.id));
-            } else if (filterVal === '__history') {
-                // 5/27: 過去注文した listingId のみ表示
+            // 地域（OR）
+            if (state.provinces.size > 0) {
+                items = items.filter(it => {
+                    const key = normalizeProvince(it.farmerProvince) || it.farmerProvince;
+                    return state.provinces.has(key);
+                });
+            }
+            // 価格帯
+            if (state.priceMax < PRICE_MAX) items = items.filter(it => it.displayPrice <= state.priceMax);
+            // 距離（既知の距離のみ判定。不明は残す）
+            if (state.distanceMax < DIST_MAX) items = items.filter(it => it.distanceKm === null || it.distanceKm <= state.distanceMax);
+            // お気に入り
+            if (state.favOnly) items = items.filter(it => favoriteIds.has(it.id));
+            // 過去注文
+            if (state.historyOnly) {
                 const ids = pastOrderedListingIds || new Set();
                 items = items.filter(it => ids.has(it.id));
-            } else if (filterVal) {
-                // 魚種フィルター
+            }
+            // 検索（魚種名・農家名）
+            const q = state.q.trim().toLowerCase();
+            if (q) {
                 items = items.filter(it => {
-                    if (it.fishType === filterVal) return true;
-                    // 旧データ（日本語テキスト保存）との比較: fishTypeにコード名を含むか
-                    const label = i18next.t(`fish.${filterVal}`);
-                    return it.fishType === label || it.fishType.includes(label.split('/')[0]?.trim());
+                    const fn = fishName(it.fishType).toLowerCase();
+                    const farmer = (it.farmerName || '').toLowerCase();
+                    return fn.includes(q) || farmer.includes(q) || (it.fishType || '').toLowerCase().includes(q);
                 });
             }
+            // ソート（売切れは常に末尾）
+            const cmp = (() => {
+                switch (state.sort) {
+                    case 'price': return (a, b) => a.displayPrice - b.displayPrice;
+                    case 'newest': return (a, b) => b.createdAtMs - a.createdAtMs;
+                    case 'rating': return (a, b) => (b.farmerAvgRating - a.farmerAvgRating) || (b.farmerReviewCount - a.farmerReviewCount);
+                    default: return (a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999);
+                }
+            })();
+            items.sort((a, b) => {
+                const aOut = Number(a.stock || 0) <= 0, bOut = Number(b.stock || 0) <= 0;
+                if (aOut !== bOut) return aOut ? 1 : -1; // 売切れを後ろへ
+                return cmp(a, b);
+            });
+            return items;
+        }
 
-            // ソート
-            if (sortVal === 'distance') {
-                items.sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
-            } else if (sortVal === 'price') {
-                items.sort((a, b) => a.displayPrice - b.displayPrice);
-            } else if (sortVal === 'newest') {
-                items.sort((a, b) => b.createdAtMs - a.createdAtMs);
-            } else if (sortVal === 'rating') {
-                // 5/12 #74: 新ダッシュボード「評価が高い農家」棚からの遷移用。
-                //   各 listing の farmer.avgRating（よい率 0-100）で降順。
-                items.sort((a, b) => (b.farmerAvgRating ?? 0) - (a.farmerAvgRating ?? 0));
-            }
+        function cardHtml(item) {
+            const name = fishName(item.fishType);
+            const out = Number(item.stock || 0) <= 0;
+            const distText = (item.distanceKm !== null && item.distanceKm !== undefined) ? `${Math.floor(item.distanceKm * 10) / 10} km` : '';
+            const metaText = out
+                ? i18next.t('fishlist.soldOut')
+                : [i18next.t('restaurant.stock', { kg: item.stock }), distText].filter(Boolean).join(' · ');
+            const isFav = favoriteIds.has(item.id);
+            const imgHtml = item.photoUrl
+                ? `<img ${asCachedImgAttrs(item.photoUrl)} alt="${escapeHtml(name)}" loading="lazy">`
+                : `<span class="material-symbols-outlined">set_meal</span>`;
+            return `
+                <div class="fl-card-wrap ${out ? 'fl-card-wrap--out' : ''}">
+                    <button class="fl-heart ${isFav ? 'active' : ''}" type="button" data-act="toggle-fav" data-id="${item.id}"
+                        aria-pressed="${isFav}" title="${i18next.t(isFav ? 'restaurant.unfavorite' : 'restaurant.favorite')}">
+                        <span class="material-symbols-outlined">favorite</span>
+                    </button>
+                    <a class="fl-card" href="/pages/restaurant/order.html?id=${item.id}">
+                        <div class="fl-card__img">
+                            ${imgHtml}
+                            ${item.farmerGaqpCertified ? `<span class="gaqp-badge"><span class="material-symbols-outlined">verified</span>${i18next.t('gaqp.badge')}</span>` : ''}
+                            ${out ? `<div class="fl-soldout"><span>${i18next.t('fishlist.soldOut')}</span></div>` : ''}
+                        </div>
+                        <div class="fl-card__body">
+                            <div class="fl-card__name">${escapeHtml(name)}</div>
+                            <div class="fl-card__sz">${escapeHtml(item.size || '')} head/kg</div>
+                            <div class="fl-card__price"><b>${item.displayPrice.toLocaleString()}</b><span>KHR/kg</span></div>
+                            <div class="fl-card__meta">${escapeHtml(metaText)}</div>
+                        </div>
+                        ${item.farmerName ? `
+                            <div class="fl-card__farmer" data-act="view-farmer" data-farmer-id="${item.farmerId}" role="button" tabindex="0" title="${i18next.t('restaurant.viewFarmer')}">
+                                <div class="fl-card__avatar">
+                                    ${item.farmerAvatarUrl ? `<img ${asCachedImgAttrs(item.farmerAvatarUrl)} alt="" loading="lazy">` : `<span class="material-symbols-outlined">person</span>`}
+                                </div>
+                                <div class="fl-card__fn">${escapeHtml(item.farmerName)}</div>
+                                <div class="fl-card__rt"><span class="material-symbols-outlined">star</span>${Math.round(item.farmerAvgRating)}% <span>(${item.farmerReviewCount})</span></div>
+                            </div>` : ''}
+                    </a>
+                </div>`;
+        }
 
+        function renderList() {
             const grid = document.getElementById('fish-grid');
-            const footer = document.getElementById('market-footer');
-            const loadMoreWrap = document.getElementById('load-more-wrap');
+            const items = filteredItems();
+            // 件数・ソートラベル・絞り込みバッジ更新
+            document.getElementById('count').textContent = i18next.t('fishlist.count', { count: items.length });
+            document.getElementById('sort-label').textContent = i18next.t('restaurant.sort' + state.sort.charAt(0).toUpperCase() + state.sort.slice(1));
+            const n = appliedCount();
+            const badge = document.getElementById('filter-badge');
+            const fbtn = document.getElementById('filter-btn');
+            if (n > 0) { badge.textContent = n; badge.classList.add('show'); fbtn.classList.add('active'); }
+            else { badge.classList.remove('show'); fbtn.classList.remove('active'); }
 
-            // 州チップを更新（読み込み済み農家から動的生成）
-            populateProvinceChips();
-
-            // もっと見るボタンの表示制御
-            if (loadMoreWrap) loadMoreWrap.style.display = hasMoreListings ? 'block' : 'none';
+            document.getElementById('load-more-wrap').style.display = hasMoreListings ? 'block' : 'none';
 
             if (items.length === 0) {
                 grid.innerHTML = `
-                    <div class="empty-state" style="grid-column:1/-1;">
-                        <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">set_meal</span></div>
-                        <div class="empty-state__text">${i18next.t('restaurant.empty')}</div>
-                    </div>
-                `;
-                footer.style.display = 'none';
+                    <div class="fl-empty">
+                        <span class="material-symbols-outlined">set_meal</span>
+                        <div class="fl-empty__text">${i18next.t('fishlist.emptyTitle')}</div>
+                        <button type="button" class="fl-empty__reset" id="empty-reset">${i18next.t('fishlist.emptyReset')}</button>
+                    </div>`;
+                document.getElementById('empty-reset')?.addEventListener('click', () => { resetFilters(); applyAndClose(); });
                 return;
             }
-
-            grid.innerHTML = items.map((item, idx) => {
-                const fishName = i18next.exists(`fish.${item.fishType}`)
-                    ? i18next.t(`fish.${item.fishType}`)
-                    : item.fishType;
-
-                const distText = (item.distanceKm !== null && item.distanceKm !== undefined)
-                    ? `${(Math.floor(item.distanceKm * 10) / 10)} km`
-                    : '';
-                // 5/11: UI 言語が km なら districtKm を優先
-                const districtText = formatDistrict({ district: item.farmerDistrict, districtKm: item.farmerDistrictKm });
-
-                // 5/23 Phase I: 最初のカードを LCP 候補として fetchpriority="high" 付与
-                // （asCachedImgAttrs が priority opt を解釈して fetchpriority 属性を出力）
-                const isPriority = idx === 0;
-                const imgHtml = item.photoUrl
-                    ? `<img ${asCachedImgAttrs(item.photoUrl, isPriority ? { priority: 'high' } : {})} alt="${fishName}">`
-                    : `<span class="fish-grid-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:40px;">set_meal</span></span>`;
-
-                // 5/11 #66: カードのカートボタンを廃止。カート追加は商品説明画面で行う
-                const cartBtnHtml = '';
-
-                const isFav = favoriteIds.has(item.id);
-                const favBtnHtml = `
-                    <button class="fish-grid-card__fav-btn ${isFav ? 'active' : ''}" type="button"
-                        data-act="toggle-fav" data-id="${item.id}"
-                        title="${i18next.t(isFav ? 'restaurant.unfavorite' : 'restaurant.favorite')}"
-                        aria-pressed="${isFav}">
-                        <span class="material-symbols-outlined">favorite</span>
-                    </button>`;
-
-                return `
-                    <div style="position:relative;">
-                    ${favBtnHtml}
-                    <a class="fish-grid-card" href="/pages/restaurant/order.html?id=${item.id}">
-                        <div class="fish-grid-card__img">
-                            ${imgHtml}
-                            <div class="fish-grid-card__price">
-                                ${item.displayPrice.toLocaleString()} KHR/kg
-                            </div>
-                            <div class="fish-grid-card__stock">
-                                ${item.stock > 0 ? i18next.t('restaurant.stock', { kg: item.stock }) : i18next.t('dashboard.outOfStock')}
-                            </div>
-                        </div>
-                        <div class="fish-grid-card__body">
-                            <div class="fish-grid-card__name">${fishName}</div>
-                            <div class="fish-grid-card__size">（${item.size} head/kg）</div>
-                            ${item.farmerProvince ? `<div class="fish-grid-card__place"><span class="material-symbols-outlined" style="font-size:14px;">location_on</span><span>${formatProvince(item.farmerProvince)}${districtText ? ', ' + districtText : ''}${distText ? ' · ' + distText : ''}</span></div>` : (distText ? `<div class="fish-grid-card__place"><span>${distText}</span></div>` : '')}
-                            ${item.farmerName ? `
-                                <div class="fish-grid-card__farmer" data-act="view-farmer" data-farmer-id="${item.farmerId}" role="button" tabindex="0" title="${i18next.t('restaurant.viewFarmer')}">
-                                    <div class="fish-grid-card__farmer-avatar">
-                                        ${item.farmerAvatarUrl
-                                            ? `<img ${asCachedImgAttrs(item.farmerAvatarUrl)} alt="" loading="lazy">`
-                                            : `<span class="material-symbols-outlined">person</span>`}
-                                    </div>
-                                    <div class="fish-grid-card__farmer-info">
-                                        <div class="fish-grid-card__farmer-name">${item.farmerName}${item.farmerGaqpCertified ? ` <span style="display:inline-flex; align-items:center; gap:2px; padding:1px 6px; background:#0d6e4c; color:#fff; border-radius:8px; font-size:9px; font-weight:700; vertical-align:middle;"><span class="material-symbols-outlined" style="font-size:11px;">verified</span>${i18next.t('gaqp.badge')}</span>` : ''}</div>
-                                        <div class="fish-grid-card__farmer-rating">
-                                            <span class="material-symbols-outlined">star</span>
-                                            ${Math.round(item.farmerAvgRating)}%（${item.farmerReviewCount}）
-                                        </div>
-                                    </div>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </a>
-                    ${cartBtnHtml}
-                    </div>
-                `;
-            }).join('');
-
-            footer.style.display = 'flex';
-            document.getElementById('footer-count').textContent =
-                i18next.t('restaurant.count', { count: items.length });
+            grid.innerHTML = items.map(cardHtml).join('');
         }
 
-        // 言語変更時
-        onLanguageChange(() => {
-            populateFilterChips();
-            const moreBtn = document.getElementById('load-more-btn');
-            if (moreBtn) moreBtn.textContent = i18next.t('restaurant.loadMore');
+        // ── ボトムシート UI ──
+        function buildSheetSpecies() {
+            const row = document.getElementById('sheet-species');
+            row.innerHTML = FISH_FILTER_KEYS.map(key => `
+                <div class="fl-chip ${state.species.has(key) ? 'selected' : ''}" data-act="toggle-species" data-key="${key}">
+                    <span class="fl-chip__check material-symbols-outlined">check</span>${escapeHtml(fishLabelShort(key))}
+                </div>`).join('');
+        }
+        function buildSheetRegion() {
+            const row = document.getElementById('sheet-region');
+            const keys = [...new Set(allItems.map(it => normalizeProvince(it.farmerProvince) || it.farmerProvince).filter(Boolean))]
+                .sort((a, b) => formatProvince(a).localeCompare(formatProvince(b)));
+            row.innerHTML = keys.map(key => `
+                <div class="fl-chip ${state.provinces.has(key) ? 'selected' : ''}" data-act="toggle-region" data-key="${key}">
+                    <span class="fl-chip__check material-symbols-outlined">check</span>${escapeHtml(formatProvince(key))}
+                </div>`).join('');
+        }
+        function syncSheetControls() {
+            buildSheetSpecies();
+            buildSheetRegion();
+            document.getElementById('price-range').value = state.priceMax;
+            document.getElementById('distance-range').value = state.distanceMax;
+            updatePriceLabel(); updateDistanceLabel();
+            document.getElementById('chip-fav').classList.toggle('selected', state.favOnly);
+            document.getElementById('chip-history').classList.toggle('selected', state.historyOnly);
+        }
+        function updatePriceLabel() {
+            const v = Number(document.getElementById('price-range').value);
+            document.getElementById('price-val').textContent = v >= PRICE_MAX ? i18next.t('fishlist.noLimit') : i18next.t('fishlist.priceUnder', { price: v.toLocaleString() });
+        }
+        function updateDistanceLabel() {
+            const v = Number(document.getElementById('distance-range').value);
+            document.getElementById('distance-val').textContent = v >= DIST_MAX ? i18next.t('fishlist.noLimit') : i18next.t('fishlist.distanceUnder', { km: v });
+        }
+        function openSheet() {
+            syncSheetControls();
+            document.getElementById('sheet-backdrop').classList.add('show');
+            document.getElementById('filter-sheet').classList.add('show');
+            document.getElementById('sort-pop').classList.remove('show');
+        }
+        function closeSheet() {
+            document.getElementById('sheet-backdrop').classList.remove('show');
+            document.getElementById('filter-sheet').classList.remove('show');
+        }
+        // シート内の一時選択をそのまま state に反映するため、シート操作で直接 state を更新する
+        async function applyAndClose() {
+            if (state.historyOnly) await ensurePastOrderedIds();
+            closeSheet();
             renderList();
+            saveState();
+        }
+        function resetFilters() {
+            state.species.clear();
+            state.provinces.clear();
+            state.priceMax = PRICE_MAX;
+            state.distanceMax = DIST_MAX;
+            state.favOnly = false;
+            state.historyOnly = false;
+            syncSheetControls();
+        }
+
+        // シート内チップ操作
+        document.getElementById('filter-sheet').addEventListener('click', (e) => {
+            const chip = e.target.closest('.fl-chip');
+            if (!chip) return;
+            const act = chip.dataset.act, key = chip.dataset.key;
+            if (act === 'toggle-species') { state.species.has(key) ? state.species.delete(key) : state.species.add(key); chip.classList.toggle('selected'); }
+            else if (act === 'toggle-region') { state.provinces.has(key) ? state.provinces.delete(key) : state.provinces.add(key); chip.classList.toggle('selected'); }
+            else if (act === 'toggle-other') {
+                if (key === 'fav') { state.favOnly = !state.favOnly; chip.classList.toggle('selected', state.favOnly); }
+                else if (key === 'history') { state.historyOnly = !state.historyOnly; chip.classList.toggle('selected', state.historyOnly); }
+            }
+        });
+        document.getElementById('price-range').addEventListener('input', (e) => { state.priceMax = Number(e.target.value); updatePriceLabel(); });
+        document.getElementById('distance-range').addEventListener('input', (e) => { state.distanceMax = Number(e.target.value); updateDistanceLabel(); });
+        document.getElementById('sheet-reset').addEventListener('click', resetFilters);
+        document.getElementById('sheet-apply').addEventListener('click', applyAndClose);
+        document.getElementById('sheet-backdrop').addEventListener('click', closeSheet);
+        document.getElementById('sheet-handle').addEventListener('click', closeSheet);
+        document.getElementById('filter-btn').addEventListener('click', openSheet);
+
+        // ソートドロップダウン
+        const sortBtn = document.getElementById('sort-btn');
+        const sortPop = document.getElementById('sort-pop');
+        sortBtn.addEventListener('click', (e) => { e.stopPropagation(); sortPop.classList.toggle('show'); });
+        sortPop.addEventListener('click', (e) => {
+            const opt = e.target.closest('.fl-sort-pop__opt');
+            if (!opt) return;
+            state.sort = opt.dataset.value;
+            sortPop.querySelectorAll('.fl-sort-pop__opt').forEach(o => o.classList.toggle('active', o === opt));
+            sortPop.classList.remove('show');
+            renderList(); saveState();
+        });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#sort-btn') && !e.target.closest('#sort-pop')) sortPop.classList.remove('show');
         });
 
-        // データ読み込み（auth完了後）
-        // 注文バッジ（リアルタイム監視）
+        // ── 検索バー（サジェスト + in-place） ──
+        const searchInput = document.getElementById('search-input');
+        const searchSuggest = document.getElementById('search-suggest');
+        const searchClear = document.getElementById('search-clear');
+        function renderSuggest(q) {
+            q = q.trim().toLowerCase();
+            if (!q) { searchSuggest.classList.remove('show'); return; }
+            const fishMatches = FISH_FILTER_KEYS
+                .map(k => ({ k, label: fishName(k) }))
+                .filter(x => x.label.toLowerCase().includes(q))
+                .slice(0, 6);
+            const farmerNames = [...new Set(allItems.map(it => it.farmerName).filter(Boolean))]
+                .filter(n => n.toLowerCase().includes(q)).slice(0, 6);
+            const rows = [
+                ...fishMatches.map(x => `<div class="fl-suggest__item" data-q="${escapeHtml(x.label)}"><span class="material-symbols-outlined">set_meal</span>${escapeHtml(x.label)}<span class="fl-suggest__type">${i18next.t('fishlist.filterSpecies')}</span></div>`),
+                ...farmerNames.map(n => `<div class="fl-suggest__item" data-q="${escapeHtml(n)}"><span class="material-symbols-outlined">storefront</span>${escapeHtml(n)}<span class="fl-suggest__type">${i18next.t('restaurant.viewFarmer')}</span></div>`),
+            ];
+            if (rows.length === 0) { searchSuggest.classList.remove('show'); return; }
+            searchSuggest.innerHTML = rows.join('');
+            searchSuggest.classList.add('show');
+        }
+        searchInput.addEventListener('input', () => {
+            state.q = searchInput.value;
+            searchClear.classList.toggle('show', !!searchInput.value);
+            renderSuggest(searchInput.value);
+            renderList(); saveState();
+        });
+        searchInput.addEventListener('focus', () => renderSuggest(searchInput.value));
+        searchSuggest.addEventListener('click', (e) => {
+            const row = e.target.closest('.fl-suggest__item');
+            if (!row) return;
+            searchInput.value = row.dataset.q;
+            state.q = row.dataset.q;
+            searchClear.classList.add('show');
+            searchSuggest.classList.remove('show');
+            renderList(); saveState();
+        });
+        searchClear.addEventListener('click', () => {
+            searchInput.value = ''; state.q = '';
+            searchClear.classList.remove('show');
+            searchSuggest.classList.remove('show');
+            renderList(); saveState();
+        });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.fl-search-wrap')) searchSuggest.classList.remove('show');
+        });
+
+        // 「もっと見る」
+        document.getElementById('load-more-btn').addEventListener('click', async () => {
+            if (isLoadingMore || !hasMoreListings) return;
+            isLoadingMore = true;
+            const btn = document.getElementById('load-more-btn');
+            btn.disabled = true; btn.textContent = '...';
+            try { await loadFishListings({ append: true }); saveState(); }
+            finally { btn.disabled = false; btn.textContent = i18next.t('restaurant.loadMore'); }
+        });
+
+        // カード操作（お気に入りトグル / 農家ページ遷移）
+        document.getElementById('fish-grid').addEventListener('click', async (e) => {
+            const farmerBlock = e.target.closest('[data-act="view-farmer"]');
+            if (farmerBlock) {
+                e.preventDefault(); e.stopPropagation();
+                const fid = farmerBlock.dataset.farmerId;
+                if (fid) { saveState(); window.location.href = `/pages/restaurant/farmer.html?id=${fid}`; }
+                return;
+            }
+            const favBtn = e.target.closest('[data-act="toggle-fav"]');
+            if (favBtn) {
+                e.preventDefault(); e.stopPropagation();
+                const uid = window.currentUser?.uid;
+                if (!uid) return;
+                favBtn.disabled = true;
+                try { await toggleFavorite(uid, favBtn.dataset.id); }
+                catch (err) { console.error('toggleFavorite failed:', err); }
+                finally { favBtn.disabled = false; }
+                return;
+            }
+        });
+        // 商品カード本体 → 商品詳細遷移時に状態保存
+        document.getElementById('fish-grid').addEventListener('click', (e) => {
+            if (e.target.closest('.fl-card') && !e.target.closest('[data-act]')) saveState();
+        }, true);
+
+        // ── バッジ・購読 ──
         function watchOrderBadge() {
             const uid = window.currentUser?.uid;
             if (!uid) return;
-
             const lastSeen = parseInt(localStorage.getItem('fishlink_rest_orders_seen') || '0');
-
-            const q = query(
-                collection(db, 'orders'),
-                where('restaurantId', '==', uid)
-            );
-            onSnapshot(q, (snap) => {
-                const hasNew = snap.docs.some(d => {
-                    const t = d.data().createdAt?.toMillis?.() || 0;
-                    return t > lastSeen;
-                });
+            onSnapshot(query(collection(db, 'orders'), where('restaurantId', '==', uid)), (snap) => {
+                const hasNew = snap.docs.some(d => (d.data().createdAt?.toMillis?.() || 0) > lastSeen);
                 const badge = document.getElementById('order-badge');
-                badge.style.display = hasNew ? 'block' : 'none';
+                if (badge) badge.style.display = hasNew ? 'block' : 'none';
             });
         }
-
-        // カートバッジ（5/11 #66: カード上のカートボタン廃止に伴いバッジ更新のみに簡略化）
         function watchCartBadge() {
             const uid = window.currentUser?.uid;
             if (!uid) return;
@@ -1083,75 +1024,43 @@
                 if (badge) badge.style.display = items.length > 0 ? 'block' : 'none';
             });
         }
-
-        // お気に入り購読＋UI差分更新
         function watchFavorites() {
             const uid = window.currentUser?.uid;
             if (!uid) return;
             subscribeFavorites(uid, (ids) => {
                 favoriteIds = new Set(ids);
-                // 表示中のカードのお気に入りボタンを即時反映
                 document.querySelectorAll('[data-act="toggle-fav"]').forEach(btn => {
                     const isFav = favoriteIds.has(btn.dataset.id);
                     btn.classList.toggle('active', isFav);
                     btn.setAttribute('aria-pressed', isFav);
                 });
-                // お気に入りフィルタ中なら一覧を再描画
-                if (currentFilter === '__favorites') {
-                    renderList();
-                }
+                if (state.favOnly) renderList();
             });
         }
 
-        // お気に入りトグル / 生産者ページ遷移 のクリック処理を集約
-        // 5/11 #66: カード上のカートボタンは廃止。カート追加は商品説明画面で実施
-        document.getElementById('fish-grid').addEventListener('click', async (e) => {
-            // 5/11 #64: 農家ブロックタップで生産者ページへ遷移（カード全体の order.html 遷移より優先）
-            const farmerBlock = e.target.closest('[data-act="view-farmer"]');
-            if (farmerBlock) {
-                e.preventDefault();
-                e.stopPropagation();
-                const farmerId = farmerBlock.dataset.farmerId;
-                if (farmerId) {
-                    window.location.href = `/pages/restaurant/farmer.html?id=${farmerId}`;
-                }
-                return;
-            }
-
-            const favBtn = e.target.closest('[data-act="toggle-fav"]');
-            if (favBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                const listingId = favBtn.dataset.id;
-                const uid = window.currentUser?.uid;
-                if (!uid) return;
-                favBtn.disabled = true;
-                try {
-                    await toggleFavorite(uid, listingId);
-                } catch (err) {
-                    console.error('toggleFavorite failed:', err);
-                } finally {
-                    favBtn.disabled = false;
-                }
-                return;
-            }
+        // 言語切替
+        onLanguageChange(() => {
+            const moreBtn = document.getElementById('load-more-btn');
+            if (moreBtn) moreBtn.textContent = i18next.t('restaurant.loadMore');
+            renderList();
+            if (document.getElementById('filter-sheet').classList.contains('show')) syncSheetControls();
         });
 
-        // Google Maps API & currentUserData の両方を待ってから実行
         function waitForGoogleMaps(cb) {
-            if (typeof google !== 'undefined' && google.maps) { cb(); }
-            else { setTimeout(() => waitForGoogleMaps(cb), 200); }
+            if (typeof google !== 'undefined' && google.maps) cb();
+            else setTimeout(() => waitForGoogleMaps(cb), 200);
         }
-
         function waitForUserData(cb) {
-            if (window.currentUserData) { cb(); }
-            else { setTimeout(() => waitForUserData(cb), 200); }
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
         }
 
-        // 5/23 #69 Phase J: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
-        //   waitForUserData の前に実行（currentUserData 待ち不要・initI18n は冒頭で await 済）
-        //   currentSort / currentFilter は URLSearchParams から module 冒頭で初期化済み
-        //   populateFilterChips() も module 冒頭で呼ばれているのでここでは renderList のみ
+        // 初期ソートラベル
+        document.getElementById('sort-pop').querySelectorAll('.fl-sort-pop__opt').forEach(o => o.classList.toggle('active', o.dataset.value === state.sort));
+        // 検索欄に復元値
+        if (state.q) { searchInput.value = state.q; searchClear.classList.add('show'); }
+
+        // ── 描画キャッシュ確認 → HIT すれば即時表示 ──
         let cachedRendered = false;
         try {
             const cached = loadRenderState('fish-list_items');
@@ -1159,27 +1068,30 @@
                 allItems = cached.items;
                 if (typeof cached.serviceRate === 'number') serviceRate = cached.serviceRate;
                 renderList();
-                loading.classList.remove('show');
-                document.body.classList.add('app-ready');
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
                 cachedRendered = true;
             }
-        } catch (e) {
-            console.warn('cached fish-list render failed:', e);
-        }
+        } catch (e) { console.warn('cached fish-list render failed:', e); }
 
         waitForUserData(() => {
-            watchOrderBadge();
-            watchCartBadge();
-            watchFavorites();
+            watchOrderBadge(); watchCartBadge(); watchFavorites();
             if (window.currentUser?.uid) {
                 subscribeTodos(window.currentUser.uid, 'restaurant');
                 subscribeNotifications(window.currentUser.uid);
             }
-            // 5/27: URL ?filter=history で来た場合は過去注文 ID を先にロード
-            if (currentFilter === '__history') {
-                ensurePastOrderedIds().then(() => renderList());
-            }
-            waitForGoogleMaps(() => loadFishListings({ silent: cachedRendered }));
+            const afterLoad = async () => {
+                if (state.historyOnly) await ensurePastOrderedIds();
+                // 復元ページ数ぶん追加読込（戻り時の表示件数を再現）
+                while (loadedPages < restoredPages && hasMoreListings) {
+                    await loadFishListings({ append: true, silent: true });
+                }
+                renderList();
+                if (restoredScrollY > 0) requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, restoredScrollY)));
+            };
+            waitForGoogleMaps(async () => {
+                await loadFishListings({ silent: cachedRendered });
+                await afterLoad();
+            });
         });
     </script>
 
