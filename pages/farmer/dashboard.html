@@ -235,6 +235,94 @@
         .card-menu__item.disabled:hover { background: transparent; }
         .card-menu__item .material-symbols-outlined { font-size: 16px; }
 
+        /* ===== 5/31 #104: 投稿一覧（ステータス別グルーピング） ===== */
+        .page-title {
+            font-size: 20px;
+            font-weight: 700;
+            padding: 14px 16px 6px;
+        }
+        .pl-group-head {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 16px 4px 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--color-text);
+        }
+        .pl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .pl-dot.on { background: var(--color-primary); }
+        .pl-dot.out { background: #e08600; }
+        .pl-dot.stop { background: #9aa3b0; }
+        .pl-count { color: var(--color-text-sub); font-weight: 600; }
+
+        .pl-card {
+            background: var(--color-surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            position: relative;
+            margin-bottom: 10px;
+        }
+        .pl-card-top { display: flex; gap: 12px; padding: 12px; }
+        .pl-img {
+            width: 88px; height: 88px; border-radius: var(--radius-sm);
+            object-fit: cover; background: var(--color-bg); flex-shrink: 0; position: relative;
+        }
+        .pl-img-ph {
+            width: 88px; height: 88px; border-radius: var(--radius-sm);
+            background: var(--color-bg); display: flex; align-items: center; justify-content: center;
+            color: #9dbed4; flex-shrink: 0;
+        }
+        .pl-img-wrap { position: relative; flex-shrink: 0; }
+        .pl-img-wrap .gaqp-badge {
+            position: absolute; top: 6px; left: 6px;
+            background: var(--color-primary); color: #fff;
+            font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 9px;
+            display: inline-flex; align-items: center; gap: 2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.2); white-space: nowrap;
+        }
+        .pl-img-wrap .gaqp-badge .material-symbols-outlined { font-size: 11px; color: #fff; }
+        .pl-info { flex: 1; min-width: 0; }
+        .pl-row1 { display: flex; align-items: center; gap: 8px; }
+        .pl-name {
+            font-size: 15px; font-weight: 700; color: var(--color-text);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+        }
+        .pl-status {
+            font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+            flex-shrink: 0; letter-spacing: .2px;
+        }
+        .pl-status.on { background: var(--color-primary-lt); color: var(--color-primary); }
+        .pl-status.out { background: #fcefd6; color: #b36a00; }
+        .pl-status.stop { background: #eceef0; color: var(--color-text-sub); }
+        .pl-sub { margin-top: 4px; font-size: 13px; color: var(--color-text-sub); }
+        .pl-price { margin-top: 8px; color: var(--color-primary); }
+        .pl-price .num { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+        .pl-price .unit { font-size: 12px; color: var(--color-text-sub); font-weight: 500; margin-left: 3px; }
+        .pl-gut { font-size: 12px; color: var(--color-text-sub); margin-top: 3px; }
+
+        .pl-actions { display: flex; align-items: center; border-top: 1px solid var(--color-border); }
+        .pl-act {
+            flex: 1; text-align: center; padding: 11px 4px;
+            font-size: 12px; font-weight: 600; color: var(--color-text);
+            cursor: pointer; background: none; border: none; border-right: 1px solid var(--color-border);
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+            text-decoration: none; font-family: inherit;
+        }
+        .pl-act:last-child { border-right: none; }
+        .pl-act:active { background: var(--color-bg); }
+        .pl-act .material-symbols-outlined { font-size: 16px; }
+        .pl-act.danger { color: var(--color-danger); }
+        .pl-act.primary { color: var(--color-primary); }
+        .pl-act.kebab { flex: 0 0 44px; }
+
+        /* 停止中：カード全体グレーアウト（アクションバーは除く） */
+        .pl-card.stopped .pl-card-top { filter: grayscale(1); opacity: .55; }
+
+        /* ケバブメニューを下部アクションバーの上に表示 */
+        .pl-card .card-menu { top: auto; bottom: 48px; right: 8px; }
+
         /* 5/7 #54: 「もっと見る」ボタン */
         #load-more-wrap {
             display: none;
@@ -300,7 +388,8 @@
             </div>
         </div>
 
-        <!-- 魚の投稿一覧 -->
+        <!-- 投稿一覧（5/31 #104） -->
+        <div class="page-title" data-i18n="dashboard.pageTitle"></div>
         <div id="fish-list"></div>
         <div id="load-more-wrap">
             <button type="button" id="load-more-btn" data-i18n="restaurant.loadMore"></button>
@@ -367,29 +456,53 @@
             }[c]));
         }
 
+        // 5/31 #104: ステータス導出（停止操作＋在庫から）
+        //   停止中（手動 isActive=false）/ 売切れ（在庫0・自動）/ 販売中
+        function deriveStatus(d) {
+            if (!d.isActive) return 'stopped';
+            if (Number(d.stock || 0) <= 0) return 'soldout';
+            return 'selling';
+        }
+
         function buildCardHtml(id, d) {
+            const status = deriveStatus(d);
             const fishName = i18next.exists(`fish.${d.fishType}`)
                 ? i18next.t(`fish.${d.fishType}`)
                 : escapeHtml(d.fishType);
 
-            const imgHtml = d.photoUrl
-                ? `<img class="fish-card__img" ${asCachedImgAttrs(d.photoUrl)} alt="${escapeHtml(fishName)}">`
-                : `<div class="fish-card__img-placeholder"><span class="material-symbols-outlined" style="font-size:28px;">set_meal</span></div>`;
+            // GAqP は農家単位（自分の認証状態）。取得済みなら全投稿カードに緑バッジ
+            const gaqp = window.currentUserData?.gaqpCertified === true;
+            const imgInner = d.photoUrl
+                ? `<img class="pl-img" ${asCachedImgAttrs(d.photoUrl)} alt="${escapeHtml(fishName)}">`
+                : `<div class="pl-img-ph"><span class="material-symbols-outlined" style="font-size:32px;">set_meal</span></div>`;
+            const imgHtml = `<div class="pl-img-wrap">${imgInner}${gaqp
+                ? `<span class="gaqp-badge"><span class="material-symbols-outlined">verified</span>${i18next.t('gaqp.badge')}</span>`
+                : ''}</div>`;
 
-            const badgeHtml = d.isActive
-                ? `<span class="fish-card__badge badge-active">${i18next.t('dashboard.active')}</span>`
-                : `<span class="fish-card__badge badge-inactive">${i18next.t('dashboard.inactive')}</span>`;
+            const statusBadge = {
+                selling: `<span class="pl-status on">${i18next.t('dashboard.statusSelling')}</span>`,
+                soldout: `<span class="pl-status out">${i18next.t('dashboard.statusSoldout')}</span>`,
+                stopped: `<span class="pl-status stop">${i18next.t('dashboard.statusStopped')}</span>`,
+            }[status];
 
-            const stockText = d.stock <= 0
-                ? i18next.t('dashboard.outOfStock')
-                : `${i18next.t('dashboard.stock')}${d.stock} kg`;
+            const stock = Number(d.stock || 0);
+            const sub = `${escapeHtml(d.size || '')} head/kg ・ ${i18next.t('dashboard.stock')}${stock} kg`;
+            const gutHtml = d.gutPrice
+                ? `<div class="pl-gut">${i18next.t('post.gutPrice')} +${Number(d.gutPrice).toLocaleString()} KHR/kg</div>`
+                : '';
 
-            const toggleBtn = d.isActive
-                ? `<button class="toggle-btn toggle-pause" data-id="${id}">${i18next.t('dashboard.pause')}</button>`
-                : `<button class="toggle-btn toggle-resume" data-id="${id}">${i18next.t('dashboard.resume')}</button>`;
+            // アクションバー（状態別）。売切れは「✏編集」を「📦在庫を補充」に置換（在庫にフォーカス）
+            const editOrRefill = status === 'soldout'
+                ? `<a class="pl-act primary" href="/pages/farmer/post.html?id=${id}&focus=stock"><span class="material-symbols-outlined">inventory_2</span>${i18next.t('dashboard.refillStock')}</a>`
+                : `<a class="pl-act" href="/pages/farmer/post.html?id=${id}"><span class="material-symbols-outlined">edit</span>${i18next.t('dashboard.edit')}</a>`;
+            const questionBtn = `<a class="pl-act" href="/pages/restaurant/comments.html?id=${id}"><span class="material-symbols-outlined">chat_bubble</span>${i18next.t('dashboard.question')}</a>`;
+            const stopResume = status === 'stopped'
+                ? `<button type="button" class="pl-act primary" data-action="resume" data-id="${id}"><span class="material-symbols-outlined">play_arrow</span>${i18next.t('dashboard.resume')}</button>`
+                : `<button type="button" class="pl-act danger" data-action="pause" data-id="${id}"><span class="material-symbols-outlined">pause</span>${i18next.t('dashboard.pause')}</button>`;
+            const kebab = `<button type="button" class="pl-act kebab" data-menu-toggle="${id}" aria-label="menu"><span class="material-symbols-outlined">more_vert</span></button>`;
 
-            // 5/7 #53: ケバブメニュー（停止中の商品のみ削除可能）
-            const menuItem = d.isActive
+            // 削除: 販売中・売切れは不可（先に出品停止）。停止中のみ可。
+            const menuItem = status !== 'stopped'
                 ? `<button type="button" class="card-menu__item disabled">
                        <span class="material-symbols-outlined">info</span>
                        ${i18next.t('dashboard.deleteAfterPause')}
@@ -400,36 +513,19 @@
                    </button>`;
 
             return `
-                <div class="fish-card">
-                    <button type="button" class="card-menu-btn" data-menu-toggle="${id}" aria-label="menu">
-                        <span class="material-symbols-outlined">more_vert</span>
-                    </button>
-                    <div class="card-menu" data-menu-id="${id}">
-                        ${menuItem}
+                <div class="pl-card ${status === 'stopped' ? 'stopped' : ''}">
+                    <div class="card-menu" data-menu-id="${id}">${menuItem}</div>
+                    <div class="pl-card-top">
+                        ${imgHtml}
+                        <div class="pl-info">
+                            <div class="pl-row1"><div class="pl-name">${fishName}</div>${statusBadge}</div>
+                            <div class="pl-sub">${sub}</div>
+                            <div class="pl-price"><span class="num">${Number(d.price || 0).toLocaleString()}</span><span class="unit">KHR /kg</span></div>
+                            ${gutHtml}
+                        </div>
                     </div>
-                    ${imgHtml}
-                    <div class="fish-card__body">
-                        <div class="fish-card__name">
-                            ${fishName} ${badgeHtml}
-                        </div>
-                        <div class="fish-card__meta">
-                            ${i18next.t('dashboard.size')}${escapeHtml(d.size)} head/kg　${stockText}
-                        </div>
-                        <div class="fish-card__price">
-                            ${Number(d.price).toLocaleString()} KHR/kg
-                            ${d.gutPrice ? `<span style="font-size:12px; font-weight:500; color:var(--color-text-sub);"> ${i18next.t('post.gutPrice')} ${Number(d.gutPrice).toLocaleString()} KHR/kg</span>` : ''}
-                        </div>
-                        <div class="card-actions">
-                            <a href="/pages/farmer/post.html?id=${id}" class="toggle-btn edit-btn">
-                                <span class="material-symbols-outlined">edit</span>
-                                ${i18next.t('dashboard.edit')}
-                            </a>
-                            <a href="/pages/restaurant/comments.html?id=${id}" class="comment-link">
-                                <span class="material-symbols-outlined">chat_bubble_outline</span>
-                                ${i18next.t('comments.title')}
-                            </a>
-                            ${toggleBtn}
-                        </div>
+                    <div class="pl-actions">
+                        ${editOrRefill}${questionBtn}${stopResume}${kebab}
                     </div>
                 </div>
             `;
@@ -454,7 +550,22 @@
             if (renderedListings.length === 0) {
                 renderEmpty();
             } else {
-                listEl.innerHTML = renderedListings.map(it => buildCardHtml(it.id, it.data)).join('');
+                // 5/31 #104: ステータス別グルーピング（固定順: 販売中→売切れ・要補充→出品停止）
+                const groups = { selling: [], soldout: [], stopped: [] };
+                renderedListings.forEach(it => { groups[deriveStatus(it.data)].push(it); });
+                const sections = [
+                    { key: 'selling', dot: 'on', label: 'dashboard.groupSelling' },
+                    { key: 'soldout', dot: 'out', label: 'dashboard.groupSoldout' },
+                    { key: 'stopped', dot: 'stop', label: 'dashboard.groupStopped' },
+                ];
+                let html = '';
+                for (const s of sections) {
+                    const arr = groups[s.key];
+                    if (arr.length === 0) continue;
+                    html += `<div class="pl-group-head"><span class="pl-dot ${s.dot}"></span>${i18next.t(s.label)} <span class="pl-count">(${arr.length})</span></div>`;
+                    html += arr.map(it => buildCardHtml(it.id, it.data)).join('');
+                }
+                listEl.innerHTML = html;
             }
             const moreWrap = document.getElementById('load-more-wrap');
             moreWrap.style.display = hasMoreListings ? 'block' : 'none';
@@ -543,8 +654,8 @@
 
         // 5/7 #53: ケバブメニュー＆削除のイベント委譲
         document.addEventListener('click', async (e) => {
-            // 既存メニューを閉じる（メニュー外クリック）
-            const insideMenu = e.target.closest('.card-menu') || e.target.closest('.card-menu-btn');
+            // 既存メニューを閉じる（メニュー外クリック）。5/31 #104: ケバブは [data-menu-toggle]
+            const insideMenu = e.target.closest('.card-menu') || e.target.closest('[data-menu-toggle]');
             if (!insideMenu) {
                 document.querySelectorAll('.card-menu.show').forEach(m => m.classList.remove('show'));
             }
@@ -588,11 +699,11 @@
                 return;
             }
 
-            // 停止/再開ボタン（既存挙動）
-            const toggleListingBtn = e.target.closest('.toggle-btn');
-            if (toggleListingBtn && (toggleListingBtn.classList.contains('toggle-pause') || toggleListingBtn.classList.contains('toggle-resume'))) {
+            // 停止/再開ボタン（5/31 #104: data-action ベース）
+            const toggleListingBtn = e.target.closest('[data-action="pause"], [data-action="resume"]');
+            if (toggleListingBtn) {
                 const listingId = toggleListingBtn.dataset.id;
-                const isPause = toggleListingBtn.classList.contains('toggle-pause');
+                const isPause = toggleListingBtn.dataset.action === 'pause';
                 toggleListingBtn.disabled = true;
                 try {
                     await updateDoc(doc(db, 'fishListings', listingId), { isActive: !isPause });

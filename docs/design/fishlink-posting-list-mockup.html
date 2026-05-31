@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 農家側 投稿一覧 - モック</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #ECEEF0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 12px 60px;
+    color: #1A1A1A;
+  }
+  .intro {
+    max-width: 420px;
+    margin-bottom: 20px;
+    background: #FFF;
+    padding: 16px 18px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .intro h1 { margin: 0 0 8px; font-size: 17px; color: #0B5FB0; }
+  .intro p { margin: 4px 0; color: #4A4A4A; }
+  .intro b { color: #0B5FB0; }
+
+  /* ===== スマホ枠 ===== */
+  .phone {
+    width: 390px;
+    max-width: 100%;
+    height: 780px;
+    background: #FFF;
+    border-radius: 36px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== ヘッダー ===== */
+  .header {
+    flex: 0 0 auto;
+    background: #FFF;
+    padding: 12px 16px 12px;
+    border-bottom: 1px solid #EEF1F4;
+    z-index: 2;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0B5FB0;
+    letter-spacing: -0.5px;
+  }
+  .logo::before { content: "🐟 "; }
+  .header-icons { display: flex; gap: 14px; align-items: center; font-size: 18px; }
+  .lang {
+    background: #F0F4F8;
+    border: 1px solid #DDE3E9;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1A1A1A;
+  }
+  .ic-badge { position: relative; }
+  .ic-badge .dot {
+    position: absolute;
+    top: -4px;
+    right: -6px;
+    background: #E5453F;
+    color: #FFF;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 8px;
+  }
+
+  /* タイトル */
+  .page-title {
+    padding: 14px 16px 10px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  /* ===== 一覧 ===== */
+  .list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 0 12px 90px;
+    background: #F7F9FB;
+  }
+
+  /* セクション見出し */
+  .group-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 16px 4px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1A1A1A;
+  }
+  .group-head .gh-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  .gh-on { background: #2E7D32; }
+  .gh-out { background: #E08600; }
+  .gh-stop { background: #9AA3B0; }
+  .group-head .gh-count {
+    color: #5A6470;
+    font-weight: 600;
+  }
+
+  /* カード */
+  .grid { display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    background: #FFF;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .card-top {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+  }
+  .card-img {
+    width: 88px;
+    height: 88px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .gaqp-img-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: #2E7D32;
+    color: #FFF;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    letter-spacing: 0.2px;
+  }
+  .card-info { flex: 1; min-width: 0; }
+  .card-row1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-name {
+    font-size: 15px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* ステータスバッジ */
+  .status {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    letter-spacing: 0.2px;
+  }
+  .status.on   { background: #E6F4EA; color: #2E7D32; }
+  .status.out  { background: #FCEFD6; color: #B36A00; }
+  .status.stop { background: #ECEEF0; color: #5A6470; }
+
+  .card-sub {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #5A6470;
+  }
+  .card-price {
+    margin-top: 8px;
+    color: #0B5FB0;
+  }
+  .card-price .num {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .card-price .unit {
+    font-size: 12px;
+    color: #5A6470;
+    font-weight: 500;
+    margin-left: 3px;
+  }
+  .gut-note {
+    font-size: 12px;
+    color: #5A6470;
+    margin-top: 3px;
+  }
+
+  /* アクションバー */
+  .card-actions {
+    display: flex;
+    align-items: center;
+    border-top: 1px solid #EEF1F4;
+  }
+  .act {
+    flex: 1;
+    text-align: center;
+    padding: 11px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1A1A1A;
+    cursor: pointer;
+    background: none;
+    border: none;
+    border-right: 1px solid #EEF1F4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .act:last-child { border-right: none; }
+  .act:active { background: #F4F6F8; }
+  .act.danger { color: #E5453F; }
+  .act.primary { color: #0B5FB0; }
+  .act.kebab { flex: 0 0 44px; }
+
+  /* 停止中：グレーアウト */
+  .card.stopped .card-img,
+  .card.stopped .card-name,
+  .card.stopped .card-sub,
+  .card.stopped .card-price,
+  .card.stopped .gut-note {
+    filter: grayscale(1);
+    opacity: 0.55;
+  }
+
+  /* ===== ボトムナビ ===== */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: #FFF;
+    border-top: 1px solid #EEF1F4;
+    display: flex;
+    padding: 8px 0 18px;
+    z-index: 2;
+  }
+  .nav-item { flex: 1; text-align: center; font-size: 10px; color: #9AA3B0; }
+  .nav-item .icon { font-size: 20px; display: block; margin-bottom: 2px; }
+  .nav-item.active { color: #0B5FB0; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 農家側 — 投稿一覧（モック）</h1>
+  <p><b>ステータスでグルーピング</b>: 販売中 → 売切れ・要補充 → 出品停止</p>
+  <p>価格は<b>青</b>に統一（緑はGAqP専用）</p>
+  <p>停止中カードは<b>グレーアウト</b>。アクションは <b>⏸出品停止(赤)</b> / <b>▶再開(青)</b></p>
+</div>
+
+<div class="phone">
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">FISHLINK</div>
+      <div class="header-icons">
+        <div class="lang">🌐 日本語</div>
+        <div class="ic-badge">🔔<span class="dot">2</span></div>
+        <div class="ic-badge">✅<span class="dot">4</span></div>
+        <div>👤</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-title">投稿一覧</div>
+
+  <!-- リスト -->
+  <div class="list">
+    <div class="grid">
+
+      <!-- ===== 販売中 ===== -->
+      <div class="group-head">
+        <span class="gh-dot gh-on"></span>販売中 <span class="gh-count">(3)</span>
+      </div>
+
+      <!-- 販売中カード1 -->
+      <div class="card">
+        <div class="card-top">
+          <div class="card-img" style="background:linear-gradient(135deg,#2C5F7F,#1A3D52)">
+            <div class="gaqp-img-badge">✓ GAqP</div>
+          </div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">ヒレナマズ</div>
+              <span class="status on">販売中</span>
+            </div>
+            <div class="card-sub">10 head/kg ・ 在庫 200 kg</div>
+            <div class="card-price"><span class="num">5,775</span><span class="unit">KHR /kg</span></div>
+            <div class="gut-note">内臓処理 +500 KHR/kg</div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="act">✏️ 編集</button>
+          <button class="act">💬 質問</button>
+          <button class="act danger">⏸ 出品停止</button>
+          <button class="act kebab">⋮</button>
+        </div>
+      </div>
+
+      <!-- 販売中カード2 -->
+      <div class="card">
+        <div class="card-top">
+          <div class="card-img" style="background:linear-gradient(135deg,#4A6B5C,#2E4A3C)">
+            <div class="gaqp-img-badge">✓ GAqP</div>
+          </div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">ライギョ</div>
+              <span class="status on">販売中</span>
+            </div>
+            <div class="card-sub">1 head/kg ・ 在庫 40 kg</div>
+            <div class="card-price"><span class="num">6,300</span><span class="unit">KHR /kg</span></div>
+            <div class="gut-note">内臓処理 +500 KHR/kg</div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="act">✏️ 編集</button>
+          <button class="act">💬 質問</button>
+          <button class="act danger">⏸ 出品停止</button>
+          <button class="act kebab">⋮</button>
+        </div>
+      </div>
+
+      <!-- 販売中カード3（その他魚種） -->
+      <div class="card">
+        <div class="card-top">
+          <div class="card-img" style="background:linear-gradient(135deg,#7B6E5A,#5A5240)"></div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">オニテナガエビ</div>
+              <span class="status on">販売中</span>
+            </div>
+            <div class="card-sub">6-8 head/kg ・ 在庫 25 kg</div>
+            <div class="card-price"><span class="num">42,000</span><span class="unit">KHR /kg</span></div>
+            <div class="gut-note">内臓処理 +500 KHR/kg</div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="act">✏️ 編集</button>
+          <button class="act">💬 質問</button>
+          <button class="act danger">⏸ 出品停止</button>
+          <button class="act kebab">⋮</button>
+        </div>
+      </div>
+
+      <!-- ===== 売切れ・要補充 ===== -->
+      <div class="group-head">
+        <span class="gh-dot gh-out"></span>売切れ・要補充 <span class="gh-count">(1)</span>
+      </div>
+
+      <!-- 売切れカード -->
+      <div class="card">
+        <div class="card-top">
+          <div class="card-img" style="background:linear-gradient(135deg,#8B6F47,#5D4A30)">
+            <div class="gaqp-img-badge">✓ GAqP</div>
+          </div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">パンガシウス</div>
+              <span class="status out">売切れ</span>
+            </div>
+            <div class="card-sub">1-2 head/kg ・ 在庫 0 kg</div>
+            <div class="card-price"><span class="num">6,300</span><span class="unit">KHR /kg</span></div>
+            <div class="gut-note">内臓処理 +500 KHR/kg</div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="act primary">📦 在庫を補充</button>
+          <button class="act">💬 質問</button>
+          <button class="act danger">⏸ 出品停止</button>
+          <button class="act kebab">⋮</button>
+        </div>
+      </div>
+
+      <!-- ===== 出品停止 ===== -->
+      <div class="group-head">
+        <span class="gh-dot gh-stop"></span>出品停止 <span class="gh-count">(1)</span>
+      </div>
+
+      <!-- 停止中カード（グレーアウト） -->
+      <div class="card stopped">
+        <div class="card-top">
+          <div class="card-img" style="background:linear-gradient(135deg,#B89F73,#8A7551)"></div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">ナイルティラピア</div>
+              <span class="status stop">停止中</span>
+            </div>
+            <div class="card-sub">2-3 head/kg ・ 在庫 60 kg</div>
+            <div class="card-price"><span class="num">5,250</span><span class="unit">KHR /kg</span></div>
+            <div class="gut-note">内臓処理 +500 KHR/kg</div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="act">✏️ 編集</button>
+          <button class="act">💬 質問</button>
+          <button class="act primary">▶ 再開</button>
+          <button class="act kebab">⋮</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ボトムナビ -->
+  <div class="bottom-nav">
+    <div class="nav-item active">
+      <div class="icon">📋</div>
+      投稿一覧
+    </div>
+    <div class="nav-item">
+      <div class="icon">➕</div>
+      出品する
+    </div>
+    <div class="nav-item">
+      <div class="icon">🚚</div>
+      注文確認
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

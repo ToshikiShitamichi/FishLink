@@ -58,6 +58,17 @@
     padding:11px 14px; color:var(--sub); font-size:14px;
   }
 
+  /* ---------- キャンペーンバナー（買い手向け・手数料割引。期間中のみ表示） ---------- */
+  .promo{
+    margin:10px 14px 2px; border-radius:12px; padding:12px 38px 12px 14px;
+    background:linear-gradient(135deg,#F5A623,#EA6A0A); color:#fff;
+    display:flex; align-items:center; gap:10px; position:relative;
+  }
+  .promo .pico{font-size:20px; flex:0 0 auto;}
+  .promo .ptxt{font-size:13px; font-weight:800; line-height:1.35;}
+  .promo .ptxt small{display:block; font-weight:600; font-size:11px; opacity:.92; margin-top:2px;}
+  .promo .pclose{position:absolute; top:9px; right:11px; font-size:13px; opacity:.85; cursor:pointer;}
+
   /* ---------- Section ---------- */
   .section{margin-top:18px;}
   .section-head{
@@ -199,6 +210,15 @@
     <div class="search">🔍 魚種・農家を探す</div>
   </div>
 
+  <!-- キャンペーンバナー（買い手向け手数料割引。期間中のみ表示・期間外は要素ごと非表示） -->
+  <div class="promo">
+    <span class="pico">🎉</span>
+    <div class="ptxt">期間限定：取引手数料が無料
+      <small>お会計時にご注文金額の5%を割引 〜6/30</small>
+    </div>
+    <span class="pclose">✕</span>
+  </div>
+
   <!-- 1. 進行中の注文 -->
   <div class="section">
     <div class="section-head">
@@ -281,6 +301,7 @@
       <div class="tile"><div class="circle">🐍</div><div class="nm">ジャイアント<br>スネークヘッド</div></div>
       <div class="tile"><div class="circle">🐟</div><div class="nm">キノボリウオ</div></div>
       <div class="tile"><div class="circle">🐸</div><div class="nm">カエル</div></div>
+      <div class="tile"><div class="circle">…</div><div class="nm">その他</div></div>
     </div>
   </div>
 

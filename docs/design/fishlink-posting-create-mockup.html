@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 農家側 出品フォーム - モック</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #ECEEF0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 12px 60px;
+    color: #1A1A1A;
+  }
+  .intro {
+    max-width: 760px;
+    margin-bottom: 24px;
+    background: #FFF;
+    padding: 16px 18px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .intro h1 { margin: 0 0 8px; font-size: 17px; color: #0B5FB0; }
+  .intro p { margin: 4px 0; color: #4A4A4A; }
+  .intro b { color: #0B5FB0; }
+  .intro .req { color: #E5453F; }
+
+  /* ===== 2画面ステージ ===== */
+  .stage { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .phone-label {
+    font-size: 13px; font-weight: 700; color: #1A1A1A;
+    background: #FFF; padding: 7px 16px; border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .phone-label .tag { color: #5A6470; font-weight: 500; }
+
+  /* ===== スマホ枠 ===== */
+  .phone {
+    width: 390px;
+    max-width: 100%;
+    height: 780px;
+    background: #FFF;
+    border-radius: 36px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== ヘッダー（戻る＋タイトル） ===== */
+  .form-header {
+    flex: 0 0 auto;
+    background: #FFF;
+    padding: 14px 16px;
+    border-bottom: 1px solid #EEF1F4;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 2;
+  }
+  .form-header .back { font-size: 20px; color: #1A1A1A; cursor: pointer; }
+  .form-header .ttl { font-size: 18px; font-weight: 800; }
+
+  /* ===== フォーム本体 ===== */
+  .form-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 4px 16px 96px;
+    background: #F7F9FB;
+  }
+
+  /* セクション見出し */
+  .sec-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 22px 0 12px;
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .sec-head::before {
+    content: "";
+    width: 4px; height: 16px;
+    background: #0B5FB0;
+    border-radius: 2px;
+  }
+  .sec-head .sub { font-size: 12px; font-weight: 500; color: #5A6470; }
+
+  /* バッジ（必須/任意） */
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 8px;
+    letter-spacing: 0.3px;
+  }
+  .badge.req { background: #FDECEA; color: #E5453F; }
+  .badge.opt { background: #ECEEF0; color: #5A6470; }
+
+  /* フィールド */
+  .field { margin-bottom: 16px; }
+  .field-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1A1A1A;
+    margin-bottom: 6px;
+  }
+  .input-row { display: flex; align-items: center; gap: 8px; }
+  .input, .select, .textarea {
+    width: 100%;
+    border: 1px solid #DDE3E9;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 15px;
+    background: #FFF;
+    color: #1A1A1A;
+    font-family: inherit;
+  }
+  .input::placeholder, .textarea::placeholder { color: #AEB6C0; }
+  .select { color: #AEB6C0; appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%235A6470' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>"); background-repeat: no-repeat; background-position: right 14px center; }
+  .input.short { width: 130px; text-align: right; }
+  .unit { font-size: 13px; color: #5A6470; font-weight: 600; flex-shrink: 0; }
+  .helper { font-size: 12px; color: #5A6470; margin-top: 6px; line-height: 1.6; }
+  .helper.green { color: #2E7D32; }
+
+  /* 写真アップロード */
+  .photo-box {
+    border: 1.5px dashed #C7D0DA;
+    border-radius: 12px;
+    padding: 28px 12px;
+    text-align: center;
+    color: #5A6470;
+    background: #FFF;
+  }
+  .photo-box .cam { font-size: 28px; }
+  .photo-box .txt { font-size: 13px; margin-top: 6px; }
+
+  /* 販売価格 計算ボックス */
+  .price-calc {
+    background: #FFF7E6;
+    border: 1px solid #F3D998;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .price-calc .pc-label { font-size: 14px; font-weight: 800; }
+  .price-calc .pc-val { font-size: 26px; font-weight: 800; color: #0B5FB0; letter-spacing: -0.5px; }
+  .price-calc .pc-val.empty { font-size: 14px; font-weight: 600; color: #AEB6C0; }
+  .price-calc .pc-unit { font-size: 12px; color: #5A6470; font-weight: 600; margin-left: 3px; }
+  .price-note {
+    font-size: 12px; color: #5A6470; line-height: 1.6;
+    background: #F0F4F8; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px;
+  }
+  .price-note b { color: #0B5FB0; }
+
+  /* CAA参考価格ボックス */
+  .ref-box {
+    background: #FFF;
+    border: 1px solid #DDE3E9;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 6px;
+  }
+  .ref-box .ref-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .ref-box .ref-ttl { font-size: 13px; font-weight: 800; }
+  .ref-box .ref-tag { font-size: 11px; color: #5A6470; }
+  .ref-box .ref-where { font-size: 12px; color: #5A6470; margin-top: 4px; }
+  .ref-box .ref-price { font-size: 20px; font-weight: 800; color: #2E7D32; margin-top: 4px; letter-spacing: -0.5px; }
+  .ref-box .ref-size { font-size: 12px; color: #5A6470; margin-top: 2px; }
+  .ref-box .ref-src { font-size: 11px; color: #9AA3B0; margin-top: 8px; }
+
+  /* 配送サマリー（2回目以降＝設定あり） */
+  .delivery-summary {
+    background: #EAF2FB;
+    border: 1px solid #C5DBF2;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .delivery-summary .ds-main { display: flex; gap: 10px; align-items: flex-start; }
+  .delivery-summary .ds-icon { font-size: 20px; line-height: 1.2; }
+  .delivery-summary .ds-line { font-size: 13px; font-weight: 700; color: #1A1A1A; }
+  .delivery-summary .ds-line2 { font-size: 12px; color: #5A6470; margin-top: 3px; }
+  .delivery-summary .ds-change { font-size: 13px; font-weight: 700; color: #0B5FB0; flex-shrink: 0; cursor: pointer; }
+
+  /* 説明：警告/注意書き（B案） */
+  .desc-guide { font-size: 12px; color: #5A6470; line-height: 1.7; margin-bottom: 8px; }
+  .desc-guide ul { margin: 4px 0 0; padding-left: 18px; }
+  .warn-note {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    background: #FFF7E6;
+    border: 1px solid #F3D998;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #B36A00;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
+
+  /* 固定CTA */
+  .cta-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: #FFF;
+    border-top: 1px solid #EEF1F4;
+    padding: 12px 16px 22px;
+    z-index: 3;
+  }
+  .cta-btn {
+    width: 100%;
+    background: #0B5FB0;
+    color: #FFF;
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .cta-btn:active { background: #094C8E; }
+
+  /* ボトムシート（配送設定の変更） */
+  .sheet-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 5; display: flex; align-items: flex-end; }
+  .sheet { width: 100%; background: #FFF; border-radius: 20px 20px 0 0; padding: 8px 18px 24px; max-height: 82%; overflow-y: auto; box-shadow: 0 -8px 30px rgba(0,0,0,0.2); }
+  .sheet-handle { width: 40px; height: 4px; background: #D5DBE2; border-radius: 2px; margin: 6px auto 12px; }
+  .sheet-title { font-size: 17px; font-weight: 800; margin-bottom: 12px; }
+  .info-note { background: #FFF7E6; border: 1px solid #F3D998; color: #B36A00; font-size: 12px; font-weight: 600; line-height: 1.5; border-radius: 10px; padding: 10px 12px; margin-bottom: 16px; display: flex; gap: 8px; }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 8px; }
+  .sheet-btn { flex: 1; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 800; border: none; cursor: pointer; font-family: inherit; }
+  .sheet-btn.save { background: #0B5FB0; color: #FFF; }
+  .sheet-btn.cancel { background: #ECEEF0; color: #5A6470; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 農家側 — 魚を投稿する（モック）</h1>
+  <p><b>配送は農家ごとの設定（A案）</b>：配送3点は魚ごとに変わらない＝農家の属性。<b>一度設定すれば全投稿に自動適用</b>、変更も1箇所で全投稿に反映。</p>
+  <p><b>① 初回（配送設定なし）</b>＝フォームに配送3欄が出る → 投稿時に保存。　<b>② 2回目以降（配送設定あり）</b>＝配送欄は消えて<b>サマリー1行＋変更</b>に。</p>
+  <p>初期値：空＋<span class="req">必須</span>=魚単価/配送可能距離/送料単価、プリフィル=内臓処理500、空＝任意=送料無料距離/最低注文量。価格・CTAは<b>青</b>に統一。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ============================================================ -->
+  <!-- ① 初回（配送設定なし）：配送3欄を入力                          -->
+  <!-- ============================================================ -->
+  <div class="phone-wrap">
+    <div class="phone-label">① 初回 <span class="tag">配送設定なし → 配送欄あり</span></div>
+    <div class="phone">
+      <div class="form-header">
+        <span class="back">←</span>
+        <span class="ttl">魚を投稿する</span>
+      </div>
+      <div class="form-body">
+
+        <div class="sec-head">基本情報</div>
+        <div class="field">
+          <div class="field-label">魚種 <span class="badge req">必須</span></div>
+          <select class="select">
+            <option>選択してください</option>
+            <!-- 実際は CAA 標準10種固定＋その他 -->
+            <option>ヒレナマズ</option>
+            <option>パンガシウス</option>
+            <option>ティラピア</option>
+            <option>ライギョ</option>
+            <option>コイ</option>
+            <option>グラミー</option>
+            <option>シルバーバルブ</option>
+            <option>スネークヘッド</option>
+            <option>キノボリウオ</option>
+            <option>ナマズ</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label">サイズ（head/kg） <span class="badge req">必須</span></div>
+          <input class="input" placeholder="例：6-8">
+        </div>
+        <div class="field">
+          <div class="field-label">在庫数量（kg） <span class="badge req">必須</span></div>
+          <input class="input" placeholder="例：50">
+        </div>
+        <div class="field">
+          <div class="field-label">写真 <span class="badge req">必須</span></div>
+          <div class="photo-box">
+            <div class="cam">📷</div>
+            <div class="txt">タップして写真を追加（複数枚可）</div>
+          </div>
+        </div>
+
+        <div class="sec-head">販売価格 <span class="sub">CAA参考価格を参考に設定</span></div>
+        <div class="field">
+          <div class="field-label">魚単価 <span class="badge req">必須</span></div>
+          <div class="input-row">
+            <input class="input short" placeholder="例：5,000">
+            <span class="unit">KHR /kg</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">＋内臓処理</div>
+          <div class="input-row">
+            <input class="input short" value="500">
+            <span class="unit">KHR /kg</span>
+          </div>
+          <div class="helper">内臓処理を希望する注文に加算されます。</div>
+        </div>
+        <div class="price-calc">
+          <span class="pc-label">販売価格</span>
+          <span class="pc-val empty">魚単価を入力してください</span>
+        </div>
+        <div class="price-note">
+          <b>販売価格 ＝ 魚単価 ＋ 内臓処理</b>
+        </div>
+        <div class="ref-box">
+          <div class="ref-top">
+            <span class="ref-ttl">参考販売価格</span>
+            <span class="ref-tag">参考表示</span>
+          </div>
+          <div class="ref-where">Takeo・ヒレナマズ</div>
+          <div class="ref-price">5,000–5,500 KHR/kg</div>
+          <div class="ref-size">0.17–0.25kg</div>
+          <div class="ref-src">※ CAA Farm Gate Price を参考に作成</div>
+        </div>
+
+        <!-- 配送：初回は入力欄。投稿すると農家の配送設定として保存される -->
+        <div class="sec-head">配送 <span class="sub">レストラン負担・全出品に共通</span></div>
+        <div class="field">
+          <div class="field-label">配送可能距離（km） <span class="badge req">必須</span></div>
+          <div class="input-row">
+            <input class="input short" placeholder="例：30">
+            <span class="unit">km</span>
+          </div>
+          <div class="helper">ここまで配達します。これより遠いレストランの画面には表示されません。</div>
+        </div>
+        <div class="field">
+          <div class="field-label">10kmあたりの送料 <span class="badge req">必須</span></div>
+          <div class="input-row">
+            <input class="input short" placeholder="例：5,000">
+            <span class="unit">KHR /10km</span>
+          </div>
+          <div class="helper">例：10kmあたり5,000 KHRなら、5km＝2,500、15km＝7,500（距離に応じて自動計算）。送料は配達1回の固定額で、注文量では変わりません。</div>
+        </div>
+        <div class="field">
+          <div class="field-label">送料無料距離（km） <span class="badge opt">任意</span></div>
+          <div class="input-row">
+            <input class="input short" placeholder="0（無料圏なし）">
+            <span class="unit">km</span>
+          </div>
+          <div class="helper green">この距離内は送料無料。空欄なら全配達で送料がかかります。無料圏を作りたいときだけ入力してください。</div>
+        </div>
+        <div class="helper">この配送条件は<b>すべての出品に共通</b>で保存されます。次回からは入力不要です。</div>
+
+        <div class="sec-head">取引条件 <span class="sub">任意</span></div>
+        <div class="field">
+          <div class="field-label">最低注文量（kg） <span class="badge opt">任意</span></div>
+          <div class="input-row">
+            <input class="input short" placeholder="指定なし">
+            <span class="unit">kg</span>
+          </div>
+          <div class="helper">これ未満の注文は受け付けません。空欄なら制限なし。</div>
+        </div>
+
+        <div class="sec-head">商品の説明 <span class="sub">任意</span></div>
+        <div class="desc-guide">
+          詳しく書くほどレストランの安心・信頼につながります。以下を参考にどうぞ。
+          <ul>
+            <li>魚の品質（鮮度・サイズ感など）</li>
+            <li>安全性（薬や添加物の使用有無）</li>
+            <li>餌（種類・自家製かどうか）</li>
+            <li>池の状態（水質管理・環境）</li>
+            <li>おすすめポイント・こだわり</li>
+          </ul>
+        </div>
+        <div class="warn-note">
+          <span>⚠️</span>
+          <span>事実だけを書いてください（虚偽は信頼を損ないます）。</span>
+        </div>
+        <div class="field">
+          <textarea class="textarea" placeholder="例：&#10;・薬は使っていません。餌は自家製の餌を与えています。&#10;・池の水質管理に気をつけて育てています。&#10;・朝に水揚げする新鮮な魚です。"></textarea>
+        </div>
+
+      </div>
+      <div class="cta-bar">
+        <button class="cta-btn">投稿する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ② 2回目以降（配送設定あり）：サマリー行＋変更                  -->
+  <!-- ============================================================ -->
+  <div class="phone-wrap">
+    <div class="phone-label">② 2回目以降 <span class="tag">配送設定あり → サマリー行</span></div>
+    <div class="phone">
+      <div class="form-header">
+        <span class="back">←</span>
+        <span class="ttl">魚を投稿する</span>
+      </div>
+      <div class="form-body">
+
+        <div class="sec-head">基本情報</div>
+        <div class="field">
+          <div class="field-label">魚種 <span class="badge req">必須</span></div>
+          <select class="select">
+            <option>選択してください</option>
+            <option>ヒレナマズ</option>
+            <option>パンガシウス</option>
+            <option>ティラピア</option>
+            <option>ライギョ</option>
+            <option>コイ</option>
+            <option>グラミー</option>
+            <option>シルバーバルブ</option>
+            <option>スネークヘッド</option>
+            <option>キノボリウオ</option>
+            <option>ナマズ</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="field-label">サイズ（head/kg） <span class="badge req">必須</span></div>
+          <input class="input" placeholder="例：6-8">
+        </div>
+        <div class="field">
+          <div class="field-label">在庫数量（kg） <span class="badge req">必須</span></div>
+          <input class="input" placeholder="例：50">
+        </div>
+        <div class="field">
+          <div class="field-label">写真 <span class="badge req">必須</span></div>
+          <div class="photo-box">
+            <div class="cam">📷</div>
+            <div class="txt">タップして写真を追加（複数枚可）</div>
+          </div>
+        </div>
+
+        <div class="sec-head">販売価格 <span class="sub">CAA参考価格を参考に設定</span></div>
+        <div class="field">
+          <div class="field-label">魚単価 <span class="badge req">必須</span></div>
+          <div class="input-row">
+            <input class="input short" placeholder="例：5,000">
+            <span class="unit">KHR /kg</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">＋内臓処理</div>
+          <div class="input-row">
+            <input class="input short" value="500">
+            <span class="unit">KHR /kg</span>
+          </div>
+          <div class="helper">内臓処理を希望する注文に加算されます。</div>
+        </div>
+        <div class="price-calc">
+          <span class="pc-label">販売価格</span>
+          <span class="pc-val empty">魚単価を入力してください</span>
+        </div>
+        <div class="price-note">
+          <b>販売価格 ＝ 魚単価 ＋ 内臓処理</b>
+        </div>
+        <div class="ref-box">
+          <div class="ref-top">
+            <span class="ref-ttl">参考販売価格</span>
+            <span class="ref-tag">参考表示</span>
+          </div>
+          <div class="ref-where">Takeo・ヒレナマズ</div>
+          <div class="ref-price">5,000–5,500 KHR/kg</div>
+          <div class="ref-size">0.17–0.25kg</div>
+          <div class="ref-src">※ CAA Farm Gate Price を参考に作成</div>
+        </div>
+
+        <!-- 配送：設定済みなので入力欄は出さず、適用される設定をサマリー表示 -->
+        <div class="sec-head">配送 <span class="sub">レストラン負担・全出品に共通</span></div>
+        <div class="delivery-summary">
+          <div class="ds-main">
+            <span class="ds-icon">🚚</span>
+            <div>
+              <div class="ds-line">30kmまで配達 ・ 5km以内は送料無料</div>
+              <div class="ds-line2">10kmあたり 5,000 KHR</div>
+            </div>
+          </div>
+          <span class="ds-change">変更</span>
+        </div>
+        <div class="helper">配送条件は全出品に共通です。「変更」するとすべての出品に反映されます。</div>
+
+        <div class="sec-head">取引条件 <span class="sub">任意</span></div>
+        <div class="field">
+          <div class="field-label">最低注文量（kg） <span class="badge opt">任意</span></div>
+          <div class="input-row">
+            <input class="input short" placeholder="指定なし">
+            <span class="unit">kg</span>
+          </div>
+          <div class="helper">これ未満の注文は受け付けません。空欄なら制限なし。</div>
+        </div>
+
+        <div class="sec-head">商品の説明 <span class="sub">任意</span></div>
+        <div class="desc-guide">
+          詳しく書くほどレストランの安心・信頼につながります。以下を参考にどうぞ。
+          <ul>
+            <li>魚の品質（鮮度・サイズ感など）</li>
+            <li>安全性（薬や添加物の使用有無）</li>
+            <li>餌（種類・自家製かどうか）</li>
+            <li>池の状態（水質管理・環境）</li>
+            <li>おすすめポイント・こだわり</li>
+          </ul>
+        </div>
+        <div class="warn-note">
+          <span>⚠️</span>
+          <span>事実だけを書いてください（虚偽は信頼を損ないます）。</span>
+        </div>
+        <div class="field">
+          <textarea class="textarea" placeholder="例：&#10;・薬は使っていません。餌は自家製の餌を与えています。&#10;・池の水質管理に気をつけて育てています。&#10;・朝に水揚げする新鮮な魚です。"></textarea>
+        </div>
+
+      </div>
+      <div class="cta-bar">
+        <button class="cta-btn">投稿する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ③ 〔変更〕タップ = ボトムシート（配送設定の変更）              -->
+  <!-- ============================================================ -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ 〔変更〕タップ <span class="tag">配送設定のボトムシート</span></div>
+    <div class="phone">
+      <div class="form-header">
+        <span class="back">←</span>
+        <span class="ttl">魚を投稿する</span>
+      </div>
+      <div class="form-body">
+        <div class="sec-head">販売価格 <span class="sub">CAA参考価格を参考に設定</span></div>
+        <div class="field">
+          <div class="field-label">魚単価 <span class="badge req">必須</span></div>
+          <div class="input-row">
+            <input class="input short" placeholder="例：5,000">
+            <span class="unit">KHR /kg</span>
+          </div>
+        </div>
+        <div class="sec-head">配送 <span class="sub">レストラン負担・全出品に共通</span></div>
+        <div class="delivery-summary">
+          <div class="ds-main">
+            <span class="ds-icon">🚚</span>
+            <div>
+              <div class="ds-line">30kmまで配達 ・ 5km以内は送料無料</div>
+              <div class="ds-line2">10kmあたり 5,000 KHR</div>
+            </div>
+          </div>
+          <span class="ds-change">変更</span>
+        </div>
+      </div>
+      <div class="cta-bar">
+        <button class="cta-btn">投稿する</button>
+      </div>
+
+      <!-- ボトムシート（変更タップで出現。入力中フォームは保持されたまま上に重なる） -->
+      <div class="sheet-overlay">
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">配送設定</div>
+          <div class="info-note">
+            <span>⚠️</span>
+            <span>配送条件は全出品に共通です。変更すると現在の <b>5件</b> すべてに反映されます。</span>
+          </div>
+
+          <div class="field">
+            <div class="field-label">配送可能距離（km） <span class="badge req">必須</span></div>
+            <div class="input-row">
+              <input class="input short" value="30">
+              <span class="unit">km</span>
+            </div>
+            <div class="helper">ここまで配達します。これより遠いレストランの画面には表示されません。</div>
+          </div>
+          <div class="field">
+            <div class="field-label">10kmあたりの送料 <span class="badge req">必須</span></div>
+            <div class="input-row">
+              <input class="input short" value="5,000">
+              <span class="unit">KHR /10km</span>
+            </div>
+            <div class="helper">例：5,000なら5km＝2,500、15km＝7,500（距離に応じて自動計算）。</div>
+          </div>
+          <div class="field">
+            <div class="field-label">送料無料距離（km） <span class="badge opt">任意</span></div>
+            <div class="input-row">
+              <input class="input short" value="5">
+              <span class="unit">km</span>
+            </div>
+            <div class="helper green">この距離内は送料無料。空欄なら全配達で送料がかかります。</div>
+          </div>
+
+          <div class="sheet-actions">
+            <button class="sheet-btn cancel">キャンセル</button>
+            <button class="sheet-btn save">保存して全出品に反映</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

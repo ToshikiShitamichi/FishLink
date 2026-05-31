@@ -141,6 +141,9 @@
         .fl-card__price b { font-size: 18px; font-weight: 800; color: var(--color-primary); line-height: 1; }
         .fl-card__price span { font-size: 11px; color: var(--color-text-sub); font-weight: 600; }
         .fl-card__meta { font-size: 12px; color: var(--color-text-sub); margin-top: 5px; }
+        /* 5/31 #107: 送料無料（緑・太字）/ 評価0件の「新規」表示 */
+        .fl-card__free { font-size: 12px; color: var(--color-primary); font-weight: 700; margin-top: 3px; }
+        .fl-new { color: var(--color-text-sub); font-weight: 600; }
         .fl-card__farmer {
             display: flex; align-items: center; gap: 6px;
             border-top: 1px solid var(--color-border); padding: 7px 10px; background: #fafcfd;
@@ -353,19 +356,12 @@
                         <span>0</span>
                         <span class="fl-slider-val" id="price-val"></span>
                     </div>
-                    <input type="range" id="price-range" min="0" max="10000" step="500" value="10000">
+                    <!-- 5/31 #107: 価格スライダー上限は 0〜25000 固定（動的にしない） -->
+                    <input type="range" id="price-range" min="0" max="25000" step="1000" value="25000">
                 </div>
             </div>
-            <div class="fl-sheet__sec">
-                <h3 data-i18n="fishlist.filterDistance"></h3>
-                <div class="fl-slider-wrap">
-                    <div class="fl-slider-labels">
-                        <span>0km</span>
-                        <span class="fl-slider-val" id="distance-val"></span>
-                    </div>
-                    <input type="range" id="distance-range" min="0" max="100" step="5" value="100">
-                </div>
-            </div>
+            <!-- 5/31 #107: 距離スライダーは廃止。配達範囲外はベースルールで完全非表示、
+                 「近い方がいい」はソート「距離が近い順」＋カードの距離表示でカバー。 -->
             <div class="fl-sheet__sec">
                 <h3 data-i18n="fishlist.filterOther"></h3>
                 <div class="fl-chip-group">
@@ -424,6 +420,7 @@
         import { asCachedImgAttrs } from '/js/image-cache.js';
         import { getCachedUser } from '/js/data-cache.js';
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        import { resolveDelivery } from '/js/order-utils.js';
 
         const loading = document.getElementById('loading');
         let cartListingIds = new Set();
@@ -456,24 +453,38 @@
         }
 
         // ── 絞り込み・ソート・検索の状態 ──
-        const PRICE_MAX = 10000, DIST_MAX = 100;
+        // 5/31 #107: 価格上限は 0〜25000 固定。距離スライダーは廃止（配達範囲外は完全非表示）。
+        const PRICE_MAX = 25000;
         const state = {
             sort: 'distance',
             species: new Set(),
             provinces: new Set(),
             priceMax: PRICE_MAX,
-            distanceMax: DIST_MAX,
             favOnly: false,
             historyOnly: false,
             q: '',
         };
+
+        // 標準10種（CAA）。これ以外は「その他」フィルタ対象。
+        const STANDARD_FISH = FISH_FILTER_KEYS;
+        function isStandardFish(ft) {
+            if (!ft) return false;
+            if (STANDARD_FISH.includes(ft)) return true;
+            // 旧データ: 日本語/英語ラベルで保存されたもの
+            return STANDARD_FISH.some(k => {
+                const label = i18next.t(`fish.${k}`);
+                if (ft === label) return true;
+                const first = String(label).split('/')[0].trim();
+                return first && String(ft).includes(first);
+            });
+        }
 
         // URL パラメータ（Home からの遷移）で初期条件を上書き
         const _params = new URLSearchParams(location.search);
         const _sortParam = _params.get('sort');
         if (['distance', 'price', 'newest', 'rating'].includes(_sortParam)) state.sort = _sortParam;
         const _fishTypeParam = _params.get('fishType');
-        if (_fishTypeParam && FISH_FILTER_KEYS.includes(_fishTypeParam)) state.species.add(_fishTypeParam);
+        if (_fishTypeParam && (FISH_FILTER_KEYS.includes(_fishTypeParam) || _fishTypeParam === 'other')) state.species.add(_fishTypeParam);
         if (_params.get('filter') === 'history') state.historyOnly = true;
         const _qParam = _params.get('q');
         if (_qParam) state.q = _qParam;
@@ -487,7 +498,6 @@
                     species: [...state.species],
                     provinces: [...state.provinces],
                     priceMax: state.priceMax,
-                    distanceMax: state.distanceMax,
                     favOnly: state.favOnly,
                     historyOnly: state.historyOnly,
                     q: state.q,
@@ -509,7 +519,6 @@
                 state.species = new Set(s.species || []);
                 state.provinces = new Set(s.provinces || []);
                 state.priceMax = typeof s.priceMax === 'number' ? s.priceMax : PRICE_MAX;
-                state.distanceMax = typeof s.distanceMax === 'number' ? s.distanceMax : DIST_MAX;
                 state.favOnly = !!s.favOnly;
                 state.historyOnly = !!s.historyOnly;
                 state.q = s.q || '';
@@ -521,7 +530,6 @@
         function appliedCount() {
             let n = state.species.size + state.provinces.size;
             if (state.priceMax < PRICE_MAX) n++;
-            if (state.distanceMax < DIST_MAX) n++;
             if (state.favOnly) n++;
             if (state.historyOnly) n++;
             return n;
@@ -660,6 +668,8 @@
                 const newItems = itemsRaw.map((it, i) => {
                     const data = it.data, farmer = it.farmer;
                     const rawUnit = (data.price || 0) + (data.gutPrice || 0);
+                    // 5/31 #105/#107: 配送設定は farmer 単位（farmerDelivery）を正・旧 listing fallback
+                    const dlv = resolveDelivery(farmer, data);
                     return {
                         id: it.id, ...data,
                         farmerName: farmer.displayName || '',
@@ -669,7 +679,9 @@
                         farmerReviewCount: Number(farmer.reviewCount || 0),
                         farmerGaqpCertified: farmer.gaqpCertified === true,
                         distanceKm: distanceMap[i] ?? null,
-                        maxDistance: data.maxDistance || null,
+                        deliverableRadiusKm: dlv.radiusKm,
+                        freeDeliveryKm: dlv.freeKm,
+                        deliveryFeePer10km: Math.round(dlv.ratePerKm * 10),
                         displayPrice: Math.round(rawUnit * (1 + serviceRate)),
                         createdAtMs: data.createdAt?.toMillis?.() || 0,
                     };
@@ -694,18 +706,19 @@
         // ── フィルタ適用＋ソート ──
         function filteredItems() {
             let items = [...allItems];
-            // 配送圏外を除外（距離不明は表示）
+            // 配達範囲外はベースルールとして完全非表示（5/31 #107・距離不明は残す）
             items = items.filter(it => {
                 if (it.distanceKm === null || it.distanceKm === undefined) return true;
-                if (it.maxDistance && it.distanceKm > it.maxDistance) return false;
+                if (it.deliverableRadiusKm && it.distanceKm > it.deliverableRadiusKm) return false;
                 return true;
             });
-            // 魚種（OR）
+            // 魚種（OR）。「その他」＝標準10種以外の出品
             if (state.species.size > 0) {
                 items = items.filter(it => {
-                    if (state.species.has(it.fishType)) return true;
-                    // 旧データ（日本語テキスト保存）との緩い一致
                     for (const key of state.species) {
+                        if (key === 'other') { if (!isStandardFish(it.fishType)) return true; continue; }
+                        if (it.fishType === key) return true;
+                        // 旧データ（日本語テキスト保存）との緩い一致
                         const label = i18next.t(`fish.${key}`);
                         if (it.fishType === label || (label && it.fishType?.includes(String(label).split('/')[0].trim()))) return true;
                     }
@@ -721,8 +734,6 @@
             }
             // 価格帯
             if (state.priceMax < PRICE_MAX) items = items.filter(it => it.displayPrice <= state.priceMax);
-            // 距離（既知の距離のみ判定。不明は残す）
-            if (state.distanceMax < DIST_MAX) items = items.filter(it => it.distanceKm === null || it.distanceKm <= state.distanceMax);
             // お気に入り
             if (state.favOnly) items = items.filter(it => favoriteIds.has(it.id));
             // 過去注文
@@ -763,6 +774,8 @@
             const metaText = out
                 ? i18next.t('fishlist.soldOut')
                 : [i18next.t('restaurant.stock', { kg: item.stock }), distText].filter(Boolean).join(' · ');
+            // 5/31 #107: distanceKm ≤ freeDeliveryKm のときだけ「送料無料」（有料時は金額を出さない）
+            const freeDelivery = !out && item.distanceKm != null && item.freeDeliveryKm > 0 && item.distanceKm <= item.freeDeliveryKm;
             const isFav = favoriteIds.has(item.id);
             const imgHtml = item.photoUrl
                 ? `<img ${asCachedImgAttrs(item.photoUrl)} alt="${escapeHtml(name)}" loading="lazy">`
@@ -784,6 +797,7 @@
                             <div class="fl-card__sz">${escapeHtml(item.size || '')} head/kg</div>
                             <div class="fl-card__price"><b>${item.displayPrice.toLocaleString()}</b><span>KHR/kg</span></div>
                             <div class="fl-card__meta">${escapeHtml(metaText)}</div>
+                            ${freeDelivery ? `<div class="fl-card__free">${i18next.t('fishlist.freeDelivery')}</div>` : ''}
                         </div>
                         ${item.farmerName ? `
                             <div class="fl-card__farmer" data-act="view-farmer" data-farmer-id="${item.farmerId}" role="button" tabindex="0" title="${i18next.t('restaurant.viewFarmer')}">
@@ -791,7 +805,9 @@
                                     ${item.farmerAvatarUrl ? `<img ${asCachedImgAttrs(item.farmerAvatarUrl)} alt="" loading="lazy">` : `<span class="material-symbols-outlined">person</span>`}
                                 </div>
                                 <div class="fl-card__fn">${escapeHtml(item.farmerName)}</div>
-                                <div class="fl-card__rt"><span class="material-symbols-outlined">star</span>${Math.round(item.farmerAvgRating)}% <span>(${item.farmerReviewCount})</span></div>
+                                <div class="fl-card__rt">${item.farmerReviewCount > 0
+                                    ? `<span class="material-symbols-outlined">star</span>${Math.round(item.farmerAvgRating)}% <span>(${item.farmerReviewCount})</span>`
+                                    : `<span class="fl-new">${i18next.t('fishlist.newFarmer')}</span>`}</div>
                             </div>` : ''}
                     </a>
                 </div>`;
@@ -827,10 +843,16 @@
         // ── ボトムシート UI ──
         function buildSheetSpecies() {
             const row = document.getElementById('sheet-species');
-            row.innerHTML = FISH_FILTER_KEYS.map(key => `
+            // 5/31 #107: 標準10種＋末尾に「その他」（10種以外の出品＝CAA参考価格なし）
+            const chips = FISH_FILTER_KEYS.map(key => `
                 <div class="fl-chip ${state.species.has(key) ? 'selected' : ''}" data-act="toggle-species" data-key="${key}">
                     <span class="fl-chip__check material-symbols-outlined">check</span>${escapeHtml(fishLabelShort(key))}
-                </div>`).join('');
+                </div>`);
+            chips.push(`
+                <div class="fl-chip ${state.species.has('other') ? 'selected' : ''}" data-act="toggle-species" data-key="other">
+                    <span class="fl-chip__check material-symbols-outlined">check</span>${escapeHtml(i18next.t('fish.otherShort'))}
+                </div>`);
+            row.innerHTML = chips.join('');
         }
         function buildSheetRegion() {
             const row = document.getElementById('sheet-region');
@@ -845,18 +867,13 @@
             buildSheetSpecies();
             buildSheetRegion();
             document.getElementById('price-range').value = state.priceMax;
-            document.getElementById('distance-range').value = state.distanceMax;
-            updatePriceLabel(); updateDistanceLabel();
+            updatePriceLabel();
             document.getElementById('chip-fav').classList.toggle('selected', state.favOnly);
             document.getElementById('chip-history').classList.toggle('selected', state.historyOnly);
         }
         function updatePriceLabel() {
             const v = Number(document.getElementById('price-range').value);
             document.getElementById('price-val').textContent = v >= PRICE_MAX ? i18next.t('fishlist.noLimit') : i18next.t('fishlist.priceUnder', { price: v.toLocaleString() });
-        }
-        function updateDistanceLabel() {
-            const v = Number(document.getElementById('distance-range').value);
-            document.getElementById('distance-val').textContent = v >= DIST_MAX ? i18next.t('fishlist.noLimit') : i18next.t('fishlist.distanceUnder', { km: v });
         }
         function openSheet() {
             syncSheetControls();
@@ -879,7 +896,6 @@
             state.species.clear();
             state.provinces.clear();
             state.priceMax = PRICE_MAX;
-            state.distanceMax = DIST_MAX;
             state.favOnly = false;
             state.historyOnly = false;
             syncSheetControls();
@@ -898,7 +914,6 @@
             }
         });
         document.getElementById('price-range').addEventListener('input', (e) => { state.priceMax = Number(e.target.value); updatePriceLabel(); });
-        document.getElementById('distance-range').addEventListener('input', (e) => { state.distanceMax = Number(e.target.value); updateDistanceLabel(); });
         document.getElementById('sheet-reset').addEventListener('click', resetFilters);
         document.getElementById('sheet-apply').addEventListener('click', applyAndClose);
         document.getElementById('sheet-backdrop').addEventListener('click', closeSheet);

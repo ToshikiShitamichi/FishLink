@@ -20,7 +20,12 @@
         "etaArrive": "នឹងមកដល់ {{when}}",
         "declinedAlert": "{{farmer}} បានបដិសេធដោយសារអស់ស្តុក",
         "findOtherFarmer": "ស្វែងរកកសិករផ្សេង",
-        "viewFarmer": "មើលកសិករ"
+        "viewFarmer": "មើលកសិករ",
+        "campaignFree": "ឥតគិតថ្លៃសេវា",
+        "campaignHalf": "ថ្លៃសេវាពាក់កណ្តាល",
+        "campaignOff": "បញ្ចុះថ្លៃសេវា {{pct}}%",
+        "campaignSub": "បញ្ចុះ {{pct}}% លើវិក្កយបត្រ",
+        "campaignSubUntil": "បញ្ចុះ {{pct}}% លើវិក្កយបត្រ · ដល់ {{until}}"
     },
     "fishlist": {
         "filter": "ត្រង",
@@ -40,7 +45,9 @@
         "soldOut": "អស់ស្តុកថ្ងៃនេះ",
         "emptyTitle": "គ្មានត្រីត្រូវនឹងលក្ខខណ្ឌ",
         "emptyReset": "កំណត់ការត្រងឡើងវិញ",
-        "searchClear": "សម្អាត"
+        "searchClear": "សម្អាត",
+        "newFarmer": "ថ្មី",
+        "freeDelivery": "ដឹកឥតគិតថ្លៃ"
     },
     "lang": {
         "ja": "日本語",
@@ -143,7 +150,7 @@
         "optional": "ជម្រើស",
         "priceResult": "តម្លៃលក់",
         "priceHint": "※ អាចកែតម្រូវពីគោលការណ៍",
-        "sectionDelivery": "ថ្លៃដឹកជញ្ជូន (ភោជនីយដ្ឋានបង់)",
+        "sectionDelivery": "ការដឹកជញ្ជូន",
         "deliveryRate": "ថ្លៃដឹកជញ្ជូនក្នុង 10 គីឡូម៉ែត្រ",
         "deliveryRateExample": "ឧទាហរណ៍៖ ប្រសិនបើ 5,000 KHR ក្នុង 10 គម 5 គម = 2,500 KHR, 15 គម = 7,500 KHR",
         "deliveryNote1": "※ ក្នុងចម្ងាយដឹកជញ្ជូនឥតគិតថ្លៃ គឺឥតគិតថ្លៃ",
@@ -167,7 +174,24 @@
         "errorPrice": "សូមបញ្ចូលតម្លៃឯកតា",
         "errorLogin": "ត្រូវការចូលគណនី",
         "errorSubmit": "បង្ហោះបរាជ័យ។ សូមព្យាយាមម្តងទៀត។",
-        "uploadProgress": "កំពុងបញ្ចូលរូបភាព... ({{current}}/{{total}})"
+        "uploadProgress": "កំពុងបញ្ចូលរូបភាព... ({{current}}/{{total}})",
+        "priceFormula": "តម្លៃលក់ = តម្លៃត្រី + ថ្លៃសម្អាតពោះវៀន",
+        "gutPriceHelper": "បន្ថែមទៅការបញ្ជាទិញដែលស្នើសុំសម្អាតពោះវៀន។",
+        "deliveryCommonTag": "ភោជនីយដ្ឋានបង់ · ប្រើរួមគ្នាគ្រប់ការបង្ហោះ",
+        "deliverableRadius": "ចម្ងាយដឹកជញ្ជូន (គ.ម)",
+        "deliverableRadiusNote": "ដឹកជញ្ជូនរហូតដល់ចំណុចនេះ។ ភោជនីយដ្ឋានឆ្ងាយជាងនេះនឹងមើលមិនឃើញការបង្ហោះរបស់អ្នក។",
+        "freeDeliveryNote": "ឥតគិតថ្លៃដឹកក្នុងចម្ងាយនេះ។ ទុកទទេ ប្រសិនបើគិតថ្លៃគ្រប់ការដឹក។ បំពេញតែពេលចង់មានតំបន់ឥតគិតថ្លៃ។",
+        "deliveryFirstHelper": "ការកំណត់ដឹកជញ្ជូននេះត្រូវរក្សាទុកសម្រាប់គ្រប់ការបង្ហោះ។ មិនចាំបាច់បំពេញម្តងទៀតទេ។",
+        "deliveryChange": "ផ្លាស់ប្តូរ",
+        "deliverySummaryHelper": "ការដឹកជញ្ជូនអនុវត្តគ្រប់ការបង្ហោះ។ «ផ្លាស់ប្តូរ» នឹងធ្វើបច្ចុប្បន្នភាពទាំងអស់។",
+        "deliverySummaryRadius": "ដឹករហូតដល់ {{km}} គ.ម",
+        "deliverySummaryFree": "ឥតគិតថ្លៃក្នុង {{km}} គ.ម",
+        "deliverySummaryFee": "{{fee}} រៀល ក្នុង 10 គ.ម",
+        "deliverySheetTitle": "ការកំណត់ដឹកជញ្ជូន",
+        "deliverySheetWarn": "ការដឹកជញ្ជូនអនុវត្តគ្រប់ការបង្ហោះ។ ការផ្លាស់ប្តូរនឹងធ្វើបច្ចុប្បន្នភាពការបង្ហោះ {{count}} ទាំងអស់។",
+        "deliverySheetCancel": "បោះបង់",
+        "deliverySheetSave": "រក្សាទុក & អនុវត្តទាំងអស់",
+        "errorDelivery": "សូមបញ្ចូលចម្ងាយ និងថ្លៃដឹកជញ្ជូន។"
     },
     "fish": {
         "striped_snakehead": "ត្រីរ៉ស់",
@@ -185,7 +209,8 @@
         "clarias_catfish": "ត្រីអណ្ដែង",
         "common_carp_large": "ត្រីកាប (ធំ)",
         "common_carp_small": "ត្រីកាប (តូច)",
-        "featherback": "ត្រីស្លាត"
+        "featherback": "ត្រីស្លាត",
+        "otherShort": "ផ្សេងៗ"
     },
     "province": {
         "phnom_penh": "ភ្នំពេញ",
@@ -413,8 +438,7 @@
         "successRedirect": "ការបញ្ជាទិញបានជោគជ័យ",
         "moreFromFarmerTitle": "ត្រីផ្សេងទៀតពីកសិករនេះ",
         "moreFromFarmerDesc": "កសិករនេះមានត្រីផ្សេងទៀតផងដែរ",
-        "viewCartCta": "មើលកន្ត្រក (បញ្ជាទិញរួមគ្នា)",
-        "farmerLabel": "កសិករ"
+        "viewCartCta": "មើលកន្ត្រក (បញ្ជាទិញរួមគ្នា)"
     },
     "orders": {
         "title": "បញ្ជាក់ការបញ្ជាទិញ",
@@ -547,7 +571,16 @@
         "delete": "លុប",
         "deleteAfterPause": "ផ្អាកមុនទើបអាចលុបបាន",
         "confirmDelete": "តើពិតជាលុបមែនទេ?\nបន្ទាប់ពីលុប វានឹងលែងបង្ហាញក្នុងបញ្ជីទៀតទេ។\n(ប្រវត្តិការបញ្ជាទិញនៅតែអាចមើលបាន)",
-        "errorDelete": "ការលុបបានបរាជ័យ។ សូមព្យាយាមម្ដងទៀត។"
+        "errorDelete": "ការលុបបានបរាជ័យ។ សូមព្យាយាមម្ដងទៀត។",
+        "pageTitle": "ការបង្ហោះរបស់ខ្ញុំ",
+        "statusSelling": "កំពុងលក់",
+        "statusSoldout": "អស់ស្តុក",
+        "statusStopped": "ផ្អាក",
+        "groupSelling": "កំពុងលក់",
+        "groupSoldout": "អស់ស្តុក · បំពេញឡើងវិញ",
+        "groupStopped": "ផ្អាកការបង្ហោះ",
+        "refillStock": "បំពេញស្តុក",
+        "question": "សំណួរ"
     },
     "nav": {
         "logout": "ចាកចេញ",

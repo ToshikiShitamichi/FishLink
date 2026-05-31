@@ -255,6 +255,10 @@
     font-size: 13px;
     color: #5A6470;
   }
+  .free-ship {
+    color: #2E7D32;
+    font-weight: 700;
+  }
   .card-footer {
     background: #F7F9FB;
     padding: 8px 12px;
@@ -600,7 +604,7 @@
             <div class="card-price">
               <span class="num">5,775</span><span class="unit">KHR /kg</span>
             </div>
-            <div class="card-meta">在庫 200kg · 5.5 km</div>
+            <div class="card-meta">在庫 200kg · 5.5 km · <span class="free-ship">送料無料</span></div>
           </div>
         </div>
         <div class="card-footer">
@@ -692,7 +696,7 @@
             <div class="card-price">
               <span class="num">6,300</span><span class="unit">KHR /kg</span>
             </div>
-            <div class="card-meta">在庫 50kg · 5.5 km</div>
+            <div class="card-meta">在庫 50kg · 5.5 km · <span class="free-ship">送料無料</span></div>
           </div>
         </div>
         <div class="card-footer">
@@ -715,7 +719,7 @@
             <div class="card-price">
               <span class="num">6,825</span><span class="unit">KHR /kg</span>
             </div>
-            <div class="card-meta">在庫 25kg · 5.5 km</div>
+            <div class="card-meta">在庫 25kg · 5.5 km · <span class="free-ship">送料無料</span></div>
           </div>
         </div>
         <div class="card-footer">
@@ -750,6 +754,7 @@
           <div class="chip" onclick="toggleChip(this)">ジャイアントスネークヘッド</div>
           <div class="chip" onclick="toggleChip(this)">キノボリウオ</div>
           <div class="chip" onclick="toggleChip(this)">カエル</div>
+          <div class="chip" onclick="toggleChip(this)">その他</div>
         </div>
       </div>
 
@@ -770,18 +775,7 @@
             <span>0</span>
             <span class="slider-value" id="price-val">〜 上限なし</span>
           </div>
-          <input type="range" min="0" max="10000" step="500" value="10000" oninput="updatePrice(this.value)">
-        </div>
-      </div>
-
-      <div class="sheet-section">
-        <h3>距離</h3>
-        <div class="slider-wrap">
-          <div class="slider-labels">
-            <span>0km</span>
-            <span class="slider-value" id="distance-val">上限なし</span>
-          </div>
-          <input type="range" min="0" max="100" step="5" value="100" oninput="updateDistance(this.value)">
+          <input type="range" min="0" max="25000" step="500" value="25000" oninput="updatePrice(this.value)">
         </div>
       </div>
 
@@ -838,7 +832,6 @@
     document.querySelectorAll('.chip.selected').forEach(c => c.classList.remove('selected'));
     document.querySelectorAll('input[type="range"]').forEach(r => r.value = r.max);
     document.getElementById('price-val').textContent = '〜 上限なし';
-    document.getElementById('distance-val').textContent = '上限なし';
   }
   function applyFilters() {
     const selected = document.querySelectorAll('.chip.selected').length;
@@ -864,11 +857,7 @@
   }
   function updatePrice(val) {
     const el = document.getElementById('price-val');
-    el.textContent = val == 10000 ? '〜 上限なし' : `〜 ${parseInt(val).toLocaleString()} KHR`;
-  }
-  function updateDistance(val) {
-    const el = document.getElementById('distance-val');
-    el.textContent = val == 100 ? '上限なし' : `${val}km 以内`;
+    el.textContent = val == 25000 ? '〜 上限なし' : `〜 ${parseInt(val).toLocaleString()} KHR`;
   }
   function toggleSort(e) {
     e.stopPropagation();

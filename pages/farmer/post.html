@@ -146,16 +146,80 @@
 
         .price-result__hint {
             font-size: 12px;
-            color: #ea580c;
+            color: var(--color-text-sub);
             margin-top: 2px;
         }
 
         .price-result__value {
-            font-size: 38px;
+            font-size: 32px;
             font-weight: 800;
-            color: #ea580c;
+            color: var(--color-primary);
             line-height: 1;
         }
+
+        /* 5/31 #105: 販売価格の式メモ */
+        .price-formula {
+            font-size: 13px;
+            color: var(--color-text-sub);
+            background: var(--color-bg);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+        .price-formula b { color: var(--color-primary); }
+
+        /* 5/31 #105: 配送サマリー（設定済み＝2回目以降） */
+        .delivery-summary {
+            background: var(--color-primary-lt);
+            border: 1px solid var(--color-primary);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .delivery-summary__main { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+        .delivery-summary__icon { color: var(--color-primary); flex-shrink: 0; }
+        .delivery-summary__line { font-size: 13px; font-weight: 700; color: var(--color-text); line-height: 1.5; }
+        .delivery-summary__line2 { font-size: 12px; color: var(--color-text-sub); margin-top: 3px; }
+        .delivery-summary__change {
+            font-size: 13px; font-weight: 700; color: var(--color-primary);
+            flex-shrink: 0; cursor: pointer; background: none; border: none; font-family: inherit; padding: 4px;
+        }
+
+        /* 5/31 #105: 配送設定 変更ボトムシート */
+        .sheet-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,.4);
+            z-index: 100; display: none; align-items: flex-end; justify-content: center;
+        }
+        .sheet-overlay.show { display: flex; }
+        .sheet {
+            width: 100%; max-width: 480px; background: var(--color-surface);
+            border-radius: 20px 20px 0 0; padding: 8px 18px 28px;
+            max-height: 85%; overflow-y: auto; box-shadow: 0 -8px 30px rgba(0,0,0,.2);
+            transform: translateY(100%); transition: transform .25s ease;
+        }
+        .sheet-overlay.show .sheet { transform: translateY(0); }
+        .sheet-handle { width: 40px; height: 4px; background: #d5dbe2; border-radius: 2px; margin: 6px auto 12px; }
+        .sheet-title { font-size: 17px; font-weight: 800; margin-bottom: 12px; }
+        .warn-note {
+            display: flex; gap: 8px; align-items: flex-start;
+            background: #fff7e6; border: 1px solid #f3d998; color: #9a6700;
+            border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12px;
+            font-weight: 600; line-height: 1.5; margin-bottom: 16px;
+        }
+        .warn-note .material-symbols-outlined { font-size: 16px; flex-shrink: 0; }
+        .sheet-actions { display: flex; gap: 10px; margin-top: 8px; }
+        .sheet-btn {
+            flex: 1; border-radius: var(--radius); padding: 14px; font-size: 15px;
+            font-weight: 800; border: none; cursor: pointer; font-family: inherit;
+        }
+        .sheet-btn.save { background: var(--color-primary); color: #fff; }
+        .sheet-btn.cancel { background: #eceef0; color: var(--color-text-sub); }
+        .delivery-helper { font-size: 12px; color: var(--color-text-sub); margin-top: 8px; line-height: 1.6; }
+        .delivery-helper b { color: var(--color-primary); }
 
         .price-result__unit {
             font-size: 16px;
@@ -346,10 +410,11 @@
 
                 <div class="price-row">
                     <label for="gut-price" data-i18n="post.gutPrice"></label>
-                    <input type="number" class="price-input" id="gut-price" placeholder="500" min="0"
+                    <input type="number" class="price-input" id="gut-price" value="500" placeholder="500" min="0"
                         oninput="updateTotalPrice()">
                     <span class="price-unit">KHR/kg</span>
                 </div>
+                <p class="delivery-helper" data-i18n="post.gutPriceHelper"></p>
 
                 <div class="price-result">
                     <div>
@@ -360,6 +425,9 @@
                         <div class="price-result__unit">KHR/kg</div>
                     </div>
                 </div>
+
+                <!-- 5/31 #105: 販売価格の式（手数料・買い手表示価格はここには出さない） -->
+                <div class="price-formula" data-i18n="post.priceFormula"></div>
 
                 <!-- CAA参考価格（販売価格の下に表示・参考用） -->
                 <div class="caa-card caa-card--inline" style="margin-top:14px;">
@@ -374,27 +442,52 @@
                 </div>
             </div>
 
-            <!-- 配送料（レストラン負担） -->
+            <!-- 配送（レストラン負担・全出品に共通＝farmerDelivery / 5/31 #105） -->
             <div class="section-block">
-                <div class="section-title" data-i18n="post.sectionDelivery"></div>
-
-                <!-- 5/9 #60: UIは「10kmあたり」で入力させる。内部保存は引き続き KHR/km
-                     （既存の deliveryRate 既存出品との互換性維持） -->
-                <div class="price-row">
-                    <label for="delivery-rate-per-10km" data-i18n="post.deliveryRate"></label>
-                    <input type="number" class="price-input" id="delivery-rate-per-10km" value="5000" min="0">
-                    <span class="price-unit">KHR/10km</span>
-                </div>
-                <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliveryRateExample"></p>
-
-                <div class="price-row" style="margin-top:12px;">
-                    <label for="free-delivery-distance" data-i18n="post.freeDeliveryDistance"></label>
-                    <input type="number" class="price-input" id="free-delivery-distance" placeholder="5" min="0">
-                    <span class="price-unit">km</span>
+                <div class="section-title">
+                    <span data-i18n="post.sectionDelivery"></span>
+                    <span class="optional-tag" style="background:transparent; color:var(--color-text-sub); font-weight:500;" data-i18n="post.deliveryCommonTag"></span>
                 </div>
 
-                <p class="delivery-note" data-i18n="post.deliveryNote1"></p>
-                <p class="delivery-note" data-i18n="post.deliveryNote2"></p>
+                <!-- 初回（farmerDelivery 未設定）：3入力欄。投稿時に農家の配送設定として保存 -->
+                <div id="delivery-form" style="display:none;">
+                    <div class="price-row">
+                        <label for="deliverable-radius" data-i18n="post.deliverableRadius"></label>
+                        <input type="number" class="price-input" id="deliverable-radius" placeholder="30" min="0">
+                        <span class="price-unit">km</span>
+                    </div>
+                    <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliverableRadiusNote"></p>
+
+                    <div class="price-row" style="margin-top:12px;">
+                        <label for="delivery-fee-per-10km" data-i18n="post.deliveryRate"></label>
+                        <input type="number" class="price-input" id="delivery-fee-per-10km" placeholder="5,000" min="0">
+                        <span class="price-unit">KHR/10km</span>
+                    </div>
+                    <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliveryRateExample"></p>
+
+                    <div class="price-row" style="margin-top:12px;">
+                        <label for="free-delivery-km" data-i18n="post.freeDeliveryDistance"></label>
+                        <input type="number" class="price-input" id="free-delivery-km" placeholder="0" min="0">
+                        <span class="price-unit">km</span>
+                    </div>
+                    <p class="delivery-note" data-i18n="post.freeDeliveryNote"></p>
+                    <p class="delivery-helper" style="margin-top:10px;" data-i18n="post.deliveryFirstHelper"></p>
+                </div>
+
+                <!-- 2回目以降（farmerDelivery 設定済み）：サマリー行＋変更 -->
+                <div id="delivery-summary" style="display:none;">
+                    <div class="delivery-summary">
+                        <div class="delivery-summary__main">
+                            <span class="material-symbols-outlined delivery-summary__icon">local_shipping</span>
+                            <div>
+                                <div class="delivery-summary__line" id="ds-line"></div>
+                                <div class="delivery-summary__line2" id="ds-line2"></div>
+                            </div>
+                        </div>
+                        <button type="button" class="delivery-summary__change" id="change-delivery-btn" data-i18n="post.deliveryChange"></button>
+                    </div>
+                    <p class="delivery-helper" data-i18n="post.deliverySummaryHelper"></p>
+                </div>
             </div>
 
             <!-- 取引条件（任意） -->
@@ -408,12 +501,6 @@
                     <label for="min-order" data-i18n="post.minOrder"></label>
                     <input type="number" class="price-input" id="min-order" placeholder="5" min="0">
                     <span class="price-unit">kg</span>
-                </div>
-
-                <div class="price-row">
-                    <label for="max-distance" data-i18n="post.maxDistance"></label>
-                    <input type="number" class="price-input" id="max-distance" placeholder="30" min="0">
-                    <span class="price-unit">km</span>
                 </div>
             </div>
 
@@ -439,13 +526,52 @@
         </div><!-- /padding -->
     </div><!-- /page -->
 
-    <!-- 投稿するボタン（固定） -->
+    <!-- 投稿するボタン（固定）：5/31 #105 価格と統一で青(プライマリ) -->
     <div
         style="position:fixed; bottom:0; left:0; right:0; max-width:480px; margin:0 auto; padding:12px 16px; background:var(--color-surface); border-top:1px solid var(--color-border);">
         <button class="btn btn-primary" id="submit-btn"
-            style="font-size:18px; background:#f97316; border:none; border-radius:16px;"
+            style="font-size:18px; border:none; border-radius:16px;"
             data-i18n="post.submit">
         </button>
+    </div>
+
+    <!-- 5/31 #105: 配送設定 変更ボトムシート（背後フォームは保持されたまま重なる） -->
+    <div class="sheet-overlay" id="delivery-sheet-overlay">
+        <div class="sheet">
+            <div class="sheet-handle"></div>
+            <div class="sheet-title" data-i18n="post.deliverySheetTitle"></div>
+            <div class="warn-note">
+                <span class="material-symbols-outlined">warning</span>
+                <span id="sheet-warn-text"></span>
+            </div>
+
+            <div class="price-row">
+                <label for="sheet-radius" data-i18n="post.deliverableRadius"></label>
+                <input type="number" class="price-input" id="sheet-radius" min="0">
+                <span class="price-unit">km</span>
+            </div>
+            <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliverableRadiusNote"></p>
+
+            <div class="price-row" style="margin-top:12px;">
+                <label for="sheet-fee" data-i18n="post.deliveryRate"></label>
+                <input type="number" class="price-input" id="sheet-fee" min="0">
+                <span class="price-unit">KHR/10km</span>
+            </div>
+            <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliveryRateExample"></p>
+
+            <div class="price-row" style="margin-top:12px;">
+                <label for="sheet-free" data-i18n="post.freeDeliveryDistance"></label>
+                <input type="number" class="price-input" id="sheet-free" min="0">
+                <span class="price-unit">km</span>
+            </div>
+            <p class="delivery-note" data-i18n="post.freeDeliveryNote"></p>
+
+            <div class="error-msg" id="sheet-error" style="margin-top:10px;"></div>
+            <div class="sheet-actions">
+                <button type="button" class="sheet-btn cancel" id="sheet-cancel" data-i18n="post.deliverySheetCancel"></button>
+                <button type="button" class="sheet-btn save" id="sheet-save" data-i18n="post.deliverySheetSave"></button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -454,7 +580,7 @@
         import { db, storage } from '/js/firebase-config.js';
         import {
             collection, addDoc, serverTimestamp, doc, getDoc, updateDoc,
-            query, where, getDocs, writeBatch
+            query, where, getDocs, writeBatch, orderBy, limit, getCountFromServer
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import {
             ref, uploadBytes, getDownloadURL
@@ -521,13 +647,11 @@
             document.getElementById('fish-size').value = d.size || '';
             document.getElementById('fish-stock').value = d.stock ?? '';
             document.getElementById('price-unit').value = d.price ?? '';
-            document.getElementById('gut-price').value = d.gutPrice ?? '';
-            // 5/9 #60: 内部保存は KHR/km、表示は KHR/10km（×10）
-            document.getElementById('delivery-rate-per-10km').value =
-                d.deliveryRate != null ? d.deliveryRate * 10 : '';
-            document.getElementById('free-delivery-distance').value = d.freeDeliveryDistance ?? '';
+            document.getElementById('gut-price').value = d.gutPrice ?? 500;
+            // 5/31 #105: 配送は farmer 単位（farmerDelivery）へ移行。listing 単位の
+            //   deliveryRate/freeDeliveryDistance/maxDistance は編集フォームでは扱わない
+            //   （配送セクションは initDeliverySection が farmerDelivery を元に描画）。
             document.getElementById('min-order').value = d.minOrder ?? '';
-            document.getElementById('max-distance').value = d.maxDistance ?? '';
             document.getElementById('description').value = d.description || '';
             window.updateTotalPrice();
             updateCaaDisplay(fishTypeSel.value);
@@ -735,6 +859,18 @@
             // 編集モードの場合は既存データをロード
             if (isEditMode) await loadExistingForEdit();
 
+            // 5/31 #105: 配送設定（farmerDelivery）の初回/2回目分岐を描画
+            await initDeliverySection();
+
+            // 5/31 #104: 投稿一覧「在庫を補充」からの遷移は在庫フィールドにフォーカス
+            if (new URLSearchParams(location.search).get('focus') === 'stock') {
+                const stockEl = document.getElementById('fish-stock');
+                if (stockEl) {
+                    stockEl.scrollIntoView({ block: 'center' });
+                    stockEl.focus();
+                }
+            }
+
             const currentVal = document.getElementById('fish-type').value;
             if (currentVal) updateCaaDisplay(currentVal);
 
@@ -757,6 +893,129 @@
             document.getElementById('total-price').textContent =
                 (unit + gut).toLocaleString();
         };
+
+        // ── 配送設定（農家単位 farmerDelivery / 5/31 #105） ──────────────
+        //   farmerDelivery = { deliverableRadiusKm, deliveryFeePer10km, freeDeliveryKm }
+        //   ・users/{uid}.farmerDelivery を唯一の正とし、全出品に共通適用（listing には書かない）。
+        //   ・初回（未設定）はフォームに3欄、2回目以降はサマリー行＋〔変更〕ボトムシート。
+        let farmerDelivery = null;     // 現在適用される配送設定
+        let deliverySeeded = false;    // 直近 listing からシードした未永続状態（投稿時に users へ保存）
+        let listingCount = 0;          // 〔変更〕警告の「現在のN件」用
+
+        function renderDeliverySection() {
+            const form = document.getElementById('delivery-form');
+            const summary = document.getElementById('delivery-summary');
+            if (farmerDelivery) {
+                form.style.display = 'none';
+                summary.style.display = 'block';
+                updateDeliverySummaryText();
+            } else {
+                form.style.display = 'block';
+                summary.style.display = 'none';
+            }
+        }
+
+        function updateDeliverySummaryText() {
+            if (!farmerDelivery) return;
+            const r = farmerDelivery.deliverableRadiusKm;
+            const free = farmerDelivery.freeDeliveryKm;
+            const fee = farmerDelivery.deliveryFeePer10km;
+            let line = i18next.t('post.deliverySummaryRadius', { km: r });
+            if (free > 0) line += ' ・ ' + i18next.t('post.deliverySummaryFree', { km: free });
+            document.getElementById('ds-line').textContent = line;
+            document.getElementById('ds-line2').textContent =
+                i18next.t('post.deliverySummaryFee', { fee: Number(fee || 0).toLocaleString() });
+        }
+
+        async function initDeliverySection() {
+            const uid = window.currentUser?.uid;
+            farmerDelivery = window.currentUserData?.farmerDelivery || null;
+
+            // 既存農家で farmerDelivery 未設定なら、直近 listing の旧フィールドからシード
+            if (!farmerDelivery && uid) {
+                try {
+                    const snap = await getDocs(query(
+                        collection(db, 'fishListings'),
+                        where('farmerId', '==', uid),
+                        orderBy('createdAt', 'desc'),
+                        limit(10)
+                    ));
+                    const docs = snap.docs.map(d => d.data()).filter(d => !d.deletedAt);
+                    const seedSrc = docs.find(d => d.deliveryRate != null || d.maxDistance != null || d.freeDeliveryDistance != null);
+                    if (seedSrc) {
+                        farmerDelivery = {
+                            deliverableRadiusKm: seedSrc.maxDistance || null,
+                            deliveryFeePer10km: seedSrc.deliveryRate != null ? seedSrc.deliveryRate * 10 : 5000,
+                            freeDeliveryKm: seedSrc.freeDeliveryDistance || 0,
+                        };
+                        deliverySeeded = true;  // 投稿/シート保存時に users doc へ永続化
+                    }
+                } catch (e) { console.warn('seed farmerDelivery failed', e); }
+            }
+
+            // 〔変更〕警告で出す現在の出品数（正確な件数・集計1read）
+            if (uid) {
+                try {
+                    const cnt = await getCountFromServer(query(
+                        collection(db, 'fishListings'),
+                        where('farmerId', '==', uid),
+                        where('isActive', '==', true)
+                    ));
+                    listingCount = cnt.data().count || 0;
+                } catch (e) { listingCount = 0; }
+            }
+
+            renderDeliverySection();
+        }
+
+        // ── 〔変更〕ボトムシート ──
+        function openDeliverySheet() {
+            document.getElementById('sheet-radius').value = farmerDelivery?.deliverableRadiusKm ?? '';
+            document.getElementById('sheet-fee').value = farmerDelivery?.deliveryFeePer10km ?? '';
+            document.getElementById('sheet-free').value = farmerDelivery?.freeDeliveryKm || '';
+            document.getElementById('sheet-warn-text').textContent =
+                i18next.t('post.deliverySheetWarn', { count: listingCount });
+            document.getElementById('sheet-error').classList.remove('show');
+            document.getElementById('delivery-sheet-overlay').classList.add('show');
+        }
+        function closeDeliverySheet() {
+            document.getElementById('delivery-sheet-overlay').classList.remove('show');
+        }
+        document.getElementById('change-delivery-btn')?.addEventListener('click', openDeliverySheet);
+        document.getElementById('sheet-cancel')?.addEventListener('click', closeDeliverySheet);
+        document.getElementById('delivery-sheet-overlay')?.addEventListener('click', (e) => {
+            if (e.target.id === 'delivery-sheet-overlay') closeDeliverySheet();
+        });
+        document.getElementById('sheet-save')?.addEventListener('click', async () => {
+            const radius = parseFloat(document.getElementById('sheet-radius').value) || 0;
+            const fee = parseInt(document.getElementById('sheet-fee').value) || 0;
+            const free = parseFloat(document.getElementById('sheet-free').value) || 0;
+            const sheetErr = document.getElementById('sheet-error');
+            if (radius <= 0 || fee <= 0) {
+                sheetErr.textContent = i18next.t('post.errorDelivery');
+                sheetErr.classList.add('show');
+                return;
+            }
+            const newFd = { deliverableRadiusKm: radius, deliveryFeePer10km: fee, freeDeliveryKm: free || 0 };
+            const saveBtn = document.getElementById('sheet-save');
+            saveBtn.disabled = true;
+            try {
+                const uid = window.currentUser?.uid;
+                // farmerDelivery は農家docのみが正 → 1箇所更新で全出品の買い手側表示に即反映
+                await updateDoc(doc(db, 'users', uid), { farmerDelivery: newFd });
+                farmerDelivery = newFd;
+                deliverySeeded = false;
+                if (window.currentUserData) window.currentUserData.farmerDelivery = newFd;
+                updateDeliverySummaryText();
+                closeDeliverySheet();
+            } catch (err) {
+                console.error('save farmerDelivery failed', err);
+                sheetErr.textContent = i18next.t('post.errorSubmit');
+                sheetErr.classList.add('show');
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
 
         // ── 写真プレビュー ──────────────────────────────────────────
         // 5/3: ×マーク付き個別削除と編集モード時の入れ替えに対応
@@ -852,12 +1111,7 @@
             const fishStock = parseFloat(document.getElementById('fish-stock').value) || 0;
             const priceUnit = parseInt(document.getElementById('price-unit').value) || 0;
             const gutPrice = parseInt(document.getElementById('gut-price').value) || 0;
-            // 5/9 #60: UI入力は KHR/10km。内部保存は KHR/km なので 10で割る
-            const delivRatePer10Km = parseInt(document.getElementById('delivery-rate-per-10km').value) || 5000;
-            const delivRate = Math.round(delivRatePer10Km / 10);
-            const freeDelivDist = parseFloat(document.getElementById('free-delivery-distance').value) || 0;
             const minOrder = parseFloat(document.getElementById('min-order').value) || 0;
-            const maxDistance = parseFloat(document.getElementById('max-distance').value) || 0;
             const description = document.getElementById('description').value.trim();
 
             // バリデーション
@@ -880,6 +1134,24 @@
                 errorMsg.textContent = i18next.t('post.errorPrice');
                 errorMsg.classList.add('show');
                 return;
+            }
+
+            // 5/31 #105: 配送設定（farmer 単位）の確定。
+            //   初回（farmerDelivery 未設定）はフォーム3欄から取得・必須検証。
+            //   シード済み（未永続）も投稿と同時に users doc へ保存。
+            let pendingFarmerDelivery = null;
+            if (!farmerDelivery) {
+                const radius = parseFloat(document.getElementById('deliverable-radius').value) || 0;
+                const fee = parseInt(document.getElementById('delivery-fee-per-10km').value) || 0;
+                const free = parseFloat(document.getElementById('free-delivery-km').value) || 0;
+                if (radius <= 0 || fee <= 0) {
+                    errorMsg.textContent = i18next.t('post.errorDelivery');
+                    errorMsg.classList.add('show');
+                    return;
+                }
+                pendingFarmerDelivery = { deliverableRadiusKm: radius, deliveryFeePer10km: fee, freeDeliveryKm: free || 0 };
+            } else if (deliverySeeded) {
+                pendingFarmerDelivery = { ...farmerDelivery };
             }
 
             submitBtn.disabled = true;
@@ -916,6 +1188,15 @@
                 // 進捗表示をクリア
                 errorMsg.textContent = '';
 
+                // 5/31 #105: 配送設定（farmer 単位）を users doc に永続化（初回 or シード確定時のみ）。
+                //   listing には配送フィールドを書かない（農家docが唯一の正・買い手側は resolveDelivery で参照）。
+                if (pendingFarmerDelivery) {
+                    await updateDoc(doc(db, 'users', uid), { farmerDelivery: pendingFarmerDelivery });
+                    farmerDelivery = pendingFarmerDelivery;
+                    deliverySeeded = false;
+                    if (window.currentUserData) window.currentUserData.farmerDelivery = pendingFarmerDelivery;
+                }
+
                 if (isEditMode) {
                     // ── 編集モード：既存の出品を更新 ──
                     // 既存の進行中・完了済みの注文に対しては編集前の値をスナップショット保存
@@ -927,10 +1208,7 @@
                         stock: fishStock,
                         price: priceUnit,
                         gutPrice,
-                        deliveryRate: delivRate,
-                        freeDeliveryDistance: freeDelivDist || null,
                         minOrder: minOrder || null,
-                        maxDistance: maxDistance || null,
                         description: description || null,
                         photos: photoUrls,
                         photoUrl: photoUrls[0] || null,
@@ -945,10 +1223,7 @@
                         stock: fishStock,
                         price: priceUnit,
                         gutPrice,
-                        deliveryRate: delivRate,
-                        freeDeliveryDistance: freeDelivDist || null,
                         minOrder: minOrder || null,
-                        maxDistance: maxDistance || null,
                         description: description || null,
                         photos: photoUrls,
                         photoUrl: photoUrls[0] || null,

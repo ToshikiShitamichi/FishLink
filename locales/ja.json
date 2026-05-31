@@ -20,7 +20,12 @@
         "etaArrive": "{{when}} 到着予定",
         "declinedAlert": "{{farmer}}が在庫切れで辞退しました",
         "findOtherFarmer": "他の農家を探す",
-        "viewFarmer": "農家を見る"
+        "viewFarmer": "農家を見る",
+        "campaignFree": "手数料が無料",
+        "campaignHalf": "手数料半額",
+        "campaignOff": "手数料{{pct}}%OFF",
+        "campaignSub": "お会計から{{pct}}%割引",
+        "campaignSubUntil": "お会計から{{pct}}%割引 〜{{until}}"
     },
     "fishlist": {
         "filter": "絞り込み",
@@ -40,7 +45,9 @@
         "soldOut": "本日売切れ",
         "emptyTitle": "条件に合う魚がありません",
         "emptyReset": "絞り込みをリセット",
-        "searchClear": "クリア"
+        "searchClear": "クリア",
+        "newFarmer": "新規",
+        "freeDelivery": "送料無料"
     },
     "lang": {
         "ja": "日本語",
@@ -143,7 +150,7 @@
         "optional": "任意",
         "priceResult": "販売価格",
         "priceHint": "※ 目安から調整可能",
-        "sectionDelivery": "配送料（レストラン負担）",
+        "sectionDelivery": "配送",
         "deliveryRate": "10kmあたりの送料",
         "deliveryRateExample": "例：10kmあたり5,000 KHRの場合、5kmなら2,500 KHR、15kmなら7,500 KHRになります",
         "deliveryNote1": "※ 送料無料距離以内は無料です",
@@ -167,7 +174,24 @@
         "errorPrice": "魚単価を入力してください",
         "errorLogin": "ログインが必要です",
         "errorSubmit": "投稿に失敗しました。もう一度お試しください。",
-        "uploadProgress": "写真をアップロード中... ({{current}}/{{total}})"
+        "uploadProgress": "写真をアップロード中... ({{current}}/{{total}})",
+        "priceFormula": "販売価格 ＝ 魚単価 ＋ 内臓処理",
+        "gutPriceHelper": "内臓処理を希望する注文に加算されます。",
+        "deliveryCommonTag": "レストラン負担・全出品に共通",
+        "deliverableRadius": "配送可能距離（km）",
+        "deliverableRadiusNote": "ここまで配達します。これより遠いレストランの画面には表示されません。",
+        "freeDeliveryNote": "この距離内は送料無料。空欄なら全配達で送料がかかります。無料圏を作りたいときだけ入力してください。",
+        "deliveryFirstHelper": "この配送条件はすべての出品に共通で保存されます。次回からは入力不要です。",
+        "deliveryChange": "変更",
+        "deliverySummaryHelper": "配送条件は全出品に共通です。「変更」するとすべての出品に反映されます。",
+        "deliverySummaryRadius": "{{km}}kmまで配達",
+        "deliverySummaryFree": "{{km}}km以内は送料無料",
+        "deliverySummaryFee": "10kmあたり {{fee}} KHR",
+        "deliverySheetTitle": "配送設定",
+        "deliverySheetWarn": "配送条件は全出品に共通です。変更すると現在の {{count}}件 すべてに反映されます。",
+        "deliverySheetCancel": "キャンセル",
+        "deliverySheetSave": "保存して全出品に反映",
+        "errorDelivery": "配送可能距離と送料を入力してください。"
     },
     "fish": {
         "striped_snakehead": "ライギョ",
@@ -185,7 +209,8 @@
         "clarias_catfish": "ヒレナマズ（クラリアス）",
         "common_carp_large": "コイ（大）",
         "common_carp_small": "コイ（小）",
-        "featherback": "ナイフフィッシュ"
+        "featherback": "ナイフフィッシュ",
+        "otherShort": "その他"
     },
     "province": {
         "phnom_penh": "プノンペン",
@@ -413,8 +438,7 @@
         "successRedirect": "注文が完了しました",
         "moreFromFarmerTitle": "この農家の他の魚",
         "moreFromFarmerDesc": "この農家は他の魚も出品しています",
-        "viewCartCta": "カートを見る（まとめて注文する）",
-        "farmerLabel": "生産者"
+        "viewCartCta": "カートを見る（まとめて注文する）"
     },
     "orders": {
         "title": "注文内容を確認",
@@ -547,7 +571,16 @@
         "delete": "削除",
         "deleteAfterPause": "出品停止後に削除できます",
         "confirmDelete": "本当に削除しますか？\n削除後は投稿一覧に表示されなくなります。\n（過去の取引履歴からは引き続き確認できます）",
-        "errorDelete": "削除に失敗しました。もう一度お試しください。"
+        "errorDelete": "削除に失敗しました。もう一度お試しください。",
+        "pageTitle": "投稿一覧",
+        "statusSelling": "販売中",
+        "statusSoldout": "売切れ",
+        "statusStopped": "停止中",
+        "groupSelling": "販売中",
+        "groupSoldout": "売切れ・要補充",
+        "groupStopped": "出品停止",
+        "refillStock": "在庫を補充",
+        "question": "質問"
     },
     "nav": {
         "logout": "ログアウト",

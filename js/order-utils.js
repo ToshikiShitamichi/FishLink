@@ -77,6 +77,35 @@ export function calcDeliveryFee(deliveryRate, freeDeliveryDistance, distanceKm) 
 }
 
 /**
+ * 5/31 #105: 配送設定は農家単位（users/{uid}.farmerDelivery）を正とする。
+ *   farmerDelivery = { deliverableRadiusKm, deliveryFeePer10km, freeDeliveryKm }
+ * 農家docに無ければ旧 listing 単位フィールド（deliveryRate/freeDeliveryDistance/maxDistance）へフォールバック。
+ * 戻り値は calcDeliveryFee/配送圏判定が使う内部表現に正規化:
+ *   { ratePerKm, freeKm, radiusKm }
+ *   ・ratePerKm = deliveryFeePer10km / 10（calcDeliveryFee は KHR/km 前提。式は数学的に同一）
+ *   ・radiusKm  = 配送可能距離（これより遠いレストランには非表示）。null=制限なし
+ * @param {object} farmer  users/{uid} doc（農家）
+ * @param {object} listing fishListings doc（旧データ fallback 用・省略可）
+ */
+export function resolveDelivery(farmer, listing) {
+    const fd = farmer && farmer.farmerDelivery;
+    if (fd && (fd.deliveryFeePer10km != null || fd.deliverableRadiusKm != null || fd.freeDeliveryKm != null)) {
+        return {
+            ratePerKm: fd.deliveryFeePer10km != null ? fd.deliveryFeePer10km / 10 : 500,
+            freeKm: fd.freeDeliveryKm || 0,
+            radiusKm: fd.deliverableRadiusKm || null,
+        };
+    }
+    // 旧データ fallback（listing 単位・farmerDelivery 未設定の既存出品）
+    const l = listing || {};
+    return {
+        ratePerKm: l.deliveryRate != null ? l.deliveryRate : 500,
+        freeKm: l.freeDeliveryDistance || 0,
+        radiusKm: l.maxDistance || null,
+    };
+}
+
+/**
  * items[] 配列から order-level 合計値を算出。
  * 戻り値: {
  *   fishPrice, serviceFee, campaignDiscount,

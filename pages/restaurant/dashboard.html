@@ -155,6 +155,22 @@
         }
         .tile__circle img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .tile__nm { font-size: 11px; color: var(--color-text); text-align: center; line-height: 1.25; font-weight: 600; word-break: break-word; }
+        /* 5/31 #106: 11種目「その他」タイル（画像なし・アイコン） */
+        .tile__circle--other { display: flex; align-items: center; justify-content: center; background: var(--color-primary-lt); }
+        .tile__circle--other .material-symbols-outlined { font-size: 30px; color: var(--color-primary); }
+
+        /* 5/31 #106: キャンペーンバナー（検索バー直下・キャンペーン中のみ表示） */
+        .home-campaign {
+            margin: 4px 16px 6px; background: var(--color-primary-lt); border: 1px solid var(--color-primary);
+            border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+        }
+        .home-campaign__main { display: flex; gap: 10px; align-items: center; flex: 1; min-width: 0; }
+        .home-campaign__main > .material-symbols-outlined { color: var(--color-primary); flex-shrink: 0; }
+        .home-campaign__title { font-size: 14px; font-weight: 800; color: var(--color-primary); }
+        .home-campaign__sub { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
+        .home-campaign__close { background: none; border: none; color: var(--color-text-sub); cursor: pointer; padding: 4px; flex-shrink: 0; display: flex; }
+        /* 5/31 #106: 評価0件の「新規」表示 */
+        .fl-new { color: var(--color-text-sub); font-weight: 600; }
 
         /* ── ③④ 商品カード（220px・モック .pcard） ── */
         .pcard {
@@ -319,6 +335,20 @@
             </form>
         </div>
 
+        <!-- 5/31 #106: キャンペーンバナー（検索バー直下・キャンペーン中のみ表示・Home画面のみ） -->
+        <div id="campaign-banner" class="home-campaign" style="display:none;">
+            <div class="home-campaign__main">
+                <span class="material-symbols-outlined">local_offer</span>
+                <div>
+                    <div class="home-campaign__title" id="campaign-title"></div>
+                    <div class="home-campaign__sub" id="campaign-sub"></div>
+                </div>
+            </div>
+            <button type="button" class="home-campaign__close" id="campaign-close" aria-label="close">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
         <!-- ① 進行中の注文（進行中ゼロならセクションごと非表示） -->
         <div class="section" id="sec-orders" style="display:none;">
             <div class="section__head">
@@ -426,6 +456,7 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { subscribeCart } from '/js/cart.js';
         import { getCachedUser, getCachedDoc } from '/js/data-cache.js';
+        import { resolveDelivery } from '/js/order-utils.js';
         import { getReviewerAvatarUrl } from '/js/profile-utils.js';
         import { asCachedImgAttrs } from '/js/image-cache.js';
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
@@ -456,10 +487,45 @@
             if (!key) return '';
             return i18next.exists(`fish.${key}`) ? i18next.t(`fish.${key}`) : key;
         }
-        // 評価表記（spec §9-1）= ★ N% (件数)
+        // 評価表記（spec §9-1）= ★ N% (件数)。5/31 #106: 0件は「新規」表示（低評価誤認防止）
         function ratingHtml(pct, count, cls) {
-            return `<span class="${cls}"><span class="material-symbols-outlined">star</span>${Math.round(pct || 0)}% <span>(${count || 0})</span></span>`;
+            if (!count || count <= 0) return `<span class="${cls}"><span class="fl-new">${i18next.t('fishlist.newFarmer')}</span></span>`;
+            return `<span class="${cls}"><span class="material-symbols-outlined">star</span>${Math.round(pct || 0)}% <span>(${count})</span></span>`;
         }
+        // 5/31 #106: キャンペーンバナー描画。
+        //   割引% = 通常率(serviceRate) − キャンペーン中の実効率(serviceRate − campaignDiscount) = campaignDiscount。
+        //   ＝明細の割引行(campaignDiscount)と一致。率はデータ化（ハードコードしない）。
+        //   注意: 現状の settings/campaign に「期限」「キャンペーンID」フィールドは無い。
+        //         期限フィールド（bannerUntil/campaignEnd）があれば「〜{期限}」を出し、無ければ省略。
+        //         再表示抑止はキャンペーン署名（率＋期限）で代替。
+        function renderCampaignBanner(c) {
+            const el = document.getElementById('campaign-banner');
+            if (!el) return;
+            const normal = Number(c.serviceRate ?? 0.05);
+            const discount = Number(c.campaignDiscount || 0);   // fishPrice 比の割引率
+            if (c.bannerActive !== true || discount <= 0) { el.style.display = 'none'; return; }
+            const until = c.bannerUntil || c.campaignEnd || '';
+            const sig = `${normal}_${discount}_${until}`;
+            if (localStorage.getItem('fishlink_campaign_dismissed') === sig) { el.style.display = 'none'; return; }
+
+            const discountPct = Math.round(discount * 100);
+            const residual = normal - discount;                 // キャンペーン中の実効手数料率
+            let title;
+            if (residual <= 0.0001) title = i18next.t('home.campaignFree');
+            else if (Math.abs(residual - normal / 2) < 0.0001) title = i18next.t('home.campaignHalf');
+            else title = i18next.t('home.campaignOff', { pct: discountPct });
+            document.getElementById('campaign-title').textContent = title;
+            document.getElementById('campaign-sub').textContent = until
+                ? i18next.t('home.campaignSubUntil', { pct: discountPct, until })
+                : i18next.t('home.campaignSub', { pct: discountPct });
+            el.style.display = 'flex';
+            document.getElementById('campaign-close').onclick = (e) => {
+                e.stopPropagation();
+                try { localStorage.setItem('fishlink_campaign_dismissed', sig); } catch (_) { }
+                el.style.display = 'none';
+            };
+        }
+
         // GAqP バッジ（spec §9-2）= 画像左上の緑 ✓ GAqP
         function gaqpBadge(on) {
             return on
@@ -540,15 +606,23 @@
             return distMap;
         }
 
-        // ── ② 魚タイル（10種固定） ──
+        // ── ② 魚タイル（5/31 #106: 10種＋「その他」＝11タイル固定） ──
         function renderFishTiles() {
             const row = document.getElementById('fish-tiles');
-            row.innerHTML = FISH_CATEGORIES.map(key => `
+            const tiles = FISH_CATEGORIES.map(key => `
                 <a class="tile" href="/pages/restaurant/fish-list.html?fishType=${encodeURIComponent(key)}">
                     <div class="tile__circle"><img src="/images/${encodeURIComponent(key)}.png" alt="" loading="lazy"></div>
                     <div class="tile__nm">${escapeHtml(fishName(key))}</div>
                 </a>
-            `).join('');
+            `);
+            // 末尾に「その他」（10種以外の出品＝CAA参考価格なしへの導線。魚一覧フィルタの「その他」チップと整合）
+            tiles.push(`
+                <a class="tile" href="/pages/restaurant/fish-list.html?fishType=other">
+                    <div class="tile__circle tile__circle--other"><span class="material-symbols-outlined">more_horiz</span></div>
+                    <div class="tile__nm">${escapeHtml(i18next.t('fish.otherShort'))}</div>
+                </a>
+            `);
+            row.innerHTML = tiles.join('');
         }
 
         // ── ③④ 商品カード（220px） ──
@@ -630,7 +704,9 @@
                         </div>
                         <div class="fcard__name">${escapeHtml(name)}</div>
                         ${locParts ? `<div class="fcard__loc">${escapeHtml(locParts)}</div>` : ''}
-                        <div class="fcard__rate"><span class="material-symbols-outlined">star</span><b>${Math.round(pct)}%</b> (${count})</div>
+                        <div class="fcard__rate">${count > 0
+                            ? `<span class="material-symbols-outlined">star</span><b>${Math.round(pct)}%</b> (${count})`
+                            : `<span class="fl-new">${i18next.t('fishlist.newFarmer')}</span>`}</div>
                         ${tagsHtml ? `<div class="fcard__tags">${tagsHtml}</div>` : ''}
                         <div class="fcard__btn"><span data-i18n-skip>${i18next.t('home.viewFarmer')}</span><span class="material-symbols-outlined">arrow_forward</span></div>
                     </div>
@@ -784,7 +860,11 @@
             let serviceRate = 0.05;
             try {
                 const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
-                if (campSnap.exists()) serviceRate = campSnap.data().serviceRate ?? 0.05;
+                if (campSnap.exists()) {
+                    const c = campSnap.data();
+                    serviceRate = c.serviceRate ?? 0.05;
+                    renderCampaignBanner(c);   // 5/31 #106: キャンペーンバナー
+                }
             } catch (e) { /* ignore */ }
 
             const baseQ = query(
@@ -804,9 +884,9 @@
 
             const distanceMap = await buildFarmerDistanceMap(uid, myLoc, farmerMap);
 
-            // 配送圏外（farmer.maxDistance 超過）は除外（#86: 両画面一致）
+            // 配送圏外は除外（#86: 両画面一致 / 5/31 #105: 配送設定は farmer 単位＝farmerDelivery を優先）
             const inRange = (l) => {
-                const max = l.maxDistance;
+                const max = resolveDelivery(farmerMap.get(l.farmerId), l).radiusKm;
                 if (!max) return true;
                 const d = distanceMap.get(l.farmerId);
                 if (!Number.isFinite(d)) return true;

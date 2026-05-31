@@ -217,7 +217,14 @@ self.addEventListener('notificationclick', (event) => {
 //   - fish-list.html（#103 2列グリッド・絞り込みボトムシート・ソートDD・検索サジェスト・売切れ末尾固定・戻り時状態保持）刷新
 //   - locales 3言語に home.* / fishlist.* 名前空間を追加 → PRECACHE 再取得のため版番号バンプ
 //   - 色は既存DS（css/style.css）に準拠、寸法はモック正本。構成/状態/遷移は spec 遵守
-const CACHE_NAME = 'fishlink-v112';
+// 5/31 #104-#107: 農家投稿一覧/出品フォーム新設 + Home/魚一覧 spec改訂 → v113
+//   - #105 post.html: 配送設定を farmer 単位（users/{uid}.farmerDelivery）へ移行。初回3欄/2回目サマリー＋変更ボトムシート。
+//     listing には配送を書かず、買い手側は order-utils.resolveDelivery で農家docを参照（旧フィールドはfallback）。価格/CTAを青(primary)統一。
+//   - #104 dashboard.html(farmer): 投稿一覧（販売中/売切れ・要補充/出品停止のグルーピング・状態別アクション・停止グレーアウト・GAqP・在庫補充ショートカット）
+//   - #107 fish-list.html: 距離スライダー廃止/配達範囲外は完全非表示/送料3param(農家doc)/価格0〜25000固定/「その他」チップ/評価0=「新規」/送料無料表示
+//   - #106 dashboard.html(restaurant): キャンペーンバナー（検索バー直下・率はデータ化）/魚タイル11種目「その他」/評価0=「新規」
+//   - cart.html / restaurant dashboard の配送計算を resolveDelivery 経由に移行。locales 3言語にキー追加 → 版番号バンプ
+const CACHE_NAME = 'fishlink-v113';
 
 const PRECACHE_URLS = [
     '/',

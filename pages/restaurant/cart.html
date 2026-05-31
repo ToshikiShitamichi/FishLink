@@ -546,7 +546,7 @@
             subscribeCart, updateCartItem, removeCartItem, clearCart, groupByFarmer
         } from '/js/cart.js';
         import {
-            calcItemPrices, calcDeliveryFee, sumItems, calcOrderTotal
+            calcItemPrices, calcDeliveryFee, sumItems, calcOrderTotal, resolveDelivery
         } from '/js/order-utils.js';
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
         import { formatProvince, formatDistrict } from '/js/province-utils.js';
@@ -767,10 +767,11 @@
                     calcItems.push({ raw: item, listing, prices });
                 }
 
-                // 配送料は農家ごとに1回（先頭item の設定を使う・同じ農家なら同じ）
+                // 配送料は農家ごとに1回（5/31 #105: 配送設定は farmer 単位。farmer doc 優先・旧 listing fallback）
                 const firstListing = calcItems[0]?.listing;
+                const _dlv = resolveDelivery(farmer, firstListing);
                 const deliveryFee = firstListing
-                    ? calcDeliveryFee(firstListing.deliveryRate, firstListing.freeDeliveryDistance, dist)
+                    ? calcDeliveryFee(_dlv.ratePerKm, _dlv.freeKm, dist)
                     : 0;
 
                 // 合計
@@ -1045,7 +1046,8 @@
                     let savings = 0;
                     if (currentGroupItems.length === 1) {
                         const curDist = distanceCache.get(it.farmerId) || 0;
-                        savings = calcDeliveryFee(curListing.deliveryRate, curListing.freeDeliveryDistance, curDist);
+                        const _curDlv = resolveDelivery(farmerCache.get(it.farmerId), curListing);
+                        savings = calcDeliveryFee(_curDlv.ratePerKm, _curDlv.freeKm, curDist);
                     }
 
                     suggestions.push({
@@ -1169,6 +1171,8 @@
             if (!listing) return;
             const farmer = farmerCache.get(farmerId) || {};
             const dist = distanceCache.get(farmerId) || 0;
+            // 5/31 #105: 配送設定は farmer 単位（farmer doc 優先・旧 listing fallback）
+            const _dlv = resolveDelivery(farmer, listing);
 
             const fishType = listing.fishType || '';
             const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
@@ -1217,8 +1221,8 @@
                 <div class="lm-info-grid">
                     <div><div class="k">${i18next.t('order.stock').replace(/[:：]\s*$/, '')}</div><div class="v">${listing.stock || 0} kg</div></div>
                     <div><div class="k">${i18next.t('order.minOrder')}</div><div class="v">${listing.minOrder || 0} kg</div></div>
-                    <div><div class="k">${i18next.t('post.deliveryRate')}</div><div class="v">${((listing.deliveryRate || 0) * 10).toLocaleString()} KHR/10km</div></div>
-                    <div><div class="k">${i18next.t('post.freeDeliveryDistance')}</div><div class="v">${listing.freeDeliveryDistance || 0} km</div></div>
+                    <div><div class="k">${i18next.t('post.deliveryRate')}</div><div class="v">${Math.round(_dlv.ratePerKm * 10).toLocaleString()} KHR/10km</div></div>
+                    <div><div class="k">${i18next.t('post.freeDeliveryDistance')}</div><div class="v">${_dlv.freeKm || 0} km</div></div>
                 </div>
                 ${listing.description ? `
                     <div class="lm-section">
@@ -1269,8 +1273,9 @@
                     return { listing, item, prices };
                 }).filter(Boolean);
                 const firstListing = calcItems[0]?.listing;
+                const _dlv = resolveDelivery(farmer, firstListing);
                 const deliveryFee = firstListing
-                    ? calcDeliveryFee(firstListing.deliveryRate, firstListing.freeDeliveryDistance, dist)
+                    ? calcDeliveryFee(_dlv.ratePerKm, _dlv.freeKm, dist)
                     : 0;
                 const itemsSum = sumItems(calcItems.map(c => c.prices));
                 const groupTotal = calcOrderTotal(itemsSum, deliveryFee);
@@ -1370,9 +1375,8 @@
 
                 const dist = distanceCache.get(farmerId) || 0;
                 const firstListing = listingCache.get(items[0].listingId);
-                const deliveryFee = calcDeliveryFee(
-                    firstListing?.deliveryRate, firstListing?.freeDeliveryDistance, dist
-                );
+                const _dlv = resolveDelivery(farmerCache.get(farmerId), firstListing);
+                const deliveryFee = calcDeliveryFee(_dlv.ratePerKm, _dlv.freeKm, dist);
 
                 // 各item の料金計算＋snap
                 const itemDocs = [];

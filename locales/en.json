@@ -20,7 +20,12 @@
         "etaArrive": "Arriving {{when}}",
         "declinedAlert": "{{farmer}} declined — out of stock",
         "findOtherFarmer": "Find another farmer",
-        "viewFarmer": "View farmer"
+        "viewFarmer": "View farmer",
+        "campaignFree": "No service fee",
+        "campaignHalf": "Half service fee",
+        "campaignOff": "{{pct}}% off service fee",
+        "campaignSub": "{{pct}}% off your bill",
+        "campaignSubUntil": "{{pct}}% off your bill · until {{until}}"
     },
     "fishlist": {
         "filter": "Filter",
@@ -40,7 +45,9 @@
         "soldOut": "Sold out today",
         "emptyTitle": "No fish match your filters",
         "emptyReset": "Reset filters",
-        "searchClear": "Clear"
+        "searchClear": "Clear",
+        "newFarmer": "New",
+        "freeDelivery": "Free delivery"
     },
     "lang": {
         "ja": "日本語",
@@ -143,7 +150,7 @@
         "optional": "Optional",
         "priceResult": "Selling Price",
         "priceHint": "※ Adjustable from guideline",
-        "sectionDelivery": "Delivery Fee (paid by restaurant)",
+        "sectionDelivery": "Delivery",
         "deliveryRate": "Delivery Fee per 10 km",
         "deliveryRateExample": "Example: With 5,000 KHR per 10 km, 5 km = 2,500 KHR, 15 km = 7,500 KHR",
         "deliveryNote1": "※ Free within the free delivery distance",
@@ -167,7 +174,24 @@
         "errorPrice": "Please enter unit price",
         "errorLogin": "Login required",
         "errorSubmit": "Failed to post. Please try again.",
-        "uploadProgress": "Uploading photos... ({{current}}/{{total}})"
+        "uploadProgress": "Uploading photos... ({{current}}/{{total}})",
+        "priceFormula": "Sale price = Fish unit price + Gutting fee",
+        "gutPriceHelper": "Added to orders that request gutting.",
+        "deliveryCommonTag": "Paid by restaurant · shared by all listings",
+        "deliverableRadius": "Delivery range (km)",
+        "deliverableRadiusNote": "You deliver up to here. Restaurants farther than this won't see your listings.",
+        "freeDeliveryNote": "Free delivery within this distance. Leave blank to charge for all deliveries. Enter only if you want a free zone.",
+        "deliveryFirstHelper": "This delivery setting is saved for all your listings. No need to enter it again next time.",
+        "deliveryChange": "Change",
+        "deliverySummaryHelper": "Delivery applies to all listings. \"Change\" updates them all.",
+        "deliverySummaryRadius": "Delivers up to {{km}} km",
+        "deliverySummaryFree": "Free within {{km}} km",
+        "deliverySummaryFee": "{{fee}} KHR per 10 km",
+        "deliverySheetTitle": "Delivery settings",
+        "deliverySheetWarn": "Delivery applies to all listings. Changing it updates all {{count}} current listings.",
+        "deliverySheetCancel": "Cancel",
+        "deliverySheetSave": "Save & apply to all",
+        "errorDelivery": "Please enter delivery range and fee."
     },
     "fish": {
         "striped_snakehead": "Striped Snakehead",
@@ -185,7 +209,8 @@
         "clarias_catfish": "Clarias Catfish",
         "common_carp_large": "Common Carp (Large)",
         "common_carp_small": "Common Carp (Small)",
-        "featherback": "Featherback"
+        "featherback": "Featherback",
+        "otherShort": "Other"
     },
     "province": {
         "phnom_penh": "Phnom Penh",
@@ -377,7 +402,7 @@
     "order": {
         "title": "Confirm Order",
         "section": "Order Details",
-        "farmerLabel": "Producer",
+        "farmerLabel": "Farmer",
         "totalLabel": "Total",
         "confirmSubmitTitle": "Submit order with the following details?",
         "confirmSubmitAsk": "The producer will be notified upon confirmation.",
@@ -413,8 +438,7 @@
         "successRedirect": "Order placed successfully",
         "moreFromFarmerTitle": "More from this farmer",
         "moreFromFarmerDesc": "This farmer has other fish available",
-        "viewCartCta": "View cart (order together)",
-        "farmerLabel": "Farmer"
+        "viewCartCta": "View cart (order together)"
     },
     "orders": {
         "title": "Confirm Order",
@@ -547,7 +571,16 @@
         "delete": "Delete",
         "deleteAfterPause": "Pause first to enable deletion",
         "confirmDelete": "Delete this listing?\nIt will no longer appear in the list.\n(Past order history will still be viewable.)",
-        "errorDelete": "Failed to delete. Please try again."
+        "errorDelete": "Failed to delete. Please try again.",
+        "pageTitle": "My listings",
+        "statusSelling": "On sale",
+        "statusSoldout": "Sold out",
+        "statusStopped": "Paused",
+        "groupSelling": "On sale",
+        "groupSoldout": "Sold out · restock",
+        "groupStopped": "Paused",
+        "refillStock": "Restock",
+        "question": "Q&A"
     },
     "nav": {
         "logout": "Logout",
