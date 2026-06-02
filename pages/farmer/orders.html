@@ -123,8 +123,9 @@
             text-decoration: none;
             color: #fff;
         }
-        .order-card__quick-cta--delivery { background: #f97316; }
-        .order-card__quick-cta--delivery:hover { background: #ea580c; }
+        /* 6/1 #112: CTA は青で統一（オレンジ廃止）。問題報告のみ赤(danger)維持。 */
+        .order-card__quick-cta--delivery { background: var(--color-cta); }
+        .order-card__quick-cta--delivery:hover { background: var(--color-cta-dk); }
         .order-card__quick-cta--payment { background: #0ea5e9; }
         .order-card__quick-cta--payment:hover { background: #0284c7; }
         /* レビュー／報告：50/50 並び */
@@ -146,10 +147,10 @@
             gap: 4px;
         }
         .order-card__quick-action--review {
-            background: #f97316;
+            background: var(--color-cta);
             color: #fff;
         }
-        .order-card__quick-action--review:hover { background: #ea580c; }
+        .order-card__quick-action--review:hover { background: var(--color-cta-dk); }
         /* 5/4: レビュー済み（無効化表示） */
         .order-card__quick-action--reviewed {
             background: #f1f5f9; color: #64748b;
@@ -278,16 +279,16 @@
         }
 
         .radio-dot.active {
-            border-color: #f97316;
-            background: #fb923c;
-            box-shadow: 0 0 0 3px #fed7aa;
+            border-color: var(--color-cta);
+            background: var(--color-cta);
+            box-shadow: 0 0 0 3px var(--color-cta-lt);
         }
 
         .submit-btn {
             width: 100%;
             border: none;
             border-radius: 16px;
-            background: #f97316;
+            background: var(--color-cta);
             color: #fff;
             font-size: 18px;
             font-weight: 700;
@@ -464,6 +465,35 @@
         .empty-state__text {
             font-size: 15px;
         }
+
+        /* 6/1 #112 (diff5): 承認確認モーダル */
+        .approve-modal {
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            display: none; align-items: flex-end; justify-content: center;
+            z-index: 200;
+        }
+        .approve-modal.show { display: flex; }
+        .approve-modal__sheet {
+            width: 100%; max-width: 480px;
+            background: #fff; border-radius: 20px 20px 0 0;
+            padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+        }
+        .approve-modal__title { font-size: 17px; font-weight: 700; margin-bottom: 12px; color: var(--color-text); }
+        .approve-modal__summary {
+            font-size: 13px; color: var(--color-text); line-height: 1.7;
+            background: #f8fafc; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
+            white-space: pre-wrap; word-break: break-word;
+        }
+        .approve-modal__ask { font-size: 12px; color: var(--color-text-sub); margin-bottom: 16px; }
+        .approve-modal__actions { display: flex; gap: 8px; }
+        .approve-modal__btn {
+            flex: 1; padding: 13px; font-size: 15px; font-weight: 700;
+            border-radius: 14px; cursor: pointer; font-family: inherit;
+        }
+        .approve-modal__btn--cancel { background: #fff; color: var(--color-text); border: 1px solid var(--color-border); }
+        .approve-modal__btn--ok { background: var(--color-cta); color: #fff; border: none; }
+        .approve-modal__btn--ok:hover { background: var(--color-cta-dk); }
     </style>
 </head>
 
@@ -714,10 +744,8 @@
                     return { id: d.id, ...data, listingData, restData, distKm, hasReview: false };
                 });
 
-                // 5/4: 農家レビューの有無を一括取得（approved以降の注文のみ・並列）
-                const reviewableNew = newOrders.filter(o =>
-                    ['approved', 'preparing', 'delivering', 'delivered', 'completed'].includes(o.status)
-                );
+                // 6/1 #112 (diff6): レビューは「完了」後のみ解禁。完了注文のみレビュー有無を取得。
+                const reviewableNew = newOrders.filter(o => o.status === 'completed');
                 await Promise.all(reviewableNew.map(async o => {
                     try {
                         const rs = await getDoc(doc(db, 'orders', o.id, 'reviews', 'farmer'));
@@ -804,13 +832,14 @@
             const photoUrl = order.snapPhotoUrl || order.listingData.photoUrl;
             // 単価表示：注文時点の fishPrice / quantity から逆算（内臓処理込みの実効単価）
             // 旧注文で fishPrice が無い場合は snap → 現listing の順でフォールバック
+            // 6/1 #112 (diff4): 魚単価と内臓処理を分解表示するため両方を保持（農家視点・手数料抜きの基本単価）
+            const basePrice = (order.snapPrice != null) ? order.snapPrice : (order.listingData.price || 0);
+            const gutFee = (order.snapGutPrice != null) ? order.snapGutPrice : (order.listingData.gutPrice || 0);
             let price = 0;
             if (order.fishPrice && order.quantity) {
                 price = Math.round(order.fishPrice / order.quantity);
             } else {
-                const basePrice = (order.snapPrice != null) ? order.snapPrice : (order.listingData.price || 0);
-                const gutPrice = (order.snapGutPrice != null) ? order.snapGutPrice : (order.listingData.gutPrice || 0);
-                price = order.gutProcessing ? basePrice + gutPrice : basePrice;
+                price = order.gutProcessing ? basePrice + gutFee : basePrice;
             }
             const dist = Math.floor(order.distKm * 10) / 10;
             const restName = order.restData.displayName || '';
@@ -856,20 +885,22 @@
 
             const fishTotal = order.fishPrice || (price * order.quantity);
             const deliveryFee = order.deliveryFee || 0;
-            // 注文時点の手数料・割引を優先（旧注文は5%でフォールバック）
-            const commission = (order.farmerCommission != null)
-                ? order.farmerCommission
-                : Math.round(fishTotal * 0.05);
-            const commissionRate = (order.farmerRateUsed != null)
-                ? (order.farmerRateUsed * 100)
-                : 5;
+            // 6/1 #112 (diff1): 手数料は「通常率の満額」を表示し、キャンペーン分を別行で戻す（+表示）。
+            //   ラベル(5%)と額のズレを作らない。受取予定額は不変（純手数料ベース）。
+            const commissionRate = (order.farmerRateUsed != null) ? (order.farmerRateUsed * 100) : 5;
+            // 通常率満額の手数料（gross）
+            const grossCommission = (order.farmerCommissionGross != null)
+                ? order.farmerCommissionGross
+                : Math.round(fishTotal * (commissionRate / 100));
+            // 実際に差し引かれる純手数料（キャンペーン適用後）
+            const netCommission = (order.farmerCommission != null) ? order.farmerCommission : grossCommission;
+            // キャンペーンで戻す額（+表示）
+            const farmerCampaignDiscount = (order.farmerCampaignDiscount != null)
+                ? order.farmerCampaignDiscount
+                : Math.max(0, grossCommission - netCommission);
             const receiveAmount = (order.farmerReceiveAmount != null)
                 ? order.farmerReceiveAmount
-                : (fishTotal - commission + deliveryFee);
-            // 5/25 #89: キャンペーン割引額 = 通常手数料(5%) - 実際の手数料。正の値のときだけ「お得」行を表示。
-            //   ※計算式は変更せず、表示用に通常との差額を可視化するのみ。
-            const baselineCommission = Math.round(fishTotal * 0.05);
-            const farmerCampaignDiscount = Math.max(0, baselineCommission - commission);
+                : (fishTotal - netCommission + deliveryFee);
 
             let statusBadge = '';
             if (order.status === 'approved') {
@@ -955,20 +986,21 @@
                                 return `<div class="order-card__row" style="padding-left:10px; line-height:1.6;">・${itShort} ${it.snapSize ? '(' + it.snapSize + ' head/kg)' : ''} ${it.quantity}kg ・${gutLabel}</div>`;
                             }).join('')}
                         ` : `
-                            <div class="order-card__row">${i18next.t('orders.unitPrice')} ${price.toLocaleString()} KHR/kg</div>
+                            <div class="order-card__row">${i18next.t('orders.unitPrice')} ${basePrice.toLocaleString()} KHR/kg</div>
+                            ${order.gutProcessing && gutFee > 0 ? `<div class="order-card__row">${i18next.t('orders.gutProcessing')} +${gutFee.toLocaleString()} KHR/kg</div>` : ''}
                             <div class="order-card__row">${i18next.t('orders.quantity')} ${order.quantity} kg</div>
-                            <div class="order-card__row">${i18next.t('orders.gutProcessing')} ${order.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')}</div>
+                            <div class="order-card__row">${i18next.t('orders.gutProcessing')}${order.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')}</div>
                         `}
                         <div class="order-card__row">${i18next.t('orders.deliveryDate')} ${order.deliveryDate}</div>
                         <div class="order-card__row">${i18next.t('orders.deliveryTime')} ${order.deliveryTime}</div>
                         <div class="order-card__divider"></div>
-                        <div class="order-card__row">${restName}　<span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span> ${restRating.toFixed(1)}%（${i18next.t('orders.reviewCount', { count: restReviews })}）</div>
+                        <div class="order-card__row">${restName}　${restReviews > 0 ? `<span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span> ${Math.round(restRating)}%（${i18next.t('orders.reviewCount', { count: restReviews })}）` : i18next.t('fishlist.newFarmer')}</div>
                         <div class="order-card__row"><a class="order-card__link" href="/pages/farmer/restaurant.html?id=${order.restaurantId}">${i18next.t('orders.viewReviews')}</a></div>
                         <div class="order-card__row"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span> ${restPlace}　${dist} km</div>
                         <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
                         <div class="order-card__divider"></div>
                         <div class="price-line"><span>${i18next.t('orders.fishTotal')}</span><span>${fishTotal.toLocaleString()} KHR</span></div>
-                        <div class="price-line"><span>${i18next.t('orders.commission', { rate: commissionRate })}</span><span>-${commission.toLocaleString()} KHR</span></div>
+                        <div class="price-line"><span>${i18next.t('orders.commission', { rate: commissionRate })}</span><span>-${grossCommission.toLocaleString()} KHR</span></div>
                         ${farmerCampaignDiscount > 0 ? `
                             <div class="price-line price-line--discount">
                                 <span><span class="material-symbols-outlined">local_offer</span>${i18next.t('orders.farmerCampaignDiscount')}</span>
@@ -1026,9 +1058,10 @@
             // pending は別途 response-section で承認/辞退ラジオが出る、declined は何も表示しない
             const isActiveDelivery = ['approved', 'preparing', 'delivering'].includes(order.status);
             const isPostDelivery = ['delivered', 'completed'].includes(order.status);
-            const showReviewReport = isActiveDelivery || isPostDelivery;
+            // 6/1 #112 (diff6): レビューは「完了」後のみ解禁（準備中・承認済みでは出さない）
+            const canReview = order.status === 'completed';
 
-            if (isActiveDelivery || isPostDelivery || showReviewReport) {
+            if (isActiveDelivery || isPostDelivery) {
                 let actionsHtml = '<div class="order-card__quick-actions">';
                 if (isActiveDelivery) {
                     actionsHtml += `<a class="order-card__quick-cta order-card__quick-cta--delivery" href="/pages/farmer/delivery.html?id=${order.id}">${i18next.t('delivery.goDelivery')}</a>`;
@@ -1036,9 +1069,10 @@
                 if (isPostDelivery) {
                     actionsHtml += `<a class="order-card__quick-cta order-card__quick-cta--payment" href="/pages/farmer/payment.html?id=${order.id}">${i18next.t('payment.goToRemittance')}</a>`;
                 }
-                if (showReviewReport) {
-                    // 5/4: レビュー済みなら無効化バッジ表示（レストラン側と同じパターン）
-                    const reviewBtn = order.hasReview
+                // レビュー（完了後のみ）と問題報告。レビュー不可の段階では報告のみ表示。
+                const reviewBtn = !canReview
+                    ? ''
+                    : (order.hasReview
                         ? `<span class="order-card__quick-action order-card__quick-action--reviewed">
                                 <span class="material-symbols-outlined">check</span>
                                 ${i18next.t('review.reviewed')}
@@ -1046,16 +1080,15 @@
                         : `<a class="order-card__quick-action order-card__quick-action--review" href="/pages/farmer/review.html?id=${order.id}">
                                 <span class="material-symbols-outlined">star</span>
                                 ${i18next.t('review.submit')}
-                            </a>`;
-                    actionsHtml += `
-                        <div class="order-card__quick-action-row">
-                            ${reviewBtn}
-                            <a class="order-card__quick-action order-card__quick-action--report" href="/pages/farmer/report.html?id=${order.id}">
-                                <span class="material-symbols-outlined">flag</span>
-                                ${i18next.t('review.reportIssue')}
-                            </a>
-                        </div>`;
-                }
+                            </a>`);
+                actionsHtml += `
+                    <div class="order-card__quick-action-row">
+                        ${reviewBtn}
+                        <a class="order-card__quick-action order-card__quick-action--report" href="/pages/farmer/report.html?id=${order.id}">
+                            <span class="material-symbols-outlined">flag</span>
+                            ${i18next.t('review.reportIssue')}
+                        </a>
+                    </div>`;
                 actionsHtml += '</div>';
                 html += actionsHtml;
             }
@@ -1305,76 +1338,13 @@
                 });
             });
 
-            // 承認ボタン（注文内容を再チェックする確認ダイアログ付き）
+            // 6/1 #112 (diff5): 承認ボタン → 自前モーダルで注文サマリを確認（ブラウザ標準ダイアログ廃止）
             document.querySelectorAll('.submit-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
+                btn.addEventListener('click', () => {
                     const orderId = btn.dataset.order;
-                    const restaurantId = btn.dataset.restaurant;
                     const action = orderStates[orderId] || 'approve';
-
                     if (action === 'decline') return; // decline-panelのボタンで処理
-
-                    // 確認ダイアログ：注文内容（魚種・数量・配送日時・金額・レストラン名）を表示
-                    // 複数アイテム注文の場合は各アイテムの明細（魚種・サイズ・数量・内臓処理）を全件表示
-                    const order = allOrders.find(o => o.id === orderId);
-                    if (order) {
-                        const restName = order.restData?.displayName || '';
-                        const fishTotal = order.fishPrice || 0;
-                        const receiveAmount = order.farmerReceiveAmount != null
-                            ? order.farmerReceiveAmount
-                            : (fishTotal - (order.farmerCommission || 0) + (order.deliveryFee || 0));
-
-                        const isMulti = Array.isArray(order.items) && order.items.length > 1;
-                        const fishLines = [];
-                        if (isMulti) {
-                            fishLines.push(`${i18next.t('orders.itemsList', { count: order.items.length })}:`);
-                            order.items.forEach(it => {
-                                const itType = it.snapFishType || '';
-                                const itName = itType
-                                    ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim()
-                                    : '';
-                                const sizePart = it.snapSize ? ` (${it.snapSize} head/kg)` : '';
-                                // 5/4: 内臓処理の表記を明示化
-                                const gutLabel = it.gutProcessing
-                                    ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
-                                    : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
-                                fishLines.push(`  ・${itName}${sizePart} ${it.quantity}kg ・${gutLabel}`);
-                            });
-                        } else {
-                            const fishTypeKey = order.snapFishType || order.listingData?.fishType || '';
-                            const fishName = fishTypeKey
-                                ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey).trim()
-                                : '';
-                            fishLines.push(`${i18next.t('orders.fishLabel')}: ${fishName}`);
-                            fishLines.push(`${i18next.t('orders.quantity')} ${order.quantity || 0} kg${order.gutProcessing ? ` (${i18next.t('orders.gutYes')})` : ''}`);
-                        }
-
-                        const lines = [
-                            i18next.t('orders.confirmApproveTitle'),
-                            '',
-                            ...fishLines,
-                            `${i18next.t('orders.deliveryDate')} ${order.deliveryDate || ''} ${order.deliveryTime || ''}`,
-                            `${i18next.t('orders.restaurantLabel')}: ${restName}`,
-                            `${i18next.t('orders.receiveAmount')} ${receiveAmount.toLocaleString()} KHR`,
-                            '',
-                            i18next.t('orders.confirmApproveAsk'),
-                        ];
-                        if (!confirm(lines.join('\n'))) return;
-                    }
-
-                    btn.disabled = true;
-                    loading.classList.add('show');
-
-                    try {
-                        await updateDoc(doc(db, 'orders', orderId), { status: 'approved' });
-                        // FCM通知はCloud Functionsが自動送信
-                        // 承認後はチャット画面へ遷移
-                        location.href = `/pages/farmer/delivery.html?id=${orderId}`;
-                    } catch (err) {
-                        console.error(err);
-                        btn.disabled = false;
-                        loading.classList.remove('show'); document.body.classList.add('app-ready');
-                    }
+                    openApproveModal(orderId, btn);
                 });
             });
 
@@ -1408,9 +1378,89 @@
             });
         }
 
+        // 6/1 #112 (diff5): 承認確認モーダル制御
+        let pendingApprove = null;   // { orderId, btn }
+        function openApproveModal(orderId, btn) {
+            const order = allOrders.find(o => o.id === orderId);
+            const summaryEl = document.getElementById('approve-modal-summary');
+            if (order && summaryEl) {
+                const restName = order.restData?.displayName || '';
+                const fishTotal = order.fishPrice || 0;
+                const receiveAmount = order.farmerReceiveAmount != null
+                    ? order.farmerReceiveAmount
+                    : (fishTotal - (order.farmerCommission || 0) + (order.deliveryFee || 0));
+                const isMulti = Array.isArray(order.items) && order.items.length > 1;
+                const fishLines = [];
+                // 6/1 #112 (diff8): 内臓処理は「(内臓処理あり)/(内臓処理なし)」フル表記
+                const gutFull = (on) => `(${i18next.t('orders.gutProcessing')}${on ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')})`;
+                if (isMulti) {
+                    fishLines.push(`${i18next.t('orders.itemsList', { count: order.items.length })}:`);
+                    order.items.forEach(it => {
+                        const itType = it.snapFishType || '';
+                        const itName = itType ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim() : '';
+                        const sizePart = it.snapSize ? ` (${it.snapSize} head/kg)` : '';
+                        fishLines.push(`・${itName}${sizePart} ${it.quantity}kg ${gutFull(it.gutProcessing)}`);
+                    });
+                } else {
+                    const fishTypeKey = order.snapFishType || order.listingData?.fishType || '';
+                    const fishName = fishTypeKey ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey).trim() : '';
+                    fishLines.push(`${i18next.t('orders.fishLabel')}: ${fishName}`);
+                    fishLines.push(`${i18next.t('orders.quantity')} ${order.quantity || 0} kg ${gutFull(order.gutProcessing)}`);
+                }
+                const lines = [
+                    ...fishLines,
+                    `${i18next.t('orders.deliveryDate')} ${order.deliveryDate || ''} ${order.deliveryTime || ''}`,
+                    `${i18next.t('orders.restaurantLabel')}: ${restName}`,
+                    `${i18next.t('orders.receiveAmount')} ${receiveAmount.toLocaleString()} KHR`,
+                ];
+                summaryEl.textContent = lines.join('\n');
+            }
+            pendingApprove = { orderId, btn };
+            document.getElementById('approve-modal').classList.add('show');
+        }
+        function closeApproveModal() {
+            document.getElementById('approve-modal').classList.remove('show');
+            pendingApprove = null;
+        }
+        document.getElementById('approve-modal-cancel').addEventListener('click', closeApproveModal);
+        document.getElementById('approve-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'approve-modal') closeApproveModal();
+        });
+        document.getElementById('approve-modal-ok').addEventListener('click', async () => {
+            if (!pendingApprove) return;
+            const { orderId, btn } = pendingApprove;
+            document.getElementById('approve-modal-ok').disabled = true;
+            if (btn) btn.disabled = true;
+            loading.classList.add('show');
+            try {
+                await updateDoc(doc(db, 'orders', orderId), { status: 'approved' });
+                // FCM通知はCloud Functionsが自動送信。承認後はチャット（配送管理）へ遷移
+                location.href = `/pages/farmer/delivery.html?id=${orderId}`;
+            } catch (err) {
+                console.error(err);
+                if (btn) btn.disabled = false;
+                document.getElementById('approve-modal-ok').disabled = false;
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
+                closeApproveModal();
+            }
+        });
+
         // 言語変更時
         onLanguageChange(() => location.reload());
     </script>
+
+    <!-- 6/1 #112 (diff5): 承認確認モーダル（ブラウザ標準ダイアログ置換・自前モーダル） -->
+    <div class="approve-modal" id="approve-modal" role="dialog" aria-modal="true">
+        <div class="approve-modal__sheet">
+            <div class="approve-modal__title" data-i18n="orders.confirmApproveTitle"></div>
+            <div class="approve-modal__summary" id="approve-modal-summary"></div>
+            <div class="approve-modal__ask" data-i18n="orders.confirmApproveAsk"></div>
+            <div class="approve-modal__actions">
+                <button type="button" class="approve-modal__btn approve-modal__btn--cancel" id="approve-modal-cancel" data-i18n="orders.cancel"></button>
+                <button type="button" class="approve-modal__btn approve-modal__btn--ok" id="approve-modal-ok" data-i18n="orders.approve"></button>
+            </div>
+        </div>
+    </div>
 
 </body>
 

@@ -210,11 +210,13 @@
     <div class="search">🔍 魚種・農家を探す</div>
   </div>
 
-  <!-- キャンペーンバナー（買い手向け手数料割引。期間中のみ表示・期間外は要素ごと非表示） -->
+  <!-- キャンペーンバナー（買い手向け手数料割引。期間中のみ表示・期間外は要素ごと非表示）
+       文言＝確定フォーマット。main/{割引%}/{期限}は運営画面(料金設定)の値を参照しハードコードしない。
+       表示条件＝campaignEnabled かつ 今日≤campaignEndDate。下記は「半額・2.5%・〜6/30」の実例。 -->
   <div class="promo">
     <span class="pico">🎉</span>
-    <div class="ptxt">期間限定：取引手数料が無料
-      <small>お会計時にご注文金額の5%を割引 〜6/30</small>
+    <div class="ptxt">手数料半額
+      <small>お会計から2.5%割引 〜6/30</small>
     </div>
     <span class="pclose">✕</span>
   </div>

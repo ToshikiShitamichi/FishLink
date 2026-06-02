@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK レストラン側 商品詳細 - モック</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #ECEEF0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 12px 60px;
+    color: #1A1A1A;
+  }
+  .intro {
+    max-width: 820px;
+    margin-bottom: 24px;
+    background: #FFF;
+    padding: 16px 18px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .intro h1 { margin: 0 0 8px; font-size: 17px; color: #0B5FB0; }
+  .intro p { margin: 4px 0; color: #4A4A4A; }
+  .intro b { color: #0B5FB0; }
+
+  .stage { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .phone-label {
+    font-size: 13px; font-weight: 700; color: #1A1A1A;
+    background: #FFF; padding: 7px 16px; border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .phone-label .tag { color: #5A6470; font-weight: 500; }
+
+  /* スマホ枠 */
+  .phone {
+    width: 390px;
+    max-width: 100%;
+    height: 780px;
+    background: #FFF;
+    border-radius: 36px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ヘッダー（戻る＋魚名＝#3） */
+  .det-header {
+    flex: 0 0 auto;
+    background: #FFF;
+    padding: 14px 16px;
+    border-bottom: 1px solid #EEF1F4;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 2;
+  }
+  .det-header .back { font-size: 20px; color: #1A1A1A; cursor: pointer; }
+  .det-header .ttl { font-size: 18px; font-weight: 800; }
+
+  /* 本体 */
+  .det-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding-bottom: 96px;
+    background: #F7F9FB;
+  }
+
+  /* ①写真カルーセル */
+  .photo {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    background: linear-gradient(135deg, #cfe0ee, #aac6dd);
+    display: flex; align-items: center; justify-content: center;
+    color: #6B8299; font-size: 40px;
+  }
+  .photo .dots {
+    position: absolute; bottom: 10px; left: 0; right: 0;
+    display: flex; gap: 6px; justify-content: center;
+  }
+  .photo .dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.6); }
+  .photo .dots span.on { background: #FFF; }
+
+  .pad { padding: 0 16px; }
+
+  /* ②魚名+サイズ */
+  .name-row { margin-top: 16px; }
+  .fish-name { font-size: 22px; font-weight: 800; }
+  .fish-size { font-size: 13px; color: #5A6470; margin-top: 3px; font-weight: 600; }
+
+  /* ③価格（内臓処理込み単一値＝#11／#14注記） */
+  .price-block { margin-top: 12px; }
+  .price-val { font-size: 30px; font-weight: 800; color: #0B5FB0; letter-spacing: -0.5px; }
+  .price-unit { font-size: 14px; color: #5A6470; font-weight: 600; margin-left: 3px; }
+  .price-incl { font-size: 12px; color: #9AA3B0; margin-top: 2px; }  /* #14 グレー注記 */
+
+  /* ④農家名+評価（タップで生産者ページ） */
+  .farmer-row {
+    margin-top: 16px;
+    background: #FFF;
+    border: 1px solid #EEF1F4;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+  }
+  .farmer-row .ava { width: 42px; height: 42px; border-radius: 50%; background: #D8E2EC; flex-shrink: 0; display:flex;align-items:center;justify-content:center;font-size:20px;color:#6B8299; }
+  .farmer-row .fmeta { flex: 1; }
+  .farmer-row .fname { font-size: 15px; font-weight: 700; }
+  .farmer-row .frate { font-size: 13px; color: #5A6470; margin-top: 2px; }   /* #1 ★96% (32) */
+  .farmer-row .fnew { font-size: 13px; color: #5A6470; margin-top: 2px; }
+  .farmer-row .chev { color: #AEB6C0; font-size: 18px; }
+
+  /* ⑤GAqP認証ボックス（#2・認証農家のみ） */
+  .gaqp-box {
+    margin-top: 12px;
+    background: #F0F8F1;
+    border: 1px solid #C5E3C8;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .gaqp-box .gicon { color: #2E7D32; font-size: 18px; line-height: 1.3; }
+  .gaqp-box .gttl { font-size: 13px; font-weight: 800; color: #2E7D32; }
+  .gaqp-box .gtxt { font-size: 12px; color: #3F6B43; margin-top: 3px; line-height: 1.5; }
+
+  /* ⑥取引条件ブロック（#12統合・#10/#13） */
+  .terms-box {
+    margin-top: 12px;
+    background: #FFF;
+    border: 1px solid #EEF1F4;
+    border-radius: 12px;
+    padding: 4px 14px;
+  }
+  .term {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 12px 0; border-bottom: 1px solid #F2F4F7;
+    font-size: 13px;
+  }
+  .term:last-child { border-bottom: none; }
+  .term .ti { width: 22px; flex-shrink: 0; text-align: center; color: #5A6470; }
+  .term .ti svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; vertical-align: -3px; }
+  .term .tmain { font-weight: 700; }
+  .term .tsub { color: #5A6470; font-weight: 500; font-size: 12px; margin-top: 2px; line-height: 1.5; }
+
+  /* セクション見出し */
+  .sec-head {
+    display: flex; align-items: center; gap: 8px;
+    margin: 24px 0 10px;
+    font-size: 16px; font-weight: 800;
+  }
+  .sec-head::before { content: ""; width: 4px; height: 16px; background: #0B5FB0; border-radius: 2px; }
+
+  /* ⑦Q&A teaser（#8） */
+  .qa-thread {
+    background: #FFF; border: 1px solid #EEF1F4; border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .qa-q { display: flex; gap: 8px; }
+  .qa-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px; flex-shrink: 0; height: fit-content; }
+  .qa-badge.q { background: #EAF2FB; color: #0B5FB0; }
+  .qa-badge.a { background: #F0F8F1; color: #2E7D32; }
+  .qa-text { font-size: 13px; line-height: 1.55; }
+  .qa-who { font-size: 11px; color: #9AA3B0; margin-top: 3px; }
+  .qa-a { display: flex; gap: 8px; margin-top: 12px; padding-left: 14px; border-left: 2px solid #EEF1F4; }
+  .qa-link {
+    display: block; text-align: center; margin-top: 10px;
+    font-size: 13px; font-weight: 700; color: #0B5FB0; cursor: pointer;
+  }
+  .qa-empty {
+    background: #FFF; border: 1px dashed #DDE3E9; border-radius: 12px;
+    padding: 16px 14px; text-align: center;
+  }
+  .qa-empty .qe-txt { font-size: 13px; color: #5A6470; }
+  .qa-empty .qe-btn {
+    display: inline-block; margin-top: 8px;
+    font-size: 13px; font-weight: 700; color: #0B5FB0; cursor: pointer;
+  }
+
+  /* ⑧商品の説明 */
+  .desc { font-size: 13px; line-height: 1.7; color: #2A2F36; white-space: pre-line; }
+
+  /* ⑨この農家の他の出品（#5） */
+  .other-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+  .other-card {
+    flex: 0 0 150px; background: #FFF; border: 1px solid #EEF1F4; border-radius: 12px;
+    overflow: hidden; cursor: pointer;
+  }
+  .other-card .oc-img { height: 96px; background: linear-gradient(135deg,#cfe0ee,#aac6dd); }
+  .other-card .oc-body { padding: 8px 10px 10px; }
+  .other-card .oc-name { font-size: 13px; font-weight: 700; }
+  .other-card .oc-size { font-size: 11px; color: #5A6470; margin-top: 2px; }  /* #5 サイズ表示 */
+  .other-card .oc-price { font-size: 16px; font-weight: 800; color: #0B5FB0; margin-top: 6px; }
+  .other-card .oc-unit { font-size: 10px; color: #5A6470; font-weight: 600; }
+
+  /* ⑩固定CTA（#9 青一本化） */
+  .cta-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: #FFF; border-top: 1px solid #EEF1F4;
+    padding: 12px 16px 22px; z-index: 3;
+    display: flex; gap: 10px;
+  }
+  .cta-btn { flex: 1; border-radius: 12px; padding: 15px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; }
+  .cta-btn.primary { background: #0B5FB0; color: #FFF; border: none; }     /* 主 */
+  .cta-btn.primary:active { background: #094C8E; }
+  .cta-btn.secondary { background: #FFF; color: #0B5FB0; border: 1.5px solid #0B5FB0; }  /* 副 */
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK レストラン側 — 商品詳細（モック）</h1>
+  <p>商品カードのタップ先。並び順は <b>①写真 ②魚名(サイズ) ③価格(内臓処理込み) ④農家名+評価 ⑤GAqP ⑥取引条件 ⑦説明 ⑧Q&A ⑨他の出品 ⑩CTA</b>（#12）。</p>
+  <p>反映：#1 評価<b>★96% (32)</b>／#2 GAqPは<b>説明ボックス</b>（写真に重ねバッジは出さない）／#3 ヘッダー=<b>魚名</b>／#9 CTA<b>カートに入れる(主青塗り)・今すぐ注文(副青枠)</b>／#10 送料は<b>性質のみ</b>・最低注文量◯kg〜／#11/#14 価格<b>内臓処理込み単一値＋グレー注記</b>／#13 在庫<b>実数</b>。</p>
+  <p>② は出し分け：<b>未認証(GAqPなし)・最低注文量なし(行ごと非表示)・説明未記入(#15 セクションごと非表示)・Q&A 0件(質問する小導線)</b>。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ============================================================ -->
+  <!-- ① GAqP認証農家・全要素あり                                    -->
+  <!-- ============================================================ -->
+  <div class="phone-wrap">
+    <div class="phone-label">① GAqP認証農家 <span class="tag">全要素あり</span></div>
+    <div class="phone">
+      <div class="det-header">
+        <span class="back">←</span>
+        <span class="ttl">ヒレナマズ</span>
+      </div>
+      <div class="det-body">
+
+        <!-- ①写真（GAqPの重ねバッジは出さない＝#2） -->
+        <div class="photo">
+          🐟
+          <div class="dots"><span class="on"></span><span></span><span></span></div>
+        </div>
+
+        <div class="pad">
+          <!-- ②魚名+サイズ -->
+          <div class="name-row">
+            <div class="fish-name">ヒレナマズ</div>
+            <div class="fish-size">6-8 head/kg</div>
+          </div>
+
+          <!-- ③価格（内臓処理込み単一値＋グレー注記） -->
+          <div class="price-block">
+            <span class="price-val">6,300</span><span class="price-unit">KHR /kg</span>
+            <div class="price-incl">内臓処理込み</div>
+          </div>
+
+          <!-- ④農家名+評価（タップで生産者ページ） -->
+          <div class="farmer-row">
+            <div class="ava">🧑‍🌾</div>
+            <div class="fmeta">
+              <div class="fname">ソカ・ファーム</div>
+              <div class="frate">★96% (32)</div>
+            </div>
+            <span class="chev">›</span>
+          </div>
+
+          <!-- ⑤GAqP認証ボックス -->
+          <div class="gaqp-box">
+            <span class="gicon">✓</span>
+            <div>
+              <div class="gttl">GAqP 認証農家</div>
+              <div class="gtxt">この農家は Good Aquaculture Practices の認証を取得しています。</div>
+            </div>
+          </div>
+
+          <!-- ⑥取引条件ブロック -->
+          <div class="terms-box">
+            <div class="term">
+              <span class="ti"><svg viewBox="0 0 24 24"><path d="M12 21s6.5-5.8 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 15.2 12 21 12 21z"/><circle cx="12" cy="10.3" r="2.4"/></svg></span>
+              <div>
+                <div class="tmain">プノンペン・チャンカルモン地区</div>
+                <div class="tsub">あなたの店から約 27.2km</div>
+              </div>
+            </div>
+            <div class="term">
+              <span class="ti"><svg viewBox="0 0 24 24"><path d="M3 6.5h11v9.5H3z"/><path d="M14 10h3.8l2.7 2.7V16H14z"/><circle cx="7" cy="17.5" r="1.7"/><circle cx="17.3" cy="17.5" r="1.7"/></svg></span>
+              <div>
+                <div class="tmain">配達可</div>
+                <div class="tsub">送料は配達1回ごと（量で変わりません）。金額はカートで確認できます。</div>
+              </div>
+            </div>
+            <div class="term">
+              <span class="ti"><svg viewBox="0 0 24 24"><path d="M12 4v10"/><path d="M8 10.5l4 4 4-4"/><path d="M5 19h14"/></svg></span>
+              <div>
+                <div class="tmain">最低注文量 5kg〜</div>
+              </div>
+            </div>
+            <div class="term">
+              <span class="ti"><svg viewBox="0 0 24 24"><path d="M3 7.5l9-4 9 4-9 4-9-4z"/><path d="M3 7.5v9l9 4 9-4v-9"/><path d="M12 11.5v9"/></svg></span>
+              <div>
+                <div class="tmain">在庫 80kg</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ⑦商品の説明（質問・返信より上＝#12改定） -->
+          <div class="sec-head">商品の説明</div>
+          <div class="desc">朝に水揚げする新鮮なヒレナマズです。
+薬は使わず、自家製の餌で育てています。
+池の水質管理に気をつけています。</div>
+
+          <!-- ⑧Q&A teaser（最新1スレッド＋件数リンク） -->
+          <div class="sec-head">質問・返信</div>
+          <div class="qa-thread">
+            <div class="qa-q">
+              <span class="qa-badge q">質問</span>
+              <div>
+                <div class="qa-text">活け締めはしてもらえますか？</div>
+                <div class="qa-who">レストランA ・ 2日前</div>
+              </div>
+            </div>
+            <div class="qa-a">
+              <span class="qa-badge a">返信</span>
+              <div>
+                <div class="qa-text">はい、ご希望に応じて対応します。注文時に備考でお知らせください。</div>
+                <div class="qa-who">ソカ・ファーム ・ 1日前</div>
+              </div>
+            </div>
+          </div>
+          <span class="qa-link">質問をすべて見る（4件）→</span>
+
+          <!-- ⑨この農家の他の出品（現出品は除外・サイズ表示） -->
+          <div class="sec-head">この農家の他の出品</div>
+          <div class="other-scroll">
+            <div class="other-card">
+              <div class="oc-img"></div>
+              <div class="oc-body">
+                <div class="oc-name">ヒレナマズ</div>
+                <div class="oc-size">10 head/kg</div>
+                <div class="oc-price">6,825<span class="oc-unit"> KHR/kg</span></div>
+              </div>
+            </div>
+            <div class="other-card">
+              <div class="oc-img"></div>
+              <div class="oc-body">
+                <div class="oc-name">パンガシウス</div>
+                <div class="oc-size">4-5 head/kg</div>
+                <div class="oc-price">5,250<span class="oc-unit"> KHR/kg</span></div>
+              </div>
+            </div>
+            <div class="other-card">
+              <div class="oc-img"></div>
+              <div class="oc-body">
+                <div class="oc-name">ティラピア</div>
+                <div class="oc-size">2-3 head/kg</div>
+                <div class="oc-price">4,200<span class="oc-unit"> KHR/kg</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- ⑩CTA -->
+      <div class="cta-bar">
+        <button class="cta-btn primary">カートに入れる</button>
+        <button class="cta-btn secondary">今すぐ注文</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ② 未認証・最低注文量なし・説明未記入・Q&A 0件                   -->
+  <!-- ============================================================ -->
+  <div class="phone-wrap">
+    <div class="phone-label">② 出し分け <span class="tag">未認証 / 最低注文量なし / 説明なし / Q&A 0件</span></div>
+    <div class="phone">
+      <div class="det-header">
+        <span class="back">←</span>
+        <span class="ttl">レッドティラピア</span>
+      </div>
+      <div class="det-body">
+
+        <div class="photo">
+          🐟
+          <div class="dots"><span class="on"></span><span></span></div>
+        </div>
+
+        <div class="pad">
+          <div class="name-row">
+            <div class="fish-name">レッドティラピア</div>
+            <div class="fish-size">3-4 head/kg</div>
+          </div>
+
+          <div class="price-block">
+            <span class="price-val">4,725</span><span class="price-unit">KHR /kg</span>
+            <div class="price-incl">内臓処理込み</div>
+          </div>
+
+          <!-- 評価0件＝「新規」（#1ルール） -->
+          <div class="farmer-row">
+            <div class="ava">🧑‍🌾</div>
+            <div class="fmeta">
+              <div class="fname">ダラ・ファーム</div>
+              <div class="fnew">新規</div>
+            </div>
+            <span class="chev">›</span>
+          </div>
+
+          <!-- GAqPボックスは未認証なので出さない -->
+
+          <!-- 取引条件：最低注文量の行は設定なしなので非表示 -->
+          <div class="terms-box">
+            <div class="term">
+              <span class="ti"><svg viewBox="0 0 24 24"><path d="M12 21s6.5-5.8 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 15.2 12 21 12 21z"/><circle cx="12" cy="10.3" r="2.4"/></svg></span>
+              <div>
+                <div class="tmain">カンダル州・タクマウ</div>
+                <div class="tsub">あなたの店から約 12.0km</div>
+              </div>
+            </div>
+            <div class="term">
+              <span class="ti"><svg viewBox="0 0 24 24"><path d="M3 6.5h11v9.5H3z"/><path d="M14 10h3.8l2.7 2.7V16H14z"/><circle cx="7" cy="17.5" r="1.7"/><circle cx="17.3" cy="17.5" r="1.7"/></svg></span>
+              <div>
+                <div class="tmain">配達可</div>
+                <div class="tsub">送料は配達1回ごと（量で変わりません）。金額はカートで確認できます。</div>
+              </div>
+            </div>
+            <div class="term">
+              <span class="ti"><svg viewBox="0 0 24 24"><path d="M3 7.5l9-4 9 4-9 4-9-4z"/><path d="M3 7.5v9l9 4 9-4v-9"/><path d="M12 11.5v9"/></svg></span>
+              <div>
+                <div class="tmain">在庫 35kg</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ⑦商品の説明：未記入＝セクションごと非表示（#15）→ここには出ない -->
+
+          <!-- ⑧Q&A 0件＝空状態の小導線（#8） -->
+          <div class="sec-head">質問・返信</div>
+          <div class="qa-empty">
+            <div class="qe-txt">まだ質問はありません。</div>
+            <span class="qe-btn">この魚について質問する →</span>
+          </div>
+
+          <div class="sec-head">この農家の他の出品</div>
+          <div class="other-scroll">
+            <div class="other-card">
+              <div class="oc-img"></div>
+              <div class="oc-body">
+                <div class="oc-name">ナイルティラピア</div>
+                <div class="oc-size">5-6 head/kg</div>
+                <div class="oc-price">3,990<span class="oc-unit"> KHR/kg</span></div>
+              </div>
+            </div>
+            <div class="other-card">
+              <div class="oc-img"></div>
+              <div class="oc-body">
+                <div class="oc-name">シルバーバーブ</div>
+                <div class="oc-size">12-15 head/kg</div>
+                <div class="oc-price">3,150<span class="oc-unit"> KHR/kg</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="cta-bar">
+        <button class="cta-btn primary">カートに入れる</button>
+        <button class="cta-btn secondary">今すぐ注文</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

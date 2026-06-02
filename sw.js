@@ -224,7 +224,17 @@ self.addEventListener('notificationclick', (event) => {
 //   - #107 fish-list.html: 距離スライダー廃止/配達範囲外は完全非表示/送料3param(農家doc)/価格0〜25000固定/「その他」チップ/評価0=「新規」/送料無料表示
 //   - #106 dashboard.html(restaurant): キャンペーンバナー（検索バー直下・率はデータ化）/魚タイル11種目「その他」/評価0=「新規」
 //   - cart.html / restaurant dashboard の配送計算を resolveDelivery 経由に移行。locales 3言語にキー追加 → 版番号バンプ
-const CACHE_NAME = 'fishlink-v113';
+// 6/1 #108-#113: クライアントレビュー修正6件 → v114
+//   - #113 魚種マスタ 10→11種（バラマンディ追加）: FISH_TYPES 5箇所 / locales fish.barramundi / post.html select / CAA / タイル・チップ・サジェストは配列由来で自動反映
+//     ・CAA-OCR(functions): プロンプト列マッピングに ត្រីឆ្ពង់→barramundi（11列）を追加。さらにバラマンディ値は Kampot 行のみのため CAA対応州に Kampot(កំពត) を追加（functions PROVINCES / caa.html PROVINCES / post.html PROVINCE_MAP）
+//   - #108 Home: GAqPバッジ「✓ GAqP」短縮（gaqp.badge）/ キャンペーンバナーに終了日 campaignEndDate（admin/settings 新設・表示条件 今日≤終了日）/ 割引文言「魚代から」
+//   - #109 魚一覧: キャンペーンバナー削除（Homeのみ表示）/ GAqPバッジ短縮
+//   - #110 商品詳細(order.html): spec全面更新（ヘッダー=魚名/★%/CTA青(カートに入れる主・今すぐ注文副)/GAqP緑ボックス見出し「GAqP 認証農家」/取引条件ブロック/説明→Q&Aの順/他の出品サイズ表示・現出品除外）
+//   - #111 カート: 内臓処理トグル中立グレー+ヒント直下/単価に(内臓処理あり/なし)併記/削除右上/CTA青/明細「魚代」/配送料注記+送料無料/最低注文量C案/整数kg/最短リードタイム8h(運営値leadTimeHours)でスロットグレーアウト/配送料節約提案を非表示/確認画面サイズ・内臓処理全項目明示・納品日時強調
+//   - #112 農家注文: 手数料は通常率満額表示+キャンペーン割引で戻す/評価★%（小数廃止・0件は新規）/CTA青(orders・delivery)/魚単価と内臓処理を分解表示/承認確認は自前モーダル/レビューは完了後のみ/到着メッセージ文言更新/(内臓処理あり)フル表記
+//   - CSS: --color-cta/-dk/-lt（青）を DS に新設（CTA=青・緑=GAqP/成功/送料無料・赤=danger 専用に役割分離）
+//   - settings/campaign に campaignEndDate / farmerCampaignEndDate / leadTimeHours を追加。locales 3言語にキー追加 → 版番号バンプ
+const CACHE_NAME = 'fishlink-v114';
 
 const PRECACHE_URLS = [
     '/',

@@ -36,7 +36,7 @@
         .cart-empty__icon { font-size: 48px; color: #cbd5e1; margin-bottom: 10px; }
         .cart-empty__cta {
             display: inline-block; margin-top: 14px;
-            background: var(--color-primary); color: #fff;
+            background: var(--color-cta); color: #fff;
             padding: 10px 20px; border-radius: 22px;
             font-size: 13px; font-weight: 700; text-decoration: none;
         }
@@ -121,6 +121,8 @@
         /* 5/25 #87: 内臓処理 あり/なし の判別を明確化。チェックアイコン + 状態別文言で
            色だけでない視認性を確保。 */
         /* 5/27: 「+xxx KHR/kg」を改行して横幅を縮め、削除ボタンと横並びを維持 */
+        /* 6/1 #111: 内臓処理トグルは中立グレー（緑=GAqP/成功 専用と混線させない）。
+           あり/なしは check アイコン+文言で判別。 */
         .gut-chip {
             display: inline-flex; align-items: center; gap: 4px;
             font-size: 12px; padding: 5px 10px; border-radius: 14px;
@@ -130,21 +132,26 @@
             line-height: 1.2;
         }
         .gut-chip.active {
-            background: #ecfdf5; color: #047857;
-            border-color: #6ee7b7;
+            background: #e2e8f0; color: var(--color-text);
+            border-color: #cbd5e1;
         }
         .gut-chip .material-symbols-outlined { font-size: 14px; }
-        .gut-chip__text { display: inline-flex; flex-direction: column; align-items: flex-start; }
-        .gut-chip__sub { font-size: 10px; font-weight: 500; opacity: 0.85; }
+        /* 6/1 #111: 内臓処理ヒントはトグル直下にグループ化（中立グレー） */
+        .gut-hint { font-size: 11px; color: var(--color-text-sub); margin-top: 4px; }
+        /* 6/1 #111: 最低注文量の明示 */
+        .min-order-note { font-size: 11px; color: var(--color-text-sub); margin-top: 4px; }
+        /* 6/1 #111: 配送料の注記・送料無料 */
+        .delivery-note { font-size: 11px; color: var(--color-text-sub); margin-top: 2px; line-height: 1.4; }
+        .free-delivery { color: var(--color-primary); font-weight: 700; }
 
-        /* 5/25 #87: キャンペーン割引を明確に強調（薄い緑バナー + ラベル太字） */
+        /* 6/1 #111: キャンペーン割引は amber 系（danger 赤は使わない） */
         .group-breakdown__row.discount {
-            color: #dc2626; font-weight: 700;
-            background: #fff7ed;
+            color: #b36a00; font-weight: 700;
+            background: #fff7e6;
             padding: 6px 8px;
             margin: 4px -8px;
             border-radius: 8px;
-            border: 1px dashed #fed7aa;
+            border: 1px dashed #f3d19e;
         }
         .group-breakdown__row.discount .material-symbols-outlined {
             font-size: 14px; vertical-align: middle; margin-right: 3px;
@@ -213,7 +220,7 @@
         .grand-total-row__value { font-size: 22px; font-weight: 700; color: var(--color-text); }
         .checkout-btn {
             width: 100%; padding: 14px;
-            background: var(--color-primary); color: #fff;
+            background: var(--color-cta); color: #fff;
             border: none; border-radius: 14px;
             font-size: 16px; font-weight: 700; cursor: pointer;
             font-family: inherit;
@@ -316,9 +323,14 @@
             border-top: 1px solid #e2e8f0; margin-top: 8px; padding-top: 6px;
             font-weight: 700;
         }
+        /* 6/1 #111: 注文確認の納品日時は強調表示（小さなグレー注記にしない） */
         .confirm-group__deliv {
-            font-size: 12px; color: var(--color-text-sub); margin-top: 6px;
+            display: flex; align-items: center; gap: 6px;
+            font-size: 13px; color: var(--color-text); margin-top: 10px;
+            background: var(--color-cta-lt); border-radius: 10px;
+            padding: 8px 10px; font-weight: 700;
         }
+        .confirm-group__deliv .material-symbols-outlined { font-size: 18px; color: var(--color-cta); }
 
         /* 出品詳細モーダル */
         .listing-modal {
@@ -576,6 +588,8 @@
         // 料率
         let serviceRate = 0.05, campaignActive = false, campaignDiscountRate = 0;
         let farmerRate = 0.05, farmerCampaignActive = false, farmerCampaignDiscountRate = 0;
+        // 6/1 #111: 最短リードタイム（時間・運営値・初期8h）。これ未満の開始時刻スロットは選べない。
+        let leadTimeHours = 8;
 
         // 5/24 #82 Phase 2 Chunk 3: 適用済みクーポン
         // { code: '...', amountKhr: 5000 } / 未適用なら null
@@ -639,6 +653,28 @@
         function todayIso() {
             const d = new Date();
             return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+        function isoFromDate(d) {
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        // 6/1 #111: 配達リードタイム — スロット開始が now + leadTimeHours 以降のものだけ選択可。
+        function slotStartHour(slot) { return parseInt(String(slot).split(':')[0], 10) || 0; }
+        function isSlotSelectable(dateIso, slot) {
+            const todayStr = todayIso();
+            if (dateIso > todayStr) return true;     // 未来日：全て選択可
+            if (dateIso < todayStr) return false;    // 過去日：選択不可
+            const now = new Date();
+            const earliest = now.getHours() + now.getMinutes() / 60 + (leadTimeHours || 0);
+            return slotStartHour(slot) >= earliest;  // 当日：開始時刻が now+lead 以降
+        }
+        // 当日に選べるスロットが無ければ翌日へ繰り上げた既定値を返す。
+        function defaultDeliveryPick() {
+            const todayStr = todayIso();
+            const firstToday = DELIVERY_TIME_SLOTS.find(s => isSlotSelectable(todayStr, s));
+            if (firstToday) return { dateIso: todayStr, time: firstToday };
+            const d = new Date(); d.setDate(d.getDate() + 1);
+            return { dateIso: isoFromDate(d), time: DELIVERY_TIME_SLOTS[0] };
         }
 
         // 5/23 #69 Phase B: data-cache 経由（同一タブ内の重複取得を抑止）
@@ -709,6 +745,7 @@
                     farmerRate = c.farmerRate ?? 0.05;
                     farmerCampaignActive = c.farmerCampaignActive === true;
                     farmerCampaignDiscountRate = c.farmerCampaignDiscount ?? 0;
+                    leadTimeHours = c.leadTimeHours != null ? c.leadTimeHours : 8;
                 }
 
                 subscribeCart(window.currentUser.uid, async (items) => {
@@ -779,11 +816,16 @@
                 const groupTotal = calcOrderTotal(itemsSum, deliveryFee);
                 grandTotal += groupTotal;
 
-                // 納品日時デフォルト（初回のみ）
+                // 納品日時デフォルト（初回のみ）。6/1 #111: リードタイムを考慮した既定値。
                 if (!deliveryPick.has(farmerId)) {
-                    deliveryPick.set(farmerId, { dateIso: todayIso(), time: DELIVERY_TIME_SLOTS[1] });
+                    deliveryPick.set(farmerId, defaultDeliveryPick());
                 }
                 const pick = deliveryPick.get(farmerId);
+                // 6/1 #111: 現在の選択スロットが（当日かつリードタイム未達で）選べないなら補正
+                if (!isSlotSelectable(pick.dateIso, pick.time)) {
+                    const firstOk = DELIVERY_TIME_SLOTS.find(s => isSlotSelectable(pick.dateIso, s));
+                    if (firstOk) { pick.time = firstOk; deliveryPick.set(farmerId, pick); }
+                }
 
                 html += `<div class="farmer-group" data-farmer="${farmerId}">
                     <div class="farmer-group__head">
@@ -801,39 +843,49 @@
                     const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
                     const shortName = fishName.trim();
                     const photoUrl = c.listing.photoUrl || (c.listing.photos?.[0]);
-                    // レストラン側UIは「サービス料込み」単価を表示（CLAUDE.md仕様：(price+gutPrice)×(1+serviceRate)）
+                    // レストラン側UIは「手数料込み」単価を表示（仕様：(price+gutPrice)×(1+serviceRate)）
                     const baseUnit = (c.listing.price || 0) + (c.raw.gutProcessing ? (c.listing.gutPrice || 0) : 0);
                     const unitPrice = Math.round(baseUnit * (1 + serviceRate));
-                    // gut追加分もサービス料込み表示
-                    const gutDisplayPrice = Math.round((c.listing.gutPrice || 0) * (1 + serviceRate));
-                    // 小計もサービス料込み（c.prices.fishPrice + c.prices.serviceFee）
+                    // 6/1 #111: 内臓処理を外したときの増減額（−525相当・手数料込み）
+                    const gutRemoveKhr = Math.round((c.listing.gutPrice || 0) * (1 + serviceRate));
+                    // 小計も手数料込み（c.prices.fishPrice + c.prices.serviceFee）
                     const lineTotal = (c.prices.fishPrice || 0) + (c.prices.serviceFee || 0);
                     const minOrder = c.listing.minOrder || 1;
+                    // 6/1 #111: 単価に内臓処理あり/なしを併記
+                    const gutAnno = c.raw.gutProcessing ? i18next.t('cart.gutAnnoOn') : i18next.t('cart.gutAnnoOff');
+                    // ヒント（トグル直下）：あり→外すと−／なし→戻すと+
+                    const gutHint = gutRemoveKhr > 0
+                        ? (c.raw.gutProcessing
+                            ? i18next.t('cart.gutHintRemove', { price: gutRemoveKhr.toLocaleString() })
+                            : i18next.t('cart.gutHintAdd', { price: gutRemoveKhr.toLocaleString() }))
+                        : '';
 
                     html += `<div class="cart-item">
                         <div class="cart-item__img">
                             ${photoUrl ? `<img ${asCachedImgAttrs(photoUrl)} alt="">` : `<span class="material-symbols-outlined" style="font-size:32px; color:#94a3b8;">set_meal</span>`}
                         </div>
                         <div class="cart-item__body">
-                            <div class="cart-item__name">${escapeHtml(shortName)}</div>
+                            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+                                <div class="cart-item__name">${escapeHtml(shortName)}</div>
+                                <button class="remove-btn" type="button" data-act="remove" data-idx="${origIndex}" aria-label="${i18next.t('cart.remove')}">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </button>
+                            </div>
                             <div class="cart-item__size">${c.listing.size || ''} head/kg</div>
-                            <div class="cart-item__price">${unitPrice.toLocaleString()} KHR/kg</div>
+                            <div class="cart-item__price">${unitPrice.toLocaleString()} KHR/kg ${gutAnno}</div>
                             <div class="cart-item__ctrl">
                                 <div class="qty-box">
                                     <button type="button" data-act="qty-minus" data-idx="${origIndex}" ${c.raw.quantity <= minOrder ? 'disabled' : ''}>−</button>
-                                    <input type="number" class="qty-box__value" data-act="qty-input" data-idx="${origIndex}" data-min="${minOrder}" value="${c.raw.quantity}" min="0" step="0.1" inputmode="decimal">
+                                    <input type="number" class="qty-box__value" data-act="qty-input" data-idx="${origIndex}" data-min="${minOrder}" value="${c.raw.quantity}" min="${minOrder}" step="1" inputmode="numeric">
                                     <button type="button" data-act="qty-plus" data-idx="${origIndex}">＋</button>
                                 </div>
                                 <button class="gut-chip ${c.raw.gutProcessing ? 'active' : ''}" type="button" data-act="toggle-gut" data-idx="${origIndex}">
-                                    ${c.raw.gutProcessing
-                                        ? `<span class="material-symbols-outlined">check_circle</span><span class="gut-chip__text"><span>${i18next.t('cart.gutChipOn')}</span><span class="gut-chip__sub">${i18next.t('cart.gutChipOnPrice', { price: gutDisplayPrice.toLocaleString() })}</span></span>`
-                                        : `<span class="material-symbols-outlined">radio_button_unchecked</span><span class="gut-chip__text"><span>${i18next.t('cart.gutChipOff')}</span></span>`}
-                                </button>
-                                <button class="remove-btn" type="button" data-act="remove" data-idx="${origIndex}">
-                                    <span class="material-symbols-outlined">delete</span>
-                                    <span>${i18next.t('cart.remove')}</span>
+                                    <span class="material-symbols-outlined">${c.raw.gutProcessing ? 'check_circle' : 'radio_button_unchecked'}</span>
+                                    <span>${c.raw.gutProcessing ? i18next.t('cart.gutChipOn') : i18next.t('cart.gutChipOff')}</span>
                                 </button>
                             </div>
+                            ${gutHint ? `<div class="gut-hint">${gutHint}</div>` : ''}
+                            ${minOrder > 1 ? `<div class="min-order-note">${i18next.t('cart.minOrderLabel', { kg: minOrder })}</div>` : ''}
                             <div class="cart-item__subtotal">${fmtKhr(lineTotal)}</div>
                         </div>
                     </div>`;
@@ -841,9 +893,10 @@
 
                 // 配送日時選択
                 const dateOptions = `<input type="date" data-act="date" data-farmer="${farmerId}" value="${pick.dateIso}" min="${todayIso()}">`;
-                const timeOptions = DELIVERY_TIME_SLOTS.map(t =>
-                    `<option value="${t}" ${t === pick.time ? 'selected' : ''}>${t}</option>`
-                ).join('');
+                const timeOptions = DELIVERY_TIME_SLOTS.map(t => {
+                    const ok = isSlotSelectable(pick.dateIso, t);
+                    return `<option value="${t}" ${t === pick.time ? 'selected' : ''} ${ok ? '' : 'disabled'}>${t}</option>`;
+                }).join('');
                 html += `<div class="delivery-pick">
                     <div><label>${i18next.t('cart.deliveryDate')}</label>${dateOptions}</div>
                     <div><label>${i18next.t('cart.deliveryTime')}</label>
@@ -851,11 +904,16 @@
                     </div>
                 </div>`;
 
+                // 6/1 #111: 送料無料圏（distanceKm ≤ freeKm）の判定。配送料は固定額（注記）。
+                const roundedDist = Math.floor((dist || 0) * 10) / 10;
+                const isFreeDelivery = _dlv.freeKm > 0 && roundedDist <= _dlv.freeKm;
+
                 // 内訳
                 html += `<div class="group-breakdown">
                     <div class="group-breakdown__row"><span>${i18next.t('cart.fishTotal')}</span><span>${fmtKhr(itemsSum.fishPrice + itemsSum.serviceFee)}</span></div>
                     ${campaignActive && itemsSum.campaignDiscount > 0 ? `<div class="group-breakdown__row discount"><span><span class="material-symbols-outlined">local_offer</span>${i18next.t('cart.campaignDiscount')}</span><span>−${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
-                    <div class="group-breakdown__row"><span>${i18next.t('cart.deliveryFee')}</span><span>${fmtKhr(deliveryFee)}</span></div>
+                    <div class="group-breakdown__row"><span>${i18next.t('cart.deliveryFee')}</span><span>${isFreeDelivery ? `<span class="free-delivery">${i18next.t('cart.freeDelivery')}</span>` : fmtKhr(deliveryFee)}</span></div>
+                    ${isFreeDelivery ? '' : `<div class="delivery-note">${i18next.t('cart.deliveryFeeNote')}</div>`}
                     <div class="group-breakdown__row total"><span>${i18next.t('cart.groupTotal')}</span><span>${fmtKhr(groupTotal)}</span></div>
                 </div>`;
 
@@ -920,16 +978,25 @@
             document.querySelectorAll('[data-act="qty-plus"]').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const idx = Number(btn.dataset.idx);
-                    await updateCartItem(uid, idx, { quantity: cartItems[idx].quantity + 1 });
+                    const item = cartItems[idx];
+                    const listing = listingCache.get(item.listingId);
+                    // 6/1 #111: 在庫上限（ソフトガード）。在庫0/未設定時は据え置き
+                    const stock = listing?.stock || 0;
+                    const next = item.quantity + 1;
+                    if (stock > 0 && next > stock) return;
+                    await updateCartItem(uid, idx, { quantity: next });
                 });
             });
-            // 5/9 #61: 数量直接入力（blur で確定。最低注文量未満は最低注文量に補正）
+            // 5/9 #61 → 6/1 #111: 数量直接入力（blur で確定）。整数kgのみ・最低注文量下限・在庫上限を適用。
             document.querySelectorAll('[data-act="qty-input"]').forEach(inp => {
                 inp.addEventListener('blur', async () => {
                     const idx = Number(inp.dataset.idx);
                     const minOrder = Number(inp.dataset.min) || 1;
-                    let v = parseFloat(inp.value);
+                    const listing = listingCache.get(cartItems[idx].listingId);
+                    const stock = listing?.stock || 0;
+                    let v = Math.round(parseFloat(inp.value));   // 整数kgに丸め
                     if (!Number.isFinite(v) || v < minOrder) v = minOrder;
+                    if (stock > 0 && v > stock) v = stock;        // 在庫上限
                     if (v !== cartItems[idx].quantity) {
                         await updateCartItem(uid, idx, { quantity: v });
                     } else {
@@ -959,6 +1026,8 @@
                     const farmerId = inp.dataset.farmer;
                     const pick = deliveryPick.get(farmerId) || {};
                     deliveryPick.set(farmerId, { ...pick, dateIso: inp.value });
+                    // 6/1 #111: 日付変更でスロットの選択可否（リードタイム）が変わるため再描画
+                    render().catch(() => {});
                 });
             });
             document.querySelectorAll('[data-act="time"]').forEach(sel => {
@@ -1287,11 +1356,14 @@
                     const fishType = c.listing.fishType || '';
                     const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
                     const shortName = fishName.trim();
-                    const gutMark = c.item.gutProcessing ? ` (${i18next.t('order.gutYes')})` : '';
-                    return `<div class="confirm-group__row"><span>${escapeHtml(shortName)} ${c.item.quantity}kg${gutMark}</span><span class="v">${fmtKhr(c.prices.fishPrice + c.prices.serviceFee)}</span></div>`;
+                    // 6/1 #111: サイズ(head/kg)併記 + 内臓処理あり/なしを全項目に明示
+                    const size = c.listing.size ? ` ${escapeHtml(c.listing.size)} head/kg` : '';
+                    const gutAnno = c.item.gutProcessing ? i18next.t('cart.gutAnnoOn') : i18next.t('cart.gutAnnoOff');
+                    return `<div class="confirm-group__row"><span>${escapeHtml(shortName)}${size} · ${c.item.quantity}kg ${gutAnno}</span><span class="v">${fmtKhr(c.prices.fishPrice + c.prices.serviceFee)}</span></div>`;
                 }).join('');
 
-                const delivPickHtml = `<div class="confirm-group__deliv">${i18next.t('cart.deliveryDate')}: ${pick.dateIso || '-'} / ${i18next.t('cart.deliveryTime')}: ${pick.time || '-'}</div>`;
+                // 6/1 #111: 納品日時を強調表示
+                const delivPickHtml = `<div class="confirm-group__deliv"><span class="material-symbols-outlined">event</span><span>${escapeHtml(pick.dateIso || '-')} ${escapeHtml(pick.time || '-')}</span></div>`;
 
                 html += `
                     <div class="confirm-group">
@@ -1300,8 +1372,8 @@
                             <span style="font-size:11px; color:var(--color-text-sub);">${i18next.t('cart.distance', { km: dist.toFixed(1) })}</span>
                         </div>
                         ${rows}
-                        ${effectiveCampaignActive && itemsSum.campaignDiscount > 0 ? `<div class="confirm-group__row" style="color:#dc2626;"><span>${i18next.t('cart.campaignDiscount')}</span><span class="v">-${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
-                        <div class="confirm-group__row"><span>${i18next.t('cart.deliveryFee')}</span><span class="v">${fmtKhr(deliveryFee)}</span></div>
+                        ${effectiveCampaignActive && itemsSum.campaignDiscount > 0 ? `<div class="confirm-group__row" style="color:#b36a00;"><span>${i18next.t('cart.campaignDiscount')}</span><span class="v">-${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
+                        <div class="confirm-group__row"><span>${i18next.t('cart.deliveryFee')}</span><span class="v">${deliveryFee <= 0 ? `<span class="free-delivery">${i18next.t('cart.freeDelivery')}</span>` : fmtKhr(deliveryFee)}</span></div>
                         <div class="confirm-group__row confirm-group__total"><span>${i18next.t('cart.groupTotal')}</span><span class="v">${fmtKhr(groupTotal)}</span></div>
                         ${delivPickHtml}
                     </div>
@@ -1337,14 +1409,17 @@
             // 5/24 #82 Phase 2 Chunk 3: クーポン適用時はレストラン側キャンペーン割引を無効化
             const effectiveCampaignActive = appliedCoupon ? false : campaignActive;
 
-            // 最新の在庫をチェック
+            // 6/1 #111: 軽量ガード。無効化は「削除済み」「売切れ(在庫0)」の2つだけ。
+            //   細かい在庫不足は農家承認（辞退）に委ねる（spec §5）。
             for (const it of cartItems) {
                 const snap = await getDoc(doc(db, 'fishListings', it.listingId));
-                const stock = snap.data()?.stock || 0;
-                if (stock < it.quantity) {
-                    throw new Error(i18next.t('cart.errorStock', {
-                        name: it.listingId, stock
-                    }) || `Stock insufficient for ${it.listingId}`);
+                const data = snap.data();
+                const stock = data?.stock || 0;
+                const unavailable = !snap.exists() || data?.isActive === false || data?.isDeleted === true || stock <= 0;
+                if (unavailable) {
+                    const fishType = data?.fishType || listingCache.get(it.listingId)?.fishType || '';
+                    const name = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : (fishType || it.listingId);
+                    throw new Error(i18next.t('cart.errorStock', { name, stock }) || `Unavailable: ${name}`);
                 }
             }
 
@@ -1574,16 +1649,18 @@
                         }
                     }
 
-                    // 提案を計算
-                    const suggestions = await computeSuggestions();
-                    if (suggestions.length > 0) {
-                        renderSuggestions(suggestions);
-                        setStage('suggest');
-                    } else {
-                        await renderConfirm();
-                        setStage('confirm');
+                    // 6/1 #111: 最低注文量の最終検証（C案・直接入力等の経路漏れを止める保険）
+                    for (const it of cartItems) {
+                        const listing = listingCache.get(it.listingId);
+                        const minOrder = listing?.minOrder || 1;
+                        if ((it.quantity || 0) < minOrder) {
+                            const fishType = listing?.fishType || '';
+                            const name = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
+                            throw new Error(i18next.t('cart.errorMinOrderQty', { name, kg: minOrder }));
+                        }
                     }
-                } else if (stage === 'suggest') {
+
+                    // 6/1 #111 (diff10): 「配送料節約の提案」は当面非表示。常に確認画面へ直行。
                     await renderConfirm();
                     setStage('confirm');
                 } else if (stage === 'confirm') {
@@ -1604,16 +1681,8 @@
         const backLink = document.querySelector('.page-header__back');
         if (backLink) {
             backLink.addEventListener('click', (e) => {
-                if (stage === 'confirm') {
-                    e.preventDefault();
-                    // 提案があった場合のみ suggest に戻す
-                    const confirmContainer = document.getElementById('confirm-container');
-                    if (document.getElementById('suggest-container').children.length > 0) {
-                        setStage('suggest');
-                    } else {
-                        setStage('cart');
-                    }
-                } else if (stage === 'suggest') {
+                // 6/1 #111 (diff10): 提案ステージは廃止。確認画面からはカートへ直接戻す。
+                if (stage === 'confirm' || stage === 'suggest') {
                     e.preventDefault();
                     setStage('cart');
                 }

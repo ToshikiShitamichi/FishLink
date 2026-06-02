@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK レストラン側 カート/注文確認 - モック</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #ECEEF0; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 24px 12px 60px; color: #1A1A1A;
+  }
+  .intro {
+    max-width: 900px; margin-bottom: 24px; background: #FFF;
+    padding: 16px 18px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    font-size: 14px; line-height: 1.7;
+  }
+  .intro h1 { margin: 0 0 8px; font-size: 17px; color: #0B5FB0; }
+  .intro p { margin: 4px 0; color: #4A4A4A; }
+  .intro b { color: #0B5FB0; }
+
+  .stage { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .phone-label { font-size: 13px; font-weight: 700; background: #FFF; padding: 7px 16px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .phone-label .tag { color: #5A6470; font-weight: 500; }
+
+  .phone {
+    width: 390px; max-width: 100%; height: 780px; background: #F7F9FB;
+    border-radius: 36px; overflow: hidden; position: relative;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.15); display: flex; flex-direction: column;
+  }
+
+  /* ヘッダー */
+  .c-header { flex: 0 0 auto; background: #FFF; padding: 12px 16px; border-bottom: 1px solid #EEF1F4; display: flex; align-items: center; gap: 10px; z-index: 2; }
+  .c-header .back { font-size: 20px; cursor: pointer; }
+  .c-header .logo { font-weight: 800; color: #0B5FB0; font-size: 16px; }
+  .c-header .lang { margin-left: auto; font-size: 12px; border: 1px solid #DDE3E9; border-radius: 14px; padding: 4px 12px; color: #1A1A1A; }
+  .c-title { text-align: center; font-size: 18px; font-weight: 800; padding: 12px 0 4px; }
+
+  /* 本体 */
+  .c-body { flex: 1 1 auto; overflow-y: auto; padding: 8px 14px 150px; }
+
+  /* 注記ボックス（注文確認の冒頭） */
+  .confirm-note { background: #EEF3FB; border: 1px solid #CFE0F3; border-radius: 12px; padding: 12px 14px; font-size: 12px; line-height: 1.6; color: #2A4763; margin-bottom: 12px; }
+  .confirm-note .cn-ttl { font-weight: 800; color: #0B5FB0; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 13px; }
+
+  /* 農家ブロック */
+  .farmer-block { background: #FFF; border: 1px solid #EEF1F4; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+  .fb-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid #F2F4F7; margin-bottom: 10px; }
+  .fb-head .fb-name { font-weight: 800; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  .fb-head .fb-dist { font-size: 11px; color: #5A6470; }
+
+  /* 商品行 */
+  .ci { display: flex; gap: 10px; padding: 10px 0; }
+  .ci .ci-img { width: 64px; height: 64px; border-radius: 10px; background: linear-gradient(135deg,#cfe0ee,#aac6dd); flex-shrink: 0; }
+  .ci .ci-main { flex: 1; min-width: 0; }
+  .ci .ci-name { font-size: 14px; font-weight: 700; }
+  .ci .ci-sub { font-size: 11px; color: #5A6470; margin-top: 1px; }
+  .ci .ci-price { font-size: 12px; color: #5A6470; margin-top: 1px; }
+  .ci .ci-price .gut-tag { color: #9AA3B0; }
+  .ci-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+
+  .ci-controls { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .gut-group { display: flex; flex-direction: column; gap: 3px; }
+  /* ステッパー */
+  .stepper { display: flex; align-items: center; border: 1px solid #DDE3E9; border-radius: 10px; overflow: hidden; }
+  .stepper button { width: 30px; height: 32px; border: none; background: #F7F9FB; font-size: 16px; color: #1A1A1A; cursor: pointer; }
+  .stepper input { width: 46px; height: 32px; border: none; border-left: 1px solid #EEF1F4; border-right: 1px solid #EEF1F4; text-align: center; font-size: 14px; font-family: inherit; }
+  .min-note { font-size: 11px; color: #5A6470; margin-top: 4px; }
+
+  /* 内臓処理トグル（中立グレー・#11文言） */
+  .gut { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #DDE3E9; background: #F4F6F8; color: #3A4250; border-radius: 10px; padding: 7px 11px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .gut .gck { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid #9AA3B0; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: #5A6470; }
+  .gut.on .gck { background: #5A6470; border-color: #5A6470; color: #FFF; }
+  .gut-hint { font-size: 11px; color: #9AA3B0; margin-top: 4px; }
+
+  /* 削除 */
+  .del { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: #E5453F; background: #FDECEA; border: 1px solid #F6CFCB; border-radius: 10px; padding: 7px 11px; cursor: pointer; }
+  .ci-total { text-align: right; font-size: 14px; font-weight: 800; margin-top: 6px; }
+
+  /* 納品日・時間帯 */
+  .deliv-row { display: flex; gap: 10px; margin: 10px 0 4px; }
+  .deliv-field { flex: 1; }
+  .deliv-field label { font-size: 11px; color: #5A6470; display: block; margin-bottom: 3px; }
+  .deliv-field .box { border: 1px solid #DDE3E9; border-radius: 9px; padding: 9px 11px; font-size: 13px; background: #FFF; }
+
+  /* 金額明細 */
+  .amt { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; color: #2A2F36; }
+  .amt.sub { border-top: 1px solid #F2F4F7; margin-top: 6px; padding-top: 10px; font-weight: 800; font-size: 14px; }
+  .amt .ship-free { color: #2E7D32; font-weight: 800; }
+  .amt-note { font-size: 11px; color: #9AA3B0; margin-top: -2px; padding-bottom: 4px; }
+  /* キャンペーン割引（amber=キャンペーン色系・danger赤は使わない） */
+  .amt.promo { background: #FFF7E6; border-radius: 8px; padding: 8px 10px; margin: 4px -2px; }
+  .amt.promo .pl { color: #B36A00; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+  .amt.promo .pv { color: #B36A00; font-weight: 800; }
+  .sched-line { font-size: 11px; color: #5A6470; padding-top: 8px; border-top: 1px dashed #EEF1F4; margin-top: 8px; }
+
+  /* クーポン */
+  .coupon { background: #FFF; border: 1px solid #EEF1F4; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+  .coupon .cp-ttl { font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .coupon .cp-row { display: flex; gap: 8px; }
+  .coupon .cp-input { flex: 1; border: 1px solid #DDE3E9; border-radius: 9px; padding: 10px 12px; font-size: 13px; font-family: inherit; }
+  .coupon .cp-btn { border: none; border-radius: 9px; padding: 0 16px; font-size: 13px; font-weight: 800; background: #0B5FB0; color: #FFF; cursor: pointer; }
+  .coupon .cp-btn.rm { background: #ECEEF0; color: #5A6470; }
+  .coupon .cp-ok { font-size: 12px; color: #2E7D32; font-weight: 700; margin-top: 8px; }
+  .coupon .cp-help { font-size: 11px; color: #9AA3B0; margin-top: 6px; }
+
+  /* クーポン併用不可の注意 */
+  .warn-note { display: flex; gap: 8px; align-items: flex-start; background: #FFF7E6; border: 1px solid #F3D998; border-radius: 10px; padding: 9px 12px; font-size: 12px; color: #B36A00; font-weight: 600; line-height: 1.5; margin-bottom: 8px; }
+
+  /* 固定フッター（合計＋CTA） */
+  .c-footer { position: absolute; bottom: 0; left: 0; right: 0; background: #FFF; border-top: 1px solid #EEF1F4; padding: 10px 16px 20px; z-index: 3; }
+  .ft-discount { display: flex; justify-content: space-between; font-size: 12px; color: #B36A00; font-weight: 700; padding: 2px 0; }
+  .ft-total { display: flex; justify-content: space-between; align-items: baseline; padding: 2px 0 8px; }
+  .ft-total .lbl { font-size: 13px; color: #5A6470; }
+  .ft-total .val { font-size: 24px; font-weight: 800; color: #0B5FB0; letter-spacing: -0.5px; }
+  .cta { width: 100%; background: #0B5FB0; color: #FFF; border: none; border-radius: 12px; padding: 15px; font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit; }
+  .cta:active { background: #094C8E; }
+  .cta.secondary { background: #FFF; color: #0B5FB0; border: 1.5px solid #0B5FB0; }
+
+  /* 空カート */
+  .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 14px; padding: 0 30px; text-align: center; }
+  .empty .e-ic { width: 64px; height: 64px; color: #C7D0DA; }
+  .empty .e-txt { font-size: 14px; color: #5A6470; }
+  .empty .e-btn { background: #0B5FB0; color: #FFF; border: none; border-radius: 12px; padding: 13px 28px; font-size: 15px; font-weight: 800; cursor: pointer; }
+
+  /* read-only 行（注文確認） */
+  .ro-item { padding: 6px 0; }
+  .ro-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .ro-item .ro-name { font-weight: 700; font-size: 13px; }
+  .ro-item .ro-size { font-size: 11px; color: #5A6470; }
+  .ro-item .ro-price { font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .ro-item .ro-meta { font-size: 11px; color: #5A6470; margin-top: 1px; }
+  /* 納品日・時間（確認画面で強調） */
+  .deliv-confirm { display: flex; align-items: center; gap: 7px; background: #EEF3FB; border: 1px solid #CFE0F3; border-radius: 9px; padding: 9px 11px; font-size: 12px; color: #2A4763; margin-top: 12px; }
+  .deliv-confirm b { color: #0B5FB0; font-weight: 800; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK レストラン側 — カート / 注文確認（モック）</h1>
+  <p>反映：#11 内臓処理＝<b>「あり ✓／外すと −525」</b>（"+525加算風"を廃止・トグル直下にヒント・削除は右上に分離・価格に（内臓処理あり/なし）併記）・トグルは<b>中立グレー</b>／#9 CTAは<b>青</b>（緑廃止）／配送料に<b>「配達1回分・量で変わりません」</b>注記＋無料圏は<b>「送料無料」</b>緑／明細ラベルは<b>「魚代」</b>（"サービス料込み"は伏せる）／割引は<b>「魚代から{%}」</b>。</p>
+  <p>ガード：最低注文量＝ステッパー下限固定＋明示／在庫上限／数量は<b>整数kg</b>・直接入力可／クーポンは<b>キャンペーンと併用不可</b>（クーポン優先・解除可）／注文確認は<b>内臓処理あり・なしを全項目明示</b>。配送料は<b>農家ごと1回の固定額</b>（量・品数で変わらない）。</p>
+  <p>配送料節約の提案は<b>いったん非表示</b>（誤誘導回避・後日ネット計算で復活）。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ============================================================ -->
+  <!-- ① カート（2農家・内臓処理あり/なし両方・送料あり/無料両方）       -->
+  <!-- ============================================================ -->
+  <div class="phone-wrap">
+    <div class="phone-label">① カート <span class="tag">2農家・内臓処理あり/なし・送料あり/無料</span></div>
+    <div class="phone">
+      <div class="c-header">
+        <span class="back">←</span>
+        <span class="logo">🐟 FISHLINK</span>
+        <span class="lang">日本語</span>
+      </div>
+      <div class="c-title">カート</div>
+      <div class="c-body">
+
+        <!-- 農家A：送料あり・2品（あり/なし） -->
+        <div class="farmer-block">
+          <div class="fb-head">
+            <span class="fb-name">🏪 ソカ・ファーム</span>
+            <span class="fb-dist">配送距離 24.8 km</span>
+          </div>
+
+          <!-- 品1：内臓処理あり（ON・標準） -->
+          <div class="ci">
+            <div class="ci-img"></div>
+            <div class="ci-main">
+              <div class="ci-top">
+                <div>
+                  <div class="ci-name">レッドティラピア</div>
+                  <div class="ci-sub">3 head/kg</div>
+                  <div class="ci-price">7,875 KHR/kg <span class="gut-tag">（内臓処理あり）</span></div>
+                </div>
+                <span class="del">🗑 削除</span>
+              </div>
+              <div class="ci-controls">
+                <div class="stepper"><button>−</button><input value="5"><button>＋</button></div>
+                <div class="gut-group">
+                  <div class="gut on"><span class="gck">✓</span>内臓処理 あり</div>
+                  <div class="gut-hint">外すと −525 KHR/kg</div>
+                </div>
+              </div>
+              <div class="min-note">最低注文量 5kg</div>
+            </div>
+          </div>
+          <div class="ci-total">39,375 KHR</div>
+
+          <!-- 品2：内臓処理なし（OFF） -->
+          <div class="ci" style="border-top:1px solid #F2F4F7;">
+            <div class="ci-img"></div>
+            <div class="ci-main">
+              <div class="ci-top">
+                <div>
+                  <div class="ci-name">ヒレナマズ</div>
+                  <div class="ci-sub">6-8 head/kg</div>
+                  <div class="ci-price">5,775 KHR/kg <span class="gut-tag">（内臓処理なし）</span></div>
+                </div>
+                <span class="del">🗑 削除</span>
+              </div>
+              <div class="ci-controls">
+                <div class="stepper"><button>−</button><input value="4"><button>＋</button></div>
+                <div class="gut-group">
+                  <div class="gut"><span class="gck">○</span>内臓処理 なし</div>
+                  <div class="gut-hint">戻すと +525 KHR/kg</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ci-total">23,100 KHR</div>
+
+          <div class="deliv-row">
+            <div class="deliv-field"><label>納品日</label><div class="box">2026-06-02</div></div>
+            <div class="deliv-field"><label>時間帯</label><div class="box">7:00–8:00</div></div>
+          </div>
+
+          <div class="amt"><span>魚代</span><span>62,475 KHR</span></div>
+          <div class="amt promo"><span class="pl">🏷 キャンペーン割引（魚代から2.5%）</span><span class="pv">−1,488 KHR</span></div>
+          <div class="amt"><span>配送料</span><span>12,400 KHR</span></div>
+          <div class="amt-note">配達1回分の固定額です。注文量を増やしても変わりません。</div>
+          <div class="amt sub"><span>この農家への小計</span><span>73,387 KHR</span></div>
+        </div>
+
+        <!-- 農家B：送料無料・1品 -->
+        <div class="farmer-block">
+          <div class="fb-head">
+            <span class="fb-name">🏪 近所ファーム</span>
+            <span class="fb-dist">配送距離 3.0 km</span>
+          </div>
+          <div class="ci">
+            <div class="ci-img"></div>
+            <div class="ci-main">
+              <div class="ci-top">
+                <div>
+                  <div class="ci-name">ナイルティラピア</div>
+                  <div class="ci-sub">5-6 head/kg</div>
+                  <div class="ci-price">5,250 KHR/kg <span class="gut-tag">（内臓処理あり）</span></div>
+                </div>
+                <span class="del">🗑 削除</span>
+              </div>
+              <div class="ci-controls">
+                <div class="stepper"><button>−</button><input value="6"><button>＋</button></div>
+                <div class="gut-group">
+                  <div class="gut on"><span class="gck">✓</span>内臓処理 あり</div>
+                  <div class="gut-hint">外すと −525 KHR/kg</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ci-total">31,500 KHR</div>
+
+          <div class="deliv-row">
+            <div class="deliv-field"><label>納品日</label><div class="box">2026-06-02</div></div>
+            <div class="deliv-field"><label>時間帯</label><div class="box">7:00–8:00</div></div>
+          </div>
+
+          <div class="amt"><span>魚代</span><span>31,500 KHR</span></div>
+          <div class="amt promo"><span class="pl">🏷 キャンペーン割引（魚代から2.5%）</span><span class="pv">−750 KHR</span></div>
+          <div class="amt"><span>配送料</span><span class="ship-free">送料無料</span></div>
+          <div class="amt-note">3.0km は送料無料圏内です。</div>
+          <div class="amt sub"><span>この農家への小計</span><span>30,750 KHR</span></div>
+        </div>
+
+      </div>
+      <div class="c-footer">
+        <div class="ft-total"><span class="lbl">合計</span><span class="val">104,137 KHR</span></div>
+        <button class="cta">確認画面へ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ② 注文確認（read-only・内臓処理明示・クーポン適用）              -->
+  <!-- ============================================================ -->
+  <div class="phone-wrap">
+    <div class="phone-label">② 注文内容の確認 <span class="tag">内臓処理明示・クーポン適用（キャンペーン無効）</span></div>
+    <div class="phone">
+      <div class="c-header">
+        <span class="back">←</span>
+        <span class="logo">🐟 FISHLINK</span>
+        <span class="lang">日本語</span>
+      </div>
+      <div class="c-title">カート</div>
+      <div class="c-body">
+
+        <div class="confirm-note">
+          <div class="cn-ttl">📋 注文内容の確認</div>
+          この内容で注文を確定します。よろしければ下の「注文を確定する」ボタンを押してください。修正は左上の「←」でカートに戻れます。
+        </div>
+
+        <!-- 農家A -->
+        <div class="farmer-block">
+          <div class="fb-head">
+            <span class="fb-name">🏪 ソカ・ファーム</span>
+            <span class="fb-dist">配送距離 24.8 km</span>
+          </div>
+          <div class="ro-item">
+            <div class="ro-head"><div><span class="ro-name">レッドティラピア</span> <span class="ro-size">3 head/kg</span></div><span class="ro-price">39,375 KHR</span></div>
+            <div class="ro-meta">5kg ・ 内臓処理あり</div>
+          </div>
+          <div class="ro-item">
+            <div class="ro-head"><div><span class="ro-name">ヒレナマズ</span> <span class="ro-size">6-8 head/kg</span></div><span class="ro-price">23,100 KHR</span></div>
+            <div class="ro-meta">4kg ・ 内臓処理なし</div>
+          </div>
+          <div class="amt"><span>配送料</span><span>12,400 KHR</span></div>
+          <div class="amt-note">配達1回分の固定額です。</div>
+          <div class="amt sub"><span>この農家への小計</span><span>74,875 KHR</span></div>
+          <div class="deliv-confirm">📅 納品 <b>2026-06-02</b> ・ 🕐 <b>7:00–8:00</b></div>
+        </div>
+
+        <!-- 農家B -->
+        <div class="farmer-block">
+          <div class="fb-head">
+            <span class="fb-name">🏪 近所ファーム</span>
+            <span class="fb-dist">配送距離 3.0 km</span>
+          </div>
+          <div class="ro-item">
+            <div class="ro-head"><div><span class="ro-name">ナイルティラピア</span> <span class="ro-size">5-6 head/kg</span></div><span class="ro-price">31,500 KHR</span></div>
+            <div class="ro-meta">6kg ・ 内臓処理あり</div>
+          </div>
+          <div class="amt"><span>配送料</span><span class="ship-free">送料無料</span></div>
+          <div class="amt sub"><span>この農家への小計</span><span>31,500 KHR</span></div>
+          <div class="deliv-confirm">📅 納品 <b>2026-06-02</b> ・ 🕐 <b>7:00–8:00</b></div>
+        </div>
+
+        <!-- クーポン（適用済） -->
+        <div class="coupon">
+          <div class="cp-ttl">🎟 クーポンコード（任意）</div>
+          <div class="cp-row">
+            <input class="cp-input" value="vmYP64RH">
+            <button class="cp-btn rm">解除</button>
+          </div>
+          <div class="cp-ok">クーポンを適用しました（−2,500 KHR）</div>
+          <div class="cp-help">マイページでお持ちのクーポンコードを確認できます。</div>
+        </div>
+
+        <div class="warn-note">
+          <span>※</span><span>クーポン使用中のため、キャンペーン割引は無効になります。</span>
+        </div>
+
+      </div>
+      <div class="c-footer">
+        <div class="ft-discount"><span>🎟 紹介クーポン割引（vmYP64RH）</span><span>−2,500 KHR</span></div>
+        <div class="ft-total"><span class="lbl">合計</span><span class="val">103,875 KHR</span></div>
+        <button class="cta">注文を確定する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ③ 空カート                                                     -->
+  <!-- ============================================================ -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ 空カート <span class="tag">CTA非表示・魚を探す導線</span></div>
+    <div class="phone">
+      <div class="c-header">
+        <span class="back">←</span>
+        <span class="logo">🐟 FISHLINK</span>
+        <span class="lang">日本語</span>
+      </div>
+      <div class="c-title">カート</div>
+      <div class="c-body" style="padding-bottom:14px;">
+        <div class="empty">
+          <svg class="e-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/><path d="M2.5 3h2l2.2 12.5a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21 7H6"/></svg>
+          <div class="e-txt">カートに商品がありません</div>
+          <button class="e-btn">魚を探す</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

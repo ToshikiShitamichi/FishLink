@@ -46,7 +46,10 @@
       "Bash(node -e \"const j=require\\('./locales/ja.json'\\); const d=j.dashboard; for \\(const k of ['stock','pause','resume','edit','delete','deleteAfterPause','confirmDelete','active','inactive','size','outOfStock']\\) console.log\\('dashboard.'+k+': '+JSON.stringify\\(d[k]\\)\\); console.log\\('fish.other:', JSON.stringify\\(j.fish.other\\)\\);\")",
       "Bash(node _i18n_merge.cjs)",
       "Bash(rm _i18n_merge.cjs)",
-      "Bash(node -e \"for\\(const l of ['ja','en','km']\\){const j=require\\('./locales/'+l+'.json'\\); if\\(!j.post.deliverySheetSave||!j.dashboard.groupSoldout||!j.fishlist.newFarmer||!j.home.campaignOff||!j.fish.otherShort\\) throw new Error\\('missing '+l\\); } console.log\\('verify OK: all keys present, JSON valid'\\);\")"
+      "Bash(node -e \"for\\(const l of ['ja','en','km']\\){const j=require\\('./locales/'+l+'.json'\\); if\\(!j.post.deliverySheetSave||!j.dashboard.groupSoldout||!j.fishlist.newFarmer||!j.home.campaignOff||!j.fish.otherShort\\) throw new Error\\('missing '+l\\); } console.log\\('verify OK: all keys present, JSON valid'\\);\")",
+      "Bash(git fetch *)",
+      "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''locales/__TRACKED_VAR__.json'\\\\'','\\\\''utf8'\\\\''\\)\\); console.log\\('\\\\''__TRACKED_VAR__ OK'\\\\''\\)')",
+      "Bash(node -e \"require\\('fs'\\).readFileSync\\('functions/index.js','utf8'\\); console.log\\('index.js readable'\\)\")"
     ]
   }
 }

@@ -473,7 +473,7 @@
         const FISH_CATEGORIES = [
             'striped_snakehead', 'walking_catfish', 'red_tilapia', 'nile_tilapia',
             'silver_barb', 'spot_pangasius', 'pangasius', 'giant_snakehead',
-            'climbing_perch', 'frog',
+            'barramundi', 'climbing_perch', 'frog',
         ];
 
         function escapeHtml(s) {
@@ -492,19 +492,26 @@
             if (!count || count <= 0) return `<span class="${cls}"><span class="fl-new">${i18next.t('fishlist.newFarmer')}</span></span>`;
             return `<span class="${cls}"><span class="material-symbols-outlined">star</span>${Math.round(pct || 0)}% <span>(${count})</span></span>`;
         }
-        // 5/31 #106: キャンペーンバナー描画。
+        // 5/31 #106 → 6/1 #108: キャンペーンバナー描画。
         //   割引% = 通常率(serviceRate) − キャンペーン中の実効率(serviceRate − campaignDiscount) = campaignDiscount。
         //   ＝明細の割引行(campaignDiscount)と一致。率はデータ化（ハードコードしない）。
-        //   注意: 現状の settings/campaign に「期限」「キャンペーンID」フィールドは無い。
-        //         期限フィールド（bannerUntil/campaignEnd）があれば「〜{期限}」を出し、無ければ省略。
-        //         再表示抑止はキャンペーン署名（率＋期限）で代替。
+        //   #108: 終了日 campaignEndDate（運営値）を導入。表示条件 = bannerActive かつ discount>0
+        //         かつ（終了日未設定 or 今日 ≤ campaignEndDate）。終了日超過で自動非表示。
+        //         サブ文言は「魚代から{割引%}%割引 〜{終了日}」（手打ち禁止・運営値を参照）。
         function renderCampaignBanner(c) {
             const el = document.getElementById('campaign-banner');
             if (!el) return;
             const normal = Number(c.serviceRate ?? 0.05);
             const discount = Number(c.campaignDiscount || 0);   // fishPrice 比の割引率
             if (c.bannerActive !== true || discount <= 0) { el.style.display = 'none'; return; }
-            const until = c.bannerUntil || c.campaignEnd || '';
+            // 終了日（YYYY-MM-DD）。設定済みで今日を超過していれば非表示。
+            const endDate = c.campaignEndDate || '';
+            if (endDate) {
+                const now = new Date();
+                const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                if (today > endDate) { el.style.display = 'none'; return; }
+            }
+            const until = endDate;
             const sig = `${normal}_${discount}_${until}`;
             if (localStorage.getItem('fishlink_campaign_dismissed') === sig) { el.style.display = 'none'; return; }
 

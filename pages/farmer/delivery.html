@@ -104,7 +104,7 @@
             text-align: center;
             font-family: inherit;
         }
-        .quick-status__btn:hover { background: #fff7ed; border-color: #fdba74; }
+        .quick-status__btn:hover { background: var(--color-cta-lt); border-color: var(--color-cta); }
         .quick-status__hint { font-size: 11px; color: var(--color-text-sub); margin-top: 6px; }
 
         .chat-input {
@@ -122,7 +122,7 @@
         }
         .chat-input button {
             border: none;
-            background: var(--color-primary);
+            background: var(--color-cta);
             color: #fff;
             border-radius: 20px;
             padding: 10px 18px;
@@ -151,11 +151,12 @@
             padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
             background: var(--color-surface);
         }
+        /* 6/1 #112: 配送完了は青CTA（オレンジ廃止） */
         .delivery-footer button {
             width: 100%;
             border: none;
             border-radius: 16px;
-            background: #f97316;
+            background: var(--color-cta);
             color: #fff;
             font-size: 18px;
             font-weight: 700;

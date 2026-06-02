@@ -1795,12 +1795,12 @@ exports.extractCaaPrices = onCall(
 
     const PROVINCES = [
       "Kandal", "Takeo", "Prey Veng", "Kg. Cham", "Kg. Thom",
-      "Siemreap", "Battambang", "Pursat", "Kg. Chhnang", "BMC",
+      "Siemreap", "Battambang", "Pursat", "Kg. Chhnang", "BMC", "Kampot",
     ];
     const FISH_TYPES = [
       "striped_snakehead", "walking_catfish", "red_tilapia", "nile_tilapia",
       "silver_barb", "spot_pangasius", "pangasius", "giant_snakehead",
-      "climbing_perch", "frog",
+      "barramundi", "climbing_perch", "frog",
     ];
 
     try {
@@ -1839,7 +1839,7 @@ exports.extractCaaPrices = onCall(
         "",
         "TABLE STRUCTURE:",
         "- Each row is a Cambodian province; each column is a fish species.",
-        "- The table has EXACTLY 10 fish-type columns per province row, in fixed left-to-right order.",
+        "- The table has EXACTLY 11 fish-type columns per province row, in fixed left-to-right order.",
         "- Each non-empty cell contains a price range (upper line, KHR/kg) and a size range (lower line, kg).",
         "",
         "CELL INDEPENDENCE (critical — most common error to avoid):",
@@ -1863,6 +1863,7 @@ exports.extractCaaPrices = onCall(
         "- ពោធិ៍សាត់ → 'Pursat'",
         "- កំពង់ឆ្នាំង → 'Kg. Chhnang'",
         "- បន្ទាយមានជ័យ → 'BMC'",
+        "- កំពត → 'Kampot'",
         "",
         "Fish type mapping (columns left-to-right):",
         "1. ត្រីរ៉ស់ Striped snakehead → 'striped_snakehead'",
@@ -1873,8 +1874,9 @@ exports.extractCaaPrices = onCall(
         "6. ត្រីពោ Spot pangasius → 'spot_pangasius'",
         "7. ត្រីប្រា Pangasius → 'pangasius'",
         "8. ត្រីឆ្តោ Giant snakehead → 'giant_snakehead'",
-        "9. ត្រីក្រាញ់ Climbing perch → 'climbing_perch'",
-        "10. កង្កែប Frog → 'frog'",
+        "9. ត្រីឆ្ពង់ Asian sea bass / Barramundi → 'barramundi'",
+        "10. ត្រីក្រាញ់ Climbing perch → 'climbing_perch'",
+        "11. កង្កែប Frog → 'frog'",
         "",
         "NUMERIC PRECISION (critical):",
         "- Parse numeric values EXACTLY as written. Preserve every digit, including trailing decimal digits.",

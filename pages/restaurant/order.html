@@ -512,12 +512,14 @@
             gap: 8px;
             align-items: stretch;
         }
-        /* 「今すぐ注文」：メインCTA */
+        /* 6/1 #110: CTA は青(=DSプライマリ)一本化。主＝カートに入れる(青塗り)／副＝今すぐ注文(青枠)。
+           赤(danger)は購入に使わない。 */
+        /* 「今すぐ注文」：サブCTA（青枠） */
         .order-footer__btn--buy-now {
             flex: 1;
-            background: #f43f5e;
-            color: #fff;
-            border: 2px solid #f43f5e;
+            background: #fff;
+            color: var(--color-cta);
+            border: 2px solid var(--color-cta);
             padding: 12px 12px;
             display: flex;
             align-items: center;
@@ -529,15 +531,15 @@
             cursor: pointer;
             font-family: inherit;
         }
-        .order-footer__btn--buy-now:hover { background: #e11d48; border-color: #e11d48; }
+        .order-footer__btn--buy-now:hover { background: var(--color-cta-lt); }
         .order-footer__btn--buy-now:disabled { opacity: 0.5; cursor: not-allowed; }
         .order-footer__btn--buy-now .material-symbols-outlined { font-size: 20px; }
-        /* 「カートに入れる」：サブCTA */
+        /* 「カートに入れる」：メインCTA（青塗り） */
         .order-footer__btn--cart {
             flex: 1;
-            background: #fff;
-            color: #047857;
-            border: 2px solid #10b981;
+            background: var(--color-cta);
+            color: #fff;
+            border: 2px solid var(--color-cta);
             padding: 12px 12px;
             display: flex;
             align-items: center;
@@ -549,14 +551,66 @@
             cursor: pointer;
             font-family: inherit;
         }
-        .order-footer__btn--cart:hover { background: #ecfdf5; }
+        .order-footer__btn--cart:hover { background: var(--color-cta-dk); border-color: var(--color-cta-dk); }
         .order-footer__btn--cart:disabled { opacity: 0.5; cursor: not-allowed; }
         .order-footer__btn--cart.added {
-            background: #ecfdf5;
-            color: #047857;
-            border-color: #10b981;
+            background: var(--color-cta-lt);
+            color: var(--color-cta-dk);
+            border-color: var(--color-cta);
         }
         .order-footer__btn--cart .material-symbols-outlined { font-size: 20px; }
+
+        /* 6/1 #110: 取引条件ブロック（産地+距離 / 配達の性質 / 最低注文量 / 在庫） */
+        .terms-box {
+            margin: 14px 0 0;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 2px 14px;
+        }
+        .term {
+            display: flex; gap: 10px; align-items: flex-start;
+            padding: 12px 0; border-bottom: 1px solid #f2f4f7;
+            font-size: 13px;
+        }
+        .term:last-child { border-bottom: none; }
+        .term__icon { flex-shrink: 0; color: var(--color-text-sub); }
+        .term__icon .material-symbols-outlined { font-size: 20px; }
+        .term__main { font-weight: 700; color: var(--color-text); }
+        .term__sub { color: var(--color-text-sub); font-weight: 500; font-size: 12px; margin-top: 2px; line-height: 1.5; }
+
+        /* 6/1 #110: セクション見出し */
+        .sec-head {
+            display: flex; align-items: center; gap: 8px;
+            margin: 22px 0 10px;
+            font-size: 15px; font-weight: 800; color: var(--color-text);
+        }
+        .sec-head::before { content: ""; width: 4px; height: 16px; background: var(--color-cta); border-radius: 2px; }
+
+        /* 6/1 #110: Q&A 空状態の質問導線 */
+        .qa-empty-box {
+            background: var(--color-surface); border: 1px dashed var(--color-border); border-radius: 12px;
+            padding: 16px 14px; text-align: center;
+        }
+        .qa-empty-box__txt { font-size: 13px; color: var(--color-text-sub); }
+        .qa-empty-box__btn {
+            display: inline-block; margin-top: 8px;
+            font-size: 13px; font-weight: 700; color: var(--color-cta); cursor: pointer; text-decoration: none;
+        }
+        /* 6/1 #110: GAqP 認証ボックス（緑） */
+        .gaqp-detail-box {
+            margin-top: 12px; padding: 12px 14px;
+            background: var(--color-primary-lt); border: 1px solid #c5e3c8; border-radius: 12px;
+            display: flex; gap: 10px; align-items: flex-start;
+        }
+        .gaqp-detail-box__icon { color: var(--color-primary); flex-shrink: 0; }
+        .gaqp-detail-box__icon .material-symbols-outlined { font-size: 20px; }
+        .gaqp-detail-box__title { font-size: 13px; font-weight: 800; color: var(--color-primary); }
+        .gaqp-detail-box__txt { font-size: 12px; color: var(--color-primary-dk); margin-top: 3px; line-height: 1.5; }
+        /* 6/1 #110: 価格の内臓処理込み注記 */
+        .fish-detail__price-incl { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
+        .fish-detail__farmer-link { display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; }
+        .fish-detail__rate-new { font-size: 13px; color: var(--color-text-sub); font-weight: 600; }
 
         /* カート追加後モーダル */
         .cart-modal {
@@ -613,11 +667,11 @@
             gap: 4px;
         }
         .cart-modal__btn--primary {
-            background: #10b981;
+            background: var(--color-cta);
             color: #fff;
-            border: 2px solid #10b981;
+            border: 2px solid var(--color-cta);
         }
-        .cart-modal__btn--primary:hover { background: #059669; border-color: #059669; }
+        .cart-modal__btn--primary:hover { background: var(--color-cta-dk); border-color: var(--color-cta-dk); }
         .cart-modal__btn--secondary {
             background: #fff;
             color: var(--color-text);
@@ -640,7 +694,7 @@
         <!-- ヘッダー -->
         <div class="order-header">
             <a href="/pages/restaurant/dashboard.html" class="order-header__back"><span class="material-symbols-outlined">arrow_back</span></a>
-            <span class="order-header__title" data-i18n="order.title"></span>
+            <span class="order-header__title" id="order-header-title"></span>
             <span>&nbsp;</span>
         </div>
 
@@ -651,15 +705,10 @@
              商品紹介ページは商品情報の確認に特化。
              5/12 #68: 価格表示は単価のみ（合計は数量入力のあるカート画面で表示）。 -->
 
-        <!-- 同一農家の他の魚 -->
-        <div id="more-from-farmer" style="display:none; margin:0 16px 16px; padding:12px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px;">
-            <div style="font-size:13px; font-weight:700; color:#065f46; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                <span class="material-symbols-outlined" style="font-size:16px;">set_meal</span>
-                <span data-i18n="order.moreFromFarmerTitle"></span>
-            </div>
-            <div style="font-size:12px; color:#065f46; line-height:1.5; margin-bottom:10px;" data-i18n="order.moreFromFarmerDesc"></div>
-            <div id="more-from-farmer-list" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none;"></div>
-            <!-- 5/5: 「カートを見る」CTA はフッターに統合済み（重複導線を撤去） -->
+        <!-- ⑨この農家の他の出品（現出品は除外・サイズ表示・横スクロール） -->
+        <div id="more-from-farmer" style="display:none; margin:0 16px 16px;">
+            <div class="sec-head"><span data-i18n="order.moreFromFarmerTitle"></span></div>
+            <div id="more-from-farmer-list" style="display:flex; gap:12px; overflow-x:auto; padding-bottom:6px; scrollbar-width:none;"></div>
         </div>
 
     </div>
@@ -890,8 +939,15 @@
             }
         });
 
-        // 言語切替時にカートUIテキストを再描画
-        onLanguageChange(() => refreshCartUI());
+        // 言語切替時にカートUIテキスト + 商品詳細（ヘッダー魚名・取引条件等）を再描画
+        onLanguageChange(() => {
+            refreshCartUI();
+            if (listingData) {
+                renderFishDetail();
+                loadQuestionPreview();
+                loadMoreFromFarmer();
+            }
+        });
 
         // ── 同一農家の他商品 ──
         // 5/12 #68: カード自体をリンク化し、その魚の商品紹介ページに遷移するよう変更。
@@ -914,14 +970,18 @@
                     const fName = i18next.exists(`fish.${x.fishType}`) ? i18next.t(`fish.${x.fishType}`) : x.fishType;
                     const shortName = String(fName).trim();
                     const unit = Math.round(((x.price || 0) + (x.gutPrice || 0)) * (1 + serviceRate));
+                    const sz = x.size || '';
                     const img = x.photoUrl
-                        ? `<img ${asCachedImgAttrs(x.photoUrl)} alt="" loading="lazy" style="width:100%; height:80px; object-fit:cover; border-radius:8px;">`
-                        : `<div style="width:100%; height:80px; background:#f1f5f9; border-radius:8px; display:flex; align-items:center; justify-content:center;"><span class="material-symbols-outlined" style="font-size:32px; color:#94a3b8;">set_meal</span></div>`;
+                        ? `<img ${asCachedImgAttrs(x.photoUrl)} alt="" loading="lazy" style="width:100%; height:96px; object-fit:cover; border-radius:10px 10px 0 0;">`
+                        : `<div style="width:100%; height:96px; background:#f1f5f9; border-radius:10px 10px 0 0; display:flex; align-items:center; justify-content:center;"><span class="material-symbols-outlined" style="font-size:32px; color:#94a3b8;">set_meal</span></div>`;
                     return `
-                        <a href="/pages/restaurant/order.html?id=${d.id}" style="flex-shrink:0; width:120px; text-decoration:none; color:inherit; display:block;">
+                        <a href="/pages/restaurant/order.html?id=${d.id}" style="flex-shrink:0; width:150px; text-decoration:none; color:inherit; display:block; background:var(--color-surface); border:1px solid var(--color-border); border-radius:12px; overflow:hidden;">
                             ${img}
-                            <div style="font-size:12px; font-weight:700; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(shortName)}</div>
-                            <div style="font-size:11px; color:#065f46; font-weight:600;">${unit.toLocaleString()} KHR/kg</div>
+                            <div style="padding:8px 10px 10px;">
+                                <div style="font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--color-text);">${escapeHtml(shortName)}</div>
+                                ${sz ? `<div style="font-size:11px; color:var(--color-text-sub); margin-top:2px;">${escapeHtml(sz)} head/kg</div>` : ''}
+                                <div style="font-size:16px; font-weight:800; color:var(--color-primary); margin-top:6px;">${unit.toLocaleString()}<span style="font-size:10px; color:var(--color-text-sub); font-weight:600;"> KHR/kg</span></div>
+                            </div>
                         </a>
                     `;
                 }).join('');
@@ -931,76 +991,63 @@
             }
         }
 
-        // ── 5/23 #80: 質問・返信プレビュー（最新の非削除質問1件 + その返信） ──
+        // ── 5/23 #80 → 6/1 #110: 質問・返信 teaser（最新1スレッド + 件数リンク or 0件導線） ──
         async function loadQuestionPreview() {
-            const body = document.getElementById('qa-preview-body');
-            if (!body) return;
+            const section = document.getElementById('qa-section');
+            if (!section) return;
             try {
-                // 最新の数件を取得して、削除済みをクライアント側で除外
+                // 件数把握のため直近20件取得 → 削除済みを除外（多くの出品でQ&Aは少数）
                 const q = query(
                     collection(db, 'fishListings', listingId, 'comments'),
                     orderBy('createdAt', 'desc'),
-                    limit(5)
+                    limit(20)
                 );
                 const snap = await getDocs(q);
                 const docs = snap.docs.filter(d => d.data().isDeleted !== true);
-                if (docs.length === 0) {
-                    // 既に「まだ質問はありません」が表示されているのでそのまま
+                const count = docs.length;
+                if (count === 0) {
+                    // 0件＝空状態の質問導線（既に描画済み・#8）
                     return;
                 }
                 const c = docs[0].data();
-                // 質問者のアバター・名前を取得（5/23 #69 Phase B: data-cache 経由）
+                // 質問者の名前（5/23 #69 Phase B: data-cache 経由）
                 const sender = (await getCachedUser(c.senderId)) || {};
-                const senderAvatarUrl = getReviewerAvatarUrl(sender);
                 const senderName = sender.displayName || '';
-                const senderAvatar = senderAvatarUrl
-                    ? `<img ${asCachedImgAttrs(senderAvatarUrl)} alt="" loading="lazy">`
-                    : `<span class="material-symbols-outlined">person</span>`;
 
                 // 返信部分（あれば）
                 let replyHtml = '';
                 if (c.replyText) {
-                    // replyByUid のユーザー。なければ listing の farmer をフォールバック
                     let replyUser = farmerData;
                     if (c.replyByUid && c.replyByUid !== listingData.farmerId) {
-                        try {
-                            const r = await getCachedUser(c.replyByUid);
-                            if (r) replyUser = r;
-                        } catch (e) { /* fall through */ }
+                        try { const r = await getCachedUser(c.replyByUid); if (r) replyUser = r; } catch (e) { /* fall through */ }
                     }
-                    const replyAvatarUrl = getReviewerAvatarUrl(replyUser);
                     const replyName = replyUser.displayName || '';
-                    const replyAvatar = replyAvatarUrl
-                        ? `<img ${asCachedImgAttrs(replyAvatarUrl)} alt="" loading="lazy">`
-                        : `<span class="material-symbols-outlined">person</span>`;
                     replyHtml = `
-                        <div class="qa-preview__reply">
-                            <div class="qa-preview__head">
-                                <div class="qa-preview__avatar">${replyAvatar}</div>
-                                <div class="qa-preview__name">${escapeHtml(replyName)}</div>
-                                <span class="qa-preview__badge qa-preview__badge--reply">${escapeHtml(i18next.t('comments.replyLabel'))}</span>
+                        <div style="display:flex; gap:8px; margin-top:12px; padding-left:14px; border-left:2px solid var(--color-border);">
+                            <span style="font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; flex-shrink:0; height:fit-content; background:var(--color-primary-lt); color:var(--color-primary);">${escapeHtml(i18next.t('comments.replyLabel'))}</span>
+                            <div>
+                                <div style="font-size:13px; line-height:1.55; color:var(--color-text);">${escapeHtml(c.replyText)}</div>
+                                <div style="font-size:11px; color:var(--color-text-sub); margin-top:3px;">${escapeHtml(replyName)}</div>
                             </div>
-                            <div class="qa-preview__text">${escapeHtml(c.replyText)}</div>
-                        </div>
-                    `;
-                } else {
-                    replyHtml = `<div class="qa-preview__noreply-row"><span class="qa-preview__badge qa-preview__badge--noreply">${escapeHtml(i18next.t('comments.noReply'))}</span></div>`;
+                        </div>`;
                 }
 
-                body.innerHTML = `
-                    <div class="qa-preview__item">
-                        <div class="qa-preview__head">
-                            <div class="qa-preview__avatar">${senderAvatar}</div>
-                            <div class="qa-preview__name">${escapeHtml(senderName)}</div>
-                            <span class="qa-preview__badge">${escapeHtml(i18next.t('comments.questionLabel'))}</span>
+                section.innerHTML = `
+                    <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:12px; padding:12px 14px;">
+                        <div style="display:flex; gap:8px;">
+                            <span style="font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; flex-shrink:0; height:fit-content; background:#eaf2fb; color:#1e40af;">${escapeHtml(i18next.t('comments.questionLabel'))}</span>
+                            <div>
+                                <div style="font-size:13px; line-height:1.55; color:var(--color-text);">${escapeHtml(c.text || '')}</div>
+                                <div style="font-size:11px; color:var(--color-text-sub); margin-top:3px;">${escapeHtml(senderName)}</div>
+                            </div>
                         </div>
-                        <div class="qa-preview__text">${escapeHtml(c.text || '')}</div>
                         ${replyHtml}
                     </div>
+                    <a href="/pages/restaurant/comments.html?id=${listingId}" style="display:block; text-align:center; margin-top:10px; font-size:13px; font-weight:700; color:var(--color-cta); text-decoration:none; padding:6px;">${escapeHtml(i18next.t('order.viewAllQuestions', { count }))} →</a>
                 `;
             } catch (e) {
                 console.warn('loadQuestionPreview failed:', e.message);
-                // フォールバック：empty メッセージはそのまま
+                // フォールバック：0件導線のまま
             }
         }
 
@@ -1019,21 +1066,24 @@
                 ? listingData.photos
                 : (listingData.photoUrl ? [listingData.photoUrl] : []);
 
+            // 6/1 #110: ヘッダーのタイトルを魚名に
+            const headerTitle = document.getElementById('order-header-title');
+            if (headerTitle) headerTitle.textContent = fishName;
+
             const dist = Math.floor(distanceKm * 10) / 10;
-            const rating = farmerData.avgRating || 0;
+            // 6/1 #110: 評価は ★好評価率%(件数)。avgRating は「よい率」(0-100)。0件は「新規」(#1)
+            const positivePct = Math.round(farmerData.avgRating || 0);
             const reviewCount = farmerData.reviewCount || 0;
+            const ratingHtml = reviewCount > 0
+                ? `<span style="color:var(--color-text-sub);"><span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b; vertical-align:-3px;">star</span> ${positivePct}% (${reviewCount})</span>`
+                : `<span class="fish-detail__rate-new">${i18next.t('fishlist.newFarmer')}</span>`;
             // 5/11 #65 + 拡張: province は i18n ラベル、district は UI 言語に応じて km/en 切替
             const province = formatProvince(farmerData.province || '');
             const district = formatDistrict(farmerData);
             const placeText = province + (district ? ', ' + district : '');
             const stock = listingData.stock || 0;
             const size = listingData.size || '';
-
-            // 在庫表示
-            const stockText = stock > 0
-                ? i18next.t('restaurant.stock', { kg: stock })
-                : i18next.t('order.stockUnavailable');
-            const stockClass = stock > 0 ? 'badge-stock' : 'badge-stock-out';
+            const minOrder = Number(listingData.minOrder) || 0;
 
             let carouselHtml;
             if (photos.length === 0) {
@@ -1051,50 +1101,75 @@
                 `;
             }
 
+            // 6/1 #110: 価格は内臓処理込みの単一値（手数料込み）＋グレー注記（常時）。単一の正(§7)。
+            const displayPrice = Math.round(((listingData.price || 0) + (listingData.gutPrice || 0)) * (1 + serviceRate));
+
             document.getElementById('fish-detail').innerHTML = `
                 <div class="fish-detail__carousel">${carouselHtml}</div>
                 <div class="fish-detail__body">
-                    <div class="fish-detail__name">${fishName}（${size} head/kg）</div>
-                    <div class="fish-detail__price">
-                        ${Math.round(((listingData.price || 0) + (listingData.gutPrice || 0)) * (1 + serviceRate)).toLocaleString()} KHR/kg
-                        ${listingData.gutPrice ? `<span style="font-size:13px; font-weight:500; color:var(--color-text-sub);">（${i18next.t('order.priceGutIncluded')}）</span>` : ''}
-                    </div>
+                    <!-- ②魚名(サイズ) -->
+                    <div class="fish-detail__name">${escapeHtml(fishName)}${size ? `（${escapeHtml(size)} head/kg）` : ''}</div>
+                    <!-- ③価格（内臓処理込み単一値＋グレー注記） -->
+                    <div class="fish-detail__price">${displayPrice.toLocaleString()} KHR/kg</div>
+                    <div class="fish-detail__price-incl">${i18next.t('order.priceGutIncluded')}</div>
+                    <!-- ④農家行（タップで生産者ページ・★好評価率%） -->
                     <div class="fish-detail__farmer">
-                        <a href="/pages/restaurant/farmer.html?id=${listingData.farmerId}" style="text-decoration:none; color:inherit;"><span class="material-symbols-outlined" style="font-size:16px;">person</span> ${farmerData.displayName || ''}</a>
-                        <span><span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span> ${rating.toFixed(1)}</span>
-                        <span style="color:var(--color-text-sub);">(${reviewCount}${i18next.t('order.reviews')})</span>
+                        <a href="/pages/restaurant/farmer.html?id=${listingData.farmerId}" class="fish-detail__farmer-link">
+                            <span class="material-symbols-outlined" style="font-size:18px;">person</span>
+                            <span style="font-weight:700; color:var(--color-text);">${escapeHtml(farmerData.displayName || '')}</span>
+                        </a>
+                        ${ratingHtml}
                     </div>
-                    ${placeText ? `<div class="fish-detail__location"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span> ${placeText} · ${dist} km</div>` : ''}
-                    <div class="fish-detail__badges">
-                        <span class="${stockClass}">${stockText}</span>
-                    </div>
+                    <!-- ⑤GAqP認証ボックス（認証農家のみ・見出し「GAqP 認証農家」） -->
                     ${farmerData.gaqpCertified === true ? `
-                        <!-- 5/27 #96: GAqP 認証バッジ + 説明文 -->
-                        <div style="margin-top:10px; padding:10px 12px; background:#ecfdf5; border:1px solid #0d6e4c; border-radius:8px;">
-                            <div style="display:inline-flex; align-items:center; gap:4px; padding:3px 10px; background:#0d6e4c; color:#fff; border-radius:10px; font-size:12px; font-weight:700; margin-bottom:6px;">
-                                <span class="material-symbols-outlined" style="font-size:14px;">verified</span>
-                                ${i18next.t('gaqp.badge')}
+                        <div class="gaqp-detail-box">
+                            <span class="gaqp-detail-box__icon"><span class="material-symbols-outlined">verified</span></span>
+                            <div>
+                                <div class="gaqp-detail-box__title">${i18next.t('gaqp.boxTitle')}</div>
+                                <div class="gaqp-detail-box__txt">${i18next.t('gaqp.description')}</div>
                             </div>
-                            <div style="font-size:12px; color:var(--color-text-sub); line-height:1.4;">${i18next.t('gaqp.description')}</div>
                         </div>
                     ` : ''}
-                    <!-- 5/23 #80: 質問・返信プレビュー枠（食べチョク参考）。中身は loadQuestionPreview で非同期描画。 -->
-                    <div class="qa-preview" id="qa-preview">
-                        <div class="qa-preview__title">
-                            <span class="material-symbols-outlined">help</span>
-                            <span>${escapeHtml(i18next.t('comments.previewTitle'))}</span>
+                    <!-- ⑥取引条件ブロック -->
+                    <div class="terms-box">
+                        ${placeText ? `
+                        <div class="term">
+                            <span class="term__icon"><span class="material-symbols-outlined">location_on</span></span>
+                            <div>
+                                <div class="term__main">${escapeHtml(placeText)}</div>
+                                <div class="term__sub">${i18next.t('order.distanceFromYou', { km: dist })}</div>
+                            </div>
+                        </div>` : ''}
+                        <div class="term">
+                            <span class="term__icon"><span class="material-symbols-outlined">local_shipping</span></span>
+                            <div>
+                                <div class="term__main">${i18next.t('order.deliveryAvailable')}</div>
+                                <div class="term__sub">${i18next.t('order.deliveryNatureSub')}</div>
+                            </div>
                         </div>
-                        <div id="qa-preview-body">
-                            <div class="qa-preview__empty">${escapeHtml(i18next.t('comments.previewEmpty'))}</div>
+                        ${minOrder > 0 ? `
+                        <div class="term">
+                            <span class="term__icon"><span class="material-symbols-outlined">shopping_basket</span></span>
+                            <div><div class="term__main">${i18next.t('order.minOrderTerm', { kg: minOrder })}</div></div>
+                        </div>` : ''}
+                        <div class="term">
+                            <span class="term__icon"><span class="material-symbols-outlined">inventory_2</span></span>
+                            <div><div class="term__main">${i18next.t('restaurant.stock', { kg: stock })}</div></div>
                         </div>
-                        <a href="/pages/restaurant/comments.html?id=${listingId}" class="qa-preview__more">${escapeHtml(i18next.t('order.comment'))} →</a>
                     </div>
+                    <!-- ⑦商品の説明（未記入ならセクションごと非表示・Q&Aより上） -->
                     ${listingData.description ? `
-                        <div style="margin-top:14px; padding:12px 14px; background:#f8fafc; border-radius:12px; border:1px solid var(--color-border);">
-                            <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:6px;">${i18next.t('order.descriptionLabel')}</div>
-                            <div style="font-size:13px; color:var(--color-text); line-height:1.6; white-space:pre-wrap; word-break:break-word;">${escapeHtml(listingData.description)}</div>
-                        </div>
+                        <div class="sec-head">${i18next.t('order.descriptionLabel')}</div>
+                        <div style="font-size:13px; color:var(--color-text); line-height:1.7; white-space:pre-wrap; word-break:break-word;">${escapeHtml(listingData.description)}</div>
                     ` : ''}
+                    <!-- ⑧Q&A（最新1スレッド＋「質問をすべて見る(◯件)」／0件は「この魚について質問する」） -->
+                    <div class="sec-head">${escapeHtml(i18next.t('comments.previewTitle'))}</div>
+                    <div id="qa-section">
+                        <div class="qa-empty-box">
+                            <div class="qa-empty-box__txt">${escapeHtml(i18next.t('comments.previewEmpty'))}</div>
+                            <a href="/pages/restaurant/comments.html?id=${listingId}" class="qa-empty-box__btn">${escapeHtml(i18next.t('order.askQuestion'))} →</a>
+                        </div>
+                    </div>
                 </div>
             `;
 

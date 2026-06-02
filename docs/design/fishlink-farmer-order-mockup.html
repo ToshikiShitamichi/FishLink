@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 農家側 注文確認 - モック</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:1000px; margin-bottom:24px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; }
+  .intro b { color:#0B5FB0; }
+
+  .stage { display:flex; flex-wrap:wrap; gap:28px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; background:#FFF; padding:7px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  .phone-label .tag { color:#5A6470; font-weight:500; }
+
+  .phone { width:390px; max-width:100%; height:780px; background:#F7F9FB; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+
+  /* ヘッダー */
+  .f-header { flex:0 0 auto; background:#FFF; padding:12px 16px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:8px; z-index:2; }
+  .f-header .logo { font-weight:800; color:#0B5FB0; font-size:15px; }
+  .f-header .sp { margin-left:auto; }
+  .f-title { text-align:center; font-size:17px; font-weight:800; padding:10px 0 2px; }
+
+  .f-body { flex:1 1 auto; overflow-y:auto; padding:8px 14px 90px; }
+
+  /* セクション見出し（本日の対応） */
+  .today-head { display:flex; align-items:center; gap:8px; background:#EAF6EE; border-left:4px solid #2E7D32; border-radius:8px; padding:9px 12px; font-weight:800; font-size:14px; margin:6px 0 12px; }
+
+  /* 注文カード（リスト） */
+  .ocard { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:13px; margin-bottom:12px; }
+  .ocard .oc-top { display:flex; gap:10px; }
+  .ocard .oc-img { width:60px; height:60px; border-radius:10px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); flex-shrink:0; }
+  .ocard .oc-main { flex:1; min-width:0; }
+  .ocard .oc-date { font-size:11px; color:#B36A00; font-weight:700; }
+  .ocard .oc-name { font-size:15px; font-weight:800; margin-top:2px; }
+  .ocard .oc-rest { font-size:11px; color:#5A6470; margin-top:2px; }
+  .ocard .oc-fl { font-size:10px; color:#9AA3B0; margin-top:2px; }
+  .badge { font-size:10px; font-weight:800; padding:3px 9px; border-radius:10px; height:fit-content; }
+  .badge.wait { background:#FFF3DC; color:#B36A00; }
+  .badge.prep { background:#EAF2FB; color:#0B5FB0; }
+  .badge.done { background:#EAF6EE; color:#2E7D32; }
+  .oc-actions { display:flex; flex-direction:column; gap:8px; margin-top:11px; }
+  .oc-actions .row2 { display:flex; gap:8px; }
+  .btn { border-radius:10px; padding:11px; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; border:none; text-align:center; }
+  .btn.pri { background:#0B5FB0; color:#FFF; }
+  .btn.sec { background:#FFF; color:#0B5FB0; border:1.5px solid #0B5FB0; flex:1; }
+  .btn.danger { background:#FDECEA; color:#E5453F; border:1px solid #F6CFCB; flex:1; }
+  .btn.full { width:100%; }
+  .accordion { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:13px 14px; margin-bottom:10px; font-size:13px; font-weight:700; color:#3A4250; display:flex; align-items:center; gap:6px; }
+  .accordion .ac-c { color:#5A6470; font-weight:600; }
+
+  /* 詳細：行 */
+  .det-photo { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+  .det-photo .dp-img { width:54px; height:54px; border-radius:10px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); flex-shrink:0; }
+  .det-name { font-size:17px; font-weight:800; }
+  .det-fl { font-size:10px; color:#9AA3B0; }
+  .limit { display:flex; align-items:center; gap:6px; color:#B36A00; font-weight:800; font-size:14px; background:#FFF7E6; border:1px solid #F3D998; border-radius:9px; padding:8px 11px; margin:10px 0; }
+  .drow { display:flex; justify-content:space-between; font-size:14px; padding:6px 0; }
+  .drow .dl { color:#5A6470; }
+  .drow .dv { font-weight:700; }
+  .drow.sub { font-size:12px; padding:3px 0 3px 14px; }
+  .drow.sub .dl { color:#9AA3B0; }
+  .divider { border-top:1px solid #EEF1F4; margin:10px 0; }
+  .rest-row { font-size:13px; }
+  .rest-row .rname { font-weight:800; }
+  .rest-row .rate { color:#B36A00; font-weight:700; }
+  .rest-row .link { color:#0B5FB0; font-weight:700; margin-top:4px; }
+  .rest-row .loc { color:#5A6470; margin-top:6px; }
+
+  /* 金額内訳 */
+  .amt { display:flex; justify-content:space-between; font-size:14px; padding:5px 0; }
+  .amt .al { color:#3A4250; }
+  .amt.promo .al, .amt.promo .av { color:#2E7D32; font-weight:700; }
+  .amt-note { font-size:11px; color:#9AA3B0; }
+  .receive { display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #EEF1F4; margin-top:8px; padding-top:10px; }
+  .receive .rl { font-size:13px; color:#5A6470; }
+  .receive .rv { font-size:24px; font-weight:800; color:#0B5FB0; }
+
+  /* 注文への対応 */
+  .respond { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:13px; margin-top:14px; }
+  .respond .rt { font-size:13px; font-weight:800; margin-bottom:10px; }
+  .radio { display:flex; align-items:center; gap:10px; padding:9px 4px; font-size:14px; font-weight:700; }
+  .radio .rc { width:18px; height:18px; border-radius:50%; border:2px solid #C7D0DA; flex-shrink:0; }
+  .radio.on .rc { border-color:#0B5FB0; box-shadow:inset 0 0 0 4px #0B5FB0; }
+
+  /* 辞退理由 */
+  .reason-box { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:13px; margin-top:12px; }
+  .reason-box .rt { font-size:13px; font-weight:800; margin-bottom:8px; }
+  .reason { display:flex; align-items:center; gap:10px; border:1px solid #DDE3E9; border-radius:10px; padding:11px 12px; margin-bottom:8px; font-size:13px; font-weight:600; }
+  .reason .rc { width:17px; height:17px; border-radius:50%; border:2px solid #C7D0DA; flex-shrink:0; }
+  .reason.on { border-color:#0B5FB0; }
+  .reason.on .rc { border-color:#0B5FB0; box-shadow:inset 0 0 0 3px #0B5FB0; }
+  .textarea { width:100%; border:1px solid #DDE3E9; border-radius:10px; padding:10px 12px; font-size:13px; font-family:inherit; min-height:70px; margin-top:4px; }
+  .reason-note { font-size:11px; color:#9AA3B0; margin-top:6px; }
+
+  /* 固定フッター */
+  .f-footer { position:absolute; bottom:0; left:0; right:0; background:#FFF; border-top:1px solid #EEF1F4; padding:11px 16px 18px; z-index:3; }
+
+  /* ボトムナビ */
+  .botnav { position:absolute; bottom:0; left:0; right:0; background:#FFF; border-top:1px solid #EEF1F4; display:flex; padding:8px 0 14px; z-index:3; }
+  .botnav .nv { flex:1; text-align:center; font-size:10px; color:#9AA3B0; }
+  .botnav .nv.on { color:#0B5FB0; font-weight:700; }
+  .botnav .nv .ic { font-size:18px; display:block; }
+
+  /* 承認確認モーダル（自前・標準ダイアログ置換） */
+  .overlay { position:absolute; inset:0; background:rgba(0,0,0,0.4); z-index:5; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .modal { width:100%; background:#FFF; border-radius:16px; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,0.25); }
+  .modal .mt { font-size:16px; font-weight:800; margin-bottom:10px; }
+  .modal .msum { font-size:13px; line-height:1.9; color:#2A2F36; background:#F7F9FB; border-radius:10px; padding:11px 13px; }
+  .modal .msum b { color:#0B5FB0; }
+  .modal .mnote { font-size:12px; color:#5A6470; margin:10px 0 14px; }
+  .modal .mact { display:flex; gap:10px; }
+  .modal .mbtn { flex:1; border-radius:10px; padding:13px; font-size:14px; font-weight:800; border:none; cursor:pointer; font-family:inherit; }
+  .modal .mbtn.cancel { background:#ECEEF0; color:#5A6470; }
+  .modal .mbtn.ok { background:#0B5FB0; color:#FFF; }
+
+  /* 配送管理：チャット */
+  .chat-head { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:11px 13px; margin-bottom:10px; }
+  .chat-head .ch-name { font-size:14px; font-weight:800; }
+  .chat-head .ch-sub { font-size:11px; color:#5A6470; margin-top:2px; }
+  .chat-head .ch-loc { font-size:12px; color:#0B5FB0; font-weight:700; margin-top:6px; }
+  .bubble { max-width:78%; border-radius:14px; padding:9px 12px; font-size:13px; margin-bottom:8px; line-height:1.5; }
+  .bubble.me { background:#DCE9F8; margin-left:auto; }
+  .bubble.them { background:#FFF; border:1px solid #EEF1F4; }
+  .bubble .au { font-size:13px; }
+  .bubble .tm { font-size:10px; color:#9AA3B0; text-align:right; margin-top:2px; }
+  .status-send { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:11px 12px; margin-top:8px; }
+  .status-send .ss-t { font-size:12px; font-weight:800; color:#5A6470; margin-bottom:8px; }
+  .status-send .ss-btns { display:flex; flex-wrap:wrap; gap:7px; }
+  .status-send .ss-b { border:1px solid #C5DBF2; background:#EAF2FB; color:#0B5FB0; border-radius:9px; padding:8px 12px; font-size:12px; font-weight:700; cursor:pointer; }
+  .msg-input { display:flex; gap:8px; align-items:center; margin-top:8px; }
+  .msg-input .mi-box { flex:1; border:1px solid #DDE3E9; border-radius:20px; padding:9px 14px; font-size:13px; color:#AEB6C0; background:#FFF; }
+  .msg-input .mi-send { background:#0B5FB0; color:#FFF; border-radius:18px; padding:9px 16px; font-size:13px; font-weight:800; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 農家側 — 注文確認 / 承認・辞退 / 配送管理（モック）</h1>
+  <p>反映：手数料は<b>通常5%（−1,875）を出しキャンペーンで戻す</b>形（ラベルと額のズレ解消）／評価は<b>★93%（40件）</b>（小数廃止）／<b>魚単価は分解表示（魚単価7,000＋内臓処理500）</b>／CTAは<b>青</b>（オレンジ廃止）／承認確認は<b>自前モーダル</b>（標準ダイアログ置換）。</p>
+  <p>承認期限＝<b>1時間（運営パラメータ）＋10分前リマインド</b>・期限切れは<b>自動辞退</b>。辞退は<b>理由を構造化選択</b>。部分承認は<b>MVPは二択維持</b>（数量の部分承認は次フェーズ）。送料は<b>農家へ全額パススルー</b>（手数料は魚代のみ）。レビューは<b>完了後のみ解禁</b>。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① 注文確認リスト -->
+  <div class="phone-wrap">
+    <div class="phone-label">① 注文確認リスト <span class="tag">本日の対応＋送金待ち/完了/辞退</span></div>
+    <div class="phone">
+      <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp">🔔 ✓✓ 🌐 👤</span></div>
+      <div class="f-title">注文内容を確認</div>
+      <div class="f-body">
+        <div class="today-head">📋 本日の対応（2件）</div>
+
+        <div class="ocard">
+          <div class="oc-top">
+            <div class="oc-img"></div>
+            <div class="oc-main">
+              <div class="oc-date">📅 6/1 7:00–8:00</div>
+              <div class="oc-name">レッドティラピア 5kg</div>
+              <div class="oc-rest">🏬 test_restaurant5 (takeo)</div>
+              <div class="oc-fl">FL-260601-003</div>
+            </div>
+            <span class="badge wait">承認待ち</span>
+          </div>
+          <div class="oc-actions"><button class="btn pri full">注文内容を確認して対応する</button></div>
+        </div>
+
+        <div class="ocard">
+          <div class="oc-top">
+            <div class="oc-img"></div>
+            <div class="oc-main">
+              <div class="oc-date">📅 5/26 7:00–8:00</div>
+              <div class="oc-name">ヒレナマズ 5kg</div>
+              <div class="oc-rest">🏬 test_restaurant5 (takeo)</div>
+              <div class="oc-fl">FL-260526-002</div>
+            </div>
+            <span class="badge prep">準備中</span>
+          </div>
+          <div class="oc-actions">
+            <button class="btn pri full">配送管理へ</button>
+            <div class="row2"><button class="btn sec">問題を報告</button></div>
+          </div>
+          <div class="amt-note" style="margin-top:8px;">※ レビューの送信は「完了」後に表示されます</div>
+        </div>
+
+        <div class="accordion">▸ 送金待ち <span class="ac-c">（14件）</span></div>
+        <div class="accordion">▸ 完了済み <span class="ac-c">（3件）</span></div>
+        <div class="accordion">▸ 辞退済み <span class="ac-c">（10件）</span></div>
+      </div>
+      <div class="botnav"><div class="nv"><span class="ic">🐟</span>投稿一覧</div><div class="nv"><span class="ic">➕</span>出品する</div><div class="nv on"><span class="ic">📑</span>注文確認</div></div>
+    </div>
+  </div>
+
+  <!-- ② 承認待ち詳細 -->
+  <div class="phone-wrap">
+    <div class="phone-label">② 承認待ち詳細 <span class="tag">金額分解・評価%・魚単価分解・青CTA</span></div>
+    <div class="phone">
+      <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 👤</span></div>
+      <div class="f-title">注文内容を確認</div>
+      <div class="f-body">
+        <div class="det-photo">
+          <div class="dp-img"></div>
+          <div><div class="det-name">レッドティラピア（3 head/kg）</div><div class="det-fl">FL-260601-003</div></div>
+        </div>
+        <div class="limit">⏳ 承認期限：12:18 ・ あと60分</div>
+
+        <div class="drow"><span class="dl">魚単価</span><span class="dv">7,000 KHR/kg</span></div>
+        <div class="drow sub"><span class="dl">内臓処理</span><span class="dv">+500 KHR/kg</span></div>
+        <div class="drow"><span class="dl">注文数量</span><span class="dv">5 kg</span></div>
+        <div class="drow"><span class="dl">内臓処理</span><span class="dv">あり</span></div>
+        <div class="drow"><span class="dl">納品日</span><span class="dv">6/1</span></div>
+        <div class="drow"><span class="dl">時間帯</span><span class="dv">7:00–8:00</span></div>
+
+        <div class="divider"></div>
+        <div class="rest-row">
+          <span class="rname">test_restaurant5</span> &nbsp; <span class="rate">★93%（40件）</span>
+          <div class="link">レビューを見る</div>
+          <div class="loc">📍 takeo, Samraong ・ 15.4 km</div>
+          <div class="link">Google Mapsで開く</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="amt"><span class="al">魚代</span><span class="av">37,500 KHR</span></div>
+        <div class="amt"><span class="al">手数料（5%）</span><span class="av">−1,875 KHR</span></div>
+        <div class="amt promo"><span class="al">キャンペーン割引</span><span class="av">+938 KHR</span></div>
+        <div class="amt"><span class="al">送料</span><span class="av">+12,400 KHR</span></div>
+        <div class="amt-note">※ 送料はレストラン負担・農家の受取に全額入ります</div>
+        <div class="receive"><span class="rl">受取予定額</span><span class="rv">48,963 KHR</span></div>
+
+        <div class="respond">
+          <div class="rt">注文への対応</div>
+          <div class="radio on"><span class="rc"></span>承認する</div>
+          <div class="radio"><span class="rc"></span>辞退する</div>
+        </div>
+      </div>
+      <div class="f-footer"><button class="btn pri full">送信する</button></div>
+    </div>
+  </div>
+
+  <!-- ③ 承認確認モーダル（自前） -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ 承認確認モーダル <span class="tag">自前（標準ダイアログ置換）</span></div>
+    <div class="phone">
+      <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 👤</span></div>
+      <div class="f-title">注文内容を確認</div>
+      <div class="f-body" style="filter:blur(1px);">
+        <div class="drow"><span class="dl">魚単価</span><span class="dv">7,000 KHR/kg</span></div>
+        <div class="drow sub"><span class="dl">内臓処理</span><span class="dv">+500 KHR/kg</span></div>
+        <div class="receive"><span class="rl">受取予定額</span><span class="rv">48,963 KHR</span></div>
+      </div>
+      <div class="overlay">
+        <div class="modal">
+          <div class="mt">以下の内容で承認します</div>
+          <div class="msum">
+            魚：<b>レッドティラピア</b>（3 head/kg）<br>
+            注文数量：<b>5 kg（内臓処理あり）</b><br>
+            納品：<b>6/1 7:00–8:00</b><br>
+            レストラン：test_restaurant5<br>
+            受取予定額：<b>48,963 KHR</b>
+          </div>
+          <div class="mnote">承認すると、レストランに通知が届きます。</div>
+          <div class="mact"><button class="mbtn cancel">キャンセル</button><button class="mbtn ok">承認する</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 辞退理由選択 -->
+  <div class="phone-wrap">
+    <div class="phone-label">④ 辞退する → 理由選択 <span class="tag">構造化＋自由記述</span></div>
+    <div class="phone">
+      <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 👤</span></div>
+      <div class="f-title">注文内容を確認</div>
+      <div class="f-body">
+        <div class="respond">
+          <div class="rt">注文への対応</div>
+          <div class="radio"><span class="rc"></span>承認する</div>
+          <div class="radio on"><span class="rc"></span>辞退する</div>
+        </div>
+        <div class="reason-box">
+          <div class="rt">辞退理由を選択</div>
+          <div class="reason"><span class="rc"></span>在庫が足りない</div>
+          <div class="reason on"><span class="rc"></span>希望サイズに合わない</div>
+          <div class="reason"><span class="rc"></span>納品時間に対応できない</div>
+          <div class="reason"><span class="rc"></span>配送が難しい</div>
+          <div class="reason"><span class="rc"></span>その他</div>
+          <div class="rt" style="margin-top:8px;">詳細（任意）</div>
+          <textarea class="textarea" placeholder="例：今日は池上げできないため対応できません"></textarea>
+          <div class="reason-note">※「その他」を選んだ場合は自由記述できます</div>
+        </div>
+      </div>
+      <div class="f-footer"><button class="btn pri full">送信する</button></div>
+    </div>
+  </div>
+
+  <!-- ⑤ 配送管理 -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑤ 配送管理 <span class="tag">チャット＋ステータス送信＋配送完了</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">📞 🌐</span></div>
+      <div class="f-body" style="padding-bottom:200px;">
+        <div class="chat-head">
+          <div class="ch-name">ヒレナマズ 5kg ・ test_restaurant5</div>
+          <div class="ch-sub">準備中 ・ 納品日 5/26 7:00–8:00 ・ FL-260526-002</div>
+          <div class="ch-loc">📍 takeo, Samraong ・ 地図を見る</div>
+        </div>
+        <div class="bubble them"><span class="au">🎤 ボイスメッセージ 0:07</span><div class="tm">5/26 17:32</div></div>
+        <div class="bubble me"><span class="au">🎤 ボイスメッセージ 0:06</span><div class="tm">5/31 09:33</div></div>
+        <div class="bubble me">準備を開始しました<div class="tm">6/1 11:06</div></div>
+      </div>
+      <div class="f-footer">
+        <div class="status-send">
+          <div class="ss-t">配送ステータスを送信</div>
+          <div class="ss-btns">
+            <span class="ss-b">準備開始</span><span class="ss-b">配送開始</span><span class="ss-b">少し遅れそうです</span><span class="ss-b">到着</span>
+          </div>
+        </div>
+        <div class="msg-input"><span>📷 🎤</span><div class="mi-box">メッセージを入力…</div><span class="mi-send">送信</span></div>
+        <button class="btn pri full" style="margin-top:10px;">配送完了</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

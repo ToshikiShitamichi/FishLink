@@ -284,16 +284,7 @@
                 <div class="fl-suggest" id="search-suggest"></div>
             </div>
 
-            <!-- キャンペーンバナー -->
-            <div id="campaign-banner" style="display:none; margin-top:12px; padding:12px 14px; border-radius:14px; background:linear-gradient(135deg, #f97316, #f59e0b); color:#fff; box-shadow:0 2px 8px rgba(249,115,22,.25);">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="material-symbols-outlined" style="font-size:22px;">local_offer</span>
-                    <div>
-                        <div style="font-size:14px; font-weight:700;" data-i18n="restaurant.campaignTitle"></div>
-                        <div style="font-size:12px; opacity:0.95;" data-i18n="restaurant.campaignDesc"></div>
-                    </div>
-                </div>
-            </div>
+            <!-- 6/1 #109: キャンペーンバナーは Home画面のみ表示。魚一覧は比較作業画面のため削除（割引は明細に再表示される） -->
 
             <!-- タイトル -->
             <div class="fl-title" data-i18n="restaurant.title"></div>
@@ -434,7 +425,7 @@
         const FISH_FILTER_KEYS = [
             'striped_snakehead', 'walking_catfish', 'red_tilapia', 'nile_tilapia',
             'silver_barb', 'spot_pangasius', 'pangasius', 'giant_snakehead',
-            'climbing_perch', 'frog'
+            'barramundi', 'climbing_perch', 'frog'
         ];
 
         function escapeHtml(s) {
@@ -613,10 +604,7 @@
                         if (campSnap.exists()) {
                             const c = campSnap.data();
                             serviceRate = c.serviceRate ?? 0.05;
-                            if (c.bannerActive === true) {
-                                const banner = document.getElementById('campaign-banner');
-                                if (banner) banner.style.display = 'block';
-                            }
+                            // 6/1 #109: バナーは Home画面のみ。魚一覧では表示しない（serviceRate は価格計算に使用）
                         }
                     } catch (e) { }
                 }

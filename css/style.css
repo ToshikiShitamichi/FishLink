@@ -42,6 +42,10 @@
     --color-primary: #0d6e4c;
     --color-primary-dk: #09513a;
     --color-primary-lt: #e6f4ef;
+    /* 6/1 #108-#112: CTA・購入系は青で統一（緑=GAqP/成功/送料無料 専用・赤=danger 専用） */
+    --color-cta: #0b5fb0;
+    --color-cta-dk: #094c8e;
+    --color-cta-lt: #eaf2fb;
     --color-danger: #e53e3e;
     --color-text: #1a1a1a;
     --color-text-sub: #666;
