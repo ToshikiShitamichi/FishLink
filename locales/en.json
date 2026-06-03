@@ -191,7 +191,14 @@
         "deliverySheetWarn": "Delivery applies to all listings. Changing it updates all {{count}} current listings.",
         "deliverySheetCancel": "Cancel",
         "deliverySheetSave": "Save & apply to all",
-        "errorDelivery": "Please enter delivery range and fee."
+        "errorDelivery": "Please enter delivery range and fee.",
+        "priceUnitPlaceholder": "e.g. 5,000",
+        "priceEmpty": "Please enter the unit price",
+        "errorPhoto": "Please add a photo",
+        "errorDeliverableRadius": "Please enter the delivery range",
+        "errorDeliveryFee": "Please enter the delivery fee (per 10 km)",
+        "errorRequiredSummary": "Some required fields are missing",
+        "descriptionWarn": "Please write only the facts (false claims undermine trust)."
     },
     "fish": {
         "striped_snakehead": "Striped Snakehead",
@@ -588,7 +595,8 @@
         "groupSoldout": "Sold out · restock",
         "groupStopped": "Paused",
         "refillStock": "Restock",
-        "question": "Q&A"
+        "question": "Q&A",
+        "gutPrice": "Gutting Fee"
     },
     "nav": {
         "logout": "Logout",

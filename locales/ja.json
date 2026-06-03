@@ -191,7 +191,14 @@
         "deliverySheetWarn": "配送条件は全出品に共通です。変更すると現在の {{count}}件 すべてに反映されます。",
         "deliverySheetCancel": "キャンセル",
         "deliverySheetSave": "保存して全出品に反映",
-        "errorDelivery": "配送可能距離と送料を入力してください。"
+        "errorDelivery": "配送可能距離と送料を入力してください。",
+        "priceUnitPlaceholder": "例：5,000",
+        "priceEmpty": "魚単価を入力してください",
+        "errorPhoto": "写真を追加してください",
+        "errorDeliverableRadius": "配送可能距離を入力してください",
+        "errorDeliveryFee": "送料（10kmあたり）を入力してください",
+        "errorRequiredSummary": "未入力の項目があります",
+        "descriptionWarn": "事実だけを書いてください（虚偽は信頼を損ないます）。"
     },
     "fish": {
         "striped_snakehead": "ライギョ",
@@ -588,7 +595,8 @@
         "groupSoldout": "売切れ・要補充",
         "groupStopped": "出品停止",
         "refillStock": "在庫を補充",
-        "question": "質問"
+        "question": "質問",
+        "gutPrice": "内臓処理"
     },
     "nav": {
         "logout": "ログアウト",

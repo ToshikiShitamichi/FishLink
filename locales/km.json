@@ -191,7 +191,14 @@
         "deliverySheetWarn": "ការដឹកជញ្ជូនអនុវត្តគ្រប់ការបង្ហោះ។ ការផ្លាស់ប្តូរនឹងធ្វើបច្ចុប្បន្នភាពការបង្ហោះ {{count}} ទាំងអស់។",
         "deliverySheetCancel": "បោះបង់",
         "deliverySheetSave": "រក្សាទុក & អនុវត្តទាំងអស់",
-        "errorDelivery": "សូមបញ្ចូលចម្ងាយ និងថ្លៃដឹកជញ្ជូន។"
+        "errorDelivery": "សូមបញ្ចូលចម្ងាយ និងថ្លៃដឹកជញ្ជូន។",
+        "priceUnitPlaceholder": "ឧ. 5,000",
+        "priceEmpty": "សូមបញ្ចូលតម្លៃឯកតាត្រី",
+        "errorPhoto": "សូមបន្ថែមរូបថត",
+        "errorDeliverableRadius": "សូមបញ្ចូលចម្ងាយដឹកជញ្ជូន",
+        "errorDeliveryFee": "សូមបញ្ចូលថ្លៃដឹកជញ្ជូន (ក្នុង 10 គ.ម)",
+        "errorRequiredSummary": "មានប្រអប់ខ្លះមិនទាន់បំពេញ",
+        "descriptionWarn": "សូមសរសេរតែការពិត (ការនិយាយមិនពិតធ្វើឱ្យបាត់បង់ការជឿទុកចិត្ត)។"
     },
     "fish": {
         "striped_snakehead": "ត្រីរ៉ស់",
@@ -588,7 +595,8 @@
         "groupSoldout": "អស់ស្តុក · បំពេញឡើងវិញ",
         "groupStopped": "ផ្អាកការបង្ហោះ",
         "refillStock": "បំពេញស្តុក",
-        "question": "សំណួរ"
+        "question": "សំណួរ",
+        "gutPrice": "ថ្លៃកាត់ពោះ"
     },
     "nav": {
         "logout": "ចាកចេញ",

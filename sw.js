@@ -234,7 +234,11 @@ self.addEventListener('notificationclick', (event) => {
 //   - #112 農家注文: 手数料は通常率満額表示+キャンペーン割引で戻す/評価★%（小数廃止・0件は新規）/CTA青(orders・delivery)/魚単価と内臓処理を分解表示/承認確認は自前モーダル/レビューは完了後のみ/到着メッセージ文言更新/(内臓処理あり)フル表記
 //   - CSS: --color-cta/-dk/-lt（青）を DS に新設（CTA=青・緑=GAqP/成功/送料無料・赤=danger 専用に役割分離）
 //   - settings/campaign に campaignEndDate / farmerCampaignEndDate / leadTimeHours を追加。locales 3言語にキー追加 → 版番号バンプ
-const CACHE_NAME = 'fishlink-v114';
+// 6/2 #114-#115: 農家側2画面の追加修正（横断ルール「CTA・価格＝青／緑＝GAqP専用」の徹底）→ v115
+//   - #114 投稿一覧(dashboard.html): 価格 .pl-price 緑→青(--color-cta) / 再開・補充 .pl-act.primary 緑→青 / カードの内臓処理表記の先頭「＋」除去（dashboard.gutPrice「内臓処理」を新設・post.gutPrice はフォームラベル用に「＋内臓処理」を温存）。販売中バッジの緑は成功色として維持
+//   - #115 出品フォーム(post.html): ①魚単価未入力時の価格ボックスを「0」→空状態「魚単価を入力してください」(post.priceEmpty) ②魚単価 placeholder「5,500」除去→「例：5,000」(post.priceUnitPlaceholder)・内臓処理500プリフィルは維持 ③CTA「投稿する」/シート「保存して全出品に反映」/販売価格表示/式 を緑→青 ④商品の説明に虚偽注意 warn-note 追加(post.descriptionWarn) ⑤必須未入力をインラインエラー方式に（各欄直下に赤メッセージ＋枠赤・最初のエラー欄へスクロール・トップは総括のみ・写真も必須化）
+//   - locales 3言語に post.priceEmpty/priceUnitPlaceholder/errorPhoto/errorDeliverableRadius/errorDeliveryFee/errorRequiredSummary/descriptionWarn + dashboard.gutPrice を追加 → 版番号バンプ
+const CACHE_NAME = 'fishlink-v115';
 
 const PRECACHE_URLS = [
     '/',

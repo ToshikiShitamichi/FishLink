@@ -297,7 +297,7 @@
         .pl-status.out { background: #fcefd6; color: #b36a00; }
         .pl-status.stop { background: #eceef0; color: var(--color-text-sub); }
         .pl-sub { margin-top: 4px; font-size: 13px; color: var(--color-text-sub); }
-        .pl-price { margin-top: 8px; color: var(--color-primary); }
+        .pl-price { margin-top: 8px; color: var(--color-cta); }
         .pl-price .num { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
         .pl-price .unit { font-size: 12px; color: var(--color-text-sub); font-weight: 500; margin-left: 3px; }
         .pl-gut { font-size: 12px; color: var(--color-text-sub); margin-top: 3px; }
@@ -314,7 +314,7 @@
         .pl-act:active { background: var(--color-bg); }
         .pl-act .material-symbols-outlined { font-size: 16px; }
         .pl-act.danger { color: var(--color-danger); }
-        .pl-act.primary { color: var(--color-primary); }
+        .pl-act.primary { color: var(--color-cta); }
         .pl-act.kebab { flex: 0 0 44px; }
 
         /* 停止中：カード全体グレーアウト（アクションバーは除く） */
@@ -488,7 +488,7 @@
             const stock = Number(d.stock || 0);
             const sub = `${escapeHtml(d.size || '')} head/kg ・ ${i18next.t('dashboard.stock')}${stock} kg`;
             const gutHtml = d.gutPrice
-                ? `<div class="pl-gut">${i18next.t('post.gutPrice')} +${Number(d.gutPrice).toLocaleString()} KHR/kg</div>`
+                ? `<div class="pl-gut">${i18next.t('dashboard.gutPrice')} +${Number(d.gutPrice).toLocaleString()} KHR/kg</div>`
                 : '';
 
             // アクションバー（状態別）。売切れは「✏編集」を「📦在庫を補充」に置換（在庫にフォーカス）

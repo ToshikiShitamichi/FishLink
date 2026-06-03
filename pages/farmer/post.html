@@ -153,8 +153,14 @@
         .price-result__value {
             font-size: 32px;
             font-weight: 800;
-            color: var(--color-primary);
+            color: var(--color-cta);
             line-height: 1;
+        }
+        /* 5/31 #105 → 6/2 #115①: 魚単価未入力時の空状態表示 */
+        .price-result__value.empty {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text-sub);
         }
 
         /* 5/31 #105: 販売価格の式メモ */
@@ -167,7 +173,7 @@
             margin-top: 10px;
             line-height: 1.6;
         }
-        .price-formula b { color: var(--color-primary); }
+        .price-formula b { color: var(--color-cta); }
 
         /* 5/31 #105: 配送サマリー（設定済み＝2回目以降） */
         .delivery-summary {
@@ -216,7 +222,7 @@
             flex: 1; border-radius: var(--radius); padding: 14px; font-size: 15px;
             font-weight: 800; border: none; cursor: pointer; font-family: inherit;
         }
-        .sheet-btn.save { background: var(--color-primary); color: #fff; }
+        .sheet-btn.save { background: var(--color-cta); color: #fff; }
         .sheet-btn.cancel { background: #eceef0; color: var(--color-text-sub); }
         .delivery-helper { font-size: 12px; color: var(--color-text-sub); margin-top: 8px; line-height: 1.6; }
         .delivery-helper b { color: var(--color-primary); }
@@ -306,6 +312,24 @@
             margin-left: 6px;
             font-weight: 400;
         }
+
+        /* 6/2 #115③: CTA「投稿する」は価格と統一で青（緑はGAqP/成功専用） */
+        #submit-btn { background: var(--color-cta); }
+        #submit-btn:not(:disabled):hover,
+        #submit-btn:not(:disabled):active { background: var(--color-cta-dk); }
+
+        /* 6/2 #115⑤: 必須未入力のインラインエラー（各フィールド直下に赤メッセージ＋枠を赤） */
+        .field-error {
+            display: none;
+            color: var(--color-danger);
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+        .field-error.show { display: block; }
+        .input-error,
+        .input-error:focus { border-color: var(--color-danger) !important; background: #fff5f5 !important; }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer>
     </script>
@@ -368,6 +392,7 @@
                         <option value="frog" data-i18n="fish.frog"></option>
                         <option value="other" data-i18n="fish.other"></option>
                     </select>
+                    <div class="field-error" id="err-fish-type" data-i18n="post.errorFishType"></div>
                 </div>
 
                 <!-- その他選択時の手入力 -->
@@ -379,12 +404,14 @@
                 <div class="form-group">
                     <label for="fish-size" data-i18n="post.fishSize"></label>
                     <input type="text" id="fish-size" data-i18n="[placeholder]post.fishSizePlaceholder">
+                    <div class="field-error" id="err-fish-size" data-i18n="post.errorFishSize"></div>
                 </div>
 
                 <div class="form-group">
                     <label for="fish-stock" data-i18n="post.fishStock"></label>
                     <input type="number" id="fish-stock" data-i18n="[placeholder]post.fishStockPlaceholder" min="0"
                         style="width:100%; padding:12px 14px; border:1.5px solid var(--color-border); border-radius:12px; font-size:16px; font-family:inherit; background:var(--color-surface);">
+                    <div class="field-error" id="err-fish-stock" data-i18n="post.errorFishStock"></div>
                 </div>
 
                 <div class="form-group">
@@ -395,6 +422,7 @@
                     </div>
                     <input type="file" id="photo-input" accept="image/*" multiple style="display:none">
                     <div class="photo-preview" id="photo-preview"></div>
+                    <div class="field-error" id="err-photo" data-i18n="post.errorPhoto"></div>
                 </div>
             </div>
 
@@ -404,10 +432,11 @@
 
                 <div class="price-row">
                     <label for="price-unit" data-i18n="post.priceUnit"></label>
-                    <input type="number" class="price-input" id="price-unit" placeholder="5,500" min="0"
+                    <input type="number" class="price-input" id="price-unit" data-i18n="[placeholder]post.priceUnitPlaceholder" min="0"
                         oninput="updateTotalPrice()">
                     <span class="price-unit">KHR/kg</span>
                 </div>
+                <div class="field-error" id="err-price" data-i18n="post.errorPrice"></div>
 
                 <div class="price-row">
                     <label for="gut-price" data-i18n="post.gutPrice"></label>
@@ -458,6 +487,7 @@
                         <span class="price-unit">km</span>
                     </div>
                     <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliverableRadiusNote"></p>
+                    <div class="field-error" id="err-radius" data-i18n="post.errorDeliverableRadius"></div>
 
                     <div class="price-row" style="margin-top:12px;">
                         <label for="delivery-fee-per-10km" data-i18n="post.deliveryRate"></label>
@@ -465,6 +495,7 @@
                         <span class="price-unit">KHR/10km</span>
                     </div>
                     <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliveryRateExample"></p>
+                    <div class="field-error" id="err-fee" data-i18n="post.errorDeliveryFee"></div>
 
                     <div class="price-row" style="margin-top:12px;">
                         <label for="free-delivery-km" data-i18n="post.freeDeliveryDistance"></label>
@@ -519,6 +550,11 @@
                     <li data-i18n="post.descriptionHintPond"></li>
                     <li data-i18n="post.descriptionHintAppeal"></li>
                 </ul>
+                <!-- 6/2 #115④: 虚偽注意（過剰申告の歯止め・spec §6 B案） -->
+                <div class="warn-note">
+                    <span class="material-symbols-outlined">warning</span>
+                    <span data-i18n="post.descriptionWarn"></span>
+                </div>
                 <textarea id="description" rows="7"
                     data-i18n="[placeholder]post.descriptionPlaceholder"
                     style="width:100%; padding:12px; border:1.5px solid var(--color-border); border-radius:12px; font-size:16px; font-family:inherit; background:#f9fafb; resize:vertical; line-height:1.5;"></textarea>
@@ -890,12 +926,26 @@
         });
 
         // 販売価格の合計表示
+        // 6/2 #115①: 魚単価が未入力のときは「0 KHR/kg」ではなく空状態メッセージを表示
+        //   （価格0と誤読されるのを防ぐ。入力後に「魚単価＋内臓処理」を計算表示）
         window.updateTotalPrice = function () {
-            const unit = parseInt(document.getElementById('price-unit').value) || 0;
+            const rawUnit = document.getElementById('price-unit').value.trim();
             const gut = parseInt(document.getElementById('gut-price').value) || 0;
-            document.getElementById('total-price').textContent =
-                (unit + gut).toLocaleString();
+            const valEl = document.getElementById('total-price');
+            const unitEl = document.querySelector('.price-result__unit');
+            if (rawUnit === '') {
+                valEl.textContent = i18next.t('post.priceEmpty');
+                valEl.classList.add('empty');
+                if (unitEl) unitEl.style.display = 'none';
+            } else {
+                const unit = parseInt(rawUnit) || 0;
+                valEl.textContent = (unit + gut).toLocaleString();
+                valEl.classList.remove('empty');
+                if (unitEl) unitEl.style.display = '';
+            }
         };
+        // 初期表示（新規モードでは空状態を出す）
+        window.updateTotalPrice();
 
         // ── 配送設定（農家単位 farmerDelivery / 5/31 #105） ──────────────
         //   farmerDelivery = { deliverableRadiusKm, deliveryFeePer10km, freeDeliveryKm }
@@ -1089,6 +1139,35 @@
             if (updates > 0) await batch.commit();
         }
 
+        // ── 6/2 #115⑤: 必須未入力のインラインバリデーション ─────────────
+        //   各必須フィールド直下に赤メッセージ＋枠を赤、最初のエラー欄へ自動スクロール。
+        //   トップの単一バナーは使わず、総括メッセージのみ errorMsg に出す。
+        function clearFieldErrors() {
+            document.querySelectorAll('.field-error.show').forEach(e => e.classList.remove('show'));
+            document.querySelectorAll('.input-error').forEach(e => e.classList.remove('input-error'));
+            errorMsg.classList.remove('show');
+        }
+        function setFieldError(errId, inputEl) {
+            const errEl = document.getElementById(errId);
+            if (errEl) errEl.classList.add('show');
+            if (inputEl) inputEl.classList.add('input-error');
+        }
+        // 入力/変更されたらそのフィールドのエラー表示を解除（押せない理由が見えるように）
+        [
+            ['fish-type', 'err-fish-type'], ['fish-type-other', 'err-fish-type'],
+            ['fish-size', 'err-fish-size'], ['fish-stock', 'err-fish-stock'],
+            ['price-unit', 'err-price'],
+            ['deliverable-radius', 'err-radius'], ['delivery-fee-per-10km', 'err-fee'],
+        ].forEach(([inputId, errId]) => {
+            const el = document.getElementById(inputId);
+            if (!el) return;
+            const ev = el.tagName === 'SELECT' ? 'change' : 'input';
+            el.addEventListener(ev, () => {
+                el.classList.remove('input-error');
+                document.getElementById(errId)?.classList.remove('show');
+            });
+        });
+
         // ── 投稿処理 ────────────────────────────────────────────────
         const submitBtn = document.getElementById('submit-btn');
 
@@ -1117,44 +1196,53 @@
             const minOrder = parseFloat(document.getElementById('min-order').value) || 0;
             const description = document.getElementById('description').value.trim();
 
-            // バリデーション
-            if (!fishType) {
-                errorMsg.textContent = i18next.t('post.errorFishType');
-                errorMsg.classList.add('show');
-                return;
-            }
-            if (!fishSize) {
-                errorMsg.textContent = i18next.t('post.errorFishSize');
-                errorMsg.classList.add('show');
-                return;
-            }
-            if (fishStock <= 0) {
-                errorMsg.textContent = i18next.t('post.errorFishStock');
-                errorMsg.classList.add('show');
-                return;
-            }
-            if (priceUnit <= 0) {
-                errorMsg.textContent = i18next.t('post.errorPrice');
-                errorMsg.classList.add('show');
-                return;
-            }
+            // 6/2 #115⑤: インラインバリデーション。全必須欄を一括検証し、
+            //   空欄ごとに直下へ赤メッセージ＋枠を赤。最初のエラー欄へスクロール。
+            clearFieldErrors();
+            const errors = [];  // { errId, inputEl }
 
             // 5/31 #105: 配送設定（farmer 単位）の確定。
             //   初回（farmerDelivery 未設定）はフォーム3欄から取得・必須検証。
             //   シード済み（未永続）も投稿と同時に users doc へ保存。
             let pendingFarmerDelivery = null;
+            let deliveryRadius = 0, deliveryFee = 0, deliveryFree = 0;
             if (!farmerDelivery) {
-                const radius = parseFloat(document.getElementById('deliverable-radius').value) || 0;
-                const fee = parseInt(document.getElementById('delivery-fee-per-10km').value) || 0;
-                const free = parseFloat(document.getElementById('free-delivery-km').value) || 0;
-                if (radius <= 0 || fee <= 0) {
-                    errorMsg.textContent = i18next.t('post.errorDelivery');
-                    errorMsg.classList.add('show');
-                    return;
-                }
-                pendingFarmerDelivery = { deliverableRadiusKm: radius, deliveryFeePer10km: fee, freeDeliveryKm: free || 0 };
+                deliveryRadius = parseFloat(document.getElementById('deliverable-radius').value) || 0;
+                deliveryFee = parseInt(document.getElementById('delivery-fee-per-10km').value) || 0;
+                deliveryFree = parseFloat(document.getElementById('free-delivery-km').value) || 0;
             } else if (deliverySeeded) {
                 pendingFarmerDelivery = { ...farmerDelivery };
+            }
+
+            // 必須＝魚種／サイズ／在庫数量／写真／魚単価（＋初回のみ配送可能距離・送料単価）
+            if (!fishType) {
+                errors.push({ errId: 'err-fish-type', inputEl: document.getElementById(fishTypeSelect === 'other' ? 'fish-type-other' : 'fish-type') });
+            }
+            if (!fishSize) errors.push({ errId: 'err-fish-size', inputEl: document.getElementById('fish-size') });
+            if (fishStock <= 0) errors.push({ errId: 'err-fish-stock', inputEl: document.getElementById('fish-stock') });
+            if (selectedItems.length === 0) errors.push({ errId: 'err-photo', inputEl: document.getElementById('photo-area') });
+            if (priceUnit <= 0) errors.push({ errId: 'err-price', inputEl: document.getElementById('price-unit') });
+            if (!farmerDelivery) {
+                if (deliveryRadius <= 0) errors.push({ errId: 'err-radius', inputEl: document.getElementById('deliverable-radius') });
+                if (deliveryFee <= 0) errors.push({ errId: 'err-fee', inputEl: document.getElementById('delivery-fee-per-10km') });
+            }
+
+            if (errors.length > 0) {
+                errors.forEach(e => setFieldError(e.errId, e.inputEl));
+                // 総括メッセージ（個別指摘は各フィールドで行う）
+                errorMsg.textContent = i18next.t('post.errorRequiredSummary');
+                errorMsg.classList.add('show');
+                // 最初のエラー欄へスクロール＋フォーカス
+                const target = errors[0].inputEl;
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (typeof target.focus === 'function') target.focus({ preventScroll: true });
+                }
+                return;
+            }
+
+            if (!farmerDelivery) {
+                pendingFarmerDelivery = { deliverableRadiusKm: deliveryRadius, deliveryFeePer10km: deliveryFee, freeDeliveryKm: deliveryFree || 0 };
             }
 
             submitBtn.disabled = true;

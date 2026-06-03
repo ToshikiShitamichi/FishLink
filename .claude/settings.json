@@ -49,7 +49,9 @@
       "Bash(node -e \"for\\(const l of ['ja','en','km']\\){const j=require\\('./locales/'+l+'.json'\\); if\\(!j.post.deliverySheetSave||!j.dashboard.groupSoldout||!j.fishlist.newFarmer||!j.home.campaignOff||!j.fish.otherShort\\) throw new Error\\('missing '+l\\); } console.log\\('verify OK: all keys present, JSON valid'\\);\")",
       "Bash(git fetch *)",
       "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''locales/__TRACKED_VAR__.json'\\\\'','\\\\''utf8'\\\\''\\)\\); console.log\\('\\\\''__TRACKED_VAR__ OK'\\\\''\\)')",
-      "Bash(node -e \"require\\('fs'\\).readFileSync\\('functions/index.js','utf8'\\); console.log\\('index.js readable'\\)\")"
+      "Bash(node -e \"require\\('fs'\\).readFileSync\\('functions/index.js','utf8'\\); console.log\\('index.js readable'\\)\")",
+      "Bash(node -e \"['ja','en','km'].forEach\\(l=>{JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/'+l+'.json','utf8'\\)\\);console.log\\(l,'OK'\\)}\\)\")",
+      "Bash(python -c \"import json;[print\\(l,'OK'\\) or json.load\\(open\\('locales/%s.json'%l,encoding='utf-8'\\)\\) for l in ['ja','en','km']]\")"
     ]
   }
 }
