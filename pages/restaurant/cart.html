@@ -94,10 +94,11 @@
         }
         .qty-box button:disabled { opacity: 0.4; cursor: not-allowed; }
         /* 5/9 #61: 直接入力に対応するため input 化 */
+        /* 6/3 #116: B2B は 100kg 超が普通。3〜4桁（最低「9999」）が収まる幅に拡張 */
         .qty-box__value {
             box-sizing: border-box;
-            width: 48px;
-            flex: 0 0 48px;
+            width: 60px;
+            flex: 0 0 60px;
             font-size: 13px; font-weight: 700;
             text-align: center;
             border: 1px solid var(--color-border);
@@ -144,16 +145,18 @@
         .delivery-note { font-size: 11px; color: var(--color-text-sub); margin-top: 2px; line-height: 1.4; }
         .free-delivery { color: var(--color-primary); font-weight: 700; }
 
-        /* 6/1 #111: キャンペーン割引は amber 系（danger 赤は使わない） */
-        .group-breakdown__row.discount {
+        /* 6/1 #111 → 6/3 #116: キャンペーン割引は amber 系（danger 赤は使わない）。
+           カート／注文確認で同じ「軽い強調」に統一（🏷＋オレンジ文字・うっすらamber・重い全幅ボックスは廃止）。 */
+        .group-breakdown__row.discount,
+        .confirm-group__row.discount {
             color: #b36a00; font-weight: 700;
             background: #fff7e6;
-            padding: 6px 8px;
-            margin: 4px -8px;
+            padding: 4px 8px;
+            margin: 2px 0;
             border-radius: 8px;
-            border: 1px dashed #f3d19e;
         }
-        .group-breakdown__row.discount .material-symbols-outlined {
+        .group-breakdown__row.discount .material-symbols-outlined,
+        .confirm-group__row.discount .material-symbols-outlined {
             font-size: 14px; vertical-align: middle; margin-right: 3px;
         }
 
@@ -217,7 +220,8 @@
             margin-bottom: 8px;
         }
         .grand-total-row__label { font-size: 13px; color: var(--color-text-sub); }
-        .grand-total-row__value { font-size: 22px; font-weight: 700; color: var(--color-text); }
+        /* 6/3 #116: 合計の金額は青（買い手が払う価格は全画面で青統一） */
+        .grand-total-row__value { font-size: 22px; font-weight: 700; color: var(--color-cta); }
         .checkout-btn {
             width: 100%; padding: 14px;
             background: var(--color-cta); color: #fff;
@@ -761,6 +765,22 @@
 
         function fmtKhr(n) { return `${Math.round(n).toLocaleString()} KHR`; }
 
+        // 6/3 #116: 納品日は曜日付き表記「6/4（木）」で統一（カート/注文確認/Home）。年は省略。
+        const WEEKDAY_SHORT = {
+            ja: ['日','月','火','水','木','金','土'],
+            en: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+            km: ['អា','ច','អ','ពុ','ព្រ','សុ','ស'],
+        };
+        function fmtDeliveryDate(iso) {
+            if (!iso) return '-';
+            const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!m) return iso;
+            const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            const lang = (typeof i18next !== 'undefined' && i18next.language) || 'km';
+            const wd = (WEEKDAY_SHORT[lang] || WEEKDAY_SHORT.en)[d.getDay()];
+            return `${Number(m[2])}/${Number(m[3])}（${wd}）`;
+        }
+
         async function render() {
             const container = document.getElementById('cart-container');
             const empty = document.getElementById('cart-empty');
@@ -955,6 +975,9 @@
                 flatpickr(inp, {
                     locale: locale,
                     dateFormat: 'Y-m-d',
+                    // 6/3 #116: 表示は曜日付き「6/4（木）」（実値は Y-m-d のまま change ハンドラへ）
+                    altInput: true,
+                    altFormat: 'n/j（D）',
                     minDate: inp.min || undefined,
                     defaultDate: inp.value || undefined,
                     disableMobile: true,
@@ -1363,7 +1386,7 @@
                 }).join('');
 
                 // 6/1 #111: 納品日時を強調表示
-                const delivPickHtml = `<div class="confirm-group__deliv"><span class="material-symbols-outlined">event</span><span>${escapeHtml(pick.dateIso || '-')} ${escapeHtml(pick.time || '-')}</span></div>`;
+                const delivPickHtml = `<div class="confirm-group__deliv"><span class="material-symbols-outlined">event</span><span>${escapeHtml(fmtDeliveryDate(pick.dateIso))} ${escapeHtml(pick.time || '-')}</span></div>`;
 
                 html += `
                     <div class="confirm-group">
@@ -1372,7 +1395,7 @@
                             <span style="font-size:11px; color:var(--color-text-sub);">${i18next.t('cart.distance', { km: dist.toFixed(1) })}</span>
                         </div>
                         ${rows}
-                        ${effectiveCampaignActive && itemsSum.campaignDiscount > 0 ? `<div class="confirm-group__row" style="color:#b36a00;"><span>${i18next.t('cart.campaignDiscount')}</span><span class="v">-${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
+                        ${effectiveCampaignActive && itemsSum.campaignDiscount > 0 ? `<div class="confirm-group__row discount"><span><span class="material-symbols-outlined">local_offer</span>${i18next.t('cart.campaignDiscount')}</span><span class="v">−${fmtKhr(itemsSum.campaignDiscount)}</span></div>` : ''}
                         <div class="confirm-group__row"><span>${i18next.t('cart.deliveryFee')}</span><span class="v">${deliveryFee <= 0 ? `<span class="free-delivery">${i18next.t('cart.freeDelivery')}</span>` : fmtKhr(deliveryFee)}</span></div>
                         <div class="confirm-group__row confirm-group__total"><span>${i18next.t('cart.groupTotal')}</span><span class="v">${fmtKhr(groupTotal)}</span></div>
                         ${delivPickHtml}

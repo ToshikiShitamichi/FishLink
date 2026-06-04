@@ -146,21 +146,29 @@
         }
         .listing-mini__img { height: 110px; background: #e2e8f0; position: relative; }
         .listing-mini__img img { width: 100%; height: 100%; object-fit: cover; }
-        .listing-mini__price {
-            position: absolute; top: 8px; left: 8px;
-            background: rgba(0,0,0,.75); color: #fff;
-            font-size: 11px; font-weight: 700;
-            padding: 3px 8px; border-radius: 20px;
-        }
+        /* 6/3 #118: 標準商品カードに統一（価格は画像下・農家フッター省略・価格オーバーレイ廃止） */
         .listing-mini__stock {
             position: absolute; bottom: 8px; right: 8px;
-            background: rgba(16,185,129,.9); color: #fff;
+            background: rgba(26,34,51,.78); color: #fff;
             font-size: 10px; font-weight: 700;
             padding: 2px 8px; border-radius: 20px;
         }
-        .listing-mini__body { padding: 8px; }
+        /* 6/3 #118: 売切れ（在庫0）＝グレーアウト末尾固定＋売切れバッジ（魚一覧と同じ） */
+        .listing-mini.sold { filter: grayscale(1); opacity: 0.6; }
+        .listing-mini__soldbadge {
+            position: absolute; top: 8px; left: 8px;
+            background: #64748b; color: #fff;
+            font-size: 10px; font-weight: 700;
+            padding: 2px 8px; border-radius: 20px;
+        }
+        .listing-mini__body { padding: 8px 10px 11px; }
         .listing-mini__name { font-size: 13px; font-weight: 700; }
         .listing-mini__meta { font-size: 11px; color: var(--color-text-sub); margin-top: 2px; }
+        /* 6/3 #118: 価格は画像下・青（買い手向け単一の正＝手数料込み・内臓処理込み） */
+        .listing-mini__price { font-size: 17px; font-weight: 800; color: var(--color-cta); margin-top: 6px; }
+        .listing-mini__price .u { font-size: 10px; color: var(--color-text-sub); font-weight: 600; }
+        /* 6/3 #118: レビューコメント「もっと見る」 */
+        .reviews-more { display: block; text-align: center; font-size: 13px; font-weight: 700; color: var(--color-cta); cursor: pointer; padding: 8px; background: none; border: none; width: 100%; font-family: inherit; }
 
         .empty-small { text-align: center; padding: 20px; color: var(--color-text-sub); font-size: 13px; }
         .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
@@ -209,8 +217,13 @@
                 <span class="material-symbols-outlined" style="font-size:14px;">location_on</span>
                 <span id="location">-</span>
             </div>
-            <!-- 5/27 #96: GAqP 認証バッジ（gaqpCertified === true のときのみ表示） -->
-            <div id="gaqp-badge-hero" style="margin-top:8px;"></div>
+            <!-- 6/3 #118: GAqP はヘッダー下のcompactバッジを廃止し「認証情報」ボックスに一本化（#6） -->
+        </div>
+
+        <!-- 6/3 #118: 生産者の一言（未記入ならセクションごと非表示）。spec §2 順＝一言→認証情報 -->
+        <div class="message-box" id="message-box" style="display:none;">
+            <div class="message-box__label" data-i18n="profile.farmerMessage"></div>
+            <div class="message-box__text" id="message-text"></div>
         </div>
 
         <!-- 5/27 #96: GAqP 認証情報セクション（認証済み時のみ表示） -->
@@ -220,12 +233,8 @@
             <div style="font-size:13px; color:var(--color-text-sub); line-height:1.5;" data-i18n="gaqp.description"></div>
         </div>
 
-        <div class="message-box" id="message-box" style="display:none;">
-            <div class="message-box__label" data-i18n="profile.farmerMessage"></div>
-            <div class="message-box__text" id="message-text"></div>
-        </div>
-
-        <div class="section">
+        <!-- 6/3 #118: 養殖環境（写真未登録ならセクションごと非表示・#4） -->
+        <div class="section" id="pond-section" style="display:none;">
             <div class="section__title" data-i18n="profile.pondPhoto"></div>
             <!-- 5/12 #72: 複数枚対応（pondPhotos[]）。1枚以下は従来通り。 -->
             <div id="pond-photos"></div>
@@ -285,6 +294,8 @@
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
+        // 6/3 #118: 出品中の魚の買い手向け価格（手数料込み）算出用。settings/campaign から取得（既定5%）。
+        let serviceRate = 0.05;
         watchAuthState({ requireAuth: true });
         await initI18n();
         initLangSelector();
@@ -359,9 +370,7 @@
                 document.getElementById('avatar').innerHTML = `<img ${asCachedImgAttrs(user.avatarUrl)} alt="avatar">`;
             }
 
-            // 5/27 #96: GAqP 認証バッジ + セクション表示
-            const gaqpHero = document.getElementById('gaqp-badge-hero');
-            if (gaqpHero) gaqpHero.innerHTML = gaqpBadgeHtml(user, 'md');
+            // 6/3 #118: GAqP はヘッダー下のcompactバッジを廃止し「認証情報」ボックスに一本化（#6）
             const gaqpSection = document.getElementById('gaqp-section');
             const gaqpSectionBadge = document.getElementById('gaqp-section-badge');
             if (gaqpSection && gaqpSectionBadge) {
@@ -373,11 +382,16 @@
                 }
             }
 
-            // 「よい率」表示（0-100%）
+            // 6/3 #118: ヘッダー★%＝取引の満足度の良かった率（全画面カードと同じ avgRating 軸で統一）。
+            //   0件は「新規」表示（★0%（0件）を出さない・#1）。
             const goodRate = Number(user.avgRating || 0);
             const count = Number(user.reviewCount || 0);
-            document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
-            document.getElementById('rating-count').textContent = `（${count}${i18next.t('order.reviews')}）`;
+            const ratingEl = document.querySelector('.farmer-hero__rating');
+            if (count === 0) {
+                if (ratingEl) ratingEl.innerHTML = `<span style="font-weight:700;">${escapeHtml(i18next.t('fishlist.newFarmer'))}</span>`;
+            } else {
+                if (ratingEl) ratingEl.innerHTML = `<span class="material-symbols-outlined">star</span><span id="rating-value">${Math.round(goodRate)}%</span><span id="rating-count" style="color:#92400e;">（${count}${i18next.t('order.reviews')}）</span>`;
+            }
             // 5/25 #84 + 5/27 #98: レビュー欄は全件数、コメント欄はコメント付きレビュー件数を別々に表示
             const commentCount = Array.isArray(reviewsWithComment) ? reviewsWithComment.length : 0;
             const subTitleEl = document.getElementById('subrating-title');
@@ -402,51 +416,65 @@
                 document.getElementById('message-text').textContent = user.farmerMessage;
             }
 
-            // 養殖環境の写真
+            // 6/3 #118: 養殖環境の写真（未登録ならセクションごと非表示・#4。プレースホルダ枠は出さない）
             const pondPhotos = getPondPhotos(user);
+            const pondSection = document.getElementById('pond-section');
             if (pondPhotos.length > 0) {
+                if (pondSection) pondSection.style.display = 'block';
                 document.getElementById('pond-photos').innerHTML = pondPhotos
                     .map(u => `<div class="pond-photo" style="margin-bottom:10px;"><img ${asCachedImgAttrs(u)} alt="pond" loading="lazy"></div>`)
                     .join('');
             } else {
-                document.getElementById('pond-photos').innerHTML = `<div class="pond-photo"><div class="pond-placeholder"><span class="material-symbols-outlined" style="font-size:48px;">water</span></div></div>`;
+                if (pondSection) pondSection.style.display = 'none';
             }
 
-            // 出品中の魚
+            // 6/3 #118: 出品中の魚＝標準商品カード（価格は画像下・青・買い手向け単一の正＝手数料込み・内臓処理込み）。
+            //   売切れ（在庫0）はグレーアウトして末尾固定（#2/#3/#7）。農家フッターは省略（全部同じ農家）。
             const container = document.getElementById('listings-container');
             if (!listings || listings.length === 0) {
                 container.innerHTML = `<div class="empty-small">${i18next.t('account.emptyListings')}</div>`;
             } else {
-                container.innerHTML = `<div class="listings-grid">${listings.map(data => {
+                // 在庫あり → 在庫0（売切れ）の順に並べる（売切れは末尾固定）
+                const sorted = listings.slice().sort((a, b) => {
+                    const aSold = (a.stock || 0) <= 0 ? 1 : 0;
+                    const bSold = (b.stock || 0) <= 0 ? 1 : 0;
+                    return aSold - bSold;
+                });
+                container.innerHTML = `<div class="listings-grid">${sorted.map(data => {
                     const name = i18next.exists(`fish.${data.fishType}`) ? i18next.t(`fish.${data.fishType}`) : (data.fishType || '');
                     const shortName = name.trim();
                     const img = data.photoUrl
                         ? `<img ${asCachedImgAttrs(data.photoUrl)} alt="${shortName}">`
                         : `<div style="display:flex; align-items:center; justify-content:center; height:100%;"><span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span></div>`;
-                    const price = (data.price || 0) + (data.gutPrice || 0);
+                    // 買い手向け単一の正：(price + gutPrice) × (1 + serviceRate)
+                    const unit = Math.round(((data.price || 0) + (data.gutPrice || 0)) * (1 + serviceRate));
+                    const isSold = (data.stock || 0) <= 0;
                     return `
-                        <a class="listing-mini" href="/pages/restaurant/order.html?id=${data.id}">
+                        <a class="listing-mini${isSold ? ' sold' : ''}" href="/pages/restaurant/order.html?id=${data.id}">
                             <div class="listing-mini__img">
                                 ${img}
-                                <div class="listing-mini__price">${fmtKhr(price)}/kg</div>
-                                ${data.stock > 0 ? `<div class="listing-mini__stock">${i18next.t('restaurant.stock', { kg: data.stock })}</div>` : ''}
+                                ${isSold
+                                    ? `<div class="listing-mini__soldbadge">${i18next.t('fishlist.soldOut')}</div>`
+                                    : `<div class="listing-mini__stock">${i18next.t('restaurant.stock', { kg: data.stock })}</div>`}
                             </div>
                             <div class="listing-mini__body">
                                 <div class="listing-mini__name">${shortName}</div>
-                                <div class="listing-mini__meta">（${data.size || ''} head/kg）</div>
+                                <div class="listing-mini__meta">${data.size || ''} head/kg</div>
+                                <div class="listing-mini__price">${unit.toLocaleString()}<span class="u"> KHR/kg</span></div>
                             </div>
                         </a>
                     `;
                 }).join('')}</div>`;
             }
 
-            // レビュー
+            // 6/3 #118: レビューコメント＝最新3件＋「もっと見る（残り◯件）」でインライン展開（専用画面は作らない・#8）
             const listEl = document.getElementById('reviews-list');
             if (!reviewsWithComment || reviewsWithComment.length === 0) {
                 listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
                 return;
             }
-            listEl.innerHTML = reviewsWithComment.map(r => {
+            const REVIEW_INITIAL = 3;
+            const cardHtml = (r, hidden) => {
                 const v = legacyToVerdict(r);
                 const reviewer = (reviewerMap && reviewerMap[r.fromUid]) || {};
                 const reviewerName = reviewer.displayName || i18next.t('profile.anonymousReviewer');
@@ -455,7 +483,7 @@
                     ? `<img ${asCachedImgAttrs(reviewerAvatar)} alt="" loading="lazy">`
                     : `<span class="material-symbols-outlined">${reviewer.role === 'farmer' ? 'person' : 'storefront'}</span>`;
                 return `
-                    <div class="review-card">
+                    <div class="review-card"${hidden ? ' data-extra-review style="display:none;"' : ''}>
                         <div class="review-card__reviewer">
                             <div class="review-card__avatar">${avatarHtml}</div>
                             <div class="review-card__reviewer-name">${escapeHtml(reviewerName)}</div>
@@ -467,7 +495,19 @@
                         <div class="review-card__comment">${escapeHtml(r.comment)}</div>
                     </div>
                 `;
-            }).join('');
+            };
+            const remaining = reviewsWithComment.length - REVIEW_INITIAL;
+            const moreBtn = remaining > 0
+                ? `<button type="button" class="reviews-more" id="reviews-more-btn">${escapeHtml(i18next.t('profile.reviewsMore', { count: remaining }))}</button>`
+                : '';
+            listEl.innerHTML = reviewsWithComment.map((r, i) => cardHtml(r, i >= REVIEW_INITIAL)).join('') + moreBtn;
+            const moreBtnEl = document.getElementById('reviews-more-btn');
+            if (moreBtnEl) {
+                moreBtnEl.addEventListener('click', () => {
+                    listEl.querySelectorAll('[data-extra-review]').forEach(el => { el.style.display = ''; });
+                    moreBtnEl.remove();
+                });
+            }
         }
 
         async function load({ silent = false } = {}) {
@@ -476,6 +516,12 @@
                 // 5/23 #69 Phase B: data-cache 経由
                 const user = await getCachedUser(targetUid);
                 if (!user) { history.back(); return; }
+
+                // 6/3 #118: 手数料率（買い手向け価格算出用）。失敗時は既定5%のまま。
+                try {
+                    const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
+                    if (campSnap.exists()) serviceRate = campSnap.data().serviceRate ?? 0.05;
+                } catch (e) { /* keep default */ }
 
                 // 出品中の魚
                 const listingsQ = query(

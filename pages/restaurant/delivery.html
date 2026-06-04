@@ -80,6 +80,14 @@
             padding: 10px 14px;
             border-bottom: 1px solid var(--color-border);
         }
+        /* 6/3 #120: 連絡先マスク警告（アンバー） */
+        .mask-warn {
+            display: flex; gap: 6px; align-items: flex-start;
+            background: #fff7e6; border: 1px solid #f3d998; color: #b36a00;
+            font-size: 12px; font-weight: 600; line-height: 1.5;
+            border-radius: 10px; padding: 8px 10px; margin: 8px 14px 0;
+        }
+        .mask-warn .material-symbols-outlined { flex-shrink: 0; }
         .chat-input input {
             flex: 1;
             border: 1px solid var(--color-border);
@@ -162,6 +170,12 @@
             <!-- 写真プレビュー -->
             <div class="photo-preview-area" id="photo-preview"></div>
 
+            <!-- 6/3 #120: 連絡先マスク警告（アンバー） -->
+            <div class="mask-warn" id="mask-warn" style="display:none;">
+                <span class="material-symbols-outlined" style="font-size:16px;">warning</span>
+                <span data-i18n="comments.maskWarning"></span>
+            </div>
+
             <!-- チャット入力 -->
             <div class="chat-input" id="chat-input-wrap">
                 <button id="photo-btn" style="border:none; background:var(--color-surface); cursor:pointer; padding:6px 8px; border-radius:50%; color:var(--color-text-sub);"><span class="material-symbols-outlined">photo_camera</span></button>
@@ -184,6 +198,8 @@
             ref, uploadBytes, getDownloadURL
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { uploadImageResized } from '/js/image-resize.js';
+        // 6/3 #120: 連絡先マスク
+        import { maskContacts } from '/js/contact-mask.js';
         // 5/23 #81: ボイスメッセージ
         import { initVoiceRecorder, renderVoiceBubble } from '/js/voice-message.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
@@ -424,7 +440,10 @@
                 imageUrls.push(url);
             }
 
-            const msgText = text || (imageUrls.length > 0 ? i18next.t('delivery.imageSent') : '');
+            // 6/3 #120: 連絡先（電話番号・SNS・URL）を検知→伏字。発動時は警告表示。
+            const maskRes = maskContacts(text, i18next.t('comments.maskedContact'));
+            document.getElementById('mask-warn').style.display = maskRes.hit ? 'flex' : 'none';
+            const msgText = maskRes.masked || (imageUrls.length > 0 ? i18next.t('delivery.imageSent') : '');
 
             await addDoc(collection(db, 'orders', orderId, 'messages'), {
                 senderId: myUid,
@@ -432,6 +451,7 @@
                 imageUrls: imageUrls.length > 0 ? imageUrls : null,
                 type: 'chat',
                 isRead: false,
+                ...(maskRes.hit ? { contactMasked: true } : {}),
                 createdAt: serverTimestamp(),
             });
 

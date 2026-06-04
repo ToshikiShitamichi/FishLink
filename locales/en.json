@@ -636,6 +636,10 @@
             "title": "New message from restaurant",
             "body": "Please reply"
         },
+        "farmer_qa": {
+            "title": "You have unanswered questions",
+            "body": "Please reply to the public question"
+        },
         "rest_receive": {
             "title": "Fish has arrived",
             "body": "Please confirm receipt"
@@ -684,6 +688,7 @@
         "reviewsCount": "{{count}} total",
         "reviewsTitleWithCount": "Reviews ({{count}})",
         "reviewCommentsTitleWithCount": "Review Comments ({{count}})",
+        "reviewsMore": "Show more ({{count}} remaining)",
         "noReviews": "No reviews yet",
         "anonymousReviewer": "(Unknown)",
         "openMap": "Open in Google Maps",
@@ -859,7 +864,12 @@
         "viewMoreReplies": "View more ({{count}} more replies)",
         "replyAgain": "Reply",
         "replyFromUser": "Reply",
-        "replyToPlaceholder": "Type your reply"
+        "replyToPlaceholder": "Type your reply",
+        "emptySub": "Be the first to ask a question",
+        "viewOnlyNote": "View only (you can't reply because this isn't your question)",
+        "confirmDeleteThread": "Removing this question will delete the entire thread, including replies. Continue?",
+        "maskWarning": "Phone numbers, social accounts and URLs can't be posted. Please keep all communication within the app.",
+        "maskedContact": "[contact hidden]"
     },
     "review": {
         "title": "Review",
@@ -1286,13 +1296,24 @@
             "typeDelay": "Delay",
             "typeReception": "Reception",
             "typeCommunication": "Communication",
+            "typeQa_contact": "Public Q&A (review)",
             "typeOther": "Other",
             "roleFarmer": "Farmer",
             "roleRestaurant": "Restaurant",
             "photos": "Photos",
             "detailEmpty": "(no detail)",
             "confirmResolve": "Mark this report as resolved?",
-            "noPhone": "No phone registered"
+            "noPhone": "No phone registered",
+            "colDetectedAt": "Detected at",
+            "colProduct": "Related product",
+            "colPoster": "Poster",
+            "colLocation": "Location",
+            "qaLocation": "Public Q&A thread",
+            "qaBodyPrefix": "Post (masked): ",
+            "chatPoster": "Chat with poster",
+            "hidePost": "Hide post",
+            "postHidden": "Hidden",
+            "confirmHidePost": "Hide this post? (It disappears from public view but is kept in the database as a record.)"
         }
     }
 }

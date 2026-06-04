@@ -77,6 +77,94 @@ async function clearAllTodosForOrder(uid, orderId) {
   console.log('All todos cleared for order:', uid, orderId, snap.size);
 }
 
+// ── 6/3 #119: 公開Q&A の「未回答の質問」やることリスト同期 ───────────
+// listing に農家未回答の質問が1件でもあれば farmer_qa todo を作成、無ければ解消（冪等）。
+async function listingHasUnansweredQuestions(listingId, farmerId) {
+  const snap = await db.collection(`fishListings/${listingId}/comments`).get();
+  const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // root 質問＝parentReplyId なし・未削除・農家自身の投稿でない
+  const roots = docs.filter((d) => !d.parentReplyId && d.isDeleted !== true && d.senderId !== farmerId);
+  for (const root of roots) {
+    // legacy 埋め込み返信（replyText）があれば回答済み扱い
+    if (root.replyText && String(root.replyText).trim()) continue;
+    // 農家からの child 返信（未削除）があれば回答済み
+    const farmerReplied = docs.some(
+      (d) => d.parentReplyId === root.id && d.senderId === farmerId && d.isDeleted !== true,
+    );
+    if (!farmerReplied) return true;
+  }
+  return false;
+}
+
+async function syncQaTodo(listingId, farmerId) {
+  if (!listingId || !farmerId) return;
+  try {
+    const has = await listingHasUnansweredQuestions(listingId, farmerId);
+    if (has) await createTodo(farmerId, "farmer_qa", listingId);
+    else await clearTodo(farmerId, "farmer_qa", listingId);
+  } catch (e) {
+    console.warn("syncQaTodo failed:", e.message);
+  }
+}
+
+// ── 6/3 #120: 連絡先マスク（サーバ側・バイパス防止）。js/contact-mask.js と同一ロジックの CJS 版 ──
+const _CONTACT_URL_RE = /\b(?:https?:\/\/|www\.)\S+/gi;
+const _CONTACT_DOMAIN_RE = /\b[a-z0-9][a-z0-9-]*\.(?:com|net|org|io|me|info|biz|co|kh|app|link|page|shop|xyz|online|site|gg|ru)\b(?:\/\S*)?/gi;
+const _CONTACT_HANDLE_RE = /@[A-Za-z0-9_.]{2,}/g;
+const _CONTACT_MSGAPP_RE = /\b(?:t\.me|wa\.me|telegram|whats?app|wechat|line\s*id|messenger|facebook\.com|fb\.com|instagram)\b\S*/gi;
+const _CONTACT_PHONE_RE = /\+?\d[\d\-.\s()]{6,}\d/g;
+function _normalizeWidth(s) {
+  return String(s ?? "").replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/　/g, " ");
+}
+function _digitCount(s) { const m = String(s).match(/\d/g); return m ? m.length : 0; }
+function maskContactsServer(text, placeholder = "［連絡先は非表示］") {
+  if (!text) return { masked: text, hit: false };
+  let hit = false;
+  let out = _normalizeWidth(text);
+  const DATE_LIKE = /^\s*\d{4}[-/.]\d{1,2}[-/.]\d{1,2}\s*$/;
+  const apply = (re, opts = {}) => {
+    out = out.replace(re, (match) => {
+      if (opts.minDigits && (_digitCount(match) < opts.minDigits || DATE_LIKE.test(match))) return match;
+      hit = true;
+      return placeholder;
+    });
+  };
+  apply(_CONTACT_URL_RE);
+  apply(_CONTACT_MSGAPP_RE);
+  apply(_CONTACT_DOMAIN_RE);
+  apply(_CONTACT_HANDLE_RE);
+  apply(_CONTACT_PHONE_RE, { minDigits: 8 });
+  return { masked: out, hit };
+}
+
+// ── 6/3 #121: マスク発動Q&A投稿を トラブル報告「公開質問（要確認）」として自動生成 ──
+async function createQaContactReport({ listingId, commentId, posterUid, posterRole, listing, farmerName, maskedText, qaField = "text" }) {
+  const admin = require("firebase-admin/firestore");
+  // 同一投稿×フィールドの重複レポートを避ける（commentId 単一フィールド query → 複合インデックス不要）。
+  const existing = await db.collection("reports")
+    .where("commentId", "==", commentId)
+    .get();
+  if (existing.docs.some((d) => d.data().type === "qa_contact" && (d.data().qaField || "text") === qaField)) return;
+  await db.collection("reports").add({
+    type: "qa_contact",
+    source: "qa",
+    qaField,                       // 'text'（質問/返信本文）or 'replyText'（legacy 埋め込み返信）
+    fromUid: posterUid || null,
+    fromRole: posterRole || "restaurant",
+    listingId: listingId || null,
+    commentId: commentId || null,
+    qaContext: {
+      fishType: listing?.fishType || "",
+      size: listing?.size || "",
+      farmerName: farmerName || "",
+    },
+    detail: maskedText || "",
+    status: "open",
+    createdAt: admin.FieldValue.serverTimestamp(),
+  });
+  console.log("QA contact report created:", listingId, commentId, qaField);
+}
+
 // 管理者UID取得（全管理者）
 // 4/29: コスト削減のため `settings/adminUids.uids[]` をキャッシュとして使用
 //       キャッシュが存在しない場合のみ users をスキャンしてキャッシュを生成
@@ -327,6 +415,7 @@ const REPORT_TYPE_LABELS = {
   delay:         { ja: "配送遅延", en: "Delay",    km: "យឺត" },
   reception:     { ja: "受取対応", en: "Reception", km: "ការទទួល" },
   communication: { ja: "やり取り", en: "Communication", km: "ទំនាក់ទំនង" },
+  qa_contact:    { ja: "公開質問（要確認）", en: "Public Q&A (review)", km: "សំណួរសាធារណៈ (ត្រួតពិនិត្យ)" },
   other:         { ja: "その他",   en: "Other",    km: "ផ្សេងទៀត" },
 };
 const REPORTER_ROLE_LABELS = {
@@ -2377,6 +2466,29 @@ exports.onCommentCreated = onDocumentCreated(
     const farmerId = listing.farmerId;
     if (!farmerId) return;
 
+    // 6/3 #120/#121: サーバ側で連絡先を再検知（バイパス防止）。client が既にマスク済みなら contactMasked フラグで検知。
+    try {
+      const serverDetect = maskContactsServer(data.text || "");
+      const wasMasked = data.contactMasked === true || serverDetect.hit;
+      if (serverDetect.hit) {
+        // client を経由しない投稿（API直叩き等）→ 本文を再マスク
+        await event.data.ref.update({ text: serverDetect.masked, contactMasked: true });
+      }
+      if (wasMasked) {
+        const farmerSnapForReport = await db.doc(`users/${farmerId}`).get();
+        await createQaContactReport({
+          listingId, commentId,
+          posterUid: data.senderId,
+          posterRole: data.senderRole,
+          listing,
+          farmerName: farmerSnapForReport.data()?.displayName || "",
+          maskedText: serverDetect.hit ? serverDetect.masked : data.text,
+        });
+      }
+    } catch (e) {
+      console.warn("qa contact mask/report failed:", e.message);
+    }
+
     // 5/27 #99: 多段スレッド対応 — parentReplyId が付いていれば返信通知ロジックへ分岐
     if (data.parentReplyId) {
       try {
@@ -2432,6 +2544,8 @@ exports.onCommentCreated = onDocumentCreated(
       } catch (e) {
         console.warn("thread reply notify failed:", e.message);
       }
+      // 6/3 #119: 農家の返信で「未回答」状態が解消されたか同期
+      await syncQaTodo(listingId, farmerId);
       return;
     }
 
@@ -2460,6 +2574,9 @@ exports.onCommentCreated = onDocumentCreated(
       url: `/pages/restaurant/comments.html?id=${listingId}`,
     });
 
+    // 6/3 #119: 未回答の質問を農家のやることリスト（✓✓）に積む（放置＝失注の防止・§5）
+    await createTodo(farmerId, "farmer_qa", listingId);
+
     console.log("Comment question notification sent to farmer:", farmerId, listingId);
   }
 );
@@ -2475,12 +2592,45 @@ exports.onCommentUpdated = onDocumentUpdated(
     const after = event.data?.after?.data();
     if (!before || !after) return;
 
+    const { listingId } = event.params;
+
+    // 6/3 #119: isDeleted が true に変化（質問/スレッド取り消し）。
+    if (before.isDeleted !== true && after.isDeleted === true) {
+      try {
+        const { commentId } = event.params;
+        // スレッドごと削除フラグ付き＝root 質問の取り消し → 子返信を連鎖でソフト削除（Rules 回避のため admin で実行）。
+        if (after.threadDeleted === true && !after.parentReplyId) {
+          const admin = require("firebase-admin/firestore");
+          const commentsSnap = await db.collection(`fishListings/${listingId}/comments`).get();
+          const batch = db.batch();
+          let n = 0;
+          for (const d of commentsSnap.docs) {
+            const dd = d.data();
+            if (dd.parentReplyId === commentId && dd.isDeleted !== true) {
+              batch.update(d.ref, { isDeleted: true, deletedAt: admin.FieldValue.serverTimestamp() });
+              n++;
+            }
+          }
+          // root の legacy 埋め込み返信もクリア
+          if (after.replyText) {
+            batch.update(event.data.after.ref, { replyText: null, replyAt: null, replyByUid: null });
+            n++;
+          }
+          if (n > 0) await batch.commit();
+          console.log("Thread cascade-deleted:", listingId, commentId, "children:", n);
+        }
+        const listingSnap = await db.doc(`fishListings/${listingId}`).get();
+        const farmerId = listingSnap.data()?.farmerId;
+        if (farmerId) await syncQaTodo(listingId, farmerId);
+      } catch (e) { console.warn("qa todo sync / cascade on delete failed:", e.message); }
+      return;
+    }
+
     // replyText が新規に追加された場合のみ通知。取消・編集や isDeleted 切替では通知しない。
     const hadReply = !!(before.replyText && String(before.replyText).trim());
     const hasReply = !!(after.replyText && String(after.replyText).trim());
     if (hadReply || !hasReply) return;
 
-    const { listingId } = event.params;
     const askerUid = after.senderId;
     if (!askerUid) return;
     // 返信者が質問者本人なら通知しない
@@ -2507,6 +2657,30 @@ exports.onCommentUpdated = onDocumentUpdated(
       vars,
       url: `/pages/restaurant/comments.html?id=${listingId}`,
     });
+
+    // 6/3 #119: 農家が legacy 返信を付けたら未回答todoを再同期
+    if (farmerId && after.replyByUid === farmerId) await syncQaTodo(listingId, farmerId);
+
+    // 6/3 #120/#121: 農家の legacy 返信にも連絡先マスク／報告を適用（バイパス防止）
+    try {
+      const det = maskContactsServer(after.replyText || "");
+      const wasMasked = after.replyContactMasked === true || det.hit;
+      if (det.hit) {
+        await event.data.after.ref.update({ replyText: det.masked, replyContactMasked: true });
+      }
+      if (wasMasked) {
+        await createQaContactReport({
+          listingId, commentId: event.params.commentId,
+          posterUid: after.replyByUid, posterRole: "farmer",
+          listing: listingSnap.data(),
+          farmerName,
+          maskedText: det.hit ? det.masked : after.replyText,
+          qaField: "replyText",
+        });
+      }
+    } catch (e) {
+      console.warn("qa reply mask/report failed:", e.message);
+    }
 
     console.log("Comment reply notification sent to asker:", askerUid, listingId);
   }

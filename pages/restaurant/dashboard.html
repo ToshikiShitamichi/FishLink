@@ -479,6 +479,20 @@
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
+        // 6/3 #116: 納品日は曜日付き表記「6/4（木）」で統一（カート/注文確認/Home）。
+        const WEEKDAY_SHORT = {
+            ja: ['日', '月', '火', '水', '木', '金', '土'],
+            en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            km: ['អា', 'ច', 'អ', 'ពុ', 'ព្រ', 'សុ', 'ស'],
+        };
+        function fmtDeliveryDate(iso) {
+            const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!m) return iso || '';
+            const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            const lang = (typeof i18next !== 'undefined' && i18next.language) || 'km';
+            const wd = (WEEKDAY_SHORT[lang] || WEEKDAY_SHORT.en)[d.getDay()];
+            return `${Number(m[2])}/${Number(m[3])}（${wd}）`;
+        }
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
             else setTimeout(() => waitForUserData(cb), 200);
@@ -779,7 +793,7 @@
             } else if (status === 'pending') {
                 footerHtml = `<div class="order-eta"><span class="material-symbols-outlined">hourglass_top</span>${i18next.t('home.confirmingEta')}</div>`;
             } else {
-                const when = [order.deliveryDate || '', order.deliveryTime || ''].filter(Boolean).join(' ');
+                const when = [order.deliveryDate ? fmtDeliveryDate(order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ');
                 footerHtml = `<div class="order-eta"><span class="material-symbols-outlined">local_shipping</span>${when ? i18next.t('home.etaArrive', { when }) : i18next.t('delivery.' + status)}</div>`;
             }
 

@@ -30,6 +30,9 @@ function resolveTodoUrl(todo, role) {
             return `/pages/farmer/review.html?id=${oid}`;
         case 'farmer_reply':
             return `/pages/farmer/delivery.html?id=${oid}`;
+        // 6/3 #119: 公開Q&A の未回答質問（oid = listingId）→ 公開Q&Aページ
+        case 'farmer_qa':
+            return `/pages/restaurant/comments.html?id=${oid}`;
         case 'rest_receive':
         case 'rest_reply':
             return `/pages/restaurant/delivery.html?id=${oid}`;

@@ -119,7 +119,8 @@
         .fish-detail__price {
             font-size: 22px;
             font-weight: 800;
-            color: var(--color-text);
+            /* 6/3 #117: 価格は青で全アプリ統一（緑は GAqP/成功専用） */
+            color: var(--color-cta);
             margin-top: 4px;
         }
 
@@ -980,7 +981,7 @@
                             <div style="padding:8px 10px 10px;">
                                 <div style="font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--color-text);">${escapeHtml(shortName)}</div>
                                 ${sz ? `<div style="font-size:11px; color:var(--color-text-sub); margin-top:2px;">${escapeHtml(sz)} head/kg</div>` : ''}
-                                <div style="font-size:16px; font-weight:800; color:var(--color-primary); margin-top:6px;">${unit.toLocaleString()}<span style="font-size:10px; color:var(--color-text-sub); font-weight:600;"> KHR/kg</span></div>
+                                <div style="font-size:16px; font-weight:800; color:var(--color-cta); margin-top:6px;">${unit.toLocaleString()}<span style="font-size:10px; color:var(--color-text-sub); font-weight:600;"> KHR/kg</span></div>
                             </div>
                         </a>
                     `;
@@ -1003,30 +1004,47 @@
                     limit(20)
                 );
                 const snap = await getDocs(q);
-                const docs = snap.docs.filter(d => d.data().isDeleted !== true);
-                const count = docs.length;
+                const all = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(d => d.isDeleted !== true);
+                const count = all.length;
                 if (count === 0) {
                     // 0件＝空状態の質問導線（既に描画済み・#8）
                     return;
                 }
-                const c = docs[0].data();
+                // 6/3 #117: teaser はスレッドの「元の質問（root）」を主に表示する。
+                //   root＝parentReplyId を持たない最上位の質問。all は createdAt desc なので roots[0] が最新スレッドの起点。
+                //   途中のフォローアップ発言（parentReplyId 付き）を主表示にしない（文脈が欠けるため）。
+                const roots = all.filter(d => !d.parentReplyId);
+                if (roots.length === 0) return;
+                const c = roots[0];
                 // 質問者の名前（5/23 #69 Phase B: data-cache 経由）
                 const sender = (await getCachedUser(c.senderId)) || {};
                 const senderName = sender.displayName || '';
 
-                // 返信部分（あれば）
-                let replyHtml = '';
+                // 6/3 #117: そのスレッドの「最新返信」を添える（あれば）。
+                //   返信＝この root への child doc（parentReplyId === c.id）または root に埋め込まれた legacy replyText。
+                const childReplies = all.filter(d => d.parentReplyId === c.id);
+                let latestReply = null; // { text, byUid, atMs }
                 if (c.replyText) {
+                    latestReply = { text: c.replyText, byUid: c.replyByUid, atMs: c.replyAt?.toMillis?.() || 0 };
+                }
+                for (const ch of childReplies) {
+                    const atMs = ch.createdAt?.toMillis?.() || 0;
+                    if (!latestReply || atMs >= latestReply.atMs) {
+                        latestReply = { text: ch.text, byUid: ch.senderId, atMs };
+                    }
+                }
+                let replyHtml = '';
+                if (latestReply && latestReply.text) {
                     let replyUser = farmerData;
-                    if (c.replyByUid && c.replyByUid !== listingData.farmerId) {
-                        try { const r = await getCachedUser(c.replyByUid); if (r) replyUser = r; } catch (e) { /* fall through */ }
+                    if (latestReply.byUid && latestReply.byUid !== listingData.farmerId) {
+                        try { const r = await getCachedUser(latestReply.byUid); if (r) replyUser = r; } catch (e) { /* fall through */ }
                     }
                     const replyName = replyUser.displayName || '';
                     replyHtml = `
                         <div style="display:flex; gap:8px; margin-top:12px; padding-left:14px; border-left:2px solid var(--color-border);">
                             <span style="font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; flex-shrink:0; height:fit-content; background:var(--color-primary-lt); color:var(--color-primary);">${escapeHtml(i18next.t('comments.replyLabel'))}</span>
                             <div>
-                                <div style="font-size:13px; line-height:1.55; color:var(--color-text);">${escapeHtml(c.replyText)}</div>
+                                <div style="font-size:13px; line-height:1.55; color:var(--color-text);">${escapeHtml(latestReply.text)}</div>
                                 <div style="font-size:11px; color:var(--color-text-sub); margin-top:3px;">${escapeHtml(replyName)}</div>
                             </div>
                         </div>`;

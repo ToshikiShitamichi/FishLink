@@ -51,7 +51,11 @@
       "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''locales/__TRACKED_VAR__.json'\\\\'','\\\\''utf8'\\\\''\\)\\); console.log\\('\\\\''__TRACKED_VAR__ OK'\\\\''\\)')",
       "Bash(node -e \"require\\('fs'\\).readFileSync\\('functions/index.js','utf8'\\); console.log\\('index.js readable'\\)\")",
       "Bash(node -e \"['ja','en','km'].forEach\\(l=>{JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/'+l+'.json','utf8'\\)\\);console.log\\(l,'OK'\\)}\\)\")",
-      "Bash(python -c \"import json;[print\\(l,'OK'\\) or json.load\\(open\\('locales/%s.json'%l,encoding='utf-8'\\)\\) for l in ['ja','en','km']]\")"
+      "Bash(python -c \"import json;[print\\(l,'OK'\\) or json.load\\(open\\('locales/%s.json'%l,encoding='utf-8'\\)\\) for l in ['ja','en','km']]\")",
+      "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\); console.log\\('\\\\''OK __TRACKED_VAR__'\\\\''\\)')",
+      "Bash(node --check js/contact-mask.js)",
+      "Bash(npx -y firebase-tools@latest --version)",
+      "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\)')"
     ]
   }
 }

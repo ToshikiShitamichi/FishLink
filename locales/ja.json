@@ -636,6 +636,10 @@
             "title": "レストランからメッセージが届いています",
             "body": "返信してください"
         },
+        "farmer_qa": {
+            "title": "未回答の質問があります",
+            "body": "公開質問に返信してください"
+        },
         "rest_receive": {
             "title": "魚が到着しました",
             "body": "受取確認をしてください"
@@ -684,6 +688,7 @@
         "reviewsCount": "全{{count}}件",
         "reviewsTitleWithCount": "レビュー（{{count}}件）",
         "reviewCommentsTitleWithCount": "レビューコメント（{{count}}件）",
+        "reviewsMore": "もっと見る（残り{{count}}件）",
         "noReviews": "まだレビューはありません",
         "anonymousReviewer": "（不明）",
         "openMap": "Google Mapsで開く",
@@ -859,7 +864,12 @@
         "viewMoreReplies": "もっと見る（あと {{count}} 件の返信）",
         "replyAgain": "返信する",
         "replyFromUser": "返信",
-        "replyToPlaceholder": "返信を入力"
+        "replyToPlaceholder": "返信を入力",
+        "emptySub": "最初の質問をどうぞ",
+        "viewOnlyNote": "閲覧のみ（自分の質問ではないため返信できません）",
+        "confirmDeleteThread": "この質問を取り消すと、返信を含むスレッド全体が削除されます。よろしいですか？",
+        "maskWarning": "電話番号・SNS・URLなどの連絡先は投稿できません。やり取りはアプリ内でお願いします。",
+        "maskedContact": "［連絡先は非表示］"
     },
     "review": {
         "title": "レビュー",
@@ -1286,13 +1296,24 @@
             "typeDelay": "配送遅延",
             "typeReception": "受取対応",
             "typeCommunication": "やり取り",
+            "typeQa_contact": "公開質問（要確認）",
             "typeOther": "その他",
             "roleFarmer": "農家",
             "roleRestaurant": "レストラン",
             "photos": "写真",
             "detailEmpty": "（詳細なし）",
             "confirmResolve": "この報告を対応済にしますか？",
-            "noPhone": "電話番号未登録"
+            "noPhone": "電話番号未登録",
+            "colDetectedAt": "検知日時",
+            "colProduct": "関連商品",
+            "colPoster": "投稿者",
+            "colLocation": "場所",
+            "qaLocation": "公開質問スレッド",
+            "qaBodyPrefix": "投稿本文（マスク済み）：",
+            "chatPoster": "投稿者とチャット",
+            "hidePost": "投稿を非表示にする",
+            "postHidden": "非表示済み",
+            "confirmHidePost": "この投稿を非表示にしますか？（公開からは消えますが、記録としてDBには残ります）"
         }
     }
 }

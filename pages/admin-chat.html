@@ -91,6 +91,14 @@
             border-top: 1px solid #e2e8f0;
             background: #fff;
         }
+        /* 6/3 #120: 連絡先マスク警告（アンバー） */
+        .mask-warn {
+            display: flex; gap: 6px; align-items: flex-start;
+            background: #fff7e6; border: 1px solid #f3d998; color: #b36a00;
+            font-size: 12px; font-weight: 600; line-height: 1.5;
+            border-radius: 10px; padding: 8px 10px; margin: 8px 12px 0;
+        }
+        .mask-warn .material-symbols-outlined { flex-shrink: 0; }
 
         .chat-input {
             flex: 1;
@@ -195,6 +203,12 @@
             </select>
         </div>
 
+        <!-- 6/3 #120: 連絡先マスク警告（アンバー） -->
+        <div class="mask-warn" id="mask-warn" style="display:none;">
+            <span class="material-symbols-outlined" style="font-size:16px;">warning</span>
+            <span data-i18n="comments.maskWarning"></span>
+        </div>
+
         <div class="chat-input-bar">
             <input type="text" class="chat-input" id="chat-input"
                 placeholder="" data-i18n-placeholder="adminChat.placeholder">
@@ -214,6 +228,8 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // 6/3 #120: 連絡先マスク
+        import { maskContacts } from '/js/contact-mask.js';
 
         const loading = document.getElementById('loading');
 
@@ -363,12 +379,16 @@
                 if (!category) { categorySelect.focus(); return; }  // 念のためのガード
                 sendBtn.disabled = true;
                 try {
+                    // 6/3 #120: 連絡先（電話番号・SNS・URL）を検知→伏字。発動時は警告表示。
+                    const maskRes = maskContacts(text, i18next.t('comments.maskedContact'));
+                    document.getElementById('mask-warn').style.display = maskRes.hit ? 'flex' : 'none';
                     await addDoc(collection(db, `adminChats/${uid}/messages`), {
                         senderId: uid,
                         senderRole: 'user',
-                        text,
+                        text: maskRes.masked,
                         category,                                // 5/25 #90
                         isRead: false,
+                        ...(maskRes.hit ? { contactMasked: true } : {}),
                         createdAt: serverTimestamp(),
                     });
                     input.value = '';

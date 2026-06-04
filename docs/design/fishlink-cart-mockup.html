@@ -68,7 +68,7 @@
   /* ステッパー */
   .stepper { display: flex; align-items: center; border: 1px solid #DDE3E9; border-radius: 10px; overflow: hidden; }
   .stepper button { width: 30px; height: 32px; border: none; background: #F7F9FB; font-size: 16px; color: #1A1A1A; cursor: pointer; }
-  .stepper input { width: 46px; height: 32px; border: none; border-left: 1px solid #EEF1F4; border-right: 1px solid #EEF1F4; text-align: center; font-size: 14px; font-family: inherit; }
+  .stepper input { width: 64px; height: 32px; border: none; border-left: 1px solid #EEF1F4; border-right: 1px solid #EEF1F4; text-align: center; font-size: 14px; font-family: inherit; }
   .min-note { font-size: 11px; color: #5A6470; margin-top: 4px; }
 
   /* 内臓処理トグル（中立グレー・#11文言） */
@@ -92,8 +92,8 @@
   .amt.sub { border-top: 1px solid #F2F4F7; margin-top: 6px; padding-top: 10px; font-weight: 800; font-size: 14px; }
   .amt .ship-free { color: #2E7D32; font-weight: 800; }
   .amt-note { font-size: 11px; color: #9AA3B0; margin-top: -2px; padding-bottom: 4px; }
-  /* キャンペーン割引（amber=キャンペーン色系・danger赤は使わない） */
-  .amt.promo { background: #FFF7E6; border-radius: 8px; padding: 8px 10px; margin: 4px -2px; }
+  /* キャンペーン割引＝軽い強調（🏷＋オレンジ文字。全幅ボックスにしない＝カート/注文確認で統一） */
+  .amt.promo { padding: 6px 0; }
   .amt.promo .pl { color: #B36A00; font-weight: 700; display: flex; align-items: center; gap: 5px; }
   .amt.promo .pv { color: #B36A00; font-weight: 800; }
   .sched-line { font-size: 11px; color: #5A6470; padding-top: 8px; border-top: 1px dashed #EEF1F4; margin-top: 8px; }
@@ -219,7 +219,7 @@
           <div class="ci-total">23,100 KHR</div>
 
           <div class="deliv-row">
-            <div class="deliv-field"><label>納品日</label><div class="box">2026-06-02</div></div>
+            <div class="deliv-field"><label>納品日</label><div class="box">6/2（火）</div></div>
             <div class="deliv-field"><label>時間帯</label><div class="box">7:00–8:00</div></div>
           </div>
 
@@ -259,7 +259,7 @@
           <div class="ci-total">31,500 KHR</div>
 
           <div class="deliv-row">
-            <div class="deliv-field"><label>納品日</label><div class="box">2026-06-02</div></div>
+            <div class="deliv-field"><label>納品日</label><div class="box">6/2（火）</div></div>
             <div class="deliv-field"><label>時間帯</label><div class="box">7:00–8:00</div></div>
           </div>
 
@@ -314,7 +314,7 @@
           <div class="amt"><span>配送料</span><span>12,400 KHR</span></div>
           <div class="amt-note">配達1回分の固定額です。</div>
           <div class="amt sub"><span>この農家への小計</span><span>74,875 KHR</span></div>
-          <div class="deliv-confirm">📅 納品 <b>2026-06-02</b> ・ 🕐 <b>7:00–8:00</b></div>
+          <div class="deliv-confirm">📅 納品 <b>6/2（火）</b> ・ 🕐 <b>7:00–8:00</b></div>
         </div>
 
         <!-- 農家B -->
@@ -329,7 +329,7 @@
           </div>
           <div class="amt"><span>配送料</span><span class="ship-free">送料無料</span></div>
           <div class="amt sub"><span>この農家への小計</span><span>31,500 KHR</span></div>
-          <div class="deliv-confirm">📅 納品 <b>2026-06-02</b> ・ 🕐 <b>7:00–8:00</b></div>
+          <div class="deliv-confirm">📅 納品 <b>6/2（火）</b> ・ 🕐 <b>7:00–8:00</b></div>
         </div>
 
         <!-- クーポン（適用済） -->

@@ -117,7 +117,8 @@
         .qa-reply-form textarea:focus { outline: none; background: #fff; border-color: var(--color-primary); }
         .qa-reply-send {
             align-self: flex-end;
-            background: #0d6e4c;
+            /* 6/3 #119: 返信する＝青（CTA・購入系の色。赤は danger=取り消し専用） */
+            background: var(--color-cta);
             color: #fff;
             border: none;
             border-radius: 999px;
@@ -169,8 +170,9 @@
             background: #f8fafc;
         }
         .footer-input textarea:focus { outline: none; background: #fff; border-color: var(--color-primary); }
+        /* 6/3 #119: 質問する＝青（CTA。赤は danger=取り消し専用） */
         .send-btn {
-            background: #ef4444;
+            background: var(--color-cta);
             color: #fff;
             border: none;
             border-radius: 24px;
@@ -185,6 +187,19 @@
         }
         .send-btn:disabled { opacity: .6; }
         .footer-input__note { font-size: 11px; color: var(--color-text-sub); margin-top: 4px; }
+        /* 6/3 #120: 連絡先マスク警告（アンバー） */
+        .mask-warn {
+            display: flex; gap: 6px; align-items: flex-start;
+            background: #fff7e6; border: 1px solid #f3d998; color: #b36a00;
+            font-size: 12px; font-weight: 600; line-height: 1.5;
+            border-radius: 10px; padding: 8px 10px; margin-bottom: 8px;
+        }
+        .mask-warn .material-symbols-outlined { flex-shrink: 0; }
+
+        /* 6/3 #119: 返信権限ゲート（閲覧のみ）注記 */
+        .gate-note { font-size: 11px; color: #94a3b8; text-align: right; margin-top: 8px; padding-left: 40px; }
+        /* 6/3 #119: 空状態の併記サブ */
+        .empty-sub { font-size: 12px; color: #9aa3b0; margin-top: 6px; }
 
         .empty-small { text-align: center; padding: 40px 20px; color: var(--color-text-sub); font-size: 13px; }
         .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
@@ -224,6 +239,11 @@
     </div>
 
     <div class="footer-input">
+        <!-- 6/3 #120: 連絡先マスク発動時の警告（アンバー） -->
+        <div class="mask-warn" id="mask-warn" style="display:none;">
+            <span class="material-symbols-outlined" style="font-size:16px;">warning</span>
+            <span data-i18n="comments.maskWarning"></span>
+        </div>
         <div class="footer-input__row">
             <textarea id="comment-input" data-i18n="[placeholder]comments.inputPlaceholder"></textarea>
             <button class="send-btn" id="send-btn" data-i18n="comments.send"></button>
@@ -242,6 +262,8 @@
         import { getCachedUser, getCachedListing } from '/js/data-cache.js';
         // 5/25 #91/#92 拡張: 画面 HTML を即時復元
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // 6/3 #120: 連絡先（電話番号・SNS・URL）の自動マスク
+        import { maskContacts } from '/js/contact-mask.js';
         import {
             doc, getDoc, updateDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -312,7 +334,13 @@
 
                 const farmerData = (await getCachedUser(listing.farmerId)) || {};
                 const farmerName = farmerData.displayName || '';
-                const price = (listing.price || 0) + (listing.gutPrice || 0);
+                // 6/3 #119: ヘッダー価格は買い手向け単一の正（手数料込み・内臓処理込み）。settings/campaign の serviceRate を反映。
+                let serviceRate = 0.05;
+                try {
+                    const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
+                    if (campSnap.exists()) serviceRate = campSnap.data().serviceRate ?? 0.05;
+                } catch (e) { /* keep default */ }
+                const price = Math.round(((listing.price || 0) + (listing.gutPrice || 0)) * (1 + serviceRate));
                 document.getElementById('fish-meta').textContent = `${farmerName} · ${price.toLocaleString()} KHR/kg`;
 
                 // ユーザー情報キャッシュ（5/23 #69 Phase B: data-cache 経由）
@@ -346,7 +374,7 @@
                 const q = query(commentsRef, orderBy('createdAt', 'asc'));
                 onSnapshot(q, async (snap) => {
                     if (snap.empty) {
-                        document.getElementById('qa-list').innerHTML = `<div class="empty-small">${escapeHtml(i18next.t('comments.empty'))}</div>`;
+                        document.getElementById('qa-list').innerHTML = `<div class="empty-small"><div>${escapeHtml(i18next.t('comments.empty'))}</div><div class="empty-sub">${escapeHtml(i18next.t('comments.emptySub'))}</div></div>`;
                         return;
                     }
 
@@ -417,7 +445,7 @@
                     const childrenByParent = lastChildrenByParent;
                     const userMap = lastUserMap;
                     if (!parents || parents.length === 0) {
-                        listEl.innerHTML = `<div class="empty-small">${escapeHtml(i18next.t('comments.empty'))}</div>`;
+                        listEl.innerHTML = `<div class="empty-small"><div>${escapeHtml(i18next.t('comments.empty'))}</div><div class="empty-sub">${escapeHtml(i18next.t('comments.emptySub'))}</div></div>`;
                         return;
                     }
 
@@ -483,6 +511,9 @@
                             ? `<div class="qa-delete-row"><button class="qa-delete-btn" data-action="del-q" data-id="${id}" type="button">${escapeHtml(i18next.t('comments.delete'))}</button></div>`
                             : '';
 
+                        // 6/3 #119: 返信権限ゲート — 農家（出品者）or 質問者本人のみ「返信する」。他レストランは閲覧のみ（§4）。
+                        const canReply = isOwner || c.senderId === uid;
+
                         // 子返信の取得
                         const children = childrenByParent.get(id) || [];
                         let repliesHtml = '';
@@ -493,7 +524,7 @@
                             if (!expanded && children.length > 1) {
                                 repliesHtml += `
                                     <div style="text-align:center; margin-top:6px;">
-                                        <button class="qa-delete-btn" data-action="expand-thread" data-id="${id}" type="button" style="color:#0369a1; font-weight:600;">${escapeHtml(i18next.t('comments.viewMoreReplies', { count: children.length - 1 }))}</button>
+                                        <button class="qa-delete-btn" data-action="expand-thread" data-id="${id}" type="button" style="color:var(--color-cta); font-weight:600;">${escapeHtml(i18next.t('comments.viewMoreReplies', { count: children.length - 1 }))}</button>
                                     </div>
                                 `;
                             }
@@ -516,10 +547,17 @@
                             `;
                         }
 
-                        // 任意の返信ターゲット（最後の返信に対して）
-                        const replyTargetBtn = children.length > 0
-                            ? `<div style="text-align:right; margin-top:6px;"><button class="qa-delete-btn" data-action="reply-to" data-parent="${id}" data-thread="${id}" type="button" style="color:#0369a1;">${escapeHtml(i18next.t('comments.replyAgain'))}</button></div>`
-                            : '';
+                        // 6/3 #119: 返信アフォーダンス（権限ゲート）。
+                        //   farmer 未返信時は上のインラインフォームで対応済。それ以外で canReply なら「返信する」、
+                        //   他レストランは閲覧のみ注記（「返信する」は出さない）。
+                        let replyAffordance = '';
+                        if (canReply) {
+                            if (!(children.length === 0 && isOwner)) {
+                                replyAffordance = `<div style="text-align:right; margin-top:6px;"><button class="qa-delete-btn" data-action="reply-to" data-parent="${id}" data-thread="${id}" type="button" style="color:var(--color-cta); font-weight:700;">${escapeHtml(i18next.t('comments.replyAgain'))}</button></div>`;
+                            }
+                        } else {
+                            replyAffordance = `<div class="gate-note">${escapeHtml(i18next.t('comments.viewOnlyNote'))}</div>`;
+                        }
 
                         return `
                             <div class="qa-card" data-id="${id}">
@@ -534,7 +572,7 @@
                                 <div class="qa-text">${escapeHtml(c.text || '')}</div>
                                 ${deleteBtnHtml}
                                 ${repliesHtml}
-                                ${replyTargetBtn}
+                                ${replyAffordance}
                             </div>
                         `;
                     }).join('');
@@ -547,17 +585,20 @@
                         });
                     } catch (e) { /* ignore */ }
 
-                    // 質問取り消し
+                    // 6/3 #119: 質問（スレッド起点）の取り消し＝スレッドごと削除（農家の返信も含む・§4-7）。
+                    //   client は root のみ isDeleted（自分の投稿＝許可）。子返信や legacy 返信の連鎖削除は
+                    //   サーバ（onCommentUpdated）が admin 権限で実行（Firestore Rules 制約の回避）。
                     listEl.querySelectorAll('[data-action="del-q"]').forEach(btn => {
                         btn.addEventListener('click', async () => {
-                            if (!confirm(i18next.t('comments.confirmDelete'))) return;
+                            if (!confirm(i18next.t('comments.confirmDeleteThread'))) return;
                             try {
                                 await updateDoc(doc(db, 'fishListings', listingId, 'comments', btn.dataset.id), {
                                     isDeleted: true,
                                     deletedAt: serverTimestamp(),
+                                    threadDeleted: true,   // サーバに「スレッドごと削除」を伝える
                                 });
                             } catch (err) {
-                                console.error('delete question failed:', err);
+                                console.error('delete thread failed:', err);
                                 alert(i18next.t('comments.errorSubmit'));
                             }
                         });
@@ -590,10 +631,14 @@
                             const sendBtn = form.querySelector('.qa-reply-send');
                             sendBtn.disabled = true;
                             try {
+                                // 6/3 #120: 返信本文も連絡先マスクを適用
+                                const { masked, hit } = maskContacts(text, i18next.t('comments.maskedContact'));
+                                document.getElementById('mask-warn').style.display = hit ? 'flex' : 'none';
                                 await updateDoc(doc(db, 'fishListings', listingId, 'comments', form.dataset.id), {
-                                    replyText: text,
+                                    replyText: masked,
                                     replyAt: serverTimestamp(),
                                     replyByUid: uid,
+                                    ...(hit ? { replyContactMasked: true } : {}),
                                 });
                                 input.value = '';
                             } catch (err) {
@@ -659,12 +704,16 @@
             const btn = document.getElementById('send-btn');
             btn.disabled = true;
             try {
+                // 6/3 #120: 連絡先（電話番号・SNS・URL）を検知→伏字に置換。発動時は警告を表示。
+                const { masked, hit } = maskContacts(text, i18next.t('comments.maskedContact'));
+                document.getElementById('mask-warn').style.display = hit ? 'flex' : 'none';
                 const payload = {
                     senderId: uid,
                     senderRole: window.currentUserData?.role || null,
-                    text,
+                    text: masked,
                     createdAt: serverTimestamp(),
                 };
+                if (hit) payload.contactMasked = true;
                 const replyTo = input.dataset.replyTo;
                 if (replyTo) {
                     // 仮想 (__legacy) は親 doc id に正規化

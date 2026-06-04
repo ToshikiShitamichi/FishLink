@@ -238,7 +238,17 @@ self.addEventListener('notificationclick', (event) => {
 //   - #114 投稿一覧(dashboard.html): 価格 .pl-price 緑→青(--color-cta) / 再開・補充 .pl-act.primary 緑→青 / カードの内臓処理表記の先頭「＋」除去（dashboard.gutPrice「内臓処理」を新設・post.gutPrice はフォームラベル用に「＋内臓処理」を温存）。販売中バッジの緑は成功色として維持
 //   - #115 出品フォーム(post.html): ①魚単価未入力時の価格ボックスを「0」→空状態「魚単価を入力してください」(post.priceEmpty) ②魚単価 placeholder「5,500」除去→「例：5,000」(post.priceUnitPlaceholder)・内臓処理500プリフィルは維持 ③CTA「投稿する」/シート「保存して全出品に反映」/販売価格表示/式 を緑→青 ④商品の説明に虚偽注意 warn-note 追加(post.descriptionWarn) ⑤必須未入力をインラインエラー方式に（各欄直下に赤メッセージ＋枠赤・最初のエラー欄へスクロール・トップは総括のみ・写真も必須化）
 //   - locales 3言語に post.priceEmpty/priceUnitPlaceholder/errorPhoto/errorDeliverableRadius/errorDeliveryFee/errorRequiredSummary/descriptionWarn + dashboard.gutPrice を追加 → 版番号バンプ
-const CACHE_NAME = 'fishlink-v115';
+// 6/3 #116-#121: 6/3 クライアントレビュー修正6件 → v116
+//   - #116 カート/注文確認: 合計の金額を青(--color-cta)/数量入力ボックス幅を3〜4桁に拡張/キャンペーン割引行をカートと注文確認で同じ軽い強調(🏷+オレンジ・うっすらamber)に統一/納品日を曜日付き「6/4（木）」表記に(カート・注文確認・Home進行中注文)
+//   - #117 商品詳細(order.html): メイン価格・他の出品カード価格を青に統一/Q&A teaser はスレッドの元の質問(root)を主に表示(+最新返信)
+//   - #118 生産者ページ(farmer.html): ヘッダー★%=取引満足度・0件は新規/出品中の魚=標準商品カード(価格は画像下・青・買い手向け単一の正=手数料込み)・農家フッター省略・売切れグレーアウト末尾固定/養殖環境・一言は未登録ならセクション非表示/GAqPは認証情報ボックスに一本化(ヘッダー下compactバッジ廃止)/レビューコメント最新3件+もっと見る
+//   - #119 公開Q&A(comments.html): 返信権限ゲート(農家=全スレ/質問者=自スレのみ/他は閲覧のみ注記)/ヘッダー価格を買い手向け単一の正/質問する・返信する=青/質問起点の取り消し=スレッドごと削除(server cascade)/Q&A通知+未回答は農家やることリスト(farmer_qa)
+//   - #120 連絡先マスク: js/contact-mask.js 新設(電話/SNS/URL検知→伏字+警告)。comments.html・farmer/restaurant delivery・admin-chat に適用。functions でサーバ側再検知(バイパス防止)
+//   - #121 モデレーション: トラブル報告に「公開質問（要確認）」(qa_contact)カテゴリ追加。マスク発動投稿を自動レポート化→admin reports.html で「投稿を非表示にする」(ソフト削除)
+//   - 追加: 農家/レストラン基本情報編集(account/basic.html)に「現在地を使う」ボタン(初期登録と同じ挙動)
+//   - Firestore Rules: comments update に sender本人・admin を追加（⚠️ Console 手動公開が必要）
+//   - locales 3言語に comments.*(emptySub/viewOnlyNote/confirmDeleteThread/maskWarning/maskedContact) / profile.reviewsMore / todos.farmer_qa / admin.reports.*(qa_contact系) を追加 → 版番号バンプ
+const CACHE_NAME = 'fishlink-v116';
 
 const PRECACHE_URLS = [
     '/',

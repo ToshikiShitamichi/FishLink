@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 生産者ページ - モック</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:900px; margin-bottom:24px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; }
+  .intro b { color:#0B5FB0; }
+
+  .stage { display:flex; flex-wrap:wrap; gap:28px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; background:#FFF; padding:7px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:center; }
+  .phone-label .tag { color:#5A6470; font-weight:500; }
+
+  .phone { width:390px; max-width:100%; height:780px; background:#F7F9FB; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+
+  .p-header { flex:0 0 auto; background:#FFF; padding:12px 16px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:8px; z-index:2; }
+  .p-header .logo { font-weight:800; color:#0B5FB0; font-size:15px; }
+  .p-header .sp { margin-left:auto; font-size:12px; border:1px solid #DDE3E9; border-radius:14px; padding:3px 10px; }
+  .p-title { text-align:center; font-size:17px; font-weight:800; padding:10px 0 4px; }
+
+  .p-body { flex:1 1 auto; overflow-y:auto; padding:6px 16px 30px; }
+
+  /* プロフィールヘッダー */
+  .prof { text-align:center; padding:14px 0 6px; }
+  .prof .ava { width:96px; height:96px; border-radius:50%; margin:0 auto; background:#D8E2EC; display:flex; align-items:center; justify-content:center; font-size:42px; color:#9AAFC2; overflow:hidden; }
+  .prof .ava img { width:100%; height:100%; object-fit:cover; }
+  .prof .pname { font-size:24px; font-weight:800; margin-top:12px; }
+  .prof .prow { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:8px; flex-wrap:wrap; }
+  .prof .rate { background:#FFF3DC; color:#B36A00; font-weight:800; font-size:13px; padding:4px 12px; border-radius:14px; }
+  .prof .loc { font-size:13px; color:#5A6470; }
+
+  .sec-h { font-size:15px; font-weight:800; margin:18px 0 8px; }
+
+  /* 生産者の一言 */
+  .hitokoto { background:#F0F8F1; border:1px solid #C5E3C8; border-radius:12px; padding:12px 14px; }
+  .hitokoto .hk-l { font-size:12px; font-weight:800; color:#2E7D32; }
+  .hitokoto .hk-t { font-size:13px; color:#2A4A2D; margin-top:4px; line-height:1.5; }
+
+  /* GAqP認証情報ボックス */
+  .gaqp-box { background:#F0F8F1; border:1px solid #C5E3C8; border-radius:12px; padding:12px 14px; }
+  .gaqp-box .gb-ttl { display:inline-flex; align-items:center; gap:6px; background:#2E7D32; color:#FFF; font-size:12px; font-weight:800; padding:4px 10px; border-radius:10px; }
+  .gaqp-box .gb-t { font-size:12px; color:#3F6B43; margin-top:8px; line-height:1.5; }
+
+  /* 養殖環境 */
+  .env-img { width:100%; height:210px; border-radius:12px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); object-fit:cover; }
+
+  /* レビュー（メトリクス） */
+  .rev-block { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-top:6px; }
+  .rev-top { display:flex; align-items:center; justify-content:space-between; }
+  .rev-top .rt-ttl { font-size:15px; font-weight:800; }
+  .rev-top .rt-link { font-size:13px; font-weight:700; color:#0B5FB0; cursor:pointer; }
+  .metrics { display:flex; gap:10px; margin-top:12px; }
+  .metric { flex:1; background:#F7F9FB; border-radius:10px; padding:12px 8px; text-align:center; }
+  .metric .m-l { font-size:11px; color:#5A6470; line-height:1.4; }
+  .metric .m-v { font-size:22px; font-weight:800; margin-top:6px; }
+
+  /* 出品中の魚（標準商品カード・価格は画像下・農家フッター省略） */
+  .fish-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .fcard { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; overflow:hidden; cursor:pointer; }
+  .fcard .fc-img { height:110px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); position:relative; }
+  .fcard .fc-stock { position:absolute; bottom:7px; right:7px; background:rgba(26,34,51,0.78); color:#FFF; font-size:11px; font-weight:700; padding:3px 8px; border-radius:10px; }
+  .fcard .fc-body { padding:8px 10px 11px; }
+  .fcard .fc-name { font-size:13px; font-weight:700; }
+  .fcard .fc-size { font-size:11px; color:#5A6470; margin-top:1px; }
+  .fcard .fc-price { font-size:17px; font-weight:800; color:#0B5FB0; margin-top:6px; }
+  .fcard .fc-price .u { font-size:10px; color:#5A6470; font-weight:600; }
+  /* 売切れ（グレーアウト末尾） */
+  .fcard.sold { filter:grayscale(1); opacity:0.6; }
+  .fcard .fc-soldbadge { position:absolute; top:7px; left:7px; background:#5A6470; color:#FFF; font-size:11px; font-weight:700; padding:3px 8px; border-radius:10px; }
+
+  /* レビューコメント */
+  .rc { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .rc-head { display:flex; align-items:center; gap:8px; }
+  .rc-ava { width:30px; height:30px; border-radius:50%; background:#D8E2EC; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .rc-name { font-size:13px; font-weight:800; }
+  .rc-date { margin-left:auto; font-size:11px; color:#9AA3B0; }
+  .rc-thumb { display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:700; padding:3px 9px; border-radius:9px; margin:8px 0 6px; }
+  .rc-thumb.good { background:#EAF6EE; color:#2E7D32; }
+  .rc-thumb.bad { background:#FDECEA; color:#E5453F; }
+  .rc-text { font-size:13px; line-height:1.5; }
+  .rc-more { display:block; text-align:center; font-size:13px; font-weight:700; color:#0B5FB0; cursor:pointer; padding:6px; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 生産者ページ — モック</h1>
+  <p>反映：ヘッダー★%＝<b>取引の満足度</b>（全画面統一・件数＝総レビュー）／場所は<b>テキストのみ</b>（Mapリンク無し＝正確な地図は注文確認・配送管理に限定）／出品中の魚は<b>標準商品カード</b>（価格は画像下・農家フッター省略・オーバーレイ廃止）／売切れは<b>グレーアウト末尾</b>。</p>
+  <p>GAqP農家＝<b>認証情報ボックス</b>（ヘッダー下のcompactバッジは省略）／<b>養殖環境・生産者の一言は未登録ならセクションごと非表示</b>／アバター未設定＝デフォルトアイコン／レビューコメントは<b>最新3件＋もっと見る</b>（インライン展開）。農家の<b>連絡先は出さない</b>（中抜き防止）。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① 通常農家（全要素あり） -->
+  <div class="phone-wrap">
+    <div class="phone-label">① 通常農家 <span class="tag">Ryosuke4・写真/一言あり・売切れ含む</span></div>
+    <div class="phone">
+      <div class="p-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="p-title">生産者ページ</div>
+      <div class="p-body">
+        <div class="prof">
+          <div class="ava">🧑‍🌾</div>
+          <div class="pname">Ryosuke4</div>
+          <div class="prow">
+            <span class="rate">★ 62%（37件）</span>
+            <span class="loc">📍 タケオ州, Samraong</span>
+          </div>
+        </div>
+
+        <div class="hitokoto">
+          <div class="hk-l">生産者の一言</div>
+          <div class="hk-t">こだわってつくってます！</div>
+        </div>
+
+        <div class="sec-h">養殖環境</div>
+        <div class="env-img"></div>
+
+        <div class="sec-h">レビュー（37件）</div>
+        <div class="rev-block">
+          <div class="rev-top">
+            <span class="rt-ttl">評価</span>
+            <span class="rt-link">レビューを見る</span>
+          </div>
+          <div class="metrics">
+            <div class="metric"><div class="m-l">取引の満足度<br>良かった率</div><div class="m-v">62%</div></div>
+            <div class="metric"><div class="m-l">魚の品質<br>良かった率</div><div class="m-v">96%</div></div>
+            <div class="metric"><div class="m-l">配送時間<br>良かった率</div><div class="m-v">100%</div></div>
+          </div>
+        </div>
+
+        <div class="sec-h">出品中の魚</div>
+        <div class="fish-grid">
+          <div class="fcard">
+            <div class="fc-img"><span class="fc-stock">在庫 100kg</span></div>
+            <div class="fc-body"><div class="fc-name">ヒレナマズ</div><div class="fc-size">10 head/kg</div><div class="fc-price">5,775<span class="u"> KHR/kg</span></div></div>
+          </div>
+          <div class="fcard">
+            <div class="fc-img"><span class="fc-stock">在庫 50kg</span></div>
+            <div class="fc-body"><div class="fc-name">パンガシウス</div><div class="fc-size">1-2 head/kg</div><div class="fc-price">6,300<span class="u"> KHR/kg</span></div></div>
+          </div>
+          <div class="fcard">
+            <div class="fc-img"><span class="fc-stock">在庫 80kg</span></div>
+            <div class="fc-body"><div class="fc-name">ヒレナマズ</div><div class="fc-size">6-8 head/kg</div><div class="fc-price">6,300<span class="u"> KHR/kg</span></div></div>
+          </div>
+          <!-- 売切れ＝グレーアウト末尾 -->
+          <div class="fcard sold">
+            <div class="fc-img"><span class="fc-soldbadge">売切れ</span></div>
+            <div class="fc-body"><div class="fc-name">レッドティラピア</div><div class="fc-size">3 head/kg</div><div class="fc-price">7,875<span class="u"> KHR/kg</span></div></div>
+          </div>
+        </div>
+
+        <div class="sec-h">レビューコメント（37件）</div>
+        <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">test_restaurant5</span><span class="rc-date">2026/05/13</span></div>
+          <span class="rc-thumb good">👍 良かった</span>
+          <div class="rc-text">美味しかったです</div>
+        </div>
+        <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">test_restaurant5</span><span class="rc-date">2026/05/11</span></div>
+          <span class="rc-thumb good">👍 良かった</span>
+          <div class="rc-text">すごく活きの良い魚です。満足です。</div>
+        </div>
+        <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">RyosukeRestaurant4</span><span class="rc-date">2026/04/25</span></div>
+          <span class="rc-thumb bad">👎 残念だった</span>
+          <div class="rc-text">配送が遅かったです。</div>
+        </div>
+        <span class="rc-more">もっと見る（残り34件）</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② GAqP農家（認証ボックス＋空状態の出し分け） -->
+  <div class="phone-wrap">
+    <div class="phone-label">② GAqP農家 <span class="tag">farmer5・認証ボックス／一言・養殖環境は未登録→非表示／アバター無</span></div>
+    <div class="phone">
+      <div class="p-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="p-title">生産者ページ</div>
+      <div class="p-body">
+        <div class="prof">
+          <div class="ava">👤</div>
+          <div class="pname">farmer5</div>
+          <div class="prow">
+            <span class="rate">★ 76%（17件）</span>
+            <span class="loc">📍 タケオ州, Doun Kaev</span>
+          </div>
+        </div>
+
+        <!-- 生産者の一言：未記入→セクションごと非表示（ここには出ない） -->
+
+        <div class="sec-h">認証情報</div>
+        <div class="gaqp-box">
+          <span class="gb-ttl">✓ GAqP</span>
+          <div class="gb-t">この農家は Good Aquaculture Practices の認証を取得しています。</div>
+        </div>
+
+        <!-- 養殖環境：写真未登録→セクションごと非表示（ここには出ない） -->
+
+        <div class="sec-h">レビュー（17件）</div>
+        <div class="rev-block">
+          <div class="rev-top">
+            <span class="rt-ttl">評価</span>
+            <span class="rt-link">レビューを見る</span>
+          </div>
+          <div class="metrics">
+            <div class="metric"><div class="m-l">取引の満足度<br>良かった率</div><div class="m-v">76%</div></div>
+            <div class="metric"><div class="m-l">魚の品質<br>良かった率</div><div class="m-v">100%</div></div>
+            <div class="metric"><div class="m-l">配送時間<br>良かった率</div><div class="m-v">100%</div></div>
+          </div>
+        </div>
+
+        <div class="sec-h">出品中の魚</div>
+        <div class="fish-grid">
+          <div class="fcard">
+            <div class="fc-img"><span class="fc-stock">在庫 100kg</span></div>
+            <div class="fc-body"><div class="fc-name">レッドティラピア</div><div class="fc-size">3 head/kg</div><div class="fc-price">7,875<span class="u"> KHR/kg</span></div></div>
+          </div>
+          <div class="fcard">
+            <div class="fc-img"><span class="fc-stock">在庫 80kg</span></div>
+            <div class="fc-body"><div class="fc-name">ヒレナマズ</div><div class="fc-size">6-8 head/kg</div><div class="fc-price">6,300<span class="u"> KHR/kg</span></div></div>
+          </div>
+        </div>
+
+        <div class="sec-h">レビューコメント（17件）</div>
+        <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">test_restaurant5</span><span class="rc-date">2026/05/12</span></div>
+          <span class="rc-thumb good">👍 良かった</span>
+          <div class="rc-text">鮮度が良く、品質も安定しています。</div>
+        </div>
+        <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">RyosukeRestaurant4</span><span class="rc-date">2026/05/08</span></div>
+          <span class="rc-thumb good">👍 良かった</span>
+          <div class="rc-text">時間通りに配達してくれました。</div>
+        </div>
+        <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">test_restaurant5</span><span class="rc-date">2026/05/03</span></div>
+          <span class="rc-thumb good">👍 良かった</span>
+          <div class="rc-text">活きが良かったです。</div>
+        </div>
+        <span class="rc-more">もっと見る（残り14件）</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

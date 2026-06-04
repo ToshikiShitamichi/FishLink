@@ -115,6 +115,14 @@
             padding: 8px 14px; font-size: 13px; font-weight: 600;
             cursor: pointer; font-family: inherit; text-decoration: none;
         }
+        /* 6/3 #121: 投稿を非表示にする（ソフト削除・danger） */
+        .btn-hide-post {
+            background: #fef2f2; color: #b91c1c;
+            border: 1px solid #fecaca; border-radius: 10px;
+            padding: 8px 14px; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+        }
+        .btn-hide-post:disabled { opacity: 0.6; cursor: not-allowed; }
         /* 5/1: 報告者へのチャット導線 */
         .btn-chat-reporter {
             background: #ecfdf5; color: #047857;
@@ -250,6 +258,49 @@
             }));
         }
 
+        // 6/3 #121: 公開質問（要確認）カード（連絡先マスク発動投稿）
+        function renderQaContactCard(r) {
+            const isOpen = r.status !== 'resolved';
+            const statusKey = isOpen ? 'open' : 'resolved';
+            const isUnread = !!currentAdminUid && !(r.readByAdmins && r.readByAdmins[currentAdminUid]);
+            const poster = userCache[r.fromUid]?.displayName || '-';
+            const ctx = r.qaContext || {};
+            const fishName = ctx.fishType && i18next.exists(`fish.${ctx.fishType}`) ? i18next.t(`fish.${ctx.fishType}`) : (ctx.fishType || '');
+            const productLabel = `${fishName}${ctx.size ? `（${ctx.size} head/kg）` : ''}${ctx.farmerName ? ` / ${ctx.farmerName}` : ''}`;
+            const postHidden = r.postHidden === true;
+            return `
+                <div class="report-card ${statusKey}${isUnread ? ' unread' : ''}" id="report-${r.id}" data-unread="${isUnread ? '1' : '0'}">
+                    <div class="report-card__head">
+                        <div class="report-card__type">
+                            ${escapeHtml(typeLabel('qa_contact'))}
+                            <span class="badge">${escapeHtml(roleLabel(r.fromRole || 'restaurant'))}</span>
+                            ${isUnread ? `<span class="badge-new">${i18next.t('admin.reports.newBadge')}</span>` : ''}
+                        </div>
+                        <span class="report-card__status ${statusKey}">${i18next.t('admin.reports.status' + (isOpen ? 'Open' : 'Resolved'))}</span>
+                    </div>
+                    <div class="report-card__meta">
+                        <div><div class="k">${i18next.t('admin.reports.colDetectedAt')}</div><div class="v">${formatDate(r.createdAt)}</div></div>
+                        <div><div class="k">${i18next.t('admin.reports.colProduct')}</div><div class="v">${r.listingId ? `<a href="/pages/restaurant/order.html?id=${escapeHtml(r.listingId)}">${escapeHtml(productLabel)}</a>` : escapeHtml(productLabel)}</div></div>
+                        <div><div class="k">${i18next.t('admin.reports.colPoster')}</div><div class="v">${escapeHtml(poster)}</div></div>
+                        <div><div class="k">${i18next.t('admin.reports.colLocation')}</div><div class="v">${i18next.t('admin.reports.qaLocation')}</div></div>
+                    </div>
+                    <div class="report-card__detail">${i18next.t('admin.reports.qaBodyPrefix')}${escapeHtml(r.detail || '')}</div>
+                    <div class="report-card__actions">
+                        ${r.fromUid ? `<a class="btn-chat-reporter" href="/pages/admin/users.html?uid=${escapeHtml(r.fromUid)}"><span class="material-symbols-outlined">chat</span>${i18next.t('admin.reports.chatPoster')}</a>` : ''}
+                        ${r.listingId ? `<a class="btn-view-order" href="/pages/restaurant/comments.html?id=${escapeHtml(r.listingId)}">${i18next.t('admin.reports.viewDetail')}</a>` : ''}
+                        ${postHidden
+                            ? `<span class="btn-view-order" style="opacity:.6; cursor:default;">${i18next.t('admin.reports.postHidden')}</span>`
+                            : `<button class="btn-hide-post" data-id="${r.id}" data-listing="${escapeHtml(r.listingId || '')}" data-comment="${escapeHtml(r.commentId || '')}" data-field="${escapeHtml(r.qaField || 'text')}">${i18next.t('admin.reports.hidePost')}</button>`
+                        }
+                        ${isOpen
+                            ? `<button class="btn-resolve" data-id="${r.id}">${i18next.t('admin.reports.markResolved')}</button>`
+                            : `<button class="btn-reopen" data-id="${r.id}">${i18next.t('admin.reports.markOpen')}</button>`
+                        }
+                    </div>
+                </div>
+            `;
+        }
+
         function render() {
             const filtered = allReports.filter(r => {
                 if (currentTab === 'all') return true;
@@ -264,6 +315,8 @@
             }
 
             container.innerHTML = `<div class="report-list">${filtered.map(r => {
+                // 6/3 #121: 公開質問（要確認）＝連絡先マスク発動投稿は専用カード
+                if (r.type === 'qa_contact') return renderQaContactCard(r);
                 const fromRole = r.fromRole || 'restaurant';
                 const reporter = userCache[r.fromUid]?.displayName || '-';
                 const reporterPhone = userCache[r.fromUid]?.phone || '';
@@ -350,6 +403,42 @@
                     btn.disabled = true;
                     try {
                         await updateDoc(doc(db, 'reports', btn.dataset.id), { status: 'open' });
+                    } catch (err) {
+                        console.error(err);
+                        alert(err.message || 'failed');
+                        btn.disabled = false;
+                    }
+                });
+            });
+
+            // 6/3 #121: 投稿を非表示にする＝ソフト削除（公開から消すがDBには残す・「運営により削除」記録）
+            container.querySelectorAll('.btn-hide-post').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm(i18next.t('admin.reports.confirmHidePost'))) return;
+                    const { id, listing, comment, field } = btn.dataset;
+                    if (!listing || !comment) { alert('missing reference'); return; }
+                    btn.disabled = true;
+                    try {
+                        // qaField が 'replyText'（legacy 埋め込み返信）なら返信のみ消す。それ以外は投稿（質問/返信doc）を非表示。
+                        const commentRef = doc(db, 'fishListings', listing, 'comments', comment);
+                        if (field === 'replyText') {
+                            await updateDoc(commentRef, {
+                                replyText: null, replyAt: null, replyByUid: null,
+                                replyRemovedByAdmin: true,
+                            });
+                        } else {
+                            await updateDoc(commentRef, {
+                                isDeleted: true,
+                                deletedAt: new Date(),
+                                removedByAdmin: true,
+                            });
+                        }
+                        // 報告に「非表示済み」を記録（status は別途「対応済」で resolved に）
+                        await updateDoc(doc(db, 'reports', id), {
+                            postHidden: true,
+                            postHiddenAt: new Date(),
+                            postHiddenBy: window.currentUser?.uid || null,
+                        });
                     } catch (err) {
                         console.error(err);
                         alert(err.message || 'failed');

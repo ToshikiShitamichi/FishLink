@@ -636,6 +636,10 @@
             "title": "មានសារពីភោជនីយដ្ឋាន",
             "body": "សូមឆ្លើយតប"
         },
+        "farmer_qa": {
+            "title": "មានសំណួរមិនទាន់ឆ្លើយតប",
+            "body": "សូមឆ្លើយតបសំណួរសាធារណៈ"
+        },
         "rest_receive": {
             "title": "ត្រីមកដល់ហើយ",
             "body": "សូមបញ្ជាក់ការទទួល"
@@ -684,6 +688,7 @@
         "reviewsCount": "សរុប {{count}}",
         "reviewsTitleWithCount": "វាយតម្លៃ ({{count}})",
         "reviewCommentsTitleWithCount": "មតិវាយតម្លៃ ({{count}})",
+        "reviewsMore": "មើលបន្ថែម (នៅសល់ {{count}})",
         "noReviews": "មិនទាន់មានការវាយតម្លៃ",
         "anonymousReviewer": "(មិនស្គាល់)",
         "openMap": "បើក Google Maps",
@@ -859,7 +864,12 @@
         "viewMoreReplies": "មើលបន្ថែម (មាន {{count}} ការឆ្លើយតបទៀត)",
         "replyAgain": "ឆ្លើយតប",
         "replyFromUser": "ឆ្លើយតប",
-        "replyToPlaceholder": "បញ្ចូលការឆ្លើយតបរបស់អ្នក"
+        "replyToPlaceholder": "បញ្ចូលការឆ្លើយតបរបស់អ្នក",
+        "emptySub": "សូមសួរសំណួរដំបូង",
+        "viewOnlyNote": "មើលតែប៉ុណ្ណោះ (មិនអាចឆ្លើយតបបានទេ ព្រោះមិនមែនជាសំណួររបស់អ្នក)",
+        "confirmDeleteThread": "ការលុបសំណួរនេះ នឹងលុបការសន្ទនាទាំងមូល រួមទាំងការឆ្លើយតប។ បន្តឬ?",
+        "maskWarning": "លេខទូរស័ព្ទ គណនីបណ្តាញសង្គម និង URL មិនអាចបង្ហោះបានទេ។ សូមទំនាក់ទំនងក្នុងកម្មវិធី។",
+        "maskedContact": "[ព័ត៌មានទំនាក់ទំនងត្រូវបានលាក់]"
     },
     "review": {
         "title": "ការវាយតម្លៃ",
@@ -1286,13 +1296,24 @@
             "typeDelay": "យឺត",
             "typeReception": "ការទទួល",
             "typeCommunication": "ទំនាក់ទំនង",
+            "typeQa_contact": "សំណួរសាធារណៈ (ត្រួតពិនិត្យ)",
             "typeOther": "ផ្សេងទៀត",
             "roleFarmer": "កសិករ",
             "roleRestaurant": "ភោជនីយដ្ឋាន",
             "photos": "រូបភាព",
             "detailEmpty": "(គ្មានព័ត៌មានលម្អិត)",
             "confirmResolve": "សម្គាល់របាយការណ៍នេះថាបានដោះស្រាយ?",
-            "noPhone": "មិនបានចុះឈ្មោះលេខទូរសព្ទ"
+            "noPhone": "មិនបានចុះឈ្មោះលេខទូរសព្ទ",
+            "colDetectedAt": "ពេលរកឃើញ",
+            "colProduct": "ផលិតផលពាក់ព័ន្ធ",
+            "colPoster": "អ្នកបង្ហោះ",
+            "colLocation": "ទីតាំង",
+            "qaLocation": "ខ្សែសំណួរសាធារណៈ",
+            "qaBodyPrefix": "ខ្លឹមសារ (បានបិទបាំង)៖ ",
+            "chatPoster": "ជជែកជាមួយអ្នកបង្ហោះ",
+            "hidePost": "លាក់ការបង្ហោះ",
+            "postHidden": "បានលាក់",
+            "confirmHidePost": "លាក់ការបង្ហោះនេះ? (វានឹងបាត់ពីសាធារណៈ ប៉ុន្តែនៅរក្សាក្នុងទិន្នន័យជាកំណត់ត្រា។)"
         }
     }
 }
