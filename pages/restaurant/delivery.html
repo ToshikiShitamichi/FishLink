@@ -38,6 +38,9 @@
             flex: 1;
             overflow-y: auto;
             min-height: 0;
+            /* 6/4 #125: システム行の中央寄せ・自分バブルの右寄せを確実にする */
+            display: flex;
+            flex-direction: column;
         }
 
         .delivery-bottom {
@@ -46,33 +49,13 @@
             border-top: 1px solid var(--color-border);
         }
 
-        .tl-status {
-            border-radius: 16px;
-            background: #bef264;
-            padding: 14px;
-            text-align: center;
-            margin-bottom: 12px;
-        }
-        .tl-status__time { font-size: 13px; color: #555; }
-        .tl-status__text { font-size: 18px; font-weight: 700; margin-top: 4px; }
-
-        .tl-chat {
-            max-width: 85%;
-            border-radius: 14px;
-            background: #e5e5e5;
-            padding: 6px 12px 4px;
-            margin-bottom: 3px;
-        }
-        .tl-chat.self { margin-left: auto; background: #dbeafe; }
-        .tl-chat__img { max-width: 100%; border-radius: 8px; margin-top: 4px; }
+        /* 6/4 #125: 会話バブル/システム行/日付区切りは css/style.css に共通化（.tl-chat / .tl-sys / .tl-datesep） */
         .photo-preview-area {
             display: none; padding: 8px 16px; gap: 8px; flex-wrap: wrap; align-items: center;
         }
         .photo-preview-area.show { display: flex; }
         .photo-preview-area img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
         .photo-preview-area .remove-all { font-size: 11px; color: #ef4444; cursor: pointer; margin-left: auto; }
-        .tl-chat__time { font-size: 10px; color: #888; text-align: right; margin-top: 2px; }
-        .tl-chat__text { font-size: 14px; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
 
         .chat-input {
             display: flex;
@@ -202,6 +185,8 @@
         import { maskContacts } from '/js/contact-mask.js';
         // 5/23 #81: ボイスメッセージ
         import { initVoiceRecorder, renderVoiceBubble } from '/js/voice-message.js';
+        // 6/4 #125: 配送管理チャットの共有レンダリング（農家側と鏡像・システム行/日付区切り/バブル）
+        import { renderChatTimelineHtml, fmtDeliveryDateShort } from '/js/chat-timeline.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
@@ -224,6 +209,17 @@
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
             else setTimeout(() => waitForUserData(cb), 300);
+        }
+
+        // 6/5 #125: レストラン↔農家の直線距離（haversine・農家側 orders.html と同一）
+        function calcDistanceKm(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2
+                + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+                * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         }
 
         // 5/25 #91/#92 拡張: 画面 HTML を即時復元
@@ -274,18 +270,33 @@
                 callBtn.dataset.phone = farmer.phone;
             }
 
-            const statusKey = `delivery.${orderData.status}`;
+            // 6/4 #125 (§2): 買い手ヘッダーのステータス表記は買い手5段の言葉（農家用語「準備中」等は使わない）
+            const BUYER_STATUS = {
+                pending: 'home.stepConfirming', approved: 'home.stepShipped', preparing: 'home.stepShipped',
+                delivering: 'home.stepDelivering', completed: 'home.stepDone', delivered: 'home.stepDone',
+            };
+            const statusKey = BUYER_STATUS[orderData.status] || `delivery.${orderData.status}`;
             const statusText = i18next.exists(statusKey) ? i18next.t(statusKey) : orderData.status;
 
             const orderNo = orderData.orderNumber || `FL-${orderId.slice(0, 8).toUpperCase()}`;
+            // 6/5 #125: ヘッダーをモック chat-head に統一（相手名＋右肩ステータスバッジ／魚種・数量・納品・FL の1行／📍距離のみ＝地図リンクは出さない）
+            // 距離は注文ドキュメントには保存されないため、レストラン位置↔農家位置から都度計算（農家側 orders.html と同じ haversine）
+            const myLoc = window.currentUserData?.location || null;
+            const farmerLoc = farmer.location || null;
+            let distKm = Number(orderData.distKm);
+            if (!Number.isFinite(distKm) && myLoc && farmerLoc
+                && Number.isFinite(myLoc.lat) && Number.isFinite(farmerLoc.lat)) {
+                distKm = calcDistanceKm(myLoc.lat, myLoc.lng, farmerLoc.lat, farmerLoc.lng);
+            }
+            const distLabel = Number.isFinite(distKm) ? `${(Math.floor(distKm * 10) / 10)}km` : '';
+            const delivStr = [orderData.deliveryDate ? fmtDeliveryDateShort(orderData.deliveryDate) : '', orderData.deliveryTime || ''].filter(Boolean).join(' ');
             document.getElementById('order-summary').innerHTML = `
-                <div style="font-weight:600; color:var(--color-text); font-size:14px;">
-                    ${fishName} ${orderData.quantity}kg · ${farmerName}
+                <div class="ch-top">
+                    <span class="ch-name">${farmerName}</span>
+                    <span class="ch-status">${statusText}</span>
                 </div>
-                <div style="font-size:12px; color:var(--color-text-sub); margin-top:2px;">
-                    ${statusText} · ${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}
-                </div>
-                <div style="font-family:monospace; font-size:11px; color:#94a3b8; margin-top:2px;">${orderNo}</div>
+                <div class="ch-sub">${fishName} ${orderData.quantity}kg ・ ${i18next.t('orders.deliveryDate')} ${delivStr} ・ <span class="ch-fl">${orderNo}</span></div>
+                ${distLabel ? `<div class="ch-dist"><span class="material-symbols-outlined">location_on</span>${distLabel}</div>` : ''}
             `;
 
             // タイムライン購読
@@ -295,29 +306,8 @@
             );
             onSnapshot(msgQuery, (snap) => {
                 const timeline = document.getElementById('timeline');
-                timeline.innerHTML = '';
-                snap.forEach(d => {
-                    const msg = d.data();
-                    const time = msg.createdAt?.toDate();
-                    const timeStr = time ? `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}` : '';
-                    const isSelf = msg.senderId === myUid;
-
-                    // 5/23 #81: ボイスメッセージ
-                    if (msg.type === 'voice') {
-                        timeline.innerHTML += renderVoiceBubble(msg, isSelf, timeStr);
-                        return;
-                    }
-
-                    const imgs = msg.imageUrls || (msg.imageUrl ? [msg.imageUrl] : []);
-                    const imgHtml = imgs.map(url => `<img class="tl-chat__img" ${asCachedImgAttrs(url)}>`).join('');
-
-                    timeline.innerHTML += `
-                        <div class="tl-chat ${isSelf ? 'self' : ''}">
-                            ${msg.text ? `<div class="tl-chat__text">${msg.text}</div>` : ''}
-                            ${imgHtml}
-                            <div class="tl-chat__time">${timeStr}</div>
-                        </div>`;
-                });
+                // 6/4 #125: 新デザイン（システム行/日付区切り/時刻のみバブル）を共有モジュールで描画
+                timeline.innerHTML = renderChatTimelineHtml(snap, myUid);
                 timeline.scrollTop = timeline.scrollHeight;
                 // 5/25 #91/#92 拡張: 次回訪問用に最新の summary + timeline HTML を保存
                 try {
@@ -388,7 +378,8 @@
 
             // 電話アイコン：承認済み以降のみ表示（pending では非表示）
             const callBtn = document.getElementById('call-btn');
-            const canCall = !isPending && callBtn.dataset.phone;
+            // 6/4 #125 (§9): 📞は注文がアクティブな間（承認後〜完了まで）のみ有効・完了後は消す
+            const canCall = !isPending && !isCompleted && callBtn.dataset.phone;
             callBtn.style.display = canCall ? 'inline-flex' : 'none';
         }
 
@@ -443,7 +434,8 @@
             // 6/3 #120: 連絡先（電話番号・SNS・URL）を検知→伏字。発動時は警告表示。
             const maskRes = maskContacts(text, i18next.t('comments.maskedContact'));
             document.getElementById('mask-warn').style.display = maskRes.hit ? 'flex' : 'none';
-            const msgText = maskRes.masked || (imageUrls.length > 0 ? i18next.t('delivery.imageSent') : '');
+            // 6/4 #125 (diff5): 画像のみの場合はラベルを付けない（サムネのみ＝空テキスト）
+            const msgText = maskRes.masked || '';
 
             await addDoc(collection(db, 'orders', orderId, 'messages'), {
                 senderId: myUid,

@@ -54,6 +54,9 @@
             flex: 1;
             overflow-y: auto;
             min-height: 0;
+            /* 6/4 #126: システム行の中央寄せ・自分バブルの右寄せを確実にする */
+            display: flex;
+            flex-direction: column;
         }
 
         /* 下部固定エリア：クイックステータス・チャット入力・配送完了ボタン */
@@ -63,29 +66,7 @@
             border-top: 1px solid var(--color-border);
         }
 
-        .tl-status {
-            width: 86%;
-            margin-left: auto;
-            border-radius: 16px;
-            background: #bef264;
-            padding: 14px;
-            text-align: center;
-            margin-bottom: 12px;
-        }
-        .tl-status__time { font-size: 13px; color: #555; }
-        .tl-status__text { font-size: 18px; font-weight: 700; margin-top: 4px; }
-
-        .tl-chat {
-            max-width: 78%;
-            border-radius: 14px;
-            background: #e5e5e5;
-            padding: 6px 12px 4px;
-            margin-bottom: 3px;
-        }
-        .tl-chat.self { margin-left: auto; background: #dbeafe; }
-        .tl-chat__img { max-width: 100%; border-radius: 8px; margin-top: 4px; }
-        .tl-chat__time { font-size: 10px; color: #888; text-align: right; margin-top: 2px; }
-        .tl-chat__text { font-size: 14px; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
+        /* 6/4 #126: 会話バブル/システム行/日付区切りは css/style.css に共通化（.tl-chat / .tl-sys / .tl-datesep） */
 
         .quick-status {
             padding: 10px 14px;
@@ -199,11 +180,12 @@
             <div class="quick-status">
                 <div class="quick-status__title" data-i18n="delivery.sendStatus"></div>
                 <div class="quick-status__grid">
-                    <button class="quick-status__btn" data-status="preparing" data-msg-key="statusPrepareMsg" data-order-status="preparing" data-i18n="delivery.statusPreparing"></button>
-                    <button class="quick-status__btn" data-status="delivering" data-msg-key="statusDeliverMsg" data-order-status="delivering" data-i18n="delivery.statusDelivering"></button>
-                    <button class="quick-status__btn" data-status="delayed" data-msg-key="statusDelayedMsg" data-i18n="delivery.statusDelayed"></button>
-                    <button class="quick-status__btn" data-status="arrived" data-msg-key="statusArrivedMsg" data-i18n="delivery.statusArrived"></button>
+                    <button class="quick-status__btn" data-status="preparing" data-status-kind="prepare_start" data-msg-key="statusPrepareMsg" data-order-status="preparing" data-i18n="delivery.statusPreparing"></button>
+                    <button class="quick-status__btn" data-status="delivering" data-status-kind="ship_start" data-msg-key="statusDeliverMsg" data-order-status="delivering" data-i18n="delivery.statusDelivering"></button>
+                    <button class="quick-status__btn" data-status="delayed" data-status-kind="delay" data-msg-key="statusDelayedMsg" data-i18n="delivery.statusDelayed"></button>
+                    <button class="quick-status__btn" data-status="arrived" data-status-kind="arrived" data-msg-key="statusArrivedMsg" data-i18n="delivery.statusArrived"></button>
                 </div>
+                <div class="quick-status__hint" data-i18n="delivery.statusSendHint"></div>
             </div>
 
             <!-- 写真プレビュー -->
@@ -230,6 +212,18 @@
         </div>
     </div>
 
+    <!-- 6/4 #126 (diff8): 配送完了の自前確認モーダル（ブラウザ標準ダイアログ置換） -->
+    <div class="chat-modal" id="complete-modal">
+        <div class="chat-modal__box">
+            <div class="chat-modal__title" data-i18n="delivery.completeModalTitle"></div>
+            <div class="chat-modal__body" data-i18n="delivery.completeModalBody"></div>
+            <div class="chat-modal__actions">
+                <button class="chat-modal__btn chat-modal__btn--cancel" id="complete-modal-cancel" data-i18n="delivery.completeModalCancel"></button>
+                <button class="chat-modal__btn chat-modal__btn--ok" id="complete-modal-ok" data-i18n="delivery.completeModalOk"></button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initI18n, initLangSelector } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
@@ -245,6 +239,8 @@
         import { maskContacts } from '/js/contact-mask.js';
         // 5/23 #81: ボイスメッセージ
         import { initVoiceRecorder, renderVoiceBubble } from '/js/voice-message.js';
+        // 6/4 #126: 配送管理チャットの共有レンダリング（システム行/日付区切り/バブル）
+        import { renderChatTimelineHtml, statusKindOf, fmtDeliveryDateShort } from '/js/chat-timeline.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
@@ -328,20 +324,17 @@
                 : null;
 
             const orderNo = orderData.orderNumber || `FL-${orderId.slice(0, 8).toUpperCase()}`;
+            // 6/5 #126: ヘッダーをモック chat-head に統一（相手名＝レストラン＋右肩ステータスバッジ／魚種・数量・納品・FL／📍地区・地図を見る）
+            const delivStr = [orderData.deliveryDate ? fmtDeliveryDateShort(orderData.deliveryDate) : '', orderData.deliveryTime || ''].filter(Boolean).join(' ');
             document.getElementById('order-summary').innerHTML = `
-                <div style="font-weight:600; color:var(--color-text); font-size:14px;">
-                    ${fishName} ${orderData.quantity}kg · ${restName}
+                <div class="ch-top">
+                    <span class="ch-name">${restName}</span>
+                    <span class="ch-status">${statusText}</span>
                 </div>
-                <div style="font-size:12px; color:var(--color-text-sub); margin-top:2px;">
-                    ${statusText} · ${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}
-                </div>
-                <div style="font-family:monospace; font-size:11px; color:#94a3b8; margin-top:2px;">${orderNo}</div>
-                ${mapLink ? `
-                    <a class="location-link" href="${mapLink}" target="_blank" rel="noopener">
-                        <span class="material-symbols-outlined">location_on</span>
-                        <span>${locLabel ? locLabel + ' · ' : ''}${i18next.t('delivery.viewLocation')}</span>
-                    </a>
-                ` : ''}
+                <div class="ch-sub">${fishName} ${orderData.quantity}kg ・ ${i18next.t('orders.deliveryDate')} ${delivStr} ・ <span class="ch-fl">${orderNo}</span></div>
+                ${mapLink
+                    ? `<a class="ch-loc" href="${mapLink}" target="_blank" rel="noopener"><span class="material-symbols-outlined">location_on</span>${locLabel ? locLabel + ' ・ ' : ''}${i18next.t('delivery.viewLocation')}</a>`
+                    : (locLabel ? `<div class="ch-dist"><span class="material-symbols-outlined">location_on</span>${locLabel}</div>` : '')}
             `;
 
             // タイムライン購読
@@ -351,30 +344,13 @@
             );
             onSnapshot(msgQuery, (snap) => {
                 const timeline = document.getElementById('timeline');
-                timeline.innerHTML = '';
-                snap.forEach(d => {
-                    const msg = d.data();
-                    const time = msg.createdAt?.toDate();
-                    const timeStr = time ? `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}` : '';
-                    const isSelf = msg.senderId === myUid;
-
-                    // 5/23 #81: ボイスメッセージ
-                    if (msg.type === 'voice') {
-                        timeline.innerHTML += renderVoiceBubble(msg, isSelf, timeStr);
-                        return;
-                    }
-
-                    const imgs = msg.imageUrls || (msg.imageUrl ? [msg.imageUrl] : []);
-                    const imgHtml = imgs.map(url => `<img class="tl-chat__img" ${asCachedImgAttrs(url)}>`).join('');
-
-                    timeline.innerHTML += `
-                        <div class="tl-chat ${isSelf ? 'self' : ''}">
-                            ${msg.text ? `<div class="tl-chat__text">${msg.text}</div>` : ''}
-                            ${imgHtml}
-                            <div class="tl-chat__time">${timeStr}</div>
-                        </div>`;
-                });
+                // 6/4 #126: 新デザイン（システム行/日付区切り/時刻のみバブル）を共有モジュールで描画
+                timeline.innerHTML = renderChatTimelineHtml(snap, myUid);
                 timeline.scrollTop = timeline.scrollHeight;
+                // 6/4 #126: 送信済みステータスから配送ステータスボタンの「緩い誘導」を更新
+                const sentKinds = new Set();
+                snap.forEach(d => { const k = statusKindOf(d.data()); if (k) sentKinds.add(k); });
+                updateStatusButtons(sentKinds, orderData?.status);
                 // 5/25 #91/#92 拡張: 次回訪問用に最新の summary + timeline HTML を保存
                 try {
                     saveRenderState(`farmer_delivery:${orderId}`, {
@@ -395,19 +371,61 @@
             loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
 
-        // クイックステータス：テンプレをチャット入力欄へ流し込む（送信は「送信」ボタンで）
-        let pendingStatusChange = null;
+        // 6/4 #126 (diff1,2,6): 配送ステータス送信＝押すと中央のシステム行として即送信。
+        //   ロックしない・重複押し許容（鮮魚配達は段取りが前後する）。緩い誘導は updateStatusButtons で表現。
+        let statusSending = false;
         document.querySelectorAll('.quick-status__btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const msgKey = btn.dataset.msgKey;
+            btn.addEventListener('click', async () => {
+                if (statusSending) return;
+                statusSending = true;
+                const statusKind = btn.dataset.statusKind;
                 const orderStatus = btn.dataset.orderStatus || null;
+                const msgKey = btn.dataset.msgKey;
                 const text = i18next.t(`delivery.${msgKey}`);
-                const input = document.getElementById('chat-text');
-                input.value = text;
-                pendingStatusChange = orderStatus;
-                input.focus();
+                try {
+                    // 6/4 #126: 通知は既存経路を維持するため type:'chat'（onMessageCreated が相手へFCM）。
+                    //   描画は statusKind で中央システム行に振り分け（statusChange は注文ステータス連動・到着/遅延は null）。
+                    await addDoc(collection(db, 'orders', orderId, 'messages'), {
+                        senderId: myUid,
+                        text,
+                        type: 'chat',
+                        statusKind,
+                        statusChange: orderStatus || null,
+                        isRead: false,
+                        createdAt: serverTimestamp(),
+                    });
+                    if (orderStatus) {
+                        await updateDoc(doc(db, 'orders', orderId), { status: orderStatus });
+                        if (orderData) orderData.status = orderStatus;
+                    }
+                } catch (e) {
+                    console.error('status send failed:', e);
+                } finally {
+                    statusSending = false;
+                }
             });
         });
+
+        // 6/4 #126 (diff6): 緩い誘導B案 — 次に押すべきを青強調／送信済みは淡色＋取り消し線／遅延はamber。
+        const STATUS_RANK = { approved: 1, preparing: 2, delivering: 3, arrived: 3, completed: 4 };
+        function updateStatusButtons(sentKinds, orderStatus) {
+            const rank = STATUS_RANK[orderStatus] || 0;
+            const prepareDone = sentKinds.has('prepare_start') || rank >= STATUS_RANK.preparing;
+            const shipDone = sentKinds.has('ship_start') || rank >= STATUS_RANK.delivering;
+            const arrivedDone = sentKinds.has('arrived');
+            let nextKind = null;
+            if (!prepareDone) nextKind = 'prepare_start';
+            else if (!shipDone) nextKind = 'ship_start';
+            else if (!arrivedDone) nextKind = 'arrived';
+            const doneMap = { prepare_start: prepareDone, ship_start: shipDone, arrived: arrivedDone };
+            document.querySelectorAll('.quick-status__btn').forEach(btn => {
+                const k = btn.dataset.statusKind;
+                btn.classList.remove('is-next', 'is-done', 'is-delay');
+                if (k === 'delay') { btn.classList.add('is-delay'); return; } // 割り込み・常時押せる
+                if (doneMap[k]) btn.classList.add('is-done');
+                else if (k === nextKind) btn.classList.add('is-next');
+            });
+        }
 
         // ── 写真プレビュー管理 ──
         let pendingFiles = [];
@@ -461,25 +479,18 @@
             // 6/3 #120: 連絡先（電話番号・SNS・URL）を検知→伏字。発動時は警告表示。
             const maskRes = maskContacts(text, i18next.t('comments.maskedContact'));
             document.getElementById('mask-warn').style.display = maskRes.hit ? 'flex' : 'none';
-            // テキストが空で画像のみの場合
-            const msgText = maskRes.masked || (imageUrls.length > 0 ? i18next.t('delivery.imageSent') : '');
+            // 6/4 #126 (diff5): 画像のみの場合はラベルを付けない（サムネのみ＝空テキスト）
+            const msgText = maskRes.masked || '';
 
             await addDoc(collection(db, 'orders', orderId, 'messages'), {
                 senderId: myUid,
                 text: msgText,
                 imageUrls: imageUrls.length > 0 ? imageUrls : null,
                 type: 'chat',
-                statusChange: pendingStatusChange || null,
                 isRead: false,
                 ...(maskRes.hit ? { contactMasked: true } : {}),
                 createdAt: serverTimestamp(),
             });
-
-            // クイックステータスから流し込まれた場合、注文ステータスを更新
-            if (pendingStatusChange) {
-                await updateDoc(doc(db, 'orders', orderId), { status: pendingStatusChange });
-                pendingStatusChange = null;
-            }
 
             input.value = '';
             pendingFiles = [];
@@ -492,22 +503,31 @@
             if (e.key === 'Enter') document.getElementById('chat-send').click();
         });
 
-        // 配送完了
-        document.getElementById('complete-btn').addEventListener('click', async () => {
-            const btn = document.getElementById('complete-btn');
-            // 誤送信防止の確認ダイアログ
-            if (!confirm(i18next.t('delivery.confirmComplete'))) return;
-            btn.disabled = true;
+        // 6/4 #126 (diff8): 配送完了は自前モーダルで確認（ブラウザ標準ダイアログ置換）
+        const completeModal = document.getElementById('complete-modal');
+        document.getElementById('complete-btn').addEventListener('click', () => {
+            completeModal.classList.add('show');
+        });
+        document.getElementById('complete-modal-cancel').addEventListener('click', () => {
+            completeModal.classList.remove('show');
+        });
+        completeModal.addEventListener('click', (e) => {
+            if (e.target === completeModal) completeModal.classList.remove('show');
+        });
+        document.getElementById('complete-modal-ok').addEventListener('click', async () => {
+            const okBtn = document.getElementById('complete-modal-ok');
+            okBtn.disabled = true;
+            document.getElementById('complete-btn').disabled = true;
 
             // 4/28: delivered ステータス廃止。直接 completed に遷移
             await updateDoc(doc(db, 'orders', orderId), { status: 'completed' });
-            // 5/2: システム自動メッセージは type: 'status' で送る
+            // システム自動メッセージは type: 'status' + statusKind:'completed'（システム行で表示）
             // → onMessageCreated は reply todo を作らず、FCM も送らない
-            // （status='completed' で UI上チャットが閉じるため、返信todo は無意味）
             await addDoc(collection(db, 'orders', orderId, 'messages'), {
                 senderId: myUid,
                 text: i18next.t('delivery.statusDeliveredMsg'),
                 type: 'status',
+                statusKind: 'completed',
                 isRead: false,
                 createdAt: serverTimestamp(),
             });

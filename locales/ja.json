@@ -25,7 +25,8 @@
         "campaignHalf": "手数料半額",
         "campaignOff": "手数料{{pct}}%OFF",
         "campaignSub": "魚代から{{pct}}%割引",
-        "campaignSubUntil": "魚代から{{pct}}%割引 〜{{until}}"
+        "campaignSubUntil": "魚代から{{pct}}%割引 〜{{until}}",
+        "dismissDecline": "このお知らせを閉じる"
     },
     "fishlist": {
         "filter": "絞り込み",
@@ -336,7 +337,13 @@
         "completed": "受取完了",
         "goDelivery": "配送管理へ",
         "goTracking": "配送状況を確認",
-        "myOrders": "注文状況"
+        "myOrders": "注文状況",
+        "statusSendHint": "押すとレストランに伝わります。順番が前後しても大丈夫です。",
+        "completeModalTitle": "配達完了にしますか？",
+        "completeModalBody": "レストランにお支払い（受け取り時のお支払い）のお知らせが届きます。",
+        "completeModalCancel": "キャンセル",
+        "completeModalOk": "配達完了にする",
+        "statusApprovedMsg": "注文が承認されました"
     },
     "voice": {
         "recording": "録音中...",
@@ -521,7 +528,11 @@
         "approvedSectionClosed": "▶ 完了済み（{{count}}件）",
         "approvedSectionOpen": "▼ 完了済み（{{count}}件）",
         "declinedSectionClosed": "▶ 辞退済み（{{count}}件）",
-        "declinedSectionOpen": "▼ 辞退済み（{{count}}件）"
+        "declinedSectionOpen": "▼ 辞退済み（{{count}}件）",
+        "sectionOrderContent": "注文内容",
+        "sectionRestaurant": "レストラン",
+        "sectionAmount": "金額",
+        "deliveryLabel": "納品"
     },
     "fcm": {
         "newOrder": "新しい注文が届きました",
@@ -1181,7 +1192,7 @@
             "farmerSection": "農家側",
             "bannerSection": "レストラン画面のバナー表示",
             "bannerActiveLabel": "キャンペーンバナー表示",
-            "bannerActiveHint": "ONにするとレストランの魚一覧の上部に「特別割引キャンペーン中」のバナーが表示されます",
+            "bannerActiveHint": "ONにするとHome画面の上部（検索バー直下）に「特別割引キャンペーン中」のバナーが表示されます",
             "serviceRateLabel": "サービス料率（%）",
             "serviceRateHint": "レストランの支払額に加算される料率（デフォルト5%）",
             "campaignActiveLabel": "キャンペーン有効化",

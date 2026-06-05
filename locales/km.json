@@ -25,7 +25,8 @@
         "campaignHalf": "ថ្លៃសេវាពាក់កណ្តាល",
         "campaignOff": "បញ្ចុះថ្លៃសេវា {{pct}}%",
         "campaignSub": "បញ្ចុះ {{pct}}% លើថ្លៃត្រី",
-        "campaignSubUntil": "បញ្ចុះ {{pct}}% លើថ្លៃត្រី · ដល់ {{until}}"
+        "campaignSubUntil": "បញ្ចុះ {{pct}}% លើថ្លៃត្រី · ដល់ {{until}}",
+        "dismissDecline": "បិទការជូនដំណឹងនេះ"
     },
     "fishlist": {
         "filter": "ត្រង",
@@ -336,7 +337,13 @@
         "completed": "បានទទួល",
         "goDelivery": "ទៅការដឹកជញ្ជូន",
         "goTracking": "តាមដានការដឹកជញ្ជូន",
-        "myOrders": "ការបញ្ជាទិញរបស់ខ្ញុំ"
+        "myOrders": "ការបញ្ជាទិញរបស់ខ្ញុំ",
+        "statusSendHint": "ការចុចនឹងជូនដំណឹងទៅភោជនីយដ្ឋាន។ លំដាប់អាចខុសគ្នាបាន។",
+        "completeModalTitle": "បញ្ជាក់ការដឹកជញ្ជូនបានបញ្ចប់?",
+        "completeModalBody": "ភោជនីយដ្ឋាននឹងទទួលដំណឹងឱ្យបង់ប្រាក់ (បង់ប្រាក់ពេលទទួល)។",
+        "completeModalCancel": "បោះបង់",
+        "completeModalOk": "បញ្ជាក់បានបញ្ចប់",
+        "statusApprovedMsg": "បញ្ជាទិញត្រូវបានយល់ព្រម"
     },
     "voice": {
         "recording": "កំពុងថត...",
@@ -521,7 +528,11 @@
         "approvedSectionClosed": "▶ បានបញ្ចប់ ({{count}})",
         "approvedSectionOpen": "▼ បានបញ្ចប់ ({{count}})",
         "declinedSectionClosed": "▶ បានបដិសេធ ({{count}})",
-        "declinedSectionOpen": "▼ បានបដិសេធ ({{count}})"
+        "declinedSectionOpen": "▼ បានបដិសេធ ({{count}})",
+        "sectionOrderContent": "ព័ត៌មានបញ្ជាទិញ",
+        "sectionRestaurant": "ភោជនីយដ្ឋាន",
+        "sectionAmount": "ចំនួនទឹកប្រាក់",
+        "deliveryLabel": "ដឹកជញ្ជូន"
     },
     "fcm": {
         "newOrder": "មានការបញ្ជាទិញថ្មី",
@@ -1181,7 +1192,7 @@
             "farmerSection": "ផ្នែកកសិករ",
             "bannerSection": "បាននៀរនៅទំព័រភោជនីយដ្ឋាន",
             "bannerActiveLabel": "បង្ហាញបាននៀរយុទ្ធនាការ",
-            "bannerActiveHint": "នៅពេលបើក បាននៀរ \"បញ្ចុះតម្លៃពិសេស\" នឹងបង្ហាញនៅខាងលើបញ្ជីត្រី។",
+            "bannerActiveHint": "នៅពេលបើក បាននៀរ \"បញ្ចុះតម្លៃពិសេស\" នឹងបង្ហាញនៅខាងលើទំព័រដើម (ក្រោមរបារស្វែងរក)។",
             "serviceRateLabel": "អត្រាថ្លៃសេវា (%)",
             "serviceRateHint": "បន្ថែមលើការបង់ពីភោជនីយដ្ឋាន (លំនាំដើម 5%)",
             "campaignActiveLabel": "បើកយុទ្ធនាការ",

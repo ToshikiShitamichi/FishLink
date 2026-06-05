@@ -25,7 +25,8 @@
         "campaignHalf": "Half service fee",
         "campaignOff": "{{pct}}% off service fee",
         "campaignSub": "{{pct}}% off the fish price",
-        "campaignSubUntil": "{{pct}}% off the fish price · until {{until}}"
+        "campaignSubUntil": "{{pct}}% off the fish price · until {{until}}",
+        "dismissDecline": "Dismiss this notice"
     },
     "fishlist": {
         "filter": "Filter",
@@ -336,7 +337,13 @@
         "completed": "Completed",
         "goDelivery": "Go to Delivery",
         "goTracking": "Track Delivery",
-        "myOrders": "My Orders"
+        "myOrders": "My Orders",
+        "statusSendHint": "Tapping notifies the restaurant. The order of steps can vary.",
+        "completeModalTitle": "Mark delivery as complete?",
+        "completeModalBody": "The restaurant will be notified to pay (payment on receipt).",
+        "completeModalCancel": "Cancel",
+        "completeModalOk": "Mark complete",
+        "statusApprovedMsg": "Order approved"
     },
     "voice": {
         "recording": "Recording...",
@@ -521,7 +528,11 @@
         "approvedSectionClosed": "▶ Completed ({{count}})",
         "approvedSectionOpen": "▼ Completed ({{count}})",
         "declinedSectionClosed": "▶ Declined ({{count}})",
-        "declinedSectionOpen": "▼ Declined ({{count}})"
+        "declinedSectionOpen": "▼ Declined ({{count}})",
+        "sectionOrderContent": "Order details",
+        "sectionRestaurant": "Restaurant",
+        "sectionAmount": "Amount",
+        "deliveryLabel": "Delivery"
     },
     "fcm": {
         "newOrder": "New order received",
@@ -1181,7 +1192,7 @@
             "farmerSection": "Farmer Side",
             "bannerSection": "Restaurant page banner",
             "bannerActiveLabel": "Show campaign banner",
-            "bannerActiveHint": "When ON, a 'Special Discount Campaign' banner is shown at the top of the restaurant's fish list.",
+            "bannerActiveHint": "When ON, a 'Special Discount Campaign' banner is shown at the top of the Home screen (below the search bar).",
             "serviceRateLabel": "Service Rate (%)",
             "serviceRateHint": "Rate added to restaurant payment (default 5%)",
             "campaignActiveLabel": "Enable Campaign",

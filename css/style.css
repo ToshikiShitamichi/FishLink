@@ -674,3 +674,106 @@ body.app-ready .loading-overlay.show {
     color: #0d6e4c !important;
     font-weight: 600 !important;
 }
+
+/* ========================================================================
+   6/4 #125/#126 配送管理チャット（共有・農家側/レストラン側で鏡像）
+   正本: docs/design/fishlink-chat-mockup.html
+   ======================================================================== */
+
+/* 会話バブル：自分=右（青 #DCE9F8）／相手=左（白・枠）。バブルは時刻のみ。 */
+.tl-chat {
+    max-width: 78%;
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid #eef1f4;
+    padding: 9px 12px;
+    margin-bottom: 9px;
+    line-height: 1.45;
+    border-bottom-left-radius: 4px;
+}
+.tl-chat.self {
+    margin-left: auto;
+    background: #dce9f8;
+    border-color: #dce9f8;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 4px;
+}
+.tl-chat__text { font-size: 14px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; color: var(--color-text); }
+.tl-chat__img { max-width: 200px; width: 100%; border-radius: 10px; margin-top: 4px; display: block; }
+.tl-chat__time { font-size: 10px; color: #9aa3b0; text-align: right; margin-top: 3px; }
+
+/* 日付区切り（中央の区切り線・曜日付き） */
+.tl-datesep {
+    display: flex; align-items: center; gap: 10px;
+    margin: 10px 0 12px;
+    color: #9aa3b0; font-size: 11px; font-weight: 600;
+}
+.tl-datesep::before, .tl-datesep::after { content: ""; flex: 1; height: 1px; background: #dde3e9; }
+
+/* システム行（出来事＝承認/準備/配達/到着/遅延/完了）。中央・淡色・線画アイコン。 */
+.tl-sys {
+    align-self: center; max-width: 88%;
+    margin: 4px auto 12px;
+    text-align: center;
+    background: #eaf2fb; color: var(--color-cta);
+    border: 1px solid #d5e6f8; border-radius: 14px;
+    padding: 7px 14px;
+    font-size: 12px; font-weight: 700; line-height: 1.4;
+}
+.tl-sys__ic { display: inline-block; vertical-align: -2px; margin-right: 5px; }
+.tl-sys__ic svg { width: 14px; height: 14px; display: block; }
+.tl-sys__t { font-weight: 600; color: #5a8ac0; margin-left: 6px; }
+.tl-sys.warn { background: #fff4e2; color: #b36a00; border-color: #f3d998; }
+.tl-sys.warn .tl-sys__t { color: #c79350; }
+
+/* 配送ステータス送信ボタン（農家側のみ・緩い誘導B案） */
+.quick-status__btn.is-next {
+    border: 1.5px solid var(--color-cta);
+    background: var(--color-cta-lt);
+    color: var(--color-cta);
+}
+.quick-status__btn.is-done {
+    opacity: .5;
+    text-decoration: line-through;
+}
+.quick-status__btn.is-delay {
+    border: 1px solid #f3d998;
+    background: #fff7e6;
+    color: #b36a00;
+}
+
+/* 配送管理チャットのヘッダー（注文サマリ）＝モック chat-head に統一 */
+.ch-top { display: flex; align-items: center; gap: 8px; }
+.ch-name { font-size: 14px; font-weight: 800; color: var(--color-text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-status { font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 10px; background: var(--color-cta-lt); color: var(--color-cta); margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+.ch-sub { font-size: 11px; color: var(--color-text-sub); margin-top: 3px; line-height: 1.4; }
+.ch-sub .ch-fl { font-family: monospace; }
+.ch-loc { font-size: 12px; color: var(--color-cta); font-weight: 700; margin-top: 5px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
+.ch-loc .material-symbols-outlined { font-size: 15px; }
+.ch-dist { font-size: 12px; color: var(--color-text-sub); font-weight: 600; margin-top: 5px; display: flex; align-items: center; gap: 4px; }
+.ch-dist .material-symbols-outlined { font-size: 15px; }
+
+/* 配送完了の自前確認モーダル（ブラウザ標準ダイアログ置換） */
+.chat-modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none; align-items: center; justify-content: center;
+    padding: 24px; z-index: 1200;
+}
+.chat-modal.show { display: flex; }
+.chat-modal__box {
+    width: 100%; max-width: 380px;
+    background: #fff; border-radius: 16px;
+    padding: 20px 18px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.chat-modal__title { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
+.chat-modal__body { font-size: 13px; line-height: 1.7; color: #2a2f36; margin-bottom: 16px; }
+.chat-modal__actions { display: flex; gap: 10px; }
+.chat-modal__btn {
+    flex: 1; border: none; border-radius: 12px;
+    padding: 13px; font-size: 14px; font-weight: 800;
+    cursor: pointer; font-family: inherit;
+}
+.chat-modal__btn--cancel { background: #eceef0; color: #5a6470; }
+.chat-modal__btn--ok { background: var(--color-cta); color: #fff; }

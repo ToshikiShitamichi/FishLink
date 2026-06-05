@@ -87,9 +87,10 @@
         .deadline-text--warn { color: #d97706; }
         .deadline-text--danger { color: #b91c1c; }
 
-        /* 5/25 #89: 農家の手数料表示でキャンペーン割引を強調（緑系で「お得」感を伝える） */
+        /* 6/4 #124②: キャンペーン割引は amber（🏷＋オレンジ）に統一。
+           緑は GAqP/成功/送料無料専用。買い手のカート/注文確認の割引と同じ見た目。 */
         .price-line--discount {
-            color: #047857;
+            color: #b36a00;
             font-weight: 700;
         }
         .price-line--discount .material-symbols-outlined { font-size: 16px; vertical-align: middle; margin-right: 2px; }
@@ -238,12 +239,49 @@
             color: var(--color-text-sub);
         }
 
+        /* 6/4 #124①: 受取予定額は青（金額の主役）。赤/オレンジにしない＝赤はdanger専用 */
         .receive-amount {
             font-size: 30px;
             font-weight: 800;
-            color: #ea580c;
+            color: var(--color-cta);
             margin-top: 4px;
         }
+
+        /* 6/4 #124 レイアウト: 注文内容/金額ブロック（薄グレーのラベルカード・新モック②） */
+        .od-sec-label {
+            font-size: 12px; font-weight: 800; color: var(--color-text-sub);
+            margin: 14px 0 6px;
+        }
+        .od-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 2px 14px;
+        }
+        .od-irow {
+            display: flex; justify-content: space-between; gap: 10px;
+            padding: 10px 0; border-bottom: 1px solid #f2f4f7;
+            font-size: 14px;
+        }
+        .od-card .od-irow:last-child { border-bottom: none; }
+        .od-irow__l { color: var(--color-text-sub); }
+        .od-irow__v { font-weight: 700; text-align: right; }
+        /* 金額の内訳サブ注記（魚代の (単価＋内臓処理×kg)） */
+        .od-subnote { color: var(--color-text-sub); font-weight: 400; font-size: 11px; }
+        .od-amt { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f2f4f7; font-size: 14px; }
+        .od-card .od-amt:last-of-type { border-bottom: none; }
+        .od-amt__l { color: var(--color-text); }
+        .od-amt__v { font-weight: 700; }
+        .od-amt--discount .od-amt__l, .od-amt--discount .od-amt__v { color: #b36a00; font-weight: 700; }
+        .od-amt--discount .material-symbols-outlined { font-size: 15px; vertical-align: -3px; margin-right: 2px; }
+        .od-receive {
+            display: flex; justify-content: space-between; align-items: baseline;
+            border-top: 2px solid var(--color-border); margin-top: 6px; padding-top: 10px;
+        }
+        .od-receive__l { font-size: 13px; color: var(--color-text-sub); }
+        .od-receive__v { font-size: 24px; font-weight: 800; color: var(--color-cta); }
+        .od-rest { font-size: 13px; padding: 4px 0 0; }
+        .od-rest__name { font-weight: 800; }
 
         /* 承認/辞退 */
         .response-section {
@@ -579,7 +617,7 @@
         import { subscribeTodos } from '/js/todos.js';
         import { subscribeNotifications } from '/js/notifications.js';
         import {
-            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc, onSnapshot
+            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc, onSnapshot, addDoc, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { getOrderNumber } from '/js/order-utils.js';
         // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ（stale-while-revalidate）
@@ -822,6 +860,21 @@
             }
         });
 
+        // 6/4 #124③: 納品日を曜日付き「6/5（金）」に（カート/注文確認/Homeと統一）
+        const WEEKDAY_SHORT = {
+            ja: ['日', '月', '火', '水', '木', '金', '土'],
+            en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            km: ['អា', 'ច', 'អ', 'ពុ', 'ព្រ', 'សុ', 'ស'],
+        };
+        function fmtDeliveryDate(iso) {
+            const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!m) return iso || '';
+            const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            const lang = (typeof i18next !== 'undefined' && i18next.language) || 'km';
+            const wd = (WEEKDAY_SHORT[lang] || WEEKDAY_SHORT.en)[d.getDay()];
+            return `${Number(m[2])}/${Number(m[3])}（${wd}）`;
+        }
+
         function renderOrderCard(order) {
             // 注文時点のスナップショット優先（編集後も注文表示は不変）
             const fishTypeKey = order.snapFishType || order.listingData.fishType;
@@ -953,9 +1006,9 @@
                         <div class="order-row__body">
                             <div class="order-row__deliv">
                                 <span class="material-symbols-outlined">event</span>
-                                ${order.deliveryDate || ''} ${order.deliveryTime || ''}
+                                ${[order.deliveryDate ? fmtDeliveryDate(order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}
                             </div>
-                            <div class="order-row__fish">${fishName} ${order.quantity || 0}kg${multiItemBadge}</div>
+                            <div class="order-row__fish">${fishName}${size ? `（${size} head/kg）` : ''} ${order.quantity || 0}kg${multiItemBadge}</div>
                             ${multiItemsInline ? `<div style="margin-top:4px;">${multiItemsInline}</div>` : ''}
                             <div class="order-row__rest">
                                 <span class="material-symbols-outlined">storefront</span>
@@ -967,55 +1020,55 @@
                         <span class="material-symbols-outlined order-row__chev">chevron_right</span>
                     </div>
                     <div class="order-card__details">
-                    <div class="order-card__img">${imgHtml}</div>
-                    <div class="order-card__fish-label">${fishName}（${size} head/kg）${itemCount > 1 ? `<span style="display:inline-block; margin-left:8px; padding:2px 10px; background:#fef3c7; color:#92400e; border-radius:10px; font-size:11px; font-weight:700;">${i18next.t('orders.totalItems', { count: itemCount })}</span>` : ''}</div>
-                    <div style="text-align:center; font-size:12px; color:#94a3b8; padding:0 16px 8px; font-family:monospace;">${getOrderNumber(order)}</div>
                     <div class="order-card__section">
                         ${statusBadge}
                         ${deadlineHtml}
-                        ${(Array.isArray(order.items) && order.items.length > 1) ? `
-                            <div class="order-card__row" style="font-weight:700; margin-bottom:4px;">${i18next.t('orders.itemsList', { count: order.items.length })}</div>
-                            ${order.items.map((it, i) => {
-                                const itType = it.snapFishType || '';
-                                const itName = itType ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType) : '';
-                                const itShort = itName.trim();
-                                // 5/4: 「あり」だけだと意味不明 →「内臓処理あり/内臓処理なし」を全文表示
-                                const gutLabel = it.gutProcessing
-                                    ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
-                                    : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
-                                return `<div class="order-card__row" style="padding-left:10px; line-height:1.6;">・${itShort} ${it.snapSize ? '(' + it.snapSize + ' head/kg)' : ''} ${it.quantity}kg ・${gutLabel}</div>`;
-                            }).join('')}
-                        ` : `
-                            <div class="order-card__row">${i18next.t('orders.unitPrice')} ${basePrice.toLocaleString()} KHR/kg</div>
-                            ${order.gutProcessing && gutFee > 0 ? `<div class="order-card__row">${i18next.t('orders.gutProcessing')} +${gutFee.toLocaleString()} KHR/kg</div>` : ''}
-                            <div class="order-card__row">${i18next.t('orders.quantity')} ${order.quantity} kg</div>
-                            <div class="order-card__row">${i18next.t('orders.gutProcessing')}${order.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')}</div>
-                        `}
-                        <div class="order-card__row">${i18next.t('orders.deliveryDate')} ${order.deliveryDate}</div>
-                        <div class="order-card__row">${i18next.t('orders.deliveryTime')} ${order.deliveryTime}</div>
-                        <div class="order-card__divider"></div>
-                        <div class="order-card__row">${restName}　${restReviews > 0 ? `<span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span> ${Math.round(restRating)}%（${i18next.t('orders.reviewCount', { count: restReviews })}）` : i18next.t('fishlist.newFarmer')}</div>
-                        <div class="order-card__row"><a class="order-card__link" href="/pages/farmer/restaurant.html?id=${order.restaurantId}">${i18next.t('orders.viewReviews')}</a></div>
-                        <div class="order-card__row"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span> ${restPlace}　${dist} km</div>
-                        <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
-                        <div class="order-card__divider"></div>
-                        <div class="price-line"><span>${i18next.t('orders.fishTotal')}</span><span>${fishTotal.toLocaleString()} KHR</span></div>
-                        <div class="price-line"><span>${i18next.t('orders.commission', { rate: commissionRate })}</span><span>-${grossCommission.toLocaleString()} KHR</span></div>
-                        ${farmerCampaignDiscount > 0 ? `
-                            <div class="price-line price-line--discount">
-                                <span><span class="material-symbols-outlined">local_offer</span>${i18next.t('orders.farmerCampaignDiscount')}</span>
-                                <span>${i18next.t('orders.farmerCampaignDiscountValue', { amount: farmerCampaignDiscount.toLocaleString() })}</span>
-                            </div>` : ''}
-                        ${Number(order.referralBonusAmount || 0) > 0 ? `
-                            <div class="price-line price-line--discount">
-                                <span><span class="material-symbols-outlined">redeem</span>${i18next.t('order.referralBonus')}</span>
-                                <span>+${Number(order.referralBonusAmount).toLocaleString()} KHR</span>
-                            </div>` : ''}
-                        <div class="price-line"><span>${i18next.t('orders.deliveryFee')}</span><span>+${deliveryFee.toLocaleString()} KHR</span></div>
-                        <div class="price-line__note">${i18next.t('orders.deliveryNote')}</div>
-                        <div class="receive-section">
-                            <div class="receive-label">${i18next.t('orders.receiveAmount')}</div>
-                            <div class="receive-amount">${receiveAmount.toLocaleString()} KHR</div>
+
+                        <!-- 6/4 #124: 注文内容ブロック（数量／内臓処理／納品＝日+時間1行・曜日付き） -->
+                        <div class="od-sec-label">${i18next.t('orders.sectionOrderContent')}</div>
+                        <div class="od-card">
+                            ${(Array.isArray(order.items) && order.items.length > 1) ? `
+                                ${order.items.map(it => {
+                                    const itType = it.snapFishType || '';
+                                    const itName = itType ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim() : '';
+                                    const gutLabel = it.gutProcessing
+                                        ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
+                                        : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
+                                    return `<div class="od-irow"><span class="od-irow__l">${itName}${it.snapSize ? '（' + it.snapSize + ' head/kg）' : ''}</span><span class="od-irow__v">${it.quantity}kg・${gutLabel}</span></div>`;
+                                }).join('')}
+                            ` : `
+                                <div class="od-irow"><span class="od-irow__l">${i18next.t('orders.quantity')}</span><span class="od-irow__v">${order.quantity} kg</span></div>
+                                <div class="od-irow"><span class="od-irow__l">${i18next.t('orders.gutProcessing')}</span><span class="od-irow__v">${order.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')}</span></div>
+                            `}
+                            <div class="od-irow"><span class="od-irow__l">${i18next.t('orders.deliveryLabel')}</span><span class="od-irow__v">${[order.deliveryDate ? fmtDeliveryDate(order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}</span></div>
+                        </div>
+
+                        <!-- レストラン（評価%／位置／Maps） -->
+                        <div class="od-sec-label">${i18next.t('orders.sectionRestaurant')}</div>
+                        <div class="od-rest">
+                            <div class="order-card__row"><span class="od-rest__name">${restName}</span>　${restReviews > 0 ? `<span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span> ${Math.round(restRating)}%（${i18next.t('orders.reviewCount', { count: restReviews })}）` : i18next.t('fishlist.newFarmer')}</div>
+                            <div class="order-card__row"><a class="order-card__link" href="/pages/farmer/restaurant.html?id=${order.restaurantId}">${i18next.t('orders.viewReviews')}</a></div>
+                            <div class="order-card__row"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span> ${restPlace}　${dist} km</div>
+                            <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
+                        </div>
+
+                        <!-- 6/4 #124: 金額ブロック（魚代の内訳ラベル／手数料／割引amber／送料／受取予定額=青） -->
+                        <div class="od-sec-label">${i18next.t('orders.sectionAmount')}</div>
+                        <div class="od-card">
+                            <div class="od-amt"><span class="od-amt__l">${i18next.t('orders.fishTotal')}${(!(Array.isArray(order.items) && order.items.length > 1)) ? ` <span class="od-subnote">${order.gutProcessing && gutFee > 0 ? `（${basePrice.toLocaleString()} ＋ ${i18next.t('orders.gutProcessing')} ${gutFee.toLocaleString()} ×${order.quantity}kg）` : `（${basePrice.toLocaleString()} ×${order.quantity}kg）`}</span>` : ''}</span><span class="od-amt__v">${fishTotal.toLocaleString()} KHR</span></div>
+                            <div class="od-amt"><span class="od-amt__l">${i18next.t('orders.commission', { rate: commissionRate })}</span><span class="od-amt__v">-${grossCommission.toLocaleString()} KHR</span></div>
+                            ${farmerCampaignDiscount > 0 ? `
+                                <div class="od-amt od-amt--discount">
+                                    <span class="od-amt__l"><span class="material-symbols-outlined">local_offer</span>${i18next.t('orders.farmerCampaignDiscount')}</span>
+                                    <span class="od-amt__v">${i18next.t('orders.farmerCampaignDiscountValue', { amount: farmerCampaignDiscount.toLocaleString() })}</span>
+                                </div>` : ''}
+                            ${Number(order.referralBonusAmount || 0) > 0 ? `
+                                <div class="od-amt od-amt--discount">
+                                    <span class="od-amt__l"><span class="material-symbols-outlined">redeem</span>${i18next.t('order.referralBonus')}</span>
+                                    <span class="od-amt__v">+${Number(order.referralBonusAmount).toLocaleString()} KHR</span>
+                                </div>` : ''}
+                            <div class="od-amt"><span class="od-amt__l">${i18next.t('orders.deliveryFee')} <span class="od-subnote">（${i18next.t('orders.deliveryNote')}）</span></span><span class="od-amt__v">+${deliveryFee.toLocaleString()} KHR</span></div>
+                            <div class="od-receive"><span class="od-receive__l">${i18next.t('orders.receiveAmount')}</span><span class="od-receive__v">${receiveAmount.toLocaleString()} KHR</span></div>
                         </div>
                         <!-- 5/4: 配送管理／送金状況／レビュー／報告 ボタンは外側の order-card__quick-actions に移動済み -->
                     </div>`;
@@ -1409,7 +1462,7 @@
                 }
                 const lines = [
                     ...fishLines,
-                    `${i18next.t('orders.deliveryDate')} ${order.deliveryDate || ''} ${order.deliveryTime || ''}`,
+                    `${i18next.t('orders.deliveryLabel')} ${[order.deliveryDate ? fmtDeliveryDate(order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}`,
                     `${i18next.t('orders.restaurantLabel')}: ${restName}`,
                     `${i18next.t('orders.receiveAmount')} ${receiveAmount.toLocaleString()} KHR`,
                 ];
@@ -1434,6 +1487,18 @@
             loading.classList.add('show');
             try {
                 await updateDoc(doc(db, 'orders', orderId), { status: 'approved' });
+                // 6/4 #126: 配送管理チャットの起点に「注文が承認されました」システム行を残す
+                //   type:'status' なので onMessageCreated は返信todo/FCM を作らない（承認FCMはステータス変更側で送信）
+                try {
+                    await addDoc(collection(db, 'orders', orderId, 'messages'), {
+                        senderId: window.currentUser?.uid || '',
+                        text: i18next.t('delivery.statusApprovedMsg'),
+                        type: 'status',
+                        statusKind: 'approved',
+                        isRead: false,
+                        createdAt: serverTimestamp(),
+                    });
+                } catch (e) { console.warn('approved system message failed:', e); }
                 // FCM通知はCloud Functionsが自動送信。承認後はチャット（配送管理）へ遷移
                 location.href = `/pages/farmer/delivery.html?id=${orderId}`;
             } catch (err) {

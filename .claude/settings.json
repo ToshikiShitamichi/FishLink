@@ -55,7 +55,15 @@
       "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\); console.log\\('\\\\''OK __TRACKED_VAR__'\\\\''\\)')",
       "Bash(node --check js/contact-mask.js)",
       "Bash(npx -y firebase-tools@latest --version)",
-      "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\)')"
+      "Bash(node -e 'JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\)')",
+      "Bash(node --check js/chat-timeline.js)",
+      "Bash(node -e \"['ja','en','km'].forEach\\(l=>{JSON.parse\\(require\\('fs'\\).readFileSync\\('./locales/'+l+'.json','utf8'\\)\\); console.log\\(l,'valid'\\)}\\)\")",
+      "Bash(echo \"=== check for headless browser tooling ===\"; ls functions/node_modules 2>/dev/null | grep -iE \"puppeteer|playwright|chromium\" | head; which chrome chromium chrome.exe 2>/dev/null; ls \"/c/Program Files/Google/Chrome/Application/chrome.exe\" 2>/dev/null && echo \"CHROME FOUND\" || echo \"no chrome path\")",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1280,720 --screenshot=\"/c/work/FishLink/_preview_chat.png\" --default-background-color=FFECEEF0 \"file:///c/work/FishLink/_preview_chat.html\")",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1300,760 --screenshot=\"C:\\\\work\\\\FishLink\\\\_preview_chat.png\" \"file:///C:/work/FishLink/_preview_chat.html\")",
+      "WebSearch",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=860,300 --screenshot=\"C:\\\\work\\\\FishLink\\\\_preview_head.png\" \"file:///C:/work/FishLink/_preview_head.html\")"
     ]
   }
 }

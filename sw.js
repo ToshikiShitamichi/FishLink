@@ -248,7 +248,18 @@ self.addEventListener('notificationclick', (event) => {
 //   - 追加: 農家/レストラン基本情報編集(account/basic.html)に「現在地を使う」ボタン(初期登録と同じ挙動)
 //   - Firestore Rules: comments update に sender本人・admin を追加（⚠️ Console 手動公開が必要）
 //   - locales 3言語に comments.*(emptySub/viewOnlyNote/confirmDeleteThread/maskWarning/maskedContact) / profile.reviewsMore / todos.farmer_qa / admin.reports.*(qa_contact系) を追加 → 版番号バンプ
-const CACHE_NAME = 'fishlink-v116';
+// 6/4 #122-#126: 6/4 クライアントレビュー修正5件 → v117
+//   - #122 Home(dashboard.html): 価格・進行中合計・「他の農家を探す」CTAを緑→青/辞退カード消去ルール(代替注文で自動クリア＋手動×・辞退済み履歴はFirestoreに残る)。バナーは既にHome実装済・admin設定文を「Home画面の上部に」へ修正・GAqPバッジは商品/農家とも同一コンパクトピルで対応済
+//   - #123 魚一覧(fish-list.html): カード価格を緑→青(全画面横断スイープ＝価格は青で統一)。「もっと見る」=初期10件/+10件は実装済を確定
+//   - #124 農家注文確認(orders.html): 受取予定額を青/キャンペーン割引をamber/納品日を曜日付き「6/5（金）」。承認待ち詳細レイアウト=魚名・FL番号を見出しに集約(本文重複削除)・魚代の内訳ラベル化・注文内容/金額ブロックに整理
+//   - #125 配送管理チャット レストラン側(delivery.html): 新デザイン(共有 js/chat-timeline.js)。システム行/日付区切り/時刻のみバブル/画像サムネのみ/買い手5段の言葉/📍距離のみ(地図リンクなし)。入口導線は既存
+//   - #126 配送管理チャット 農家側(delivery.html): システム行(線画アイコン・遅延amber)/日付区切り/音声プレイヤー/画像ラベル廃止/ステータス送信ボタンの緩い誘導(次=青/送信済=取消線/遅延=amber)/CTA青/配送完了の自前モーダル。承認時に「注文が承認されました」システム行を生成
+//   - 共通: css/style.css に .tl-chat/.tl-sys/.tl-datesep/.quick-status状態/.chat-modal を追加。js/chat-timeline.js 新設(両アプリ鏡像レンダリング)。locales 3言語に home.dismissDecline / orders.section*・deliveryLabel / delivery.completeModal*・statusSendHint・statusApprovedMsg を追加
+//   - functions 変更なし(ステータス送信は type:'chat'+statusKind を維持し既存通知経路を保全)。Firestore Rules/インデックス変更なし
+// 6/5 #125/#126 レビュー反映(チャットヘッダー統一・距離計算) → v118
+//   - 配送管理チャットのヘッダーをモック chat-head に統一(両画面)：相手名＋右肩ステータスバッジ／魚種・数量・納品(曜日付き)・FL の1行／📍距離(買い手のみ)・📍地区＋地図を見る(農家のみ)。css/style.css に .ch-top/.ch-name/.ch-status/.ch-sub/.ch-loc/.ch-dist を追加
+//   - 買い手チャットの📍距離: 注文ドキュメントに distKm が無いため、レストラン位置↔農家位置から haversine で都度計算(農家側 orders.html と同一ロジック)
+const CACHE_NAME = 'fishlink-v118';
 
 const PRECACHE_URLS = [
     '/',
@@ -267,6 +278,7 @@ const PRECACHE_URLS = [
     '/js/referral.js',
     '/js/image-cache.js',
     '/js/render-cache.js',
+    '/js/chat-timeline.js',
     '/locales/ja.json',
     '/locales/en.json',
     '/locales/km.json',

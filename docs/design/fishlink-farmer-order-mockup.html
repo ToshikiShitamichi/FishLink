@@ -71,10 +71,19 @@
   .rest-row .link { color:#0B5FB0; font-weight:700; margin-top:4px; }
   .rest-row .loc { color:#5A6470; margin-top:6px; }
 
+  /* セクションラベル＋情報カード（注文内容/金額） */
+  .sec-label { font-size:12px; font-weight:800; color:#5A6470; margin:14px 0 6px; }
+  .info-card { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:2px 14px; }
+  .irow { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #F2F4F7; font-size:13px; }
+  .irow:last-child { border-bottom:none; }
+  .irow .il { color:#9AA3B0; }
+  .irow .iv { font-weight:700; }
+  .sub-note { color:#9AA3B0; font-weight:400; font-size:11px; }
+
   /* 金額内訳 */
-  .amt { display:flex; justify-content:space-between; font-size:14px; padding:5px 0; }
+  .amt { display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px solid #F2F4F7; }
   .amt .al { color:#3A4250; }
-  .amt.promo .al, .amt.promo .av { color:#2E7D32; font-weight:700; }
+  .amt.promo .al, .amt.promo .av { color:#B36A00; font-weight:700; }
   .amt-note { font-size:11px; color:#9AA3B0; }
   .receive { display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #EEF1F4; margin-top:8px; padding-top:10px; }
   .receive .rl { font-size:13px; color:#5A6470; }
@@ -198,39 +207,53 @@
 
   <!-- ② 承認待ち詳細 -->
   <div class="phone-wrap">
-    <div class="phone-label">② 承認待ち詳細 <span class="tag">金額分解・評価%・魚単価分解・青CTA</span></div>
+    <div class="phone-label">② 承認待ち詳細 <span class="tag">重複削除・注文内容/金額ブロック・曜日付き</span></div>
     <div class="phone">
       <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 👤</span></div>
       <div class="f-title">注文内容を確認</div>
       <div class="f-body">
-        <div class="det-photo">
-          <div class="dp-img"></div>
-          <div><div class="det-name">レッドティラピア（3 head/kg）</div><div class="det-fl">FL-260601-003</div></div>
+        <!-- 集約カード見出し（魚名・サイズ・数量・レストラン・FL番号を1箇所に） -->
+        <div class="ocard" style="margin-bottom:4px;">
+          <div class="oc-top">
+            <div class="oc-img"></div>
+            <div class="oc-main">
+              <div class="oc-date">📅 6/1（月）7:00–8:00</div>
+              <div class="oc-name">レッドティラピア（3 head/kg）・5kg</div>
+              <div class="oc-rest">🏬 test_restaurant5 (takeo)</div>
+              <div class="oc-fl">FL-260601-003</div>
+            </div>
+            <span class="badge wait">承認待ち</span>
+          </div>
         </div>
-        <div class="limit">⏳ 承認期限：12:18 ・ あと60分</div>
 
-        <div class="drow"><span class="dl">魚単価</span><span class="dv">7,000 KHR/kg</span></div>
-        <div class="drow sub"><span class="dl">内臓処理</span><span class="dv">+500 KHR/kg</span></div>
-        <div class="drow"><span class="dl">注文数量</span><span class="dv">5 kg</span></div>
-        <div class="drow"><span class="dl">内臓処理</span><span class="dv">あり</span></div>
-        <div class="drow"><span class="dl">納品日</span><span class="dv">6/1</span></div>
-        <div class="drow"><span class="dl">時間帯</span><span class="dv">7:00–8:00</span></div>
+        <div class="limit">⏳ 承認期限 12:18（あと60分）</div>
 
-        <div class="divider"></div>
+        <!-- 注文内容ブロック -->
+        <div class="sec-label">注文内容</div>
+        <div class="info-card">
+          <div class="irow"><span class="il">数量</span><span class="iv">5 kg</span></div>
+          <div class="irow"><span class="il">内臓処理</span><span class="iv">あり</span></div>
+          <div class="irow"><span class="il">納品</span><span class="iv">6/1（月）7:00–8:00</span></div>
+        </div>
+
+        <!-- レストラン -->
+        <div class="sec-label">レストラン</div>
         <div class="rest-row">
-          <span class="rname">test_restaurant5</span> &nbsp; <span class="rate">★93%（40件）</span>
+          <span class="rname">test_restaurant5</span> &nbsp; <span class="rate">★93%（42件）</span>
           <div class="link">レビューを見る</div>
           <div class="loc">📍 takeo, Samraong ・ 15.4 km</div>
           <div class="link">Google Mapsで開く</div>
         </div>
 
-        <div class="divider"></div>
-        <div class="amt"><span class="al">魚代</span><span class="av">37,500 KHR</span></div>
-        <div class="amt"><span class="al">手数料（5%）</span><span class="av">−1,875 KHR</span></div>
-        <div class="amt promo"><span class="al">キャンペーン割引</span><span class="av">+938 KHR</span></div>
-        <div class="amt"><span class="al">送料</span><span class="av">+12,400 KHR</span></div>
-        <div class="amt-note">※ 送料はレストラン負担・農家の受取に全額入ります</div>
-        <div class="receive"><span class="rl">受取予定額</span><span class="rv">48,963 KHR</span></div>
+        <!-- 金額（魚単価+内臓処理は魚代の内訳に折り込む） -->
+        <div class="sec-label">金額</div>
+        <div class="info-card">
+          <div class="amt"><span class="al">魚代 <span class="sub-note">（7,000 ＋ 内臓処理 500 ×5kg）</span></span><span class="av">37,500 KHR</span></div>
+          <div class="amt"><span class="al">手数料（5%）</span><span class="av">−1,875 KHR</span></div>
+          <div class="amt promo"><span class="al">🏷 キャンペーン割引</span><span class="av">+938 KHR</span></div>
+          <div class="amt"><span class="al">送料 <span class="sub-note">（レストラン負担）</span></span><span class="av">+12,400 KHR</span></div>
+          <div class="receive"><span class="rl">受取予定額</span><span class="rv">48,963 KHR</span></div>
+        </div>
 
         <div class="respond">
           <div class="rt">注文への対応</div>

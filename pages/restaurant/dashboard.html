@@ -86,7 +86,8 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .order-card__amt { margin-left: auto; text-align: right; flex-shrink: 0; }
-        .order-card__amt b { color: var(--color-primary); font-size: 15px; font-weight: 800; }
+        /* 6/4 #122①: 進行中の注文の合計は青（金額＝青）。緑は使わない */
+        .order-card__amt b { color: var(--color-cta); font-size: 15px; font-weight: 800; }
         .order-card__amt .u { font-size: 11px; color: var(--color-text-sub); }
 
         .stepper { display: flex; align-items: flex-start; margin: 4px 2px 10px; }
@@ -121,16 +122,27 @@
         .order-eta .material-symbols-outlined { font-size: 15px; color: var(--color-primary-dk); }
         .order-eta b { color: var(--color-primary-dk); }
 
+        .order-card { position: relative; }
         .order-card.declined { border-color: #f3c9c9; }
+        /* 6/4 #122④: 辞退カードの手動「×（閉じる）」。閉じても注文状況の「辞退済み」に履歴は残る */
+        .order-card__close {
+            position: absolute; top: 8px; right: 8px;
+            width: 26px; height: 26px; border-radius: 50%;
+            border: none; background: #fceced; color: var(--color-danger);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; padding: 0; z-index: 3;
+        }
+        .order-card__close .material-symbols-outlined { font-size: 16px; }
         .order-alert {
             font-size: 12px; color: var(--color-danger); background: #fceced;
             border-radius: 8px; padding: 7px 10px; display: flex; align-items: center; gap: 6px;
             margin-bottom: 8px; line-height: 1.35;
         }
         .order-alert .material-symbols-outlined { font-size: 15px; flex-shrink: 0; }
+        /* 6/4 #122①: 辞退時「他の農家を探す」は主CTA＝青（緑にしない） */
         .order-find {
             display: flex; align-items: center; justify-content: center; gap: 4px;
-            width: 100%; background: var(--color-primary); color: #fff;
+            width: 100%; background: var(--color-cta); color: #fff;
             border: none; border-radius: 10px; padding: 11px;
             font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
             text-decoration: none;
@@ -202,7 +214,8 @@
         }
         .pcard__sz { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
         .pcard__price { margin-top: 7px; display: flex; align-items: baseline; gap: 4px; }
-        .pcard__price b { font-size: 22px; font-weight: 800; color: var(--color-primary); line-height: 1; }
+        /* 6/4 #122①: 商品カードの価格は青（緑はGAqP/成功/送料無料専用） */
+        .pcard__price b { font-size: 22px; font-weight: 800; color: var(--color-cta); line-height: 1; }
         .pcard__price span { font-size: 12px; color: var(--color-text-sub); font-weight: 600; }
         .pcard__meta {
             display: flex; align-items: center; gap: 10px;
@@ -799,6 +812,7 @@
 
             return `
                 <div class="order-card ${isDeclined ? 'declined' : ''}" data-href="/pages/restaurant/orders.html#order-${o.id}" role="button" tabindex="0">
+                    ${isDeclined ? `<button type="button" class="order-card__close" data-act="dismiss-decline" data-order-id="${o.id}" aria-label="${escapeHtml(i18next.t('home.dismissDecline'))}" title="${escapeHtml(i18next.t('home.dismissDecline'))}"><span class="material-symbols-outlined">close</span></button>` : ''}
                     <div class="order-card__top">
                         <div class="order-card__thumb">
                             ${photo ? `<img ${asCachedImgAttrs(photo)} alt="" loading="lazy">` : `<span class="material-symbols-outlined">set_meal</span>`}
@@ -814,16 +828,47 @@
                 </div>`;
         }
 
+        // 6/4 #122④: 辞退カードの消去ルール（fresh/cache 両経路で適用＝表示時にフィルタ）
+        //   ①「他の農家を探す」から代替注文を入れたら自動クリア（同魚種の進行中注文があれば解決済み）
+        //   ② 手動「×」で閉じたものは表示しない（辞退済み履歴は Firestore に残る）
+        function filterDeclinedForHome(orders) {
+            const dismissed = getDismissedDeclines();
+            const activeFishTypes = new Set(
+                orders.filter(r => r.order.status !== 'declined')
+                      .map(r => orderPrimaryItem(r.order).snapFishType)
+                      .filter(Boolean)
+            );
+            return orders.filter(r => {
+                if (r.order.status !== 'declined') return true;
+                if (dismissed.has(r.id)) return false;
+                const ft = orderPrimaryItem(r.order).snapFishType;
+                if (ft && activeFishTypes.has(ft)) return false; // 代替注文済み＝自動クリア
+                return true;
+            });
+        }
+
         function renderOrders(orders) {
             const sec = document.getElementById('sec-orders');
             const row = document.getElementById('orders-row');
-            if (!orders || orders.length === 0) {
+            const shown = filterDeclinedForHome(orders || []);
+            if (shown.length === 0) {
                 sec.style.display = 'none';
                 row.innerHTML = '';
                 return;
             }
             sec.style.display = 'block';
-            row.innerHTML = orders.map(orderCard).join('');
+            row.innerHTML = shown.map(orderCard).join('');
+        }
+
+        // 6/4 #122④: 辞退カードの「手動×で閉じた」記録（端末ローカル。辞退済み履歴は Firestore に残る）
+        const DISMISSED_DECLINE_KEY = 'fishlink_home_declined_dismissed';
+        function getDismissedDeclines() {
+            try { return new Set(JSON.parse(localStorage.getItem(DISMISSED_DECLINE_KEY) || '[]')); }
+            catch (_) { return new Set(); }
+        }
+        function addDismissedDecline(oid) {
+            const s = getDismissedDeclines(); s.add(oid);
+            try { localStorage.setItem(DISMISSED_DECLINE_KEY, JSON.stringify([...s])); } catch (_) { }
         }
 
         // ── 進行中の注文を取得（declined は先頭固定） ──
@@ -967,6 +1012,22 @@
 
         // ── 農家ブロックタップ（商品カード内）→ 生産者ページ ──
         document.addEventListener('click', (e) => {
+            // 6/4 #122④: 辞退カードの手動「×」→ Home の進行中から消す（辞退済み履歴は残す）
+            const dismissEl = e.target.closest('[data-act="dismiss-decline"]');
+            if (dismissEl) {
+                e.preventDefault();
+                e.stopPropagation();
+                const oid = dismissEl.dataset.orderId;
+                if (oid) {
+                    addDismissedDecline(oid);
+                    const card = dismissEl.closest('.order-card');
+                    if (card) card.remove();
+                    // セクションが空になったら見出しごと隠す
+                    const row = document.getElementById('orders-row');
+                    if (row && row.children.length === 0) document.getElementById('sec-orders').style.display = 'none';
+                }
+                return;
+            }
             const farmerEl = e.target.closest('[data-act="view-farmer"]');
             if (farmerEl) {
                 e.preventDefault();
