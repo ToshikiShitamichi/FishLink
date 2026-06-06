@@ -205,7 +205,7 @@
         import { watchAuthState } from '/js/auth.js';
         import { db, storage } from '/js/firebase-config.js';
         import {
-            doc, getDoc, addDoc, collection, serverTimestamp
+            doc, getDoc, addDoc, updateDoc, collection, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import {
             ref, uploadBytes, getDownloadURL
@@ -339,6 +339,14 @@
                     status: 'open',
                     createdAt: serverTimestamp(),
                 });
+
+                // 6/5 #129 ④/§8: レストランの問題報告→該当注文の農家送金を保留（運営が調査して送金/返金/一部返金）。
+                //   既に送金済(remitted)・完了(done)の場合は保留しない。
+                if (!['remitted', 'done'].includes(orderData.adminStatus)) {
+                    try {
+                        await updateDoc(doc(db, 'orders', orderId), { paymentProblemHold: true });
+                    } catch (e) { console.warn('set paymentProblemHold failed:', e); }
+                }
 
                 document.getElementById('main-view').style.display = 'none';
                 document.getElementById('footer-actions').style.display = 'none';

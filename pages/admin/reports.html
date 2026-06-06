@@ -301,6 +301,47 @@
             `;
         }
 
+        // 6/5 #128: レビュー（要確認）カード（連絡先マスク発動レビューコメント）
+        function renderReviewContactCard(r) {
+            const isOpen = r.status !== 'resolved';
+            const statusKey = isOpen ? 'open' : 'resolved';
+            const isUnread = !!currentAdminUid && !(r.readByAdmins && r.readByAdmins[currentAdminUid]);
+            const reviewer = userCache[r.fromUid]?.displayName || '-';
+            const target = userCache[r.reportedUid]?.displayName || '-';
+            const postHidden = r.postHidden === true;
+            return `
+                <div class="report-card ${statusKey}${isUnread ? ' unread' : ''}" id="report-${r.id}" data-unread="${isUnread ? '1' : '0'}">
+                    <div class="report-card__head">
+                        <div class="report-card__type">
+                            ${escapeHtml(typeLabel('review_contact'))}
+                            <span class="badge">${escapeHtml(roleLabel(r.fromRole || 'restaurant'))}</span>
+                            ${isUnread ? `<span class="badge-new">${i18next.t('admin.reports.newBadge')}</span>` : ''}
+                        </div>
+                        <span class="report-card__status ${statusKey}">${i18next.t('admin.reports.status' + (isOpen ? 'Open' : 'Resolved'))}</span>
+                    </div>
+                    <div class="report-card__meta">
+                        <div><div class="k">${i18next.t('admin.reports.colDetectedAt')}</div><div class="v">${formatDate(r.createdAt)}</div></div>
+                        <div><div class="k">${i18next.t('admin.reports.colOrder')}</div><div class="v">${r.orderId ? `<a href="/pages/admin/order.html?id=${escapeHtml(r.orderId)}">${escapeHtml(r.orderId)}</a>` : '-'}</div></div>
+                        <div><div class="k">${i18next.t('admin.reports.colReporter')}</div><div class="v">${escapeHtml(reviewer)}</div></div>
+                        <div><div class="k">${i18next.t('admin.reports.colTarget')}</div><div class="v">${escapeHtml(target)}</div></div>
+                    </div>
+                    <div class="report-card__detail">${i18next.t('admin.reports.qaBodyPrefix')}${escapeHtml(r.detail || '')}</div>
+                    <div class="report-card__actions">
+                        ${r.fromUid ? `<a class="btn-chat-reporter" href="/pages/admin/users.html?uid=${escapeHtml(r.fromUid)}"><span class="material-symbols-outlined">chat</span>${i18next.t('admin.reports.chatPoster')}</a>` : ''}
+                        ${r.orderId ? `<a class="btn-view-order" href="/pages/admin/order.html?id=${escapeHtml(r.orderId)}">${i18next.t('admin.reports.viewDetail')}</a>` : ''}
+                        ${postHidden
+                            ? `<span class="btn-view-order" style="opacity:.6; cursor:default;">${i18next.t('admin.reports.postHidden')}</span>`
+                            : `<button class="btn-hide-review" data-id="${r.id}" data-order="${escapeHtml(r.orderId || '')}" data-review="${escapeHtml(r.reviewId || '')}">${i18next.t('admin.reports.hidePost')}</button>`
+                        }
+                        ${isOpen
+                            ? `<button class="btn-resolve" data-id="${r.id}">${i18next.t('admin.reports.markResolved')}</button>`
+                            : `<button class="btn-reopen" data-id="${r.id}">${i18next.t('admin.reports.markOpen')}</button>`
+                        }
+                    </div>
+                </div>
+            `;
+        }
+
         function render() {
             const filtered = allReports.filter(r => {
                 if (currentTab === 'all') return true;
@@ -317,6 +358,8 @@
             container.innerHTML = `<div class="report-list">${filtered.map(r => {
                 // 6/3 #121: 公開質問（要確認）＝連絡先マスク発動投稿は専用カード
                 if (r.type === 'qa_contact') return renderQaContactCard(r);
+                // 6/5 #128: レビュー（要確認）＝連絡先マスク発動レビューは専用カード
+                if (r.type === 'review_contact') return renderReviewContactCard(r);
                 const fromRole = r.fromRole || 'restaurant';
                 const reporter = userCache[r.fromUid]?.displayName || '-';
                 const reporterPhone = userCache[r.fromUid]?.phone || '';
@@ -434,6 +477,32 @@
                             });
                         }
                         // 報告に「非表示済み」を記録（status は別途「対応済」で resolved に）
+                        await updateDoc(doc(db, 'reports', id), {
+                            postHidden: true,
+                            postHiddenAt: new Date(),
+                            postHiddenBy: window.currentUser?.uid || null,
+                        });
+                    } catch (err) {
+                        console.error(err);
+                        alert(err.message || 'failed');
+                        btn.disabled = false;
+                    }
+                });
+            });
+
+            // 6/5 #128: レビューコメントを非表示にする＝ソフト削除（公開から消すがDBには残す）
+            container.querySelectorAll('.btn-hide-review').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm(i18next.t('admin.reports.confirmHidePost'))) return;
+                    const { id, order, review } = btn.dataset;
+                    if (!order || !review) { alert('missing reference'); return; }
+                    btn.disabled = true;
+                    try {
+                        await updateDoc(doc(db, 'orders', order, 'reviews', review), {
+                            hidden: true,
+                            hiddenAt: new Date(),
+                            removedByAdmin: true,
+                        });
                         await updateDoc(doc(db, 'reports', id), {
                             postHidden: true,
                             postHiddenAt: new Date(),

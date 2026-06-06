@@ -93,10 +93,11 @@
             margin-bottom: 4px;
         }
 
+        /* 6/5 #129: 受取予定額＝青 */
         .amount-value {
             font-size: 32px;
             font-weight: 800;
-            color: #ea580c;
+            color: var(--color-cta);
             line-height: 1.1;
         }
 
@@ -115,8 +116,11 @@
         }
 
         .amount-line__label { color: var(--color-text-sub); }
-        .amount-line__value.minus { color: #ef4444; }
-        .amount-line__value.plus { color: #16a34a; }
+        /* 6/5 #129: 手数料・送料は中立グレー（±符号で方向）。キャンペーン割引は amber */
+        .amount-line__value.minus { color: var(--color-text-sub); }
+        .amount-line__value.plus { color: var(--color-text-sub); }
+        .amount-line__value.campaign { color: #b36a00; }
+        .amount-line__label .material-symbols-outlined { font-size: 15px; vertical-align: middle; margin-right: 2px; }
 
         .info-box {
             background: #ecfdf5;
@@ -134,6 +138,22 @@
             font-weight: 700;
             color: #166534;
             margin-bottom: 4px;
+        }
+
+        /* 6/5 #129 ④: 問題報告で送金保留中は中立グレー（緑にしない） */
+        .info-box.neutral {
+            background: #f4f6f8;
+            border-color: #e3e8ed;
+            color: var(--color-text-sub);
+        }
+        .info-box.neutral .info-box__title { color: var(--color-text-sub); }
+
+        /* 6/5 #129: レビューは支払い確認後のみ。それ以前は注記のみ */
+        .review-hint-note {
+            font-size: 11px;
+            color: var(--color-text-sub);
+            text-align: center;
+            margin: 12px 16px 0;
         }
 
         .order-meta {
@@ -173,25 +193,26 @@
             <div id="status-box"></div>
         </div>
 
-        <!-- 受取予定額 -->
+        <!-- 受取予定額（6/5 #129: ラベルは renderStatus 側で制御＝保留中表記の切替のため） -->
         <div class="amount-card">
-            <div class="amount-label" data-i18n="payment.receiveAmount"></div>
+            <div class="amount-label" id="amount-label"></div>
             <div class="amount-value" id="receive-amount">0 KHR</div>
             <div class="amount-breakdown" id="breakdown"></div>
         </div>
 
-        <!-- 送金についての説明 -->
-        <div class="info-box">
-            <div class="info-box__title" data-i18n="payment.aboutRemittance"></div>
-            <div data-i18n="payment.remittanceDesc"></div>
+        <!-- 送金についての説明（6/5 #129: テキストは renderStatus 側で制御＝保留中で中立グレーに切替） -->
+        <div class="info-box" id="info-box">
+            <div class="info-box__title" id="info-box-title"></div>
+            <div id="info-box-desc"></div>
         </div>
 
-        <!-- レビュー遷移ボタン（送金完了後に表示） -->
-        <a id="review-btn" href="#" style="display:none; margin:14px 16px 0; padding:12px; background:#f97316; color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:14px; align-items:center; justify-content:center; gap:6px; line-height:1;">
+        <!-- レビュー遷移ボタン（6/5 #129: 支払い確認後のみ表示・色は青(CTA)） -->
+        <a id="review-btn" href="#" style="display:none; margin:14px 16px 0; padding:12px; background:var(--color-cta); color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:14px; align-items:center; justify-content:center; gap:6px; line-height:1;">
             <span class="material-symbols-outlined" style="font-size:18px; line-height:1;">star</span>
             <span data-i18n="review.submit" style="line-height:1;"></span>
         </a>
         <div id="reviewed-label" style="display:none; margin:14px 16px 0; padding:12px; background:#f3f4f6; color:#6b7280; border-radius:12px; font-weight:700; font-size:14px; text-align:center; line-height:1;" data-i18n="review.reviewed"></div>
+        <div id="review-hint-note" class="review-hint-note" style="display:none;" data-i18n="payment.reviewAfterConfirm"></div>
     </div>
 
     <script type="module">
@@ -203,6 +224,8 @@
         import {
             doc, getDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 6/5 #129: FL番号表示
+        import { getOrderNumber } from '/js/order-utils.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -283,6 +306,7 @@
 
             renderOrderInfo();
             renderBreakdown();
+            renderStatus(orderData.adminStatus ?? null, orderData.paymentStatus || 'pending');
 
             // ステータスをリアルタイム購読
             onSnapshot(doc(db, 'orders', orderId), (snap) => {
@@ -301,16 +325,38 @@
             loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
 
+        // 6/5 #129: 農家のレビュー解禁は「支払い確認後」のみ（運営が入金確認済 以降）
+        function isPaymentConfirmedOrBeyond() {
+            if (!orderData) return false;
+            return ['payment_confirmed', 'remitted', 'done'].includes(orderData.adminStatus);
+        }
+
         // 5/7 #55: レビュー済みなら詳細画面のレビューボタンを「レビュー済み」表示に
+        let alreadyReviewed = false;
         function applyReviewedState(reviewed) {
+            alreadyReviewed = reviewed;
+            refreshReviewArea();
+        }
+
+        // 6/5 #129: レビュー導線の表示制御を一元化（支払い確認後・未レビューのみボタン表示）
+        function refreshReviewArea() {
             const reviewBtn = document.getElementById('review-btn');
             const reviewedLabel = document.getElementById('reviewed-label');
-            if (reviewed) {
+            const hint = document.getElementById('review-hint-note');
+            reviewBtn.href = `/pages/farmer/review.html?id=${orderId}`;
+            if (!isPaymentConfirmedOrBeyond()) {
+                reviewBtn.style.display = 'none';
+                reviewedLabel.style.display = 'none';
+                hint.style.display = 'block';
+                return;
+            }
+            hint.style.display = 'none';
+            if (alreadyReviewed) {
                 reviewBtn.style.display = 'none';
                 reviewedLabel.style.display = 'block';
             } else {
                 reviewedLabel.style.display = 'none';
-                // review-btn の表示制御は renderStatus 側に任せる
+                reviewBtn.style.display = 'flex';
             }
         }
 
@@ -329,6 +375,7 @@
                     <span class="material-symbols-outlined" style="font-size:14px;">restaurant</span>
                     ${restName}${place ? ` · ${place}` : ''}
                 </div>
+                <div style="font-size:11px; color:#9aa3b0; font-family:ui-monospace,Menlo,monospace; margin-top:6px;">${getOrderNumber({ id: orderId, ...orderData })}</div>
             `;
         }
 
@@ -336,25 +383,37 @@
             if (!orderData) return;
             const fishTotal = orderData.fishPrice || 0;
             const deliveryFee = orderData.deliveryFee || 0;
-            const commission = (orderData.farmerCommission != null)
-                ? orderData.farmerCommission
-                : Math.round(fishTotal * 0.05);
+            // 6/5 #129 ③: 手数料を「手数料(5%) -1,875 ＋ キャンペーン割引 +938」に分解（承認画面と統一）
             const commissionRate = (orderData.farmerRateUsed != null)
                 ? (orderData.farmerRateUsed * 100)
                 : 5;
+            const grossCommission = (orderData.farmerCommissionGross != null)
+                ? orderData.farmerCommissionGross
+                : Math.round(fishTotal * (commissionRate / 100));
+            const farmerCampaignDiscount = (orderData.farmerCampaignDiscount != null)
+                ? orderData.farmerCampaignDiscount
+                : 0;
+            const netCommission = (orderData.farmerCommission != null)
+                ? orderData.farmerCommission
+                : (grossCommission - farmerCampaignDiscount);
             const receiveAmount = (orderData.farmerReceiveAmount != null)
                 ? orderData.farmerReceiveAmount
-                : (fishTotal - commission + deliveryFee);
+                : (fishTotal - netCommission + deliveryFee);
 
             document.getElementById('receive-amount').textContent = `${receiveAmount.toLocaleString()} KHR`;
             // 5/27 #101 ④: 紹介ボーナス行を追加（適用済みのみ表示）
             const referralBonus = Number(orderData.referralBonusAmount || 0);
             const bonusLine = referralBonus > 0
-                ? `<div class="amount-line"><span class="amount-line__label">${i18next.t('order.referralBonus')}</span><span class="amount-line__value plus">+${referralBonus.toLocaleString()} KHR</span></div>`
+                ? `<div class="amount-line"><span class="amount-line__label">${i18next.t('order.referralBonus')}</span><span class="amount-line__value campaign">+${referralBonus.toLocaleString()} KHR</span></div>`
+                : '';
+            // キャンペーン割引行（farmer 側・amber）。適用済みのみ表示
+            const campaignLine = farmerCampaignDiscount > 0
+                ? `<div class="amount-line"><span class="amount-line__label"><span class="material-symbols-outlined">local_offer</span>${i18next.t('orders.farmerCampaignDiscount')}</span><span class="amount-line__value campaign">${i18next.t('orders.farmerCampaignDiscountValue', { amount: farmerCampaignDiscount.toLocaleString() })}</span></div>`
                 : '';
             document.getElementById('breakdown').innerHTML = `
                 <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.fishTotal')}</span><span class="amount-line__value">${fishTotal.toLocaleString()} KHR</span></div>
-                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.commission', { rate: commissionRate })}</span><span class="amount-line__value minus">-${commission.toLocaleString()} KHR</span></div>
+                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.commission', { rate: commissionRate })}</span><span class="amount-line__value minus">-${grossCommission.toLocaleString()} KHR</span></div>
+                ${campaignLine}
                 ${bonusLine}
                 <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.deliveryFee')}</span><span class="amount-line__value plus">+${deliveryFee.toLocaleString()} KHR</span></div>
             `;
@@ -371,7 +430,13 @@
             const box = document.getElementById('status-box');
             let cls = 'pending', titleKey = 'payment.statusWaitingPayment', descKey = 'payment.statusWaitingPaymentDesc';
 
-            if (adminStatus === 'done') {
+            // 6/5 #129 ④: 問題報告で送金保留中＝「確認中（問題が報告されています）」。送金前のみ有効
+            const hold = orderData?.paymentProblemHold === true
+                && !['remitted', 'done'].includes(adminStatus);
+
+            if (hold) {
+                cls = 'confirmed'; titleKey = 'payment.statusProblemHold'; descKey = 'payment.statusProblemHoldDesc';
+            } else if (adminStatus === 'done') {
                 cls = 'done'; titleKey = 'payment.statusDone'; descKey = 'payment.statusDoneDesc';
             } else if (adminStatus === 'remitted') {
                 cls = 'remitted'; titleKey = 'payment.statusRemitted'; descKey = 'payment.statusRemittedDesc';
@@ -388,14 +453,19 @@
                 </div>
             `;
 
-            // レビューボタンは常時表示（送金状況ページに来ている時点で delivered/completed）
-            // 5/7 #55: レビュー済みの場合は applyReviewedState 側で「レビュー済み」表示に切替
-            const reviewBtn = document.getElementById('review-btn');
-            const reviewedLabel = document.getElementById('reviewed-label');
-            reviewBtn.href = `/pages/farmer/review.html?id=${orderId}`;
-            if (reviewedLabel.style.display !== 'block') {
-                reviewBtn.style.display = 'flex';
-            }
+            // 6/5 #129: 受取予定額ラベル＝保留中は「（保留中）」付き
+            document.getElementById('amount-label').textContent =
+                hold ? i18next.t('payment.receiveAmountHold') : i18next.t('payment.receiveAmount');
+
+            // 6/5 #129: 送金についての説明＝保留中は中立グレー＋返金可能性を明記（緑にしない）
+            const infoBox = document.getElementById('info-box');
+            infoBox.classList.toggle('neutral', hold);
+            document.getElementById('info-box-title').textContent = i18next.t('payment.aboutRemittance');
+            document.getElementById('info-box-desc').textContent =
+                hold ? i18next.t('payment.remittanceHoldDesc') : i18next.t('payment.remittanceDesc');
+
+            // 6/5 #129: レビュー導線は支払い確認後のみ
+            refreshReviewArea();
         }
     </script>
 </body>

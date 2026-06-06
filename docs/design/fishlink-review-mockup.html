@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK レビュー入力 - モック</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:1100px; margin-bottom:24px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; } .intro b{color:#0B5FB0;}
+
+  .stage { display:flex; flex-wrap:wrap; gap:28px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; background:#FFF; padding:7px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  .phone-label .tag { color:#5A6470; font-weight:500; }
+
+  .phone { width:390px; max-width:100%; height:820px; background:#F4F6F8; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+  .f-header { flex:0 0 auto; background:#FFF; padding:12px 16px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:8px; z-index:2; }
+  .f-header .logo { font-weight:800; color:#0B5FB0; font-size:15px; }
+  .f-header .sp { margin-left:auto; font-size:12px; color:#0B5FB0; font-weight:700; border:1px solid #CFE0EE; border-radius:14px; padding:3px 10px; }
+  .f-body { flex:1 1 auto; overflow-y:auto; padding:14px 14px 20px; }
+
+  .h-title { text-align:center; font-size:19px; font-weight:800; margin:4px 0 2px; }
+  .h-sub { text-align:center; font-size:12px; color:#5A6470; margin-bottom:14px; }
+
+  .card { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .tgt-l { font-size:12px; color:#5A6470; }
+  .tgt-n { font-size:18px; font-weight:800; margin-top:3px; }
+  .tgt-s { font-size:13px; color:#3A4250; margin-top:3px; }
+  .tgt-fl { font-size:11px; color:#9AA3B0; margin-top:5px; }
+
+  .guide { display:flex; gap:7px; align-items:center; background:#EAF2FB; border:1px solid #D5E6F8; border-radius:10px; padding:9px 12px; margin-bottom:12px; font-size:12px; font-weight:700; color:#0B5FB0; }
+
+  .axes { padding:2px 14px; }
+  .axis { padding:13px 0; }
+  .ax-head { display:flex; align-items:center; margin-bottom:9px; }
+  .ax-t { font-size:13px; font-weight:800; }
+  .ax-req { font-size:10px; font-weight:800; color:#9AA3B0; margin-left:7px; }
+  .ax-btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .tog { border:1.5px solid #DDE3E9; border-radius:12px; padding:12px 8px; display:flex; flex-direction:column; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#5A6470; cursor:pointer; background:#FFF; }
+  .tog svg { width:24px; height:24px; }
+  .tog.on-good { border-color:#1FA463; background:#EAF7EF; color:#2E7D32; }
+  .tog.on-bad { border-color:#E5453F; background:#FDECEA; color:#C0392B; }
+  .ax-div { border-top:1px solid #F0F2F5; }
+  .axis.err .tog { border-color:#E5453F; }
+  .err-msg { color:#E5453F; font-size:11.5px; font-weight:700; margin-top:8px; }
+
+  .cm-l { font-size:13px; font-weight:800; margin-bottom:8px; }
+  .cm-l .opt { color:#9AA3B0; font-weight:600; font-size:11px; margin-left:6px; }
+  textarea { width:100%; border:1px solid #DDE3E9; border-radius:10px; padding:10px 12px; font-size:13px; font-family:inherit; min-height:64px; resize:none; box-sizing:border-box; color:#1A1A1A; }
+  textarea::placeholder { color:#AEB6C0; }
+  .card.prompt { border-color:#F3D998; }
+  .cm-prompt { display:flex; gap:7px; align-items:flex-start; background:#FFF7E6; border:1px solid #F3D998; border-radius:9px; padding:9px 11px; margin-bottom:9px; font-size:12px; color:#B36A00; font-weight:700; line-height:1.5; }
+
+  .f-footer { flex:0 0 auto; background:#FFF; border-top:1px solid #EEF1F4; padding:12px 16px 18px; }
+  .form-err { color:#E5453F; font-size:12px; font-weight:700; margin-bottom:9px; text-align:center; }
+  .btn { width:100%; border:none; border-radius:11px; padding:14px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; }
+  .btn.pri { background:#0B5FB0; color:#FFF; }
+
+  .note { max-width:1100px; margin-top:24px; background:#FFF; padding:14px 18px; border-radius:12px; font-size:13px; line-height:1.8; color:#4A4A4A; }
+  .note h2 { font-size:14px; color:#0B5FB0; margin:0 0 8px; } .note b{color:#0B5FB0;} .note .g{color:#2E7D32;} .note .r{color:#C0392B;} .note .am{color:#B36A00;}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK レビュー入力（モック・修正反映版）</h1>
+  <p>相互レビュー。<b>左＝レストラン→農家</b>／<b>農家→レストラン</b>（軸は役割別）＋バリデーション＋「残念だった」促し。</p>
+  <p>線画アイコン（<span style="color:#2E7D32">良かった=緑</span>／<span style="color:#C0392B">残念だった=赤</span>）／3軸必須・コメント任意／送信＝青・<b>問題報告はこの画面に置かない</b>／実名＋FL番号／見出し1つ／3軸は1カード区切り線／上部にガイド／未選択はインライン指摘。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① レストラン→農家 -->
+  <div class="phone-wrap">
+    <div class="phone-label">① レストラン→農家 <span class="tag">記入例（全て良かった）</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="h-title">レビュー</div>
+        <div class="h-sub">取引を評価してください</div>
+
+        <div class="card">
+          <div class="tgt-l">評価対象</div>
+          <div class="tgt-n">大星農場</div>
+          <div class="tgt-s">レッドティラピア 5kg ・ 6/5 の取引</div>
+          <div class="tgt-fl">FL-260604-003</div>
+        </div>
+
+        <div class="guide">✓ 3つすべて選んでください（コメントは任意）</div>
+
+        <div class="card axes">
+          <div class="axis">
+            <div class="ax-head"><span class="ax-t">取引の満足度</span></div>
+            <div class="ax-btns">
+              <div class="tog on-good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+          </div>
+          <div class="ax-div"></div>
+          <div class="axis">
+            <div class="ax-head"><span class="ax-t">魚の品質</span></div>
+            <div class="ax-btns">
+              <div class="tog on-good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+          </div>
+          <div class="ax-div"></div>
+          <div class="axis">
+            <div class="ax-head"><span class="ax-t">配送時間</span></div>
+            <div class="ax-btns">
+              <div class="tog on-good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cm-l">コメント<span class="opt">（任意）</span></div>
+          <textarea placeholder="良かった点などを書いてください"></textarea>
+        </div>
+      </div>
+      <div class="f-footer">
+        <button class="btn pri">レビューを送信</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 農家→レストラン -->
+  <div class="phone-wrap">
+    <div class="phone-label">② 農家→レストラン <span class="tag">軸が役割別</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="h-title">レビュー</div>
+        <div class="h-sub">取引を評価してください</div>
+
+        <div class="card">
+          <div class="tgt-l">評価対象</div>
+          <div class="tgt-n">レストラン・アンコール</div>
+          <div class="tgt-s">レッドティラピア 5kg ・ 6/5 の取引</div>
+          <div class="tgt-fl">FL-260604-003</div>
+        </div>
+
+        <div class="guide">✓ 3つすべて選んでください（コメントは任意）</div>
+
+        <div class="card axes">
+          <div class="axis">
+            <div class="ax-head"><span class="ax-t">総合評価</span></div>
+            <div class="ax-btns">
+              <div class="tog on-good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+          </div>
+          <div class="ax-div"></div>
+          <div class="axis">
+            <div class="ax-head"><span class="ax-t">やり取り</span></div>
+            <div class="ax-btns">
+              <div class="tog on-good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+          </div>
+          <div class="ax-div"></div>
+          <div class="axis">
+            <div class="ax-head"><span class="ax-t">受取対応</span></div>
+            <div class="ax-btns">
+              <div class="tog on-good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cm-l">コメント<span class="opt">（任意）</span></div>
+          <textarea placeholder="取引の様子をコメントで残せます"></textarea>
+        </div>
+      </div>
+      <div class="f-footer">
+        <button class="btn pri">レビューを送信</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ バリデーション -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ バリデーション <span class="tag">未選択をインライン指摘</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="h-title">レビュー</div>
+        <div class="h-sub">取引を評価してください</div>
+
+        <div class="card axes">
+          <div class="axis">
+            <div class="ax-head"><span class="ax-t">取引の満足度</span></div>
+            <div class="ax-btns">
+              <div class="tog on-good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+          </div>
+          <div class="ax-div"></div>
+          <div class="axis err">
+            <div class="ax-head"><span class="ax-t">魚の品質</span></div>
+            <div class="ax-btns">
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+            <div class="err-msg">⚠ 選択してください</div>
+          </div>
+          <div class="ax-div"></div>
+          <div class="axis err">
+            <div class="ax-head"><span class="ax-t">配送時間</span></div>
+            <div class="ax-btns">
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+            <div class="err-msg">⚠ 選択してください</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cm-l">コメント<span class="opt">（任意）</span></div>
+          <textarea placeholder="良かった点などを書いてください"></textarea>
+        </div>
+      </div>
+      <div class="f-footer">
+        <div class="form-err">未選択の項目があります</div>
+        <button class="btn pri">レビューを送信</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 残念だった → コメント促し -->
+  <div class="phone-wrap">
+    <div class="phone-label">④ 「残念だった」→ コメント促し <span class="tag">任意・強制しない</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="h-title">レビュー</div>
+        <div class="h-sub">取引を評価してください</div>
+
+        <div class="card axes">
+          <div class="axis">
+            <div class="ax-head"><span class="ax-t">取引の満足度</span></div>
+            <div class="ax-btns">
+              <div class="tog on-good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+          </div>
+          <div class="ax-div"></div>
+          <div class="axis">
+            <div class="ax-head"><span class="ax-t">魚の品質</span></div>
+            <div class="ax-btns">
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog on-bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+          </div>
+          <div class="ax-div"></div>
+          <div class="axis">
+            <div class="ax-head"><span class="ax-t">配送時間</span></div>
+            <div class="ax-btns">
+              <div class="tog on-good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>良かった</div>
+              <div class="tog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>残念だった</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card prompt">
+          <div class="cm-prompt">💬 「残念だった」がありました。差し支えなければ理由を教えてください（任意）</div>
+          <textarea placeholder="例：氷が少なく鮮度が落ちていた／サイズが小さめだった など"></textarea>
+        </div>
+      </div>
+      <div class="f-footer">
+        <button class="btn pri">レビューを送信</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <h2>設計メモ（このモックで表現していること）</h2>
+  <p><b>軸は役割別</b>：レストラン→農家＝取引の満足度／魚の品質／配送時間（生産者ページに公開）。農家→レストラン＝総合評価／やり取り／受取対応（レストランページに公開・後日レビュー）。</p>
+  <p><b>アイコン</b>：絵文字をやめ<b>モノクロ線画のスマイリー（笑顔／困り顔）</b>。表情は世界共通＆文字いらずで低リテラシーに最も伝わる（満足度＝顔・サムズの「いいね」より素直）。未選択＝グレー、選択＝<span class="g">良かった 緑</span>／<span class="r">残念だった 赤</span>。</p>
+  <p><b>必須／バリデーション（③）</b>：3軸すべて必須・コメント任意。上部にガイド。未選択で送信したら<b>該当軸の枠を赤＋その場に「選択してください」＋最初の未選択へ自動スクロール</b>（ボタンは無効化しない＝出品フォームと同方式）。下部は総括のみ。</p>
+  <p><b>「残念だった」促し（④）</b>：いずれかで「残念だった」を選ぶと<b>コメントを軽く促す（任意・強制しない）</b>。理由が相手の改善に効く。</p>
+  <p><b>その他</b>：見出しは1つ（「レビュー／取引を評価してください」）。3軸は1カードに区切り線でまとめて高さを圧縮。送信＝青。<b>問題を報告はこの画面に置かない</b>（完了済みカード＋支払い画面に集約）。評価対象は実名＋FL番号。コメントは<b>連絡先マスク＋モデレーション</b>対象（公開テキスト）。</p>
+</div>
+
+</body>
+</html>

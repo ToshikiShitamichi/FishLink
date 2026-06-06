@@ -63,7 +63,13 @@
       "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1280,720 --screenshot=\"/c/work/FishLink/_preview_chat.png\" --default-background-color=FFECEEF0 \"file:///c/work/FishLink/_preview_chat.html\")",
       "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1300,760 --screenshot=\"C:\\\\work\\\\FishLink\\\\_preview_chat.png\" \"file:///C:/work/FishLink/_preview_chat.html\")",
       "WebSearch",
-      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=860,300 --screenshot=\"C:\\\\work\\\\FishLink\\\\_preview_head.png\" \"file:///C:/work/FishLink/_preview_head.html\")"
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=860,300 --screenshot=\"C:\\\\work\\\\FishLink\\\\_preview_head.png\" \"file:///C:/work/FishLink/_preview_head.html\")",
+      "Bash(node -c functions/index.js)",
+      "Bash(find . -name \"storage.rules\" -not -path \"*/node_modules/*\")",
+      "Bash(grep -n \"storage\" firebase.json)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.claude/settings.json','utf8'\\)\\); console.log\\('settings.json valid JSON'\\)\")",
+      "Bash(rm -f tmp_extract_pdf.py tmp_pdf_text.txt)",
+      "Bash(ls tmp_extract_pdf.py)"
     ]
   }
 }

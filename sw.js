@@ -259,7 +259,14 @@ self.addEventListener('notificationclick', (event) => {
 // 6/5 #125/#126 レビュー反映(チャットヘッダー統一・距離計算) → v118
 //   - 配送管理チャットのヘッダーをモック chat-head に統一(両画面)：相手名＋右肩ステータスバッジ／魚種・数量・納品(曜日付き)・FL の1行／📍距離(買い手のみ)・📍地区＋地図を見る(農家のみ)。css/style.css に .ch-top/.ch-name/.ch-status/.ch-sub/.ch-loc/.ch-dist を追加
 //   - 買い手チャットの📍距離: 注文ドキュメントに distKm が無いため、レストラン位置↔農家位置から haversine で都度計算(農家側 orders.html と同一ロジック)
-const CACHE_NAME = 'fishlink-v118';
+// 6/5 #128/#129: 6/5 クライアントレビュー修正2件 → v119
+//   - #128 相互レビュー入力(restaurant/farmer review.html): アイコン絵文字👍👎→線画スマイリー(sentiment_satisfied/dissatisfied・未選択グレー・良かった緑/残念赤)・送信ボタン青・問題報告を削除・3軸を1カード区切り線・上部ガイド・実名＋FL番号・見出し1つ・インラインバリデーション(未選択軸赤枠＋「選択してください」＋最初の未選択へスクロール・下部総括・ボタン無効化しない)・「残念だった」でコメント促し・コメント連絡先マスク(rawComment/masked/hidden)。
+//   - #128 モデレーション: functions onReviewCreated でサーバ側再マスク(バイパス防止)＋マスク発動レビューを reports type:'review_contact'(新カテゴリ)へ自動上げ。admin/reports.html に専用カード＋「非表示にする」(review.hidden=true)。生産者ページ farmer.html は hidden を公開から除外。firestore.rules: reviews サブコレクションに admin の update を許可。
+//   - #129 精算フロー: restaurant/payment.html=金額青/割引amber/確認ボタン「支払い完了」青/自前モーダル/金額をコピー/レビュー導線は支払い後のみ/FL番号。farmer/payment.html=受取予定額青/手数料を「-1,875＋キャンペーン割引+938」分解(承認画面と統一)/手数料・送料を中立グレー(±)/「確認中(問題報告)」状態追加/レビュー導線は支払い確認後のみ/FL番号。
+//   - #129 admin: index.html=「未払い(期限超過)」フィルタ＋赤件数バッジ。order.html=入金控え(振込元名義＋メモ＋入金スクショ)/「送金額をコピー」＋送金スクショ/問題報告の保留通知＋保留解除/FL番号。restaurant/report.html=問題報告で paymentProblemHold=true。
+//   - locales 3言語: review.*(guide/errorAxis/errorSummary/commentPromptBad) / payment.*(copyAmount/copied/reviewAfterPay/reviewAfterConfirm/modal*/receiveAmountHold/statusProblemHold*/remittanceHoldDesc) / admin.tx.tabOverdue・statusOverdue / admin.order.*(hold*/depositProof*/payerName/copyRemitAmount/remitProof*) / admin.reports.typeReview_contact。functions REPORT_TYPE_LABELS に review_contact。
+//   ⚠️ Firestore Rules 変更あり(reviews update=admin) → Console 手動公開が必要。
+const CACHE_NAME = 'fishlink-v119';
 
 const PRECACHE_URLS = [
     '/',

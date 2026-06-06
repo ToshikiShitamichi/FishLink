@@ -167,6 +167,49 @@
             text-decoration: none; display: block; margin-top: 8px;
         }
 
+        /* 6/5 #129 ⑥: 入金控え／送金控え（証拠を残す）＋金額コピー＋保留通知 */
+        .proof-block { margin-top: 14px; border-top: 1px dashed #cbd5e1; padding-top: 12px; }
+        .proof-label { font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 8px; }
+        .proof-input {
+            width: 100%; border: 1px solid #cbd5e1; border-radius: 10px;
+            padding: 9px 11px; font-size: 13px; font-family: inherit; margin-bottom: 8px;
+            background: #fff; box-sizing: border-box;
+        }
+        .proof-memo {
+            width: 100%; border: 1px solid #cbd5e1; border-radius: 10px;
+            padding: 9px 11px; font-size: 13px; font-family: inherit;
+            min-height: 56px; resize: vertical; background: #fff; box-sizing: border-box;
+        }
+        .proof-attach-row { display: flex; gap: 10px; align-items: center; margin-top: 9px; }
+        .attach-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; font-weight: 600; color: #0b5fb0;
+            border: 1px dashed #9cc2e6; border-radius: 10px; padding: 8px 12px;
+            background: #f4f9fe; cursor: pointer;
+        }
+        .attach-btn .material-symbols-outlined { font-size: 18px; }
+        .proof-thumb img { width: 56px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; display: block; }
+        .copy-remit-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 13px; font-weight: 600; color: #0b5fb0;
+            border: 1px solid #bfdbfe; background: #eff6ff; border-radius: 10px;
+            padding: 8px 12px; margin-top: 10px; cursor: pointer; font-family: inherit;
+        }
+        .copy-remit-btn .material-symbols-outlined { font-size: 18px; }
+        .hold-notice {
+            display: flex; gap: 9px; align-items: flex-start;
+            background: #fef3c7; border: 1px solid #fde68a; border-radius: 14px;
+            padding: 12px 14px; margin-bottom: 14px;
+        }
+        .hold-notice .material-symbols-outlined { color: #b45309; }
+        .hold-notice__t { font-size: 13px; font-weight: 700; color: #854d0e; }
+        .hold-notice__s { font-size: 12px; color: #92700e; margin-top: 2px; }
+        .hold-notice__release {
+            margin-left: auto; align-self: center; white-space: nowrap;
+            border: 1px solid #cbd5e1; background: #fff; color: #334155;
+            border-radius: 10px; padding: 7px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+        }
+
         .admin-header__right {
             display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
             justify-content: flex-end;
@@ -246,6 +289,16 @@
             <span id="top-date-pill" class="pill"></span>
         </div>
 
+        <!-- 6/5 #129 ④/§8: 問題報告で農家送金を保留中 -->
+        <div class="hold-notice" id="hold-notice" style="display:none;">
+            <span class="material-symbols-outlined">report</span>
+            <div>
+                <div class="hold-notice__t" data-i18n="admin.order.holdTitle"></div>
+                <div class="hold-notice__s" data-i18n="admin.order.holdDesc"></div>
+            </div>
+            <button class="hold-notice__release" id="release-hold-btn" data-i18n="admin.order.releaseHold"></button>
+        </div>
+
         <!-- サマリー3カード -->
         <div class="summary-grid">
             <div class="summary-card">
@@ -298,6 +351,24 @@
                     <div class="sub-card__label" data-i18n="admin.order.paymentInfo"></div>
                     <div id="payment-info"></div>
                     <button class="primary-btn" id="confirm-payment-btn" data-i18n="admin.order.markPaymentConfirmed"></button>
+                    <!-- 6/5 #129 ⑥: 入金控え（入金スクショ＋メモ＋振込元名義）＝証拠を毎回残す -->
+                    <div class="proof-block">
+                        <div class="proof-label" data-i18n="admin.order.depositProofLabel"></div>
+                        <input class="proof-input" id="payer-name-input" data-i18n="[placeholder]admin.order.payerNamePlaceholder">
+                        <textarea class="proof-memo" id="deposit-memo" data-i18n="[placeholder]admin.order.depositMemoPlaceholder"></textarea>
+                        <div class="proof-attach-row">
+                            <label class="attach-btn">
+                                <span class="material-symbols-outlined">attach_file</span>
+                                <span data-i18n="admin.order.attachDepositProof"></span>
+                                <input type="file" accept="image/*" id="deposit-proof-file" hidden>
+                            </label>
+                            <a class="proof-thumb" id="deposit-proof-thumb" style="display:none;" target="_blank" rel="noopener"></a>
+                        </div>
+                        <div class="memo-save-row">
+                            <span class="memo-save-row__note" id="deposit-saved" data-i18n="admin.order.memoSaved"></span>
+                            <button style="border:1px solid #cbd5e1; background:#fff; color:#334155; font-weight:600; font-size:13px; padding:8px 16px; border-radius:10px; cursor:pointer;" id="save-deposit-btn" data-i18n="admin.order.saveMemo"></button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -312,11 +383,28 @@
                 <div class="sub-card">
                     <div class="sub-card__label" data-i18n="admin.order.remitPreview"></div>
                     <div id="remit-breakdown"></div>
+                    <!-- 6/5 #129 ⑥: 送金額をコピー（銀行アプリに正確な額を入力） -->
+                    <button class="copy-remit-btn" id="copy-remit-btn">
+                        <span class="material-symbols-outlined">content_copy</span>
+                        <span data-i18n="admin.order.copyRemitAmount"></span>
+                    </button>
                 </div>
                 <div class="sub-card">
                     <div class="sub-card__label" data-i18n="admin.order.remitTarget"></div>
                     <div id="remit-target"></div>
                     <button class="secondary-btn" id="mark-remit-btn" data-i18n="admin.order.markRemitted"></button>
+                    <!-- 6/5 #129 ⑥: 送金控え（送金スクショを添付）＝証拠 -->
+                    <div class="proof-block">
+                        <div class="proof-label" data-i18n="admin.order.remitProofLabel"></div>
+                        <div class="proof-attach-row">
+                            <label class="attach-btn">
+                                <span class="material-symbols-outlined">attach_file</span>
+                                <span data-i18n="admin.order.attachRemitProof"></span>
+                                <input type="file" accept="image/*" id="remit-proof-file" hidden>
+                            </label>
+                            <a class="proof-thumb" id="remit-proof-thumb" style="display:none;" target="_blank" rel="noopener"></a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -348,11 +436,14 @@
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState, logout } from '/js/auth.js';
-        import { db } from '/js/firebase-config.js';
+        import { db, storage } from '/js/firebase-config.js';
         import { initAdminReportBadge } from '/js/admin-report-badge.js';
         import {
             doc, getDoc, updateDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 6/5 #129 ⑥: 入金/送金スクショの添付（証拠）
+        import { ref } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+        import { uploadImageResized } from '/js/image-resize.js';
         // 5/23 #69 Phase F: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/25 #91/#92 拡張: 画面 HTML を即時復元
@@ -377,6 +468,7 @@
         let farmerData = null;
         let restData = null;
         let listingData = null;
+        let lastRemitAmount = 0; // 6/5 #129 ⑥: コピー用に保持
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
@@ -527,6 +619,7 @@
             const remitAmount = (orderData.farmerReceiveAmount != null)
                 ? orderData.farmerReceiveAmount
                 : (fishPrice - commission + deliveryFee);
+            lastRemitAmount = remitAmount;
             document.getElementById('summary-remit').textContent = `${remitAmount.toLocaleString()} KHR`;
 
             // 注文情報（スナップショット優先）
@@ -621,6 +714,19 @@
             // 内部メモ
             document.getElementById('admin-memo').value = orderData.adminMemo || '';
 
+            // 6/5 #129 ④/§8: 問題報告で送金保留中の通知（送金前のみ）
+            const hold = orderData.paymentProblemHold === true && !isRemitted;
+            const holdNotice = document.getElementById('hold-notice');
+            if (holdNotice) holdNotice.style.display = hold ? 'flex' : 'none';
+
+            // 6/5 #129 ⑥: 入金控え（振込元名義・メモ・スクショ）を反映
+            const payerInput = document.getElementById('payer-name-input');
+            const depositMemo = document.getElementById('deposit-memo');
+            if (payerInput && document.activeElement !== payerInput) payerInput.value = orderData.payerName || '';
+            if (depositMemo && document.activeElement !== depositMemo) depositMemo.value = orderData.depositMemo || '';
+            renderProofThumb('deposit-proof-thumb', orderData.depositProofUrl);
+            renderProofThumb('remit-proof-thumb', orderData.remitProofUrl);
+
             // 5/25 #91/#92 拡張: 次回訪問用に画面 HTML をキャッシュ保存
             try {
                 const chip = document.getElementById('top-status-chip');
@@ -673,6 +779,74 @@
             const note = document.getElementById('memo-saved');
             note.classList.add('show');
             setTimeout(() => note.classList.remove('show'), 1500);
+        });
+
+        // ── 6/5 #129 ⑥: 入金控え／送金控え・金額コピー・保留解除 ──
+        function renderProofThumb(id, url) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (url) {
+                el.href = url;
+                el.innerHTML = `<img ${asCachedImgAttrs(url)} alt="proof">`;
+                el.style.display = 'inline-block';
+            } else {
+                el.style.display = 'none';
+                el.innerHTML = '';
+            }
+        }
+
+        async function uploadProof(field, file, prefix) {
+            if (!file) return;
+            loading.classList.add('show');
+            try {
+                const baseName = (file.name || prefix).replace(/\.[^.]+$/, '');
+                const storageRef = ref(storage, `settlements/${orderId}/${prefix}_${Date.now()}_${baseName}.jpg`);
+                const url = await uploadImageResized(storageRef, file);
+                await updateDoc(doc(db, 'orders', orderId), { [field]: url });
+            } catch (err) {
+                console.error(err);
+                alert(err.message || 'upload failed');
+            } finally {
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
+            }
+        }
+
+        // 入金控え：振込元名義＋メモ保存
+        document.getElementById('save-deposit-btn').addEventListener('click', async () => {
+            const payerName = document.getElementById('payer-name-input').value.trim();
+            const depositMemo = document.getElementById('deposit-memo').value.trim();
+            await updateDoc(doc(db, 'orders', orderId), {
+                payerName: payerName || null,
+                depositMemo: depositMemo || null,
+            });
+            const note = document.getElementById('deposit-saved');
+            note.classList.add('show');
+            setTimeout(() => note.classList.remove('show'), 1500);
+        });
+
+        document.getElementById('deposit-proof-file').addEventListener('change', (e) => {
+            uploadProof('depositProofUrl', e.target.files?.[0], 'deposit');
+            e.target.value = '';
+        });
+        document.getElementById('remit-proof-file').addEventListener('change', (e) => {
+            uploadProof('remitProofUrl', e.target.files?.[0], 'remit');
+            e.target.value = '';
+        });
+
+        // 送金額をコピー
+        document.getElementById('copy-remit-btn').addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(String(lastRemitAmount));
+                const btn = document.getElementById('copy-remit-btn');
+                const label = btn.querySelector('span[data-i18n]');
+                if (label) { label.textContent = i18next.t('admin.order.copied'); setTimeout(() => { label.textContent = i18next.t('admin.order.copyRemitAmount'); }, 1500); }
+            } catch (e) { console.warn('clipboard failed:', e); }
+        });
+
+        // 問題報告の保留解除（運営が調査して送金可と判断した場合）
+        document.getElementById('release-hold-btn').addEventListener('click', async () => {
+            if (!confirm(i18next.t('admin.order.confirmReleaseHold'))) return;
+            await updateDoc(doc(db, 'orders', orderId), { paymentProblemHold: false });
         });
 
         onLanguageChange(() => orderData && render());

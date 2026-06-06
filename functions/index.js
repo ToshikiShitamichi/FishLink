@@ -165,6 +165,30 @@ async function createQaContactReport({ listingId, commentId, posterUid, posterRo
   console.log("QA contact report created:", listingId, commentId, qaField);
 }
 
+// ── 6/5 #128: マスク発動レビューコメントを トラブル報告「レビュー（要確認）」として自動生成 ──
+//   #121 の qa_contact と同じ要領。運営が reports.html から「非表示」にすると review.hidden=true に。
+async function createReviewContactReport({ orderId, reviewId, fromUid, fromRole, reportedUid, maskedText }) {
+  const admin = require("firebase-admin/firestore");
+  // 同一レビュー（注文×方向）の重複レポートを避ける
+  const existing = await db.collection("reports")
+    .where("orderId", "==", orderId)
+    .get();
+  if (existing.docs.some((d) => d.data().type === "review_contact" && (d.data().reviewId || "") === reviewId)) return;
+  await db.collection("reports").add({
+    type: "review_contact",
+    source: "review",
+    orderId: orderId || null,
+    reviewId: reviewId || null,          // 'restaurant' | 'farmer'（reviews サブコレクションの doc id）
+    fromUid: fromUid || null,            // 投稿者（評者）
+    fromRole: fromRole || "restaurant",
+    reportedUid: reportedUid || null,    // 被評価者
+    detail: maskedText || "",            // マスク後の本文（公開と同じ）
+    status: "open",
+    createdAt: admin.FieldValue.serverTimestamp(),
+  });
+  console.log("Review contact report created:", orderId, reviewId);
+}
+
 // 管理者UID取得（全管理者）
 // 4/29: コスト削減のため `settings/adminUids.uids[]` をキャッシュとして使用
 //       キャッシュが存在しない場合のみ users をスキャンしてキャッシュを生成
@@ -416,6 +440,7 @@ const REPORT_TYPE_LABELS = {
   reception:     { ja: "受取対応", en: "Reception", km: "ការទទួល" },
   communication: { ja: "やり取り", en: "Communication", km: "ទំនាក់ទំនង" },
   qa_contact:    { ja: "公開質問（要確認）", en: "Public Q&A (review)", km: "សំណួរសាធារណៈ (ត្រួតពិនិត្យ)" },
+  review_contact: { ja: "レビュー（要確認）", en: "Review (check)", km: "ការវាយតម្លៃ (ត្រួតពិនិត្យ)" },
   other:         { ja: "その他",   en: "Other",    km: "ផ្សេងទៀត" },
 };
 const REPORTER_ROLE_LABELS = {
@@ -1490,6 +1515,31 @@ exports.onReviewCreated = onDocumentCreated(
     const toUid = review.toUid;
     const fromRole = review.fromRole; // 'restaurant' → 農家を評価 / 'farmer' → レストランを評価
     if (!toUid || !review.verdict) return;
+
+    // ── 6/5 #128: コメントの連絡先マスクをサーバ側で再検証（バイパス防止）＋ 要確認レポート生成 ──
+    const orderId = event.params.orderId;
+    const reviewId = event.params.reviewId; // 'restaurant' | 'farmer'
+    const rawComment = review.rawComment || review.comment || "";
+    if (rawComment) {
+      const det = maskContactsServer(rawComment);
+      if (det.hit) {
+        // クライアントがマスクせず保存した場合に備えて上書き
+        if (review.comment !== det.masked || review.masked !== true) {
+          try {
+            await db.doc(`orders/${orderId}/reviews/${reviewId}`)
+              .set({ comment: det.masked, masked: true }, { merge: true });
+          } catch (e) { console.warn("review re-mask update failed:", e); }
+        }
+        await createReviewContactReport({
+          orderId,
+          reviewId,
+          fromUid: review.fromUid,
+          fromRole,
+          reportedUid: toUid,
+          maskedText: det.masked,
+        });
+      }
+    }
 
     const userRef = db.doc(`users/${toUid}`);
 

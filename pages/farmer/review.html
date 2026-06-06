@@ -20,20 +20,52 @@
         .review-head__title { font-size: 22px; font-weight: 700; color: var(--color-text); }
         .review-head__sub { font-size: 13px; color: var(--color-text-sub); margin-top: 4px; }
 
-        .target-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; }
+        .target-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 18px; padding: 14px 16px; margin-bottom: 12px; }
         .target-card__label { font-size: 12px; color: var(--color-text-sub); }
         .target-card__name { font-size: 18px; font-weight: 700; color: var(--color-text); margin-top: 4px; }
         .target-card__fish { font-size: 13px; color: var(--color-text-sub); margin-top: 2px; }
         .target-card__date { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
+        /* 6/5 #128: 評価対象に FL番号 を表示（実名＋FL番号） */
+        .target-card__fl { font-size: 11px; color: #9aa3b0; font-family: ui-monospace, Menlo, monospace; margin-top: 6px; }
 
-        .rating-section { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
-        .rating-section__label { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--color-text); }
+        /* 6/5 #128: 上部ガイド「3つすべて選んでください（コメントは任意）」 */
+        .review-guide {
+            display: flex; gap: 7px; align-items: center;
+            background: var(--color-cta-lt);
+            border: 1px solid #d5e6f8;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            font-size: 13px; font-weight: 700; color: var(--color-cta);
+        }
+        .review-guide .material-symbols-outlined { font-size: 18px; }
+
+        /* 6/5 #128: 3軸を1カードに区切り線でまとめて圧縮（大ボタンは維持） */
+        .rating-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 18px;
+            padding: 4px 16px;
+            margin-bottom: 12px;
+        }
+        .axis { padding: 14px 0; }
+        .axis__label { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--color-text); }
+        .axis-div { border-top: 1px solid var(--color-border); }
+        .axis__err {
+            display: none;
+            color: var(--color-danger);
+            font-size: 12.5px; font-weight: 700; margin-top: 8px;
+            align-items: center; gap: 4px;
+        }
+        .axis.err .axis__err { display: flex; }
+        .axis.err .verdict-btn { border-color: var(--color-danger); }
+
         .verdict-row { display: flex; gap: 10px; }
         .verdict-btn {
             flex: 1;
             border: 2px solid var(--color-border);
             background: var(--color-surface);
-            color: var(--color-text);
+            color: var(--color-text-sub);
             border-radius: 14px;
             padding: 14px 8px;
             font-size: 14px; font-weight: 700;
@@ -43,15 +75,32 @@
             gap: 6px;
             transition: background .12s, color .12s, border-color .12s;
         }
-        .verdict-btn .material-symbols-outlined { font-size: 28px; }
+        .verdict-btn .material-symbols-outlined { font-size: 30px; }
         .verdict-btn.selected.good { background: #ecfdf5; color: #047857; border-color: #16a34a; }
         .verdict-btn.selected.bad { background: #fef2f2; color: #b91c1c; border-color: #dc2626; }
 
-        .comment-section textarea {
+        .comment-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 18px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .comment-card.prompted { border-color: #f3d998; }
+        /* 6/5 #128:「残念だった」選択時にコメントを軽く促す（任意・強制しない） */
+        .comment-prompt {
+            display: flex; gap: 7px; align-items: flex-start;
+            background: #fff7e6; border: 1px solid #f3d998; border-radius: 10px;
+            padding: 9px 11px; margin-bottom: 10px;
+            font-size: 12.5px; color: #b36a00; font-weight: 700; line-height: 1.5;
+        }
+        .comment-prompt .material-symbols-outlined { font-size: 18px; flex-shrink: 0; }
+        .comment-card__label { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--color-text); }
+        .comment-card textarea {
             width: 100%; min-height: 90px; border: 1px solid var(--color-border); border-radius: 12px;
             padding: 10px 12px; font-size: 16px; font-family: inherit; background: #f9fafb; resize: vertical;
         }
-        .comment-section textarea:focus { outline: none; border-color: var(--color-primary); background: #fff; }
+        .comment-card textarea:focus { outline: none; border-color: var(--color-cta); background: #fff; }
 
         .footer-actions {
             position: fixed; bottom: 0; left: 0; right: 0;
@@ -60,21 +109,15 @@
             padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
             display: flex; flex-direction: column; gap: 8px;
         }
-        .btn-submit-review { background: #f97316; color: #fff; border: none; border-radius: 14px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
-        .btn-report {
-            background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;
-            border-radius: 14px; padding: 10px; font-size: 13px; font-weight: 700;
-            cursor: pointer; font-family: inherit;
-            display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
-        }
-        .btn-report .material-symbols-outlined { font-size: 18px; }
+        /* 6/5 #128: 送信ボタン オレンジ → 青（CTA） */
+        .btn-submit-review { background: var(--color-cta); color: #fff; border: none; border-radius: 14px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
 
-        .error-msg { font-size: 13px; color: #b91c1c; padding: 6px 12px; }
+        /* 6/5 #128: 下部は総括のみ（どの軸かはインラインで指摘済み） */
+        .error-msg { font-size: 13px; color: var(--color-danger); font-weight: 700; padding: 4px 12px 6px; text-align: center; }
 
         .submitted-state { text-align: center; padding: 40px 20px; }
         .submitted-state__icon { font-size: 60px; color: #16a34a; }
         .submitted-state__text { font-size: 16px; font-weight: 700; margin-top: 8px; }
-        .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
     </style>
 </head>
 
@@ -92,13 +135,12 @@
                 <option value="ja">日本語</option>
             </select>
         </div>
-
-        <div class="sub-page__title" data-i18n="review.title"></div>
     </div>
 
     <div class="review-page">
 
         <div id="main-view">
+            <!-- 6/5 #128: 見出しは1つ。重複の sub-page__title は撤去 -->
             <div class="review-head">
                 <div class="review-head__title" data-i18n="review.title"></div>
                 <div class="review-head__sub" data-i18n="review.subtitle"></div>
@@ -109,25 +151,42 @@
                 <div class="target-card__name" id="target-name">-</div>
                 <div class="target-card__fish" id="target-fish">-</div>
                 <div class="target-card__date" id="target-date"></div>
+                <div class="target-card__fl" id="target-fl"></div>
             </div>
 
-            <div class="rating-section">
-                <div class="rating-section__label" data-i18n="review.farmerSide_overall"></div>
-                <div class="verdict-row" data-group="overall"></div>
+            <div class="review-guide">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span data-i18n="review.guide"></span>
             </div>
 
-            <div class="rating-section">
-                <div class="rating-section__label" data-i18n="review.farmerSide_communication"></div>
-                <div class="verdict-row" data-group="communication"></div>
+            <!-- 6/5 #128: 3軸を1カードに区切り線でまとめる -->
+            <div class="rating-card">
+                <div class="axis" data-axis="overall">
+                    <div class="axis__label" data-i18n="review.farmerSide_overall"></div>
+                    <div class="verdict-row" data-group="overall"></div>
+                    <div class="axis__err"><span class="material-symbols-outlined" style="font-size:16px;">error</span><span data-i18n="review.errorAxis"></span></div>
+                </div>
+                <div class="axis-div"></div>
+                <div class="axis" data-axis="communication">
+                    <div class="axis__label" data-i18n="review.farmerSide_communication"></div>
+                    <div class="verdict-row" data-group="communication"></div>
+                    <div class="axis__err"><span class="material-symbols-outlined" style="font-size:16px;">error</span><span data-i18n="review.errorAxis"></span></div>
+                </div>
+                <div class="axis-div"></div>
+                <div class="axis" data-axis="reception">
+                    <div class="axis__label" data-i18n="review.farmerSide_reception"></div>
+                    <div class="verdict-row" data-group="reception"></div>
+                    <div class="axis__err"><span class="material-symbols-outlined" style="font-size:16px;">error</span><span data-i18n="review.errorAxis"></span></div>
+                </div>
             </div>
 
-            <div class="rating-section">
-                <div class="rating-section__label" data-i18n="review.farmerSide_reception"></div>
-                <div class="verdict-row" data-group="reception"></div>
-            </div>
-
-            <div class="rating-section comment-section">
-                <div class="rating-section__label" data-i18n="review.comment"></div>
+            <div class="comment-card" id="comment-card">
+                <!-- 6/5 #128:「残念だった」選択時に表示するコメント促し（任意） -->
+                <div class="comment-prompt" id="comment-prompt" style="display:none;">
+                    <span class="material-symbols-outlined">forum</span>
+                    <span data-i18n="review.commentPromptBad"></span>
+                </div>
+                <div class="comment-card__label" data-i18n="review.comment"></div>
                 <textarea id="comment-input" data-i18n="[placeholder]review.commentPlaceholderFarmer"></textarea>
             </div>
 
@@ -143,12 +202,9 @@
         </div>
     </div>
 
+    <!-- 6/5 #128: 問題を報告はこの画面に置かない（完了済みカード＋支払い画面に集約）。送信ボタンのみ -->
     <div class="footer-actions" id="footer-actions">
         <button class="btn-submit-review" id="submit-btn" data-i18n="review.submit"></button>
-        <a class="btn-report" id="report-link" href="#">
-            <span class="material-symbols-outlined">flag</span>
-            <span data-i18n="review.reportIssue"></span>
-        </a>
     </div>
 
     <script type="module">
@@ -160,6 +216,10 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 5/25 #91/#92 拡張: 対象注文情報を render-cache 化（フォーム入力は対象外）
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // 6/5 #128: コメントの連絡先マスク（#120 流用・中抜き対策）
+        import { maskContacts } from '/js/contact-mask.js';
+        // 6/5 #128: FL番号表示
+        import { getOrderNumber } from '/js/order-utils.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -170,7 +230,7 @@
         const orderId = new URLSearchParams(location.search).get('id');
         if (!orderId) { location.href = '/pages/farmer/orders.html'; }
 
-        document.getElementById('report-link').href = `/pages/farmer/report.html?id=${orderId}`;
+        const AXES = ['overall', 'communication', 'reception'];
 
         // 5/25 #91/#92 拡張: 対象注文の表示部を render-cache から即時復元
         (function applyCache() {
@@ -180,23 +240,33 @@
                 const nameEl = document.getElementById('target-name');
                 const fishEl = document.getElementById('target-fish');
                 const dateEl = document.getElementById('target-date');
+                const flEl = document.getElementById('target-fl');
                 if (nameEl && cached.targetName) nameEl.textContent = cached.targetName;
                 if (fishEl && cached.targetFish) fishEl.textContent = cached.targetFish;
                 if (dateEl && cached.targetDate) dateEl.textContent = cached.targetDate;
+                if (flEl && cached.targetFl) flEl.textContent = cached.targetFl;
             } catch (e) { /* ignore */ }
         })();
 
-        // 2段階評価（よい / 残念だった）
+        // 6/5 #128:「残念だった」がひとつでもあればコメントを軽く促す（強制しない）
+        function updateBadPrompt() {
+            const anyBad = AXES.some(g => document.querySelector(`.verdict-row[data-group="${g}"]`).dataset.value === 'bad');
+            document.getElementById('comment-prompt').style.display = anyBad ? 'flex' : 'none';
+            document.getElementById('comment-card').classList.toggle('prompted', anyBad);
+        }
+
+        // 2段階評価（良かった / 残念だった）
+        // 6/5 #128: アイコンは絵文字でなく線画スマイリー（良かった=笑顔/残念=困り顔）
         function initVerdict(group) {
             const row = document.querySelector(`.verdict-row[data-group="${group}"]`);
             // 動的挿入のため i18next.t() で直接展開（data-i18n は applyTranslations 済みの後では解釈されない）
             row.innerHTML = `
                 <button type="button" class="verdict-btn good" data-value="good">
-                    <span class="material-symbols-outlined">thumb_up</span>
+                    <span class="material-symbols-outlined">sentiment_satisfied</span>
                     <span>${i18next.t('review.verdictGood')}</span>
                 </button>
                 <button type="button" class="verdict-btn bad" data-value="bad">
-                    <span class="material-symbols-outlined">thumb_down</span>
+                    <span class="material-symbols-outlined">sentiment_dissatisfied</span>
                     <span>${i18next.t('review.verdictBad')}</span>
                 </button>`;
             row.querySelectorAll('.verdict-btn').forEach(btn => {
@@ -204,10 +274,13 @@
                     row.querySelectorAll('.verdict-btn').forEach(b => b.classList.remove('selected'));
                     btn.classList.add('selected');
                     row.dataset.value = btn.dataset.value;
+                    // 6/5 #128: 選択でその軸のインラインエラーを解消
+                    document.querySelector(`.axis[data-axis="${group}"]`).classList.remove('err');
+                    updateBadPrompt();
                 });
             });
         }
-        ['overall', 'communication', 'reception'].forEach(initVerdict);
+        AXES.forEach(initVerdict);
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
@@ -246,12 +319,15 @@
                 const shortName = fishName ? fishName.trim() : '';
                 document.getElementById('target-fish').textContent = `${shortName} ${orderData.quantity || 0}kg`;
                 document.getElementById('target-date').textContent = i18next.t('review.orderOn', { date: orderData.deliveryDate || '' });
+                // 6/5 #128: FL番号（実名＋FL番号）
+                document.getElementById('target-fl').textContent = getOrderNumber({ id: orderId, ...orderData });
                 // 5/25 #91/#92 拡張: 次回訪問用に表示部キャッシュ
                 try {
                     saveRenderState(`farmer_review:${orderId}`, {
                         targetName: document.getElementById('target-name')?.textContent || '',
                         targetFish: document.getElementById('target-fish')?.textContent || '',
                         targetDate: document.getElementById('target-date')?.textContent || '',
+                        targetFl: document.getElementById('target-fl')?.textContent || '',
                     });
                 } catch (e) { /* ignore */ }
             } catch (err) {
@@ -261,19 +337,40 @@
             }
         });
 
-        document.getElementById('submit-btn').addEventListener('click', async () => {
+        // 6/5 #128: バリデーションはインライン方式（未選択軸＝赤枠＋その場「選択してください」
+        //           ＋最初の未選択軸へ自動スクロール／下部は総括のみ／ボタンは無効化しない）
+        function validateInline() {
+            let firstErr = null;
+            AXES.forEach(g => {
+                const axis = document.querySelector(`.axis[data-axis="${g}"]`);
+                const val = document.querySelector(`.verdict-row[data-group="${g}"]`).dataset.value;
+                if (!val) {
+                    axis.classList.add('err');
+                    if (!firstErr) firstErr = axis;
+                } else {
+                    axis.classList.remove('err');
+                }
+            });
+            if (firstErr) {
+                errorMsg.textContent = i18next.t('review.errorSummary');
+                errorMsg.style.display = 'block';
+                firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
             errorMsg.style.display = 'none';
+            return true;
+        }
+
+        document.getElementById('submit-btn').addEventListener('click', async () => {
+            if (!validateInline()) return;
+
             const overall = document.querySelector('.verdict-row[data-group="overall"]').dataset.value;
             const communication = document.querySelector('.verdict-row[data-group="communication"]').dataset.value;
             const reception = document.querySelector('.verdict-row[data-group="reception"]').dataset.value;
 
-            if (!overall || !communication || !reception) {
-                errorMsg.textContent = i18next.t('review.errorRating');
-                errorMsg.style.display = 'block';
-                return;
-            }
-
-            const comment = document.getElementById('comment-input').value.trim();
+            // 6/5 #128: コメントの連絡先マスク（公開テキスト＝両方向に適用）。原文は運営閲覧用に rawComment へ
+            const rawComment = document.getElementById('comment-input').value.trim();
+            const { masked, hit } = maskContacts(rawComment);
 
             const btn = document.getElementById('submit-btn');
             btn.disabled = true;
@@ -286,7 +383,10 @@
                     orderId,
                     verdict: overall,
                     subVerdicts: { communication, reception },
-                    comment: comment || null,
+                    comment: rawComment ? masked : null,   // 公開はマスク後
+                    rawComment: rawComment || null,        // 原文（運営閲覧用）
+                    masked: !!hit,                         // マスク発動有無
+                    hidden: false,                         // モデレーションで非表示にされたか
                     createdAt: serverTimestamp(),
                 });
                 document.getElementById('main-view').style.display = 'none';

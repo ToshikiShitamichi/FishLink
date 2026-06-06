@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 精算フロー - モック</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:1100px; margin-bottom:24px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; }
+  .intro b { color:#0B5FB0; } .intro .am { color:#B36A00; }
+
+  .stage { display:flex; flex-wrap:wrap; gap:28px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; background:#FFF; padding:7px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  .phone-label .tag { color:#5A6470; font-weight:500; }
+
+  .phone { width:390px; max-width:100%; height:820px; background:#F4F6F8; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+  .f-header { flex:0 0 auto; background:#FFF; padding:12px 16px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:8px; z-index:2; font-size:15px; }
+  .f-header .ttl { font-weight:800; }
+  .f-header .sp { margin-left:auto; font-size:12px; color:#0B5FB0; font-weight:700; border:1px solid #CFE0EE; border-radius:14px; padding:3px 10px; }
+  .f-body { flex:1 1 auto; overflow-y:auto; padding:12px 14px 24px; }
+
+  .card { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .alert { display:flex; gap:9px; align-items:flex-start; background:#FFF7E6; border:1px solid #F3D998; border-radius:12px; padding:11px 13px; margin-bottom:12px; }
+  .alert .at { font-size:13px; font-weight:800; color:#B36A00; }
+  .alert .as { font-size:12px; color:#9A7430; margin-top:2px; }
+
+  .ord-date { font-size:12px; color:#5A6470; }
+  .ord-rel { font-size:12px; color:#5A6470; margin-top:5px; }
+  .ord-name { font-size:17px; font-weight:800; margin-top:7px; }
+  .ord-sub { font-size:13px; color:#3A4250; margin-top:3px; }
+  .ord-fl { font-size:11px; color:#9AA3B0; margin-top:5px; }
+  .divider { border-top:1px solid #F0F2F5; margin:11px 0; }
+  .statrow { display:flex; align-items:center; }
+  .statrow .sl { font-size:13px; color:#5A6470; }
+  .badge { margin-left:auto; font-size:11px; font-weight:800; padding:3px 10px; border-radius:10px; }
+  .badge.wait { background:#FFF3DC; color:#B36A00; }
+
+  .total-lbl { font-size:13px; color:#5A6470; }
+  .total-amt { font-size:28px; font-weight:800; color:#0B5FB0; line-height:1.1; margin-top:2px; }
+  .copybtn { margin-top:9px; display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#0B5FB0; border:1px solid #CFE0EE; background:#F2F8FD; border-radius:9px; padding:6px 11px; cursor:pointer; }
+  .brk { display:flex; justify-content:space-between; font-size:13px; padding:6px 0; }
+  .brk .bl { color:#5A6470; } .brk .bv { font-weight:700; color:#3A4250; }
+  .brk.am .bl, .brk.am .bv { color:#B36A00; }
+
+  .khqr-t { text-align:center; font-size:13px; font-weight:800; margin-bottom:10px; }
+  .qr { width:190px; height:225px; margin:0 auto; border-radius:12px; background:#fff; border:1px solid #E3E8ED; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; position:relative; overflow:hidden; }
+  .qr .aba { font-size:17px; font-weight:800; letter-spacing:.5px; } .qr .aba b{ color:#0072BC;} .qr .aba i{ color:#E2231A; font-style:normal;}
+  .qr .scan { font-size:9px; color:#9AA3B0; }
+  .qr .code { width:108px; height:108px; background:repeating-conic-gradient(#1A1A1A 0% 25%, #fff 0% 50%) 0 0/14px 14px; border:5px solid #fff; box-shadow:0 0 0 1px #ddd; }
+  .qr .who { font-size:10px; font-weight:700; color:#333; }
+  .qr .topbar{ position:absolute; top:0; left:0; right:0; height:8px; background:#0B6E8C;}
+  .qr-note { font-size:10px; color:#9AA3B0; text-align:center; margin-top:9px; line-height:1.5; }
+  .qr-acts { display:flex; gap:9px; margin-top:10px; }
+  .qr-acts .qb { flex:1; text-align:center; font-size:12px; font-weight:700; color:#3A4250; border:1px solid #DDE3E9; border-radius:9px; padding:9px; background:#FCFDFE; }
+
+  .secL { font-size:12px; font-weight:800; color:#5A6470; margin:2px 0 8px; }
+  .state-box { border-radius:12px; padding:13px; }
+  .state-box.blue { background:#EAF2FB; border:1px solid #D5E6F8; }
+  .state-box.amber { background:#FFF4E2; border:1px solid #F3D998; }
+  .state-box .stt { font-size:18px; font-weight:800; }
+  .state-box.blue .stt { color:#0B5FB0; } .state-box.amber .stt { color:#B36A00; }
+  .state-box .sts { font-size:12px; margin-top:6px; line-height:1.6; }
+  .state-box.blue .sts { color:#3E6A98; } .state-box.amber .sts { color:#8A6A28; }
+
+  .info-green { background:#EAF6EE; border:1px solid #BFE3CB; border-radius:12px; padding:12px 13px; margin-top:4px; }
+  .info-green .ig-t { font-size:12px; font-weight:800; color:#2E7D32; }
+  .info-green .ig-b { font-size:12px; color:#3F6B48; margin-top:5px; line-height:1.6; }
+  .info-neutral { background:#F4F6F8; border:1px solid #E3E8ED; border-radius:12px; padding:12px 13px; margin-top:4px; }
+  .info-neutral .ig-t { font-size:12px; font-weight:800; color:#5A6470; }
+  .info-neutral .ig-b { font-size:12px; color:#5A6470; margin-top:5px; line-height:1.6; }
+
+  .f-footer { flex:0 0 auto; background:#FFF; border-top:1px solid #EEF1F4; padding:12px 16px 18px; }
+  .btn { width:100%; border:none; border-radius:11px; padding:14px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; }
+  .btn.pri { background:#0B5FB0; color:#FFF; }
+  .foot-note { font-size:11px; color:#9AA3B0; text-align:center; }
+
+  /* モーダル */
+  .overlay { position:absolute; inset:0; background:rgba(0,0,0,0.42); z-index:5; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .modal { width:100%; background:#FFF; border-radius:16px; padding:20px 18px; box-shadow:0 12px 40px rgba(0,0,0,0.25); }
+  .modal .mt { font-size:17px; font-weight:800; }
+  .modal .mb { font-size:13px; color:#5A6470; margin:10px 0 16px; line-height:1.6; }
+  .modal .mact { display:flex; gap:10px; }
+  .modal .mbtn { flex:1; border-radius:10px; padding:13px; font-size:14px; font-weight:800; border:none; cursor:pointer; font-family:inherit; }
+  .modal .mbtn.cancel { background:#ECEEF0; color:#5A6470; }
+  .modal .mbtn.ok { background:#0B5FB0; color:#FFF; }
+
+  /* 運営画面（デスクトップ） */
+  .adm { width:100%; max-width:1180px; margin-top:34px; display:flex; flex-direction:column; gap:10px; }
+  .adm-label { align-self:center; font-size:13px; font-weight:700; background:#FFF; padding:7px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  .adm-label .tag { color:#5A6470; font-weight:500; }
+  .win { background:#F7F9FB; border:1px solid #E3E8ED; border-radius:16px; padding:22px 26px 26px; box-shadow:0 8px 28px rgba(0,0,0,0.10); }
+  .win .kicker { font-size:12px; color:#9AA3B0; }
+  .win h2 { font-size:22px; font-weight:800; margin:2px 0 4px; }
+  .win .sub { font-size:13px; color:#5A6470; margin-bottom:16px; }
+  .nav { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; align-items:center; }
+  .nav .nv { font-size:13px; font-weight:700; color:#3A4250; background:#FFF; border:1px solid #E3E8ED; border-radius:18px; padding:7px 14px; }
+  .nav .nv.on { background:#0B1B33; color:#FFF; border-color:#0B1B33; }
+  .nav .nv .cnt { background:#E5453F; color:#fff; border-radius:9px; font-size:11px; padding:0 6px; margin-left:5px; }
+  .nav .nv.lang { margin-left:auto; color:#0B5FB0; border-color:#CFE0EE; }
+  .filt { display:flex; gap:8px; margin-bottom:16px; }
+  .filt .ch { font-size:12px; font-weight:700; color:#3A4250; background:#FFF; border:1px solid #E3E8ED; border-radius:16px; padding:6px 14px; }
+  .filt .ch.on { background:#0B1B33; color:#FFF; border-color:#0B1B33; }
+  .kpis { display:flex; gap:16px; margin-bottom:18px; }
+  .kpi { flex:1; background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:14px 16px; }
+  .kpi .kl { font-size:12px; color:#5A6470; }
+  .kpi .kv { font-size:24px; font-weight:800; color:#0B1B33; margin-top:4px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .chips .c { font-size:12px; font-weight:700; color:#3A4250; background:#FFF; border:1px solid #E3E8ED; border-radius:16px; padding:6px 13px; }
+  .chips .c.on { background:#0B1B33; color:#FFF; border-color:#0B1B33; }
+  .chips .c.new { border-color:#F1C0BD; color:#C0392B; background:#FDF1F0; }
+  .chips .c .cn { background:#E5453F; color:#fff; border-radius:9px; font-size:11px; padding:0 6px; margin-left:5px; }
+  table.tx { width:100%; border-collapse:collapse; background:#FFF; border:1px solid #EEF1F4; border-radius:12px; overflow:hidden; font-size:13px; }
+  table.tx th { text-align:left; font-size:12px; color:#5A6470; font-weight:700; padding:12px 14px; border-bottom:1px solid #EEF1F4; background:#FAFBFC; }
+  table.tx td { padding:13px 14px; border-bottom:1px solid #F2F4F7; color:#3A4250; }
+  table.tx tr:last-child td { border-bottom:none; }
+  table.tx .flno { font-family:ui-monospace,Menlo,monospace; color:#5A6470; font-size:12px; }
+  .sbadge { font-size:11px; font-weight:800; padding:3px 9px; border-radius:10px; white-space:nowrap; }
+  .sbadge.recv { background:#FFF3DC; color:#B36A00; }
+  .sbadge.paid { background:#EAF2FB; color:#0B5FB0; }
+  .sbadge.done { background:#EAF6EE; color:#2E7D32; }
+  .sbadge.over { background:#FDECEA; color:#C0392B; }
+  .linkbtn { font-size:12px; font-weight:700; color:#0B5FB0; border:1px solid #CFE0EE; border-radius:8px; padding:6px 11px; background:#F2F8FD; }
+  .dgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:18px; }
+  .dcard { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:16px; }
+  .dcard .dl { font-size:12px; color:#5A6470; }
+  .dcard .dv { font-size:22px; font-weight:800; color:#0B1B33; margin-top:4px; }
+  .dcard .dn { font-size:11px; color:#9AA3B0; margin-top:6px; }
+  .panel { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:18px; margin-bottom:16px; }
+  .panel .pt { font-size:14px; font-weight:800; display:flex; align-items:center; }
+  .panel .hint { margin-left:auto; font-size:11px; font-weight:700; border-radius:14px; padding:5px 11px; }
+  .panel .hint.amber { background:#FFF7E6; color:#B36A00; border:1px solid #F3D998; }
+  .panel .hint.green { background:#EAF6EE; color:#2E7D32; border:1px solid #BFE3CB; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:14px; }
+  .kv2 { display:flex; justify-content:space-between; font-size:13px; padding:7px 0; border-bottom:1px solid #F2F4F7; }
+  .kv2 .l { color:#5A6470; } .kv2 .v { font-weight:700; color:#3A4250; }
+  .kv2.am .v { color:#B36A00; }
+  .kv2.tot { border-bottom:none; border-top:2px solid #EEF1F4; margin-top:4px; padding-top:10px; }
+  .kv2.tot .v { font-size:18px; color:#0B1B33; }
+  .darkbtn { width:100%; background:#0B1B33; color:#FFF; border:none; border-radius:10px; padding:13px; font-size:14px; font-weight:800; margin-top:12px; cursor:pointer; }
+  .ghostbtn { width:100%; background:#EEF1F4; color:#9AA3B0; border:none; border-radius:10px; padding:13px; font-size:14px; font-weight:800; margin-top:12px; cursor:not-allowed; }
+  .memo-attach { margin-top:14px; border-top:1px dashed #DDE3E9; padding-top:13px; }
+  .memo-attach .mal { font-size:12px; font-weight:800; color:#5A6470; margin-bottom:7px; }
+  .memo-attach textarea { width:100%; border:1px solid #DDE3E9; border-radius:9px; padding:9px 11px; font-size:12px; font-family:inherit; min-height:52px; box-sizing:border-box; }
+  .memo-attach .arow { display:flex; gap:9px; align-items:center; margin-top:9px; }
+  .memo-attach .attbtn { font-size:12px; font-weight:700; color:#0B5FB0; border:1px dashed #9CC2E6; border-radius:8px; padding:8px 12px; background:#F4F9FE; }
+  .memo-attach .thumb { width:54px; height:42px; border-radius:6px; background:#EAF1F7; border:1px solid #C9D6E2; position:relative; }
+  .memo-attach .thumb::after { content:"🧾"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .lastop { display:flex; align-items:center; background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:14px 18px; }
+  .lastop .lt { font-size:13px; font-weight:800; } .lastop .ls { font-size:12px; color:#9AA3B0; margin-top:2px; }
+  .donebtn { margin-left:auto; background:#2E7D32; color:#FFF; border:none; border-radius:10px; padding:12px 22px; font-size:14px; font-weight:800; cursor:pointer; }
+  .qrlink { font-size:12px; color:#0B5FB0; word-break:break-all; margin-top:9px; }
+  .mini-qr { width:120px; height:120px; margin-top:8px; border:1px solid #E3E8ED; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:6px; }
+  .mini-qr .code { width:70px; height:70px; background:repeating-conic-gradient(#1A1A1A 0% 25%, #fff 0% 50%) 0 0/10px 10px; border:4px solid #fff; box-shadow:0 0 0 1px #ddd; }
+  .mini-qr .aba { font-size:11px; font-weight:800; } .mini-qr .aba b{color:#0072BC;} .mini-qr .aba i{color:#E2231A; font-style:normal;}
+
+  .note { max-width:1100px; margin-top:24px; background:#FFF; padding:14px 18px; border-radius:12px; font-size:13px; line-height:1.8; color:#4A4A4A; }
+  .note h2 { font-size:14px; color:#0B5FB0; margin:0 0 8px; } .note b{ color:#0B5FB0;} .note .am{color:#B36A00;}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 精算フロー（モック・修正反映版）</h1>
+  <p>同一注文 FL-260604-003（レッドティラピア 3head/kg・5kg・内臓処理あり）。既存実装のレビュー修正を反映した姿。</p>
+  <p><b>金額＝青</b>／<span class="am">キャンペーン割引＝amber</span>／手数料・送料＝中立／ボタン＝青／確認は<b>自前モーダル</b>／<b>レビューは支払い前は出さない</b>／農家の手数料は<b>「-1,875＋キャンペーン+938」分解</b>／問題報告ありは<b>「確認中」</b>表示。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① レストラン お支払い -->
+  <div class="phone-wrap">
+    <div class="phone-label">① レストラン｜お支払い <span class="tag">KHQR・修正反映</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="ttl">お支払い</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="alert">
+          <span>⏰</span>
+          <div><div class="at">8:48 までにお支払いください</div><div class="as">受け取り時にお支払いください</div></div>
+        </div>
+
+        <div class="card">
+          <div class="ord-date">納品日 6/5（金）7:00–8:00</div>
+          <div class="ord-rel">🐟 取引相手：大星農場・タケオ州 Doun Kaev</div>
+          <div class="ord-name">レッドティラピア（3 head/kg）</div>
+          <div class="ord-sub">5kg・内臓処理あり</div>
+          <div class="ord-fl">FL-260604-003</div>
+          <div class="divider"></div>
+          <div class="statrow"><span class="sl">支払いステータス</span><span class="badge wait">お支払い待ち</span></div>
+        </div>
+
+        <div class="card">
+          <div class="total-lbl">合計</div>
+          <div class="total-amt">50,837 KHR</div>
+          <div class="copybtn">📋 金額をコピー</div>
+          <div class="divider"></div>
+          <div class="brk"><span class="bl">小計（魚代）</span><span class="bv">39,375 KHR</span></div>
+          <div class="brk"><span class="bl">送料</span><span class="bv">12,400 KHR</span></div>
+          <div class="brk am"><span class="bl">キャンペーン割引</span><span class="bv">-938 KHR</span></div>
+        </div>
+
+        <div class="card">
+          <div class="khqr-t">QRコードでお支払い（KHQR）</div>
+          <div class="qr">
+            <div class="topbar"></div>
+            <div class="aba"><b>ABA</b> <i>PAY</i></div>
+            <div class="scan">Scan. Pay. Done.</div>
+            <div class="code"></div>
+            <div class="who">FISHLINK (運営口座)</div>
+          </div>
+          <div class="qr-note">※スマホでスキャンできない場合は「リンクを開く」から支払い、またはQR画像を保存してください</div>
+          <div class="qr-acts"><span class="qb">🔗 リンクを開く</span><span class="qb">⬇ QRを保存</span></div>
+        </div>
+      </div>
+      <div class="f-footer">
+        <button class="btn pri">支払い完了</button>
+        <div class="foot-note" style="margin-top:8px;">※ レビューは支払い後に表示されます</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 支払い完了モーダル -->
+  <div class="phone-wrap">
+    <div class="phone-label">② レストラン｜「支払い完了」確認 <span class="tag">自前モーダル</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="ttl">お支払い</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body" style="filter:saturate(.6);">
+        <div class="card">
+          <div class="total-lbl">合計</div>
+          <div class="total-amt">50,837 KHR</div>
+          <div class="divider"></div>
+          <div class="brk"><span class="bl">小計（魚代）</span><span class="bv">39,375 KHR</span></div>
+          <div class="brk"><span class="bl">送料</span><span class="bv">12,400 KHR</span></div>
+          <div class="brk am"><span class="bl">キャンペーン割引</span><span class="bv">-938 KHR</span></div>
+        </div>
+        <div class="card">
+          <div class="khqr-t">QRコードでお支払い（KHQR）</div>
+          <div class="qr"><div class="topbar"></div><div class="aba"><b>ABA</b> <i>PAY</i></div><div class="scan">Scan. Pay. Done.</div><div class="code"></div><div class="who">FISHLINK (運営口座)</div></div>
+        </div>
+      </div>
+      <div class="overlay">
+        <div class="modal">
+          <div class="mt">支払いを完了しましたか？</div>
+          <div class="mb">運営が入金を確認します。確認後に「支払い確認待ち」になります。</div>
+          <div class="mact">
+            <button class="mbtn cancel">キャンセル</button>
+            <button class="mbtn ok">はい</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 農家 送金状況（通常） -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ 農家｜送金状況（通常） <span class="tag">手数料分解・受取額青</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="ttl">送金状況</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="card">
+          <div class="ord-date">納品日 6/5（金）7:00–8:00</div>
+          <div class="ord-name">レッドティラピア（3 head/kg）</div>
+          <div class="ord-sub">注文数量 5kg・内臓処理あり</div>
+          <div class="ord-rel" style="margin-top:7px;">🍴 レストラン・アンコール・プノンペン, Daun Penh</div>
+          <div class="ord-fl">FL-260604-003</div>
+        </div>
+
+        <div class="card">
+          <div class="secL">現在の状態</div>
+          <div class="state-box blue">
+            <div class="stt">支払い確認待ち</div>
+            <div class="sts">レストランの支払い確認後、FishLink から送金されます。</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="total-lbl">受取予定額</div>
+          <div class="total-amt">48,963 KHR</div>
+          <div class="divider"></div>
+          <div class="brk"><span class="bl">魚代</span><span class="bv">37,500 KHR</span></div>
+          <div class="brk"><span class="bl">手数料（5%）</span><span class="bv">-1,875 KHR</span></div>
+          <div class="brk am"><span class="bl">キャンペーン割引</span><span class="bv">+938 KHR</span></div>
+          <div class="brk"><span class="bl">送料</span><span class="bv">+12,400 KHR</span></div>
+        </div>
+
+        <div class="info-green">
+          <div class="ig-t">送金について</div>
+          <div class="ig-b">レストランがその場で農家に直接支払うわけではありません。支払い確認後、FishLink から農家へ送金されます。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 農家 送金状況（問題報告あり＝確認中） -->
+  <div class="phone-wrap">
+    <div class="phone-label">④ 農家｜送金状況（確認中） <span class="tag">問題報告あり</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="ttl">送金状況</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="card">
+          <div class="ord-date">納品日 6/5（金）7:00–8:00</div>
+          <div class="ord-name">レッドティラピア（3 head/kg）</div>
+          <div class="ord-sub">注文数量 5kg・内臓処理あり</div>
+          <div class="ord-rel" style="margin-top:7px;">🍴 レストラン・アンコール・プノンペン, Daun Penh</div>
+          <div class="ord-fl">FL-260604-003</div>
+        </div>
+
+        <div class="card">
+          <div class="secL">現在の状態</div>
+          <div class="state-box amber">
+            <div class="stt">確認中</div>
+            <div class="sts">問題が報告されています。運営が内容を確認しています。確認後に送金または対応のご連絡をします。</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="total-lbl">受取予定額（保留中）</div>
+          <div class="total-amt">48,963 KHR</div>
+          <div class="divider"></div>
+          <div class="brk"><span class="bl">魚代</span><span class="bv">37,500 KHR</span></div>
+          <div class="brk"><span class="bl">手数料（5%）</span><span class="bv">-1,875 KHR</span></div>
+          <div class="brk am"><span class="bl">キャンペーン割引</span><span class="bv">+938 KHR</span></div>
+          <div class="brk"><span class="bl">送料</span><span class="bv">+12,400 KHR</span></div>
+        </div>
+
+        <div class="info-neutral">
+          <div class="ig-t">送金について</div>
+          <div class="ig-b">問題の確認が済むと、問題がなければ送金されます。内容によっては一部・全額がレストランへ返金される場合があります。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ⑤ 運営 取引一覧 -->
+<div class="adm">
+  <div class="adm-label">⑤ 運営｜取引一覧 <span class="tag">「未払い（期限超過）」フィルタ追加</span></div>
+  <div class="win">
+    <div class="kicker">FISHLINK 管理画面</div>
+    <h2>取引一覧</h2>
+    <div class="sub">各注文をステータスごとに一覧管理し、詳細画面から入金確認・農家送金・取引完了を行う</div>
+    <div class="nav">
+      <span class="nv on">取引一覧</span><span class="nv">ユーザー</span><span class="nv">料金設定</span><span class="nv">紹介クーポン</span><span class="nv">CAA参考価格</span><span class="nv">トラブル報告<span class="cnt">8</span></span><span class="nv">ログアウト</span><span class="nv lang">🌐 日本語</span>
+    </div>
+    <div class="filt"><span class="ch">本日</span><span class="ch on">期間指定</span><span class="ch">全期間</span></div>
+    <div class="kpis">
+      <div class="kpi"><div class="kl">取引数</div><div class="kv">4件</div></div>
+      <div class="kpi"><div class="kl">流通総額</div><div class="kv">117,374 KHR</div></div>
+      <div class="kpi"><div class="kl">手数料</div><div class="kv">6,524 KHR</div></div>
+    </div>
+    <div class="chips">
+      <span class="c on">すべて</span><span class="c">準備開始</span><span class="c">配送開始</span><span class="c">受け取り完了</span><span class="c">レストラン入金済</span><span class="c">農家送金済</span><span class="c">取引完了</span><span class="c new">未払い（期限超過）<span class="cn">1</span></span>
+    </div>
+    <table class="tx">
+      <thead><tr><th>取引番号</th><th>ステータス</th><th>注文日時</th><th>レストラン</th><th>農家</th><th>支払予定額</th><th>詳細</th></tr></thead>
+      <tbody>
+        <tr><td class="flno">FL-260604-005</td><td><span class="sbadge over">未払い（期限超過）</span></td><td>2026/06/04 08:10</td><td>サンプル食堂</td><td>海風養殖</td><td><b>18,200 KHR</b></td><td><span class="linkbtn">詳細を見る</span></td></tr>
+        <tr><td class="flno">FL-260604-003</td><td><span class="sbadge recv">受け取り完了</span></td><td>2026/06/04 12:44</td><td>レストラン・アンコール</td><td>大星農場</td><td><b>50,837 KHR</b></td><td><span class="linkbtn">詳細を見る</span></td></tr>
+        <tr><td class="flno">FL-260604-002</td><td><span class="sbadge paid">レストラン入金済</span></td><td>2026/06/04 10:27</td><td>レストラン・アンコール</td><td>大星農場</td><td><b>50,837 KHR</b></td><td><span class="linkbtn">詳細を見る</span></td></tr>
+        <tr><td class="flno">FL-260604-001</td><td><span class="sbadge done">取引完了</span></td><td>2026/06/04 07:41</td><td>テストレストラン</td><td>テスト農家</td><td><b>15,700 KHR</b></td><td><span class="linkbtn">詳細を見る</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ⑥ 運営 注文管理詳細 -->
+<div class="adm">
+  <div class="adm-label">⑥ 運営｜注文管理詳細 <span class="tag">入金確認に「メモ＋スクショ添付」追加</span></div>
+  <div class="win">
+    <div class="kicker">← 取引一覧に戻る ・ FISHLINK 管理画面</div>
+    <h2>注文管理詳細</h2>
+    <div class="sub">レストラン入金確認 → 農家送金 → 取引完了 の運用を手動で管理 ・ FL-260604-003</div>
+    <div style="margin-bottom:18px;"><span class="sbadge recv">受け取り完了</span> <span style="font-size:12px;color:#9AA3B0;margin-left:8px;">2026/06/04 12:44</span></div>
+    <div class="dgrid">
+      <div class="dcard"><div class="dl">注文ステータス</div><div class="dv" style="font-size:20px;">受け取り完了</div><div class="dn">次の操作：レストラン入金の確認</div></div>
+      <div class="dcard"><div class="dl">レストラン支払予定額</div><div class="dv">50,837 KHR</div><div class="dn">魚代・送料・サービス料・割引を含む</div></div>
+      <div class="dcard"><div class="dl">農家送金予定額</div><div class="dv">48,963 KHR</div><div class="dn">手数料控除後の送金額</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="pt">レストラン入金確認 <span class="hint amber">Merchant Appを見て手動確認</span></div>
+      <div class="two">
+        <div>
+          <div class="kv2"><span class="l">魚代</span><span class="v">37,500 KHR</span></div>
+          <div class="kv2"><span class="l">送料</span><span class="v">12,400 KHR</span></div>
+          <div class="kv2"><span class="l">サービス料</span><span class="v">1,875 KHR</span></div>
+          <div class="kv2 am"><span class="l">割引</span><span class="v">-938 KHR</span></div>
+          <div class="kv2 tot"><span class="l">合計</span><span class="v">50,837 KHR</span></div>
+        </div>
+        <div>
+          <div class="kv2"><span class="l">振込元名義</span><span class="v">-</span></div>
+          <div class="kv2"><span class="l">振込元口座番号</span><span class="v">-</span></div>
+          <button class="darkbtn">入金確認済にする</button>
+          <div class="memo-attach">
+            <div class="mal">入金控え・メモ（入金スクショを添付／過不足・振込元の補足）</div>
+            <textarea placeholder="例：入金確認OK。／50,000のみ入金・差額837を督促中。／振込元名義 ◯◯。"></textarea>
+            <div class="arow"><span class="attbtn">📎 入金スクショを添付</span><div class="thumb"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="pt">農家送金 <span class="hint green">入金確認後に手動送金</span></div>
+      <div class="two">
+        <div>
+          <div class="kv2"><span class="l">魚代</span><span class="v">37,500 KHR</span></div>
+          <div class="kv2"><span class="l">送料</span><span class="v">12,400 KHR</span></div>
+          <div class="kv2"><span class="l">手数料控除額（5%）</span><span class="v">-937 KHR</span></div>
+          <div class="kv2 tot"><span class="l">合計（送金額）</span><span class="v">48,963 KHR</span></div>
+          <div class="copybtn">📋 送金額をコピー</div>
+        </div>
+        <div>
+          <div class="kv2"><span class="l">送金先名義</span><span class="v">大星農場</span></div>
+          <div class="mini-qr"><div class="aba"><b>ABA</b> <i>PAY</i></div><div class="code"></div></div>
+          <div class="qrlink">🔗 https://link.payway.com.kh/ABAPAYD8436667x</div>
+          <button class="ghostbtn">農家へ送金済にする（入金確認後）</button>
+          <div class="memo-attach">
+            <div class="mal">送金控え（送金後にスクショを添付／任意）</div>
+            <div class="arow"><span class="attbtn">📎 送金スクショを添付</span><div class="thumb"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lastop">
+      <div><div class="lt">最終操作</div><div class="ls">入金確認と農家送金が完了したら、取引完了にする</div></div>
+      <button class="donebtn">取引完了にする</button>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <h2>設計メモ（このモックで表現していること）</h2>
+  <p><b>色</b>：金額（合計・受取予定額）＝<b>青</b>／<span class="am">キャンペーン割引＝amber</span>／手数料・送料＝中立グレー（±符号で方向を示す）。緑はGAqP/成功/送金説明、赤はdanger専用。</p>
+  <p><b>①お支払い</b>：手数料はレストランには内包表示（小計＝魚代39,375に込み）。割引のみ明細に出す。<b>金額コピー</b>で手入力ミスを低減（口座QRで金額手入力のため）。フッターは「支払い完了」青のみ＝<b>レビューは支払い前に出さない</b>（押下→支払い確認待ちになってから表示）。</p>
+  <p><b>②モーダル</b>：ブラウザ標準ダイアログ→自前モーダル。文言は実態に合わせ「運営が入金を確認します」。</p>
+  <p><b>③送金状況（通常）</b>：受取予定額＝青。<b>手数料を「手数料(5%) -1,875 ＋ キャンペーン割引 +938」に分解</b>（承認画面と統一）。決済中継（FishLink経由）を明記＝中抜き対策。</p>
+  <p><b>④送金状況（確認中）</b>：レストランが問題報告→運営が送金保留→農家に<b>「確認中（問題が報告されています）」</b>を表示し不安を防ぐ。結果は送金／返金／一部返金（運営手動）。</p>
+  <p><b>⑤運営 取引一覧</b>：状態フィルタに <b>「未払い（期限超過）」</b>チップ＋件数バッジを追加（期限超過の注文を運営が見つけて督促対応するため）。赤バッジの行が該当例。</p>
+  <p><b>⑥運営 注文管理詳細</b>：レストラン入金確認 → 農家送金 → 取引完了 の手動運用。<b>入金確認</b>に<b>「入金控え（入金スクショを添付）＋メモ」</b>＝入金された証拠を毎回残す（過不足・振込元の補足も）。<b>農家送金</b>は運営が手動で振り込むため <b>「送金額をコピー」</b>（銀行アプリに正確な額を入力）＋<b>「送金スクショを添付」</b>（送金控え＝証拠）。入金控え／送金控えで取引の両端を証拠化。送金ボタンは入金確認後に活性。色は内部用のため最小限（金額は濃色・割引amber）。</p>
+</div>
+
+</body>
+</html>

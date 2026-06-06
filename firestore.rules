@@ -61,6 +61,10 @@ service cloud.firestore {
         allow create: if request.auth != null
           && (get(/databases/$(database)/documents/orders/$(id)).data.farmerId == request.auth.uid
            || get(/databases/$(database)/documents/orders/$(id)).data.restaurantId == request.auth.uid);
+        // 6/5 #128: モデレーション（運営が非表示=hidden に）のみ admin に update を許可。
+        // 送信後の本人編集は不可（MVP）＝管理者だけが update できる。
+        allow update: if request.auth != null
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
       }
     }
 

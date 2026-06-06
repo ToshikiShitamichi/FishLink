@@ -38,18 +38,38 @@
             margin-bottom: 4px;
         }
 
+        /* 6/5 #129: 金額（合計）＝青 */
         .pay-total {
             font-size: 32px;
             font-weight: 800;
-            color: var(--color-text);
+            color: var(--color-cta);
             line-height: 1.1;
         }
 
+        /* 6/5 #129: 割引の注記は amber に統一 */
         .pay-total-note {
             font-size: 12px;
-            color: #16a34a;
+            color: #b36a00;
             margin-top: 4px;
         }
+
+        /* 6/5 #129: 金額をコピー（口座QRは金額手入力のため誤入力防止） */
+        .copy-amount-btn {
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--color-cta);
+            border: 1px solid var(--color-cta-lt);
+            background: var(--color-cta-lt);
+            border-radius: 10px;
+            padding: 7px 12px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .copy-amount-btn .material-symbols-outlined { font-size: 18px; }
 
         .pay-breakdown {
             border-top: 1px solid var(--color-border);
@@ -66,7 +86,8 @@
         }
 
         .pay-line__label { color: var(--color-text-sub); }
-        .pay-line__value.discount { color: #16a34a; }
+        /* 6/5 #129: キャンペーン割引＝amber */
+        .pay-line__value.discount { color: #b36a00; }
 
         .qr-section {
             text-align: center;
@@ -153,11 +174,12 @@
             border-top: 1px solid var(--color-border);
         }
 
+        /* 6/5 #129: 確認ボタン 紫 → 青（CTA） */
         .payment-footer button {
             width: 100%;
             border: none;
             border-radius: 16px;
-            background: #6366f1;
+            background: var(--color-cta);
             color: #fff;
             font-size: 17px;
             font-weight: 700;
@@ -170,6 +192,36 @@
         }
 
         .payment-footer button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 6/5 #129: レビューは支払い前は出さない旨の注記 */
+        .review-hint-note {
+            font-size: 11px;
+            color: var(--color-text-sub);
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* 6/5 #129: 自前モーダル（ブラウザ標準ダイアログを置換） */
+        .pay-modal-overlay {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(0,0,0,0.42);
+            display: none; align-items: center; justify-content: center;
+            padding: 24px;
+        }
+        .pay-modal-overlay.show { display: flex; }
+        .pay-modal {
+            width: 100%; max-width: 360px;
+            background: var(--color-surface);
+            border-radius: 18px;
+            padding: 20px 18px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        }
+        .pay-modal__title { font-size: 17px; font-weight: 800; color: var(--color-text); }
+        .pay-modal__body { font-size: 13px; color: var(--color-text-sub); margin: 10px 0 16px; line-height: 1.6; }
+        .pay-modal__actions { display: flex; gap: 10px; }
+        .pay-modal__btn { flex: 1; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 800; border: none; cursor: pointer; font-family: inherit; }
+        .pay-modal__btn.cancel { background: #eceef0; color: var(--color-text-sub); }
+        .pay-modal__btn.ok { background: var(--color-cta); color: #fff; }
 
         .paid-banner {
             background: #f0fdf4;
@@ -218,6 +270,10 @@
             <div class="pay-total-label" data-i18n="payment.total"></div>
             <div class="pay-total" id="total-amount">0 KHR</div>
             <div class="pay-total-note" id="discount-note" style="display:none;" data-i18n="payment.discountApplied"></div>
+            <button type="button" class="copy-amount-btn" id="copy-amount-btn">
+                <span class="material-symbols-outlined">content_copy</span>
+                <span data-i18n="payment.copyAmount"></span>
+            </button>
             <div class="pay-breakdown" id="breakdown"></div>
         </div>
 
@@ -243,11 +299,25 @@
 
     <div class="payment-footer">
         <button id="paid-btn" data-i18n="payment.confirmPaid"></button>
-        <a id="review-btn" href="#" style="display:none; margin-top:8px; padding:12px; background:#f97316; color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:14px; align-items:center; justify-content:center; gap:6px; line-height:1;">
+        <!-- 6/5 #129: レビューは支払い前は出さない。「支払い完了」押下後（=paid 以降）のみ表示。色は青(CTA) -->
+        <a id="review-btn" href="#" style="display:none; margin-top:8px; padding:12px; background:var(--color-cta); color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:14px; align-items:center; justify-content:center; gap:6px; line-height:1;">
             <span class="material-symbols-outlined" style="font-size:18px; line-height:1;">star</span>
             <span data-i18n="review.submit" style="line-height:1;"></span>
         </a>
         <div id="reviewed-label" style="display:none; margin-top:8px; padding:12px; background:#f3f4f6; color:#6b7280; border-radius:12px; font-weight:700; font-size:14px; text-align:center; line-height:1;" data-i18n="review.reviewed"></div>
+        <div id="review-hint-note" class="review-hint-note" data-i18n="payment.reviewAfterPay"></div>
+    </div>
+
+    <!-- 6/5 #129: 自前モーダル（支払い完了の確認） -->
+    <div class="pay-modal-overlay" id="pay-modal-overlay">
+        <div class="pay-modal">
+            <div class="pay-modal__title" data-i18n="payment.confirmModalTitle"></div>
+            <div class="pay-modal__body" data-i18n="payment.confirmModalBody"></div>
+            <div class="pay-modal__actions">
+                <button class="pay-modal__btn cancel" id="modal-cancel" data-i18n="payment.modalCancel"></button>
+                <button class="pay-modal__btn ok" id="modal-ok" data-i18n="payment.confirmModalOk"></button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -255,6 +325,8 @@
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import { formatProvince, formatDistrict } from '/js/province-utils.js';
+        // 6/5 #129: FL番号表示
+        import { getOrderNumber } from '/js/order-utils.js';
         import {
             doc, getDoc, updateDoc, onSnapshot
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -361,16 +433,41 @@
             loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
 
+        // 6/5 #129: レビュー解禁は「支払いの合図の後」のみ（支払い完了押下=paid 以降）
+        function isPaidOrBeyond() {
+            if (!orderData) return false;
+            return orderData.paymentStatus === 'paid'
+                || ['payment_confirmed', 'remitted', 'done'].includes(orderData.adminStatus);
+        }
+
         // 5/7 #55: レビュー済みなら詳細画面のレビューボタンを「レビュー済み」表示に
+        let alreadyReviewed = false;
         function applyReviewedState(reviewed) {
+            alreadyReviewed = reviewed;
+            refreshReviewArea();
+        }
+
+        // 6/5 #129: レビュー導線の表示制御を一元化
+        //   支払い前 → レビュー導線は出さず注記のみ／支払い後・未レビュー → レビューを送信／レビュー済み → ラベル
+        function refreshReviewArea() {
             const reviewBtn = document.getElementById('review-btn');
             const reviewedLabel = document.getElementById('reviewed-label');
-            if (reviewed) {
+            const hint = document.getElementById('review-hint-note');
+            reviewBtn.href = `/pages/restaurant/review.html?id=${orderId}`;
+            const unlocked = isPaidOrBeyond();
+            if (!unlocked) {
+                reviewBtn.style.display = 'none';
+                reviewedLabel.style.display = 'none';
+                hint.style.display = 'block';
+                return;
+            }
+            hint.style.display = 'none';
+            if (alreadyReviewed) {
                 reviewBtn.style.display = 'none';
                 reviewedLabel.style.display = 'block';
             } else {
                 reviewedLabel.style.display = 'none';
-                // review-btn の表示制御は updatePaidState 側に任せる
+                reviewBtn.style.display = 'flex';
             }
         }
 
@@ -442,6 +539,7 @@
                     ${i18next.t('payment.partnerLabel')}: ${farmerName}${place ? ` · ${place}` : ''}
                 </div>
                 ${itemsHtml}
+                <div style="font-size:11px; color:#9aa3b0; font-family:ui-monospace,Menlo,monospace; margin-top:6px;">${getOrderNumber({ id: orderId, ...orderData })}</div>
                 <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center;">
                     <span style="font-size:13px; color:var(--color-text-sub);">${i18next.t('payment.statusLabel')}</span>
                     <span style="font-size:13px; font-weight:700; padding:3px 10px; border-radius:10px; background:${payStatusInfo.bg}; color:${payStatusInfo.color};">${payStatusInfo.text}</span>
@@ -506,32 +604,50 @@
         function updatePaidState(paymentStatus) {
             const btn = document.getElementById('paid-btn');
             const banner = document.getElementById('paid-banner');
-            const reviewBtn = document.getElementById('review-btn');
             if (paymentStatus === 'paid') {
                 banner.style.display = 'block';
                 btn.classList.add('paid');
                 btn.textContent = i18next.t('payment.alreadyPaid');
                 btn.disabled = true;
             }
-            // レビューボタンは常時表示（受取完了後にこの画面に来ているため）
-            // 5/7 #55: レビュー済みの場合は applyReviewedState 側で「レビュー済み」表示に切替
-            reviewBtn.href = `/pages/restaurant/review.html?id=${orderId}`;
-            const reviewedLabel = document.getElementById('reviewed-label');
-            if (reviewedLabel.style.display !== 'block') {
-                reviewBtn.style.display = 'flex';
-            }
+            // 6/5 #129: レビュー導線は支払い後のみ（refreshReviewArea で制御）
+            refreshReviewArea();
         }
 
-        // 支払い完了ボタン
-        document.getElementById('paid-btn').addEventListener('click', async () => {
+        // 6/5 #129: 金額をコピー（口座QRは金額手入力＝誤入力防止）。数字のみコピー
+        document.getElementById('copy-amount-btn').addEventListener('click', async () => {
+            const total = orderData?.totalAmount
+                || ((orderData?.fishPrice || 0) + (orderData?.deliveryFee || 0) + (orderData?.serviceFee || 0)
+                    - (orderData?.campaignDiscount || 0) - (orderData?.referralDiscountAmount || 0));
+            const btn = document.getElementById('copy-amount-btn');
+            const label = btn.querySelector('span[data-i18n]');
+            try {
+                await navigator.clipboard.writeText(String(total));
+                if (label) { label.textContent = i18next.t('payment.copied'); setTimeout(() => { label.textContent = i18next.t('payment.copyAmount'); }, 1500); }
+            } catch (e) { console.warn('clipboard failed:', e); }
+        });
+
+        // 6/5 #129: 支払い完了は自前モーダルで確認（ブラウザ標準ダイアログを置換）
+        const modalOverlay = document.getElementById('pay-modal-overlay');
+        function openPayModal() { modalOverlay.classList.add('show'); }
+        function closePayModal() { modalOverlay.classList.remove('show'); }
+        document.getElementById('modal-cancel').addEventListener('click', closePayModal);
+        modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closePayModal(); });
+
+        document.getElementById('paid-btn').addEventListener('click', () => {
             const btn = document.getElementById('paid-btn');
             if (btn.disabled) return;
-            if (!confirm(i18next.t('payment.confirmDialog'))) return;
+            openPayModal();
+        });
 
+        document.getElementById('modal-ok').addEventListener('click', async () => {
+            const btn = document.getElementById('paid-btn');
+            closePayModal();
             btn.disabled = true;
             loading.classList.add('show');
             try {
                 await updateDoc(doc(db, 'orders', orderId), { paymentStatus: 'paid' });
+                if (orderData) orderData.paymentStatus = 'paid';
                 updatePaidState('paid');
             } catch (err) {
                 console.error(err);

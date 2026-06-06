@@ -544,7 +544,8 @@
                     const reviewSnap = await getDocs(rq);
                     const reviews = [];
                     reviewSnap.forEach(d => { reviews.push({ id: d.id, ...d.data() }); });
-                    reviewsWithComment = reviews.filter(r => r.comment && String(r.comment).trim() !== '');
+                    // 6/5 #128: モデレーションで非表示(hidden)にされたレビューは公開から除外
+                    reviewsWithComment = reviews.filter(r => !r.hidden && r.comment && String(r.comment).trim() !== '');
                     const reviewerIds = [...new Set(reviewsWithComment.map(r => r.fromUid).filter(Boolean))];
                     await Promise.all(reviewerIds.map(async (uid) => {
                         try { reviewerMap[uid] = (await getCachedUser(uid)) || {}; }

@@ -193,6 +193,14 @@
             background: #0f172a;
             color: #fff;
         }
+        /* 6/5 #129 ⑤: 未払いタブの件数バッジ（赤） */
+        .tab-btn.tab-overdue { border: 1px solid #f1c0bd; color: #b91c1c; background: #fdf1f0; }
+        .tab-btn.tab-overdue.active { background: #b91c1c; color: #fff; border-color: #b91c1c; }
+        .tab-btn .tab-count {
+            display: inline-block; margin-left: 5px; padding: 0 6px;
+            border-radius: 999px; background: #e5453f; color: #fff;
+            font-size: 11px; font-weight: 700;
+        }
 
         .table-card {
             background: #fff;
@@ -251,6 +259,8 @@
         .badge-remitted { background: #ccfbf1; color: #0f766e; }
         .badge-done { background: #0f172a; color: #fff; }
         .badge-declined { background: #fee2e2; color: #991b1b; }
+        /* 6/5 #129 ⑤: 未払い（期限超過）＝赤 */
+        .badge-overdue { background: #fee2e2; color: #b91c1c; }
 
         .btn-detail {
             padding: 6px 12px;
@@ -452,11 +462,23 @@
         // 4/28: delivered ステータスは廃止、completed に統合
         const TAB_KEYS = [
             'all', 'preparing', 'delivering',
-            'completed', 'payment_confirmed', 'remitted', 'done'
+            'completed', 'payment_confirmed', 'remitted', 'done', 'overdue'
         ];
+
+        // 6/5 #129 ⑤: 未払い（期限超過）＝魚は受取完了・レストラン未入金・支払期限超過。
+        //   運営が見つけて督促する対象。adminStatus が進んでいる（入金確認済以降）ものは除外。
+        function isOverdue(order) {
+            const isReceived = order.status === 'completed' || order.status === 'delivered';
+            if (!isReceived) return false;
+            if (order.paymentStatus === 'paid') return false;
+            if (['payment_confirmed', 'remitted', 'done'].includes(order.adminStatus)) return false;
+            const dl = order.paymentDeadline?.toMillis?.() || 0;
+            return dl > 0 && Date.now() > dl;
+        }
 
         function matchTab(order, tab) {
             if (tab === 'all') return true;
+            if (tab === 'overdue') return isOverdue(order);
             // admin 用の表示ステータス
             if (order.adminStatus === 'done') return tab === 'done';
             if (order.adminStatus === 'remitted') return tab === 'remitted';
@@ -473,6 +495,8 @@
             if (order.adminStatus === 'remitted') return 'remitted';
             if (order.adminStatus === 'payment_confirmed') return 'payment_confirmed';
             if (order.status === 'declined') return 'declined';
+            // 6/5 #129 ⑤: 期限超過は赤い「未払い」表示で運営に気づかせる
+            if (isOverdue(order)) return 'overdue';
             // 4/28: 旧 delivered は completed として表示
             if (order.status === 'delivered') return 'completed';
             return order.status || 'pending';
@@ -558,8 +582,11 @@
             row.innerHTML = '';
             TAB_KEYS.forEach(key => {
                 const btn = document.createElement('button');
-                btn.className = 'tab-btn' + (key === currentTab ? ' active' : '');
-                btn.textContent = i18next.t(`admin.tx.tab${capitalize(key)}`);
+                // 6/5 #129 ⑤: 未払い（期限超過）タブは赤系＋件数バッジ
+                const isOverdueTab = key === 'overdue';
+                btn.className = 'tab-btn' + (isOverdueTab ? ' tab-overdue' : '') + (key === currentTab ? ' active' : '');
+                btn.dataset.tab = key;
+                btn.innerHTML = `<span>${i18next.t(`admin.tx.tab${capitalize(key)}`)}</span>${isOverdueTab ? '<span class="tab-count" id="overdue-count" style="display:none;">0</span>' : ''}`;
                 btn.addEventListener('click', () => {
                     currentTab = key;
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -597,6 +624,14 @@
             // サマリー計算（期間フィルタ後、タブ無視）
             const periodFiltered = allOrders.filter(matchPeriod);
             const count = periodFiltered.length;
+
+            // 6/5 #129 ⑤: 未払い（期限超過）件数バッジ更新
+            const overdueCount = periodFiltered.filter(isOverdue).length;
+            const overdueBadge = document.getElementById('overdue-count');
+            if (overdueBadge) {
+                overdueBadge.textContent = overdueCount;
+                overdueBadge.style.display = overdueCount > 0 ? 'inline-block' : 'none';
+            }
             const volume = periodFiltered.reduce((s, o) => s + (o.totalAmount || 0), 0);
             // 手数料 = FishLink収益 = 魚代 × 10%（= 手数料5% + サービス料5%）
             // 正確には fishPrice × 5% + serviceFee で算出
