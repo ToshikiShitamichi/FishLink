@@ -28,9 +28,17 @@
         .qr-actions button.danger { color: #b91c1c; border-color: #fecaca; }
         .save-row { display: flex; gap: 8px; margin-top: 14px; }
         .save-row button { flex: 1; border: none; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; justify-content: center; text-align: center; }
-        .save-row .save { background: var(--color-primary); color: #fff; }
+        /* 6/6 #132: 送金先の CTA は青（緑は GAqP/成功専用） */
+        .save-row .save { background: var(--color-cta); color: #fff; }
         .edit-toggle { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-        .edit-btn { background: #eef2ff; color: #3730a3; border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+        .edit-btn { background: var(--color-cta-lt); color: var(--color-cta); border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+        /* 6/6 #132: 名義一致の注意（amber・誤送金防止） */
+        .name-notice { display: flex; gap: 8px; align-items: flex-start; background: #fff7e6; border: 1px solid #f3d998; border-radius: 12px; padding: 11px 13px; font-size: 12.5px; color: #8a6a28; font-weight: 600; line-height: 1.6; margin-bottom: 14px; }
+        .name-notice .material-symbols-outlined { font-size: 18px; color: #b45309; flex-shrink: 0; }
+        /* 6/6 #132: インラインバリデーション（#131/#115 と統一） */
+        .field-error { display: none; color: var(--color-danger); font-size: 12px; font-weight: 600; margin-top: 6px; line-height: 1.5; }
+        .field-error.show { display: block; }
+        .input-error, .input-error:focus { border-color: var(--color-danger) !important; background: #fff5f5 !important; }
     </style>
 </head>
 <body>
@@ -79,13 +87,21 @@
 
         <!-- 編集モード -->
         <div id="edit-mode" style="display:none;">
+            <!-- 6/6 #132: 名義一致の注意（誤送金防止） -->
+            <div class="name-notice">
+                <span class="material-symbols-outlined">warning</span>
+                <span data-i18n="account.nameMatchNotice"></span>
+            </div>
             <div class="acc-row">
                 <div class="acc-row__label" data-i18n="account.accountName"></div>
                 <input type="text" id="in-accountName" data-i18n="[placeholder]account.accountNamePlaceholder">
+                <div class="field-error" id="err-accountName" data-i18n="account.errorAccountName"></div>
             </div>
             <div class="acc-row">
                 <div class="acc-row__label" data-i18n="account.qrLink"></div>
                 <input type="url" id="in-qrLink" data-i18n="[placeholder]account.qrLinkPlaceholder">
+                <div class="input-hint" data-i18n="account.qrEitherHint"></div>
+                <div class="field-error" id="err-qrLink" data-i18n="account.errorQrLinkFormat"></div>
             </div>
             <div class="acc-row">
                 <div class="acc-row__label" data-i18n="account.qrImage"></div>
@@ -97,6 +113,7 @@
                     <button type="button" id="btn-qr-remove" class="danger" data-i18n="account.qrRemove"></button>
                     <input type="file" id="qr-file-input" accept="image/*" style="display:none;">
                 </div>
+                <div class="field-error" id="err-qr" data-i18n="account.errorQrRequired"></div>
             </div>
             <div class="save-row">
                 <button class="edit-btn" id="btn-cancel" style="flex:1;" data-i18n="account.cancel"></button>
@@ -210,10 +227,54 @@
             showQr('e-qrImage', null);
         });
 
+        // 6/6 #132: 入力でその欄のエラー解除
+        ['in-accountName', 'in-qrLink'].forEach((id) => {
+            document.getElementById(id)?.addEventListener('input', () => {
+                document.getElementById(id).classList.remove('input-error');
+                document.getElementById('err-accountName')?.classList.remove('show');
+                document.getElementById('err-qrLink')?.classList.remove('show');
+                document.getElementById('err-qr')?.classList.remove('show');
+            });
+        });
+
         document.getElementById('btn-save').addEventListener('click', async () => {
             const uid = window.currentUser?.uid;
             if (!uid) return;
             const btn = document.getElementById('btn-save');
+
+            // 6/6 #132: インラインバリデーション
+            //   必須＝口座の登録名（名義）＋「QRリンク or QR画像」の少なくとも片方（両方空NG）。
+            //   QRリンクは link.payway.com.kh… 形式を軽くチェック。
+            const accountNameRaw = document.getElementById('in-accountName').value.trim();
+            const qrLinkRaw = document.getElementById('in-qrLink').value.trim();
+            const hasImage = !!(editState.qrFile) || (!!editState.qrImageUrl && !editState.qrRemoved);
+            // エラー表示クリア
+            ['err-accountName', 'err-qrLink', 'err-qr'].forEach(e => document.getElementById(e)?.classList.remove('show'));
+            document.getElementById('in-accountName').classList.remove('input-error');
+            document.getElementById('in-qrLink').classList.remove('input-error');
+
+            let firstError = null;
+            if (!accountNameRaw) {
+                document.getElementById('err-accountName').classList.add('show');
+                document.getElementById('in-accountName').classList.add('input-error');
+                firstError = firstError || document.getElementById('in-accountName');
+            }
+            if (qrLinkRaw && !/^https?:\/\/link\.payway\.com\.kh\//i.test(qrLinkRaw)) {
+                document.getElementById('err-qrLink').classList.add('show');
+                document.getElementById('in-qrLink').classList.add('input-error');
+                firstError = firstError || document.getElementById('in-qrLink');
+            }
+            if (!qrLinkRaw && !hasImage) {
+                // リンク・画像とも無い → どちらか必須
+                document.getElementById('err-qr').classList.add('show');
+                firstError = firstError || document.getElementById('in-qrLink');
+            }
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (typeof firstError.focus === 'function') firstError.focus({ preventScroll: true });
+                return;
+            }
+
             btn.disabled = true;
             loading.classList.add('show');
             try {

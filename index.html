@@ -54,10 +54,12 @@
                 <!-- エラーメッセージ -->
                 <div class="error-msg" id="error-msg"></div>
 
-                <!-- ログインID -->
+                <!-- 電話番号（6/6 #131: 識別子をログインID→電話番号に変更） -->
                 <div class="form-group">
-                    <label for="login-id" data-i18n="login.loginId"></label>
-                    <input type="text" id="login-id" autocapitalize="none" spellcheck="false">
+                    <label for="login-id" data-i18n="login.phone"></label>
+                    <input type="tel" id="login-id" inputmode="tel" autocomplete="tel"
+                        autocapitalize="none" spellcheck="false"
+                        data-i18n="[placeholder]login.phonePlaceholder">
                 </div>
 
                 <!-- パスワード -->
@@ -69,12 +71,17 @@
                     </div>
                 </div>
 
-                <!-- ログインボタン -->
-                <button class="btn btn-primary" id="login-btn" data-i18n="login.submit"></button>
+                <!-- パスワードをお忘れですか？（6/6 #131: SMS-OTP回復導線） -->
+                <div class="login-forgot">
+                    <a href="/recover.html" data-i18n="login.forgotPassword"></a>
+                </div>
+
+                <!-- ログインボタン（6/6 #131: CTA青） -->
+                <button class="btn btn-primary btn-cta" id="login-btn" data-i18n="login.submit"></button>
             </div>
 
-            <!-- 新規登録リンク -->
-            <div class="link-text">
+            <!-- 新規登録リンク（6/6 #131: リンク青） -->
+            <div class="link-text link-text--cta">
                 <span data-i18n="login.noAccount"></span>
                 <a href="/register.html" data-i18n="login.register"></a>
             </div>

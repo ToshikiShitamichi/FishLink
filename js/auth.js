@@ -3,7 +3,9 @@ import {
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
-    updateProfile
+    updateProfile,
+    setPersistence,
+    browserLocalPersistence
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js';
 
 import {
@@ -21,24 +23,26 @@ import {
     arrayRemove
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
-import { auth, db, toInternalEmail } from './firebase-config.js';
+import { auth, db, toInternalEmail, normalizePhone, isValidCambodiaPhone } from './firebase-config.js';
 import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js';
 import { normalizeProvince } from './province-utils.js';
+
+// 6/6 #131: セッション維持（入りっぱなし）。ローカル永続を明示。
+// ※ Firebase Web SDK の既定もローカル永続だが、明示しておく。
+setPersistence(auth, browserLocalPersistence).catch((e) => {
+    console.warn('setPersistence failed:', e?.message);
+});
 
 // FCM VAPIDキー（Firebaseコンソール → Cloud Messaging → ウェブプッシュ証明書）
 const VAPID_KEY = 'BHPaUqpvuOvpMUtxvVinoXFk0nZBiDMvPXlIBjeLqNesPPmBPt8sOGC2UZdSZLhTiv08ULuw4AMe-OXhIijp-k4'; // TODO: Firebaseコンソールから取得して設定
 
 // ── バリデーション ────────────────────────────────────────────
-// ログインIDは英数字とアンダースコアのみ・3〜20文字
-function isValidLoginId(id) {
-    return /^[a-zA-Z0-9_]{3,20}$/.test(id);
-}
-
-// ログインIDの重複チェック（Firestoreで確認）
-async function isLoginIdTaken(loginId) {
+// 6/6 #131: 識別子は電話番号（旧ログインIDは廃止）。
+// 電話番号の重複チェック（正規化済みの値で Firestore を確認）
+async function isPhoneTaken(normalizedPhone) {
     const q = query(
         collection(db, 'users'),
-        where('loginId', '==', loginId.toLowerCase()),
+        where('phone', '==', normalizedPhone),
         limit(1)
     );
     const snap = await getDocs(q);
@@ -93,24 +97,27 @@ function watchAuthState({ requireAuth = true, redirectIfLoggedIn = false, skipRe
 }
 
 // ── 新規登録 ──────────────────────────────────────────────────
-async function register({ loginId, displayName, phone, password, role, location, province, district, districtKm, lang, pendingReferralCode }) {
-    const id = loginId.toLowerCase().trim();
-
+// 6/6 #131: ログインID欄を廃止。識別子＝電話番号。
+//   電話番号を正規化 → 合成メール {phone}@fishlink.local を内部IDとして使用。
+async function register({ displayName, phone, password, role, location, province, district, districtKm, lang, pendingReferralCode }) {
     // バリデーション
-    if (!isValidLoginId(id)) throw new Error('error.invalidLoginId');
-    if (!displayName.trim()) throw new Error('error.displayNameRequired');
+    if (!displayName || !displayName.trim()) throw new Error('error.displayNameRequired');
     if (!phone || !String(phone).trim()) throw new Error('error.phoneRequired');
     if (password.length < 6) throw new Error('error.passwordTooShort');
     if (!['farmer', 'restaurant'].includes(role)) throw new Error('error.roleRequired');
     if (!location) throw new Error('error.locationRequired');
 
-    // ログインID重複チェック
-    if (await isLoginIdTaken(id)) throw new Error('error.loginIdTaken');
+    // 電話番号の正規化＋形式検証（カンボジア形式）
+    const normPhone = normalizePhone(phone);
+    if (!isValidCambodiaPhone(normPhone)) throw new Error('error.phoneInvalid');
 
-    // Firebase Auth にユーザー作成（仮メール方式）
+    // 電話番号の重複チェック
+    if (await isPhoneTaken(normPhone)) throw new Error('error.phoneTaken');
+
+    // Firebase Auth にユーザー作成（電話番号→合成メール方式）
     const credential = await createUserWithEmailAndPassword(
         auth,
-        toInternalEmail(id),
+        toInternalEmail(normPhone),
         password
     );
     const uid = credential.user.uid;
@@ -131,9 +138,9 @@ async function register({ loginId, displayName, phone, password, role, location,
     // 検証は呼び出し側（register.html）で済ませてある前提。
     // ここでは保存するだけ。pendingReferralCode は初回取引完了時に referredBy に昇格される。
     const userDoc = {
-        loginId: id,
+        // 6/6 #131: loginId 廃止。電話番号は正規化形で保存（重複チェック・合成メールの素）。
         displayName: displayName.trim(),
-        phone: String(phone).trim(),
+        phone: normPhone,
         role,
         location: { lat: location.lat, lng: location.lng },
         province: normalizedProvince,
@@ -160,11 +167,29 @@ async function register({ loginId, displayName, phone, password, role, location,
 }
 
 // ── ログイン ──────────────────────────────────────────────────
-async function login(loginId, password) {
-    const id = loginId.toLowerCase().trim();
-    if (!id || !password) throw new Error('error.fieldsRequired');
+// 6/6 #131: 識別子＝電話番号。ハイブリッド解決で既存アカウントも保護する。
+//   - 入力がカンボジア電話番号形式 → 正規化して {phone}@fishlink.local で認証（新方式）。
+//   - それ以外（旧ログインID） → {loginId}@fishlink.local で認証（既存アカウント救済・admin含む）。
+//   失敗時は生 Firebase エラーを出さず「電話番号またはパスワードが違います」（どちらかは特定しない）。
+async function login(identifier, password) {
+    const raw = String(identifier || '').trim();
+    if (!raw || !password) throw new Error('error.fieldsRequired');
 
-    await signInWithEmailAndPassword(auth, toInternalEmail(id), password);
+    const normPhone = normalizePhone(raw);
+    const email = isValidCambodiaPhone(normPhone)
+        ? toInternalEmail(normPhone)                 // 新方式（電話番号ベース）
+        : toInternalEmail(raw.toLowerCase());        // 旧方式フォールバック（ログインID）
+
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+        // auth/invalid-credential, auth/user-not-found, auth/wrong-password 等は
+        // すべて同一の友好的文言に丸める（番号有無・正誤を漏らさない＝総当たり防止）。
+        if (err?.code === 'auth/network-request-failed') {
+            throw new Error('error.network');
+        }
+        throw new Error('error.invalidCredentials');
+    }
 
     // ロール取得 → 言語同期 → リダイレクト
     const user = auth.currentUser;

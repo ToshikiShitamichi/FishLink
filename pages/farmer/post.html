@@ -355,14 +355,14 @@
             <!-- 編集モード時のみ表示する案内 -->
             <div id="edit-notice" style="display:none; background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; border-radius:14px; padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.6;" data-i18n="post.editNotice"></div>
 
-            <!-- 送金先未登録の警告バナー -->
-            <div id="bank-notice" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:14px; padding:14px; margin-bottom:14px; color:#7f1d1d;">
-                <div style="display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; margin-bottom:6px;">
+            <!-- 送金先未登録の警告バナー（6/6 #132: 要件の注意なので amber、CTAは青） -->
+            <div id="bank-notice" style="display:none; background:#fff7e6; border:1px solid #f3d998; border-radius:14px; padding:14px; margin-bottom:14px; color:#8a6a28;">
+                <div style="display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; margin-bottom:6px; color:#b45309;">
                     <span class="material-symbols-outlined" style="font-size:18px;">warning</span>
                     <span data-i18n="post.bankRequiredTitle"></span>
                 </div>
                 <div style="font-size:13px; line-height:1.5; margin-bottom:10px;" data-i18n="post.bankRequiredDesc"></div>
-                <a href="/pages/farmer/account/payment.html" style="display:inline-flex; align-items:center; gap:4px; padding:8px 14px; background:#dc2626; color:#fff; border-radius:10px; text-decoration:none; font-weight:700; font-size:13px;">
+                <a href="/pages/farmer/account/payment.html" style="display:inline-flex; align-items:center; gap:4px; padding:8px 14px; background:var(--color-cta); color:#fff; border-radius:10px; text-decoration:none; font-weight:700; font-size:13px;">
                     <span class="material-symbols-outlined" style="font-size:16px;">account_balance_wallet</span>
                     <span data-i18n="post.goToBankRegister"></span>
                 </a>

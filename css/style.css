@@ -256,6 +256,35 @@ select:focus {
     cursor: not-allowed;
 }
 
+/* 6/6 #131/#132: 認証・送金先の CTA は青（緑は GAqP/成功専用）。
+   .btn-primary に .btn-cta を重ねて色だけ上書き（他画面の緑ボタンは不変）。 */
+.btn-cta {
+    background: var(--color-cta);
+}
+.btn-cta:hover {
+    background: var(--color-cta-dk);
+}
+
+/* 6/6 #131: ログイン「パスワードをお忘れですか？」導線 */
+.login-forgot {
+    text-align: right;
+    margin: -6px 0 14px;
+}
+.login-forgot a {
+    color: var(--color-cta);
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+}
+.login-forgot a:hover {
+    text-decoration: underline;
+}
+
+/* 6/6 #131: 認証画面のリンクは青（新規登録/ログイン/規約） */
+.link-text--cta a {
+    color: var(--color-cta);
+}
+
 /* ── ロール選択 ──────────────────────────────────────────────── */
 .role-select {
     display: grid;

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK ログイン／新規登録 - モック</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:1200px; margin-bottom:24px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; } .intro b{color:#0B5FB0;}
+
+  .stage { display:flex; flex-wrap:wrap; gap:28px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; background:#FFF; padding:7px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  .phone-label .tag { color:#5A6470; font-weight:500; }
+
+  .phone { width:390px; max-width:100%; height:820px; background:#F4F6F8; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+  .f-header { flex:0 0 auto; background:#FFF; padding:12px 16px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:8px; z-index:2; }
+  .f-header .logo { font-weight:800; color:#0B5FB0; font-size:15px; }
+  .f-header .sp { margin-left:auto; font-size:12px; color:#0B5FB0; font-weight:700; border:1px solid #CFE0EE; border-radius:14px; padding:3px 10px; }
+  .f-body { flex:1 1 auto; overflow-y:auto; padding:16px 16px 24px; }
+
+  .brand { text-align:center; margin:18px 0 8px; }
+  .brand .bl { font-size:26px; font-weight:800; color:#0B5FB0; letter-spacing:.5px; }
+  .brand .bs { font-size:12px; color:#5A6470; margin-top:4px; }
+
+  .card { background:#FFF; border:1px solid #EEF1F4; border-radius:16px; padding:18px; margin:14px 0; box-shadow:0 4px 14px rgba(0,0,0,0.04); }
+  .card h2 { font-size:18px; font-weight:800; margin:0 0 14px; }
+
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:12px; color:#5A6470; font-weight:700; margin-bottom:6px; }
+  .field .req { color:#E5453F; margin-left:3px; }
+  .inp { width:100%; border:1px solid #DDE3E9; border-radius:10px; padding:11px 13px; font-size:14px; font-family:inherit; background:#FFF; color:#1A1A1A; display:flex; align-items:center; }
+  .inp .ph { color:#AEB6C0; } .inp .val { color:#1A1A1A; }
+  .inp .eye { margin-left:auto; color:#9AA3B0; }
+  .hint { font-size:11px; color:#9AA3B0; margin-top:5px; }
+  .err-field .inp { border-color:#E5453F; }
+  .err-msg { color:#E5453F; font-size:11.5px; font-weight:700; margin-top:5px; }
+
+  .alert-err { background:#FDECEA; border:1px solid #F6CFCB; color:#C0392B; border-radius:10px; padding:11px 13px; font-size:13px; font-weight:700; margin-bottom:14px; display:flex; gap:8px; align-items:flex-start; }
+
+  .link-r { text-align:right; margin:-6px 0 14px; }
+  .link { color:#0B5FB0; font-weight:700; font-size:12.5px; }
+  .btn { width:100%; border:none; border-radius:11px; padding:14px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; }
+  .btn.pri { background:#0B5FB0; color:#FFF; }
+  .btn.sec { background:#FFF; color:#0B5FB0; border:1.5px solid #0B5FB0; }
+  .foot-link { text-align:center; font-size:13px; color:#5A6470; margin-top:16px; }
+  .foot-link .link { margin-left:4px; }
+
+  /* ロール */
+  .roles { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .role { border:1.5px solid #DDE3E9; border-radius:12px; padding:16px 8px; text-align:center; cursor:pointer; background:#FFF; }
+  .role .ic { font-size:24px; } .role .rl { font-size:13px; font-weight:700; color:#3A4250; margin-top:6px; }
+  .role.on { border-color:#0B5FB0; background:#EAF2FB; } .role.on .rl { color:#0B5FB0; }
+
+  /* 地図 */
+  .map { height:150px; border-radius:12px; overflow:hidden; position:relative; background:linear-gradient(135deg,#dfe9f0,#cdddea); border:1px solid #DDE3E9; }
+  .map .roads { position:absolute; inset:0; background:
+     linear-gradient(90deg, transparent 48%, #fff 48%, #fff 52%, transparent 52%),
+     linear-gradient(0deg, transparent 60%, #fff 60%, #fff 63%, transparent 63%); opacity:.7; }
+  .map .pin { position:absolute; top:46%; left:50%; transform:translate(-50%,-100%); font-size:26px; }
+  .map .gg { position:absolute; left:8px; bottom:6px; font-size:10px; color:#5A6470; font-weight:700; }
+  .map-act { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#0B5FB0; border:1px solid #CFE0EE; border-radius:9px; padding:8px 12px; background:#F2F8FD; margin-top:10px; }
+  .loc-set { display:flex; align-items:center; gap:7px; font-size:12px; color:#2E7D32; font-weight:700; margin-top:10px; }
+  .loc-set .dot { width:8px; height:8px; border-radius:50%; background:#2E7D32; }
+  .loc-addr { font-size:12px; color:#5A6470; margin-top:3px; margin-left:15px; }
+
+  .consent { font-size:12px; color:#5A6470; line-height:1.6; margin:6px 0 14px; }
+  .consent .link { font-size:12px; }
+
+  /* OTPコード入力 */
+  .otp { display:flex; gap:8px; justify-content:center; margin:8px 0 4px; }
+  .otp .d { width:44px; height:54px; border:1.5px solid #DDE3E9; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; color:#1A1A1A; }
+  .otp .d.cur { border-color:#0B5FB0; box-shadow:0 0 0 3px #E6F0FA; }
+  .resend { text-align:center; font-size:12px; color:#5A6470; margin-top:14px; }
+
+  /* 送金先登録 */
+  .title-c { text-align:center; font-size:17px; font-weight:800; padding:8px 0 6px; }
+  .sec-title { font-size:15px; font-weight:800; margin:8px 0 10px; }
+  .gate-alert { background:#FFF7E6; border:1px solid #F3D998; border-radius:12px; padding:13px; margin-bottom:16px; }
+  .gate-alert .ga-t { font-size:13px; font-weight:800; color:#B36A00; }
+  .gate-alert .ga-b { font-size:12px; color:#8A6A28; margin:6px 0 11px; line-height:1.6; }
+  .btn.disabled { background:#A9CBEA; color:#F0F6FC; cursor:not-allowed; }
+  .photo-box { border:1.5px dashed #C7D0DA; border-radius:12px; padding:24px; text-align:center; color:#9AA3B0; font-size:12.5px; line-height:1.8; }
+  .photo-box .pc { font-size:24px; }
+  .edit-btn { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; color:#0B5FB0; border:1px solid #CFE0EE; background:#F2F8FD; border-radius:9px; padding:7px 12px; }
+  .view-row { padding:13px 0; border-bottom:1px solid #F2F4F7; }
+  .view-row:last-child { border-bottom:none; }
+  .view-row .vl { font-size:12px; color:#5A6470; font-weight:700; }
+  .view-row .vv { font-size:14px; margin-top:6px; color:#1A1A1A; word-break:break-all; }
+  .qr-box { border:1px dashed #C7D0DA; border-radius:12px; padding:16px; display:flex; align-items:center; justify-content:center; background:#FAFBFC; margin-top:8px; }
+  .qr-img { width:118px; height:118px; background:repeating-conic-gradient(#1A1A1A 0% 25%, #fff 0% 50%) 0 0/16px 16px; border:7px solid #fff; box-shadow:0 0 0 1px #ddd; }
+  .notice-amber { display:flex; gap:8px; align-items:flex-start; background:#FFF7E6; border:1px solid #F3D998; border-radius:10px; padding:11px 13px; font-size:12px; color:#8A6A28; font-weight:600; line-height:1.6; margin-bottom:14px; }
+  .row2 { display:flex; gap:10px; }
+  .row2 .btn { flex:1; }
+  .qr-acts { display:flex; gap:9px; margin-top:11px; }
+  .qr-acts .qa { font-size:12.5px; font-weight:700; border-radius:9px; padding:9px 13px; }
+  .qr-acts .qa.sel { color:#0B5FB0; border:1px solid #CFE0EE; background:#F2F8FD; }
+  .qr-acts .qa.del { color:#E5453F; border:1px solid #F6CFCB; background:#FDECEA; }
+
+  /* オンボーディング */
+  .ob-done { text-align:center; margin:10px 0 6px; }
+  .ob-done .chk { font-size:34px; color:#1FA463; }
+  .ob-done .t { font-size:19px; font-weight:800; margin-top:6px; }
+  .ob-done .s { font-size:13px; color:#5A6470; margin-top:4px; }
+  .ob-step { display:flex; gap:11px; align-items:flex-start; background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:13px; margin-bottom:10px; }
+  .ob-step .n { width:24px; height:24px; border-radius:50%; background:#EAF2FB; color:#0B5FB0; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .ob-step .ot { font-size:14px; font-weight:800; } .ob-step .os { font-size:12px; color:#5A6470; margin-top:3px; line-height:1.5; }
+  .ob-step .mini { margin-top:8px; font-size:12px; font-weight:700; color:#0B5FB0; border:1px solid #CFE0EE; border-radius:8px; padding:7px 11px; display:inline-block; background:#F2F8FD; }
+  .ob-step.farmer { border-color:#F3D998; background:#FFFBF2; }
+  .ob-step.farmer .n { background:#FFF1D6; color:#B36A00; }
+  .ob-step .ic { width:38px; height:38px; border-radius:10px; background:#EAF2FB; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#0B5FB0; }
+  .ob-step .ic svg { width:20px; height:20px; }
+  .ob-step.farmer .ic { background:#FFF1D6; color:#B36A00; }
+  .ob-step .body { flex:1; }
+  .guide-strip { display:flex; align-items:center; gap:4px; margin-top:10px; background:#F4F8FC; border:1px solid #E1ECF7; border-radius:10px; padding:9px 7px; }
+  .guide-strip .gs { flex:1; text-align:center; }
+  .guide-strip .gs .gi { font-size:18px; line-height:1; }
+  .guide-strip .gs .gl { font-size:9.5px; color:#5A6470; font-weight:700; margin-top:4px; line-height:1.25; }
+  .guide-strip .ar { color:#9AA3B0; font-weight:800; font-size:14px; }
+  .guide-plat { margin-top:10px; }
+  .guide-plat .gp-l { font-size:11px; font-weight:800; color:#3A4250; margin-bottom:5px; }
+  .guide-plat .guide-strip { margin-top:0; }
+  .check-item { display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12px; font-weight:700; color:#5A6470; }
+  .check-item .box { width:18px; height:18px; border-radius:5px; border:1.5px solid #C7D0DA; flex-shrink:0; }
+
+  .note { max-width:1200px; margin-top:24px; background:#FFF; padding:14px 18px; border-radius:12px; font-size:13px; line-height:1.8; color:#4A4A4A; }
+  .note h2 { font-size:14px; color:#0B5FB0; margin:0 0 8px; } .note b{color:#0B5FB0;}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK ログイン／新規登録（モック・修正反映版）</h1>
+  <p>認証フロー＝<b>電話番号＋パスワード</b>でログイン／パスワード回復は<b>SMS-OTP（電話→コード→新パスワード・MVP本命）</b>／セッション維持。新規登録は<b>ログインID欄を削除</b>（電話番号がID）。</p>
+  <p>※UIは確認用に日本語表示。<b>本番デフォルトはクメール語</b>。色＝CTA青・緑はGAqP/成功専用。⑧〜⑩＝農家の<b>送金先登録</b>（出品ゲート／表示／編集）。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① ログイン -->
+  <div class="phone-wrap">
+    <div class="phone-label">① ログイン <span class="tag">電話＋パスワード</span></div>
+    <div class="phone">
+      <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="brand"><div class="bl">🐟 FISHLINK</div><div class="bs">農家とレストランをつなぐ</div></div>
+        <div class="card">
+          <h2>ログイン</h2>
+          <div class="field">
+            <label>電話番号</label>
+            <div class="inp"><span class="val">012 345 678</span></div>
+          </div>
+          <div class="field">
+            <label>パスワード</label>
+            <div class="inp"><span class="val">••••••••••</span><span class="eye">👁</span></div>
+          </div>
+          <div class="link-r"><span class="link">パスワードをお忘れですか？</span></div>
+          <button class="btn pri">ログイン</button>
+          <div class="foot-link">アカウントをお持ちでない方<span class="link">新規登録</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② ログイン（エラー） -->
+  <div class="phone-wrap">
+    <div class="phone-label">② ログイン（エラー） <span class="tag">友好的な文言</span></div>
+    <div class="phone">
+      <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="brand"><div class="bl">🐟 FISHLINK</div><div class="bs">農家とレストランをつなぐ</div></div>
+        <div class="card">
+          <h2>ログイン</h2>
+          <div class="alert-err"><span>⚠</span><span>電話番号またはパスワードが違います</span></div>
+          <div class="field">
+            <label>電話番号</label>
+            <div class="inp"><span class="val">012 345 678</span></div>
+          </div>
+          <div class="field">
+            <label>パスワード</label>
+            <div class="inp"><span class="val">••••••</span><span class="eye">👁</span></div>
+          </div>
+          <div class="link-r"><span class="link">パスワードをお忘れですか？</span></div>
+          <button class="btn pri">ログイン</button>
+          <div class="foot-link">アカウントをお持ちでない方<span class="link">新規登録</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 新規登録 -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ 新規登録 <span class="tag">ログインID欄なし・電話がID</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="card">
+          <h2>新規登録</h2>
+
+          <div class="field">
+            <label>表示名<span class="req">*</span></label>
+            <div class="inp"><span class="ph">例：ヒレナマズ農場</span></div>
+            <div class="hint">農家名・店名として公開されます</div>
+          </div>
+
+          <div class="field">
+            <label>電話番号<span class="req">*</span></label>
+            <div class="inp"><span class="ph">例：012 345 678</span></div>
+            <div class="hint">ログイン・FishLinkからの連絡・送金確認に使用します</div>
+          </div>
+
+          <div class="field">
+            <label>パスワード（6文字以上）<span class="req">*</span></label>
+            <div class="inp"><span class="ph">パスワード</span><span class="eye">👁</span></div>
+          </div>
+
+          <div class="field">
+            <label>ロールを選択<span class="req">*</span></label>
+            <div class="roles">
+              <div class="role on"><div class="ic">🐟</div><div class="rl">養殖農家</div></div>
+              <div class="role"><div class="ic">🍴</div><div class="rl">レストラン</div></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>位置情報を設定<span class="req">*</span></label>
+            <div class="map"><div class="roads"></div><div class="pin">📍</div><div class="gg">Google</div></div>
+            <div class="map-act">◎ 現在地を使う</div>
+            <div class="loc-set"><span class="dot"></span>位置情報を設定済み</div>
+            <div class="loc-addr">On National Road #2, Doun Kaev, Cambodia</div>
+          </div>
+
+          <div class="field">
+            <label>言語</label>
+            <div class="inp"><span class="val">ភាសាខ្មែរ (Khmer)</span></div>
+          </div>
+
+          <div class="field">
+            <label>紹介コード（任意）</label>
+            <div class="inp"><span class="ph">紹介コード（8桁・英数字）</span></div>
+            <div class="hint">友達から教えてもらったコードがあれば入力してください</div>
+          </div>
+
+          <div class="consent">登録すると<span class="link">利用規約</span>と<span class="link">プライバシーポリシー</span>に同意したものとみなされます。</div>
+          <button class="btn pri">登録する</button>
+          <div class="foot-link">すでにアカウントをお持ちの方<span class="link">ログイン</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 登録後オンボーディング -->
+  <div class="phone-wrap">
+    <div class="phone-label">④ 登録後オンボーディング <span class="tag">PWA設定＋農家は送金先</span></div>
+    <div class="phone">
+      <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="ob-done">
+          <div class="chk">✓</div>
+          <div class="t">アカウント作成完了！</div>
+          <div class="s">使い始める前に、3つだけ設定しましょう</div>
+        </div>
+
+        <div class="ob-step">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+          <div class="body">
+            <div class="ot">ホーム画面に追加</div>
+            <div class="os">アプリのように使えて通知も届きます（iPhoneは必須）</div>
+            <div class="guide-plat">
+              <div class="gp-l">📱 iPhone（Safari）</div>
+              <div class="guide-strip">
+                <div class="gs"><div class="gi">⬆️</div><div class="gl">共有を<br>タップ</div></div>
+                <div class="ar">›</div>
+                <div class="gs"><div class="gi">➕</div><div class="gl">ホーム画面<br>に追加</div></div>
+                <div class="ar">›</div>
+                <div class="gs"><div class="gi">✅</div><div class="gl">追加</div></div>
+              </div>
+            </div>
+            <div class="guide-plat">
+              <div class="gp-l">🤖 Android（Chrome）</div>
+              <div class="guide-strip">
+                <div class="gs"><div class="gi">⋮</div><div class="gl">メニューを<br>タップ</div></div>
+                <div class="ar">›</div>
+                <div class="gs"><div class="gi">➕</div><div class="gl">ホーム画面<br>に追加</div></div>
+                <div class="ar">›</div>
+                <div class="gs"><div class="gi">✅</div><div class="gl">追加</div></div>
+              </div>
+            </div>
+            <div class="os" style="margin-top:8px;font-size:11px;color:#9AA3B0;">※ お使いの端末に合わせて自動で表示します</div>
+          </div>
+        </div>
+        <div class="ob-step">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+          <div class="body"><div class="ot">通知を許可</div><div class="os">注文・チャット・配送のお知らせを受け取れます</div><div class="mini">通知を許可する</div></div>
+        </div>
+        <div class="ob-step">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></div>
+          <div class="body">
+            <div class="ot">端末の音をオン</div>
+            <div class="os">新しい注文・お知らせに音で気づけます</div>
+            <div class="guide-strip" style="margin-top:9px;">
+              <div class="gs"><div class="gi">🔕</div><div class="gl">マナーモード<br>を解除</div></div>
+              <div class="ar">＋</div>
+              <div class="gs"><div class="gi">🔊</div><div class="gl">音量を<br>上げる</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ob-step farmer">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+          <div class="body"><div class="ot">送金先を登録（農家のみ）</div><div class="os">魚の代金を受け取るために、送金先（ABA口座）の登録が必要です。出品の前に設定してください。</div><div class="mini">送金先を登録</div></div>
+        </div>
+
+        <button class="btn pri" style="margin-top:6px;">はじめる</button>
+        <div class="foot-link"><span class="link">あとで設定する</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 回復① 電話番号 -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑤ パスワード回復① <span class="tag">電話番号を入力</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="brand" style="margin-top:18px;"><div class="bl" style="font-size:20px;">パスワードをお忘れですか？</div><div class="bs">登録した電話番号にコードを送ります</div></div>
+        <div class="card">
+          <div class="field">
+            <label>登録した電話番号</label>
+            <div class="inp"><span class="ph">例：012 345 678</span></div>
+            <div class="hint">この番号宛にSMSで確認コードを送ります</div>
+          </div>
+          <button class="btn pri">コードを送信</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 回復② コード入力 -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑥ パスワード回復② <span class="tag">SMSコードを入力</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="brand" style="margin-top:18px;"><div class="bl" style="font-size:20px;">確認コードを入力</div><div class="bs">012 345 678 宛にコードを送りました</div></div>
+        <div class="card">
+          <div class="otp"><div class="d">4</div><div class="d">9</div><div class="d">2</div><div class="d cur">1</div><div class="d"></div><div class="d"></div></div>
+          <button class="btn pri" style="margin-top:16px;">確認</button>
+          <div class="resend">コードが届かない場合は <span class="link">再送する</span>（有効期限 10分）</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑦ 回復③ 新パスワード -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑦ パスワード回復③ <span class="tag">新しいパスワード</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="brand" style="margin-top:18px;"><div class="bl" style="font-size:20px;">新しいパスワードを設定</div></div>
+        <div class="card">
+          <div class="field">
+            <label>新しいパスワード（6文字以上）</label>
+            <div class="inp"><span class="ph">新しいパスワード</span><span class="eye">👁</span></div>
+          </div>
+          <div class="field">
+            <label>確認のため再入力</label>
+            <div class="inp"><span class="ph">もう一度入力</span><span class="eye">👁</span></div>
+          </div>
+          <button class="btn pri">設定する</button>
+          <div class="hint" style="text-align:center;margin-top:10px;">設定するとそのままログインします</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑧ 出品ゲート -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑧ 出品ゲート（農家） <span class="tag">送金先未登録だと投稿不可</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="sec-title" style="font-size:17px;">魚を投稿する</div>
+        <div class="gate-alert">
+          <div class="ga-t">⚠ 送金先情報を登録してください</div>
+          <div class="ga-b">出品するには、口座の登録名と送金先QR（リンクまたは画像）の登録が必要です。登録完了後に出品できるようになります。</div>
+          <button class="btn pri" style="width:auto;padding:11px 18px;">送金先を登録する</button>
+        </div>
+        <div class="sec-title">基本情報</div>
+        <div class="field"><label>魚種</label><div class="inp"><span class="ph">選択してください</span></div></div>
+        <div class="field"><label>サイズ（head/kg）</label><div class="inp"><span class="ph">例：6–8</span></div></div>
+        <div class="field"><label>在庫数量（kg）</label><div class="inp"><span class="ph">例：50</span></div></div>
+        <div class="field"><label>写真</label><div class="photo-box"><div class="pc">📷</div>タップして写真を追加（複数枚可）</div></div>
+        <button class="btn disabled" style="margin-top:6px;">投稿する</button>
+        <div class="hint" style="text-align:center;margin-top:8px;">※ 送金先を登録すると投稿できます</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑨ 送金先情報（表示） -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑨ 送金先情報（表示） <span class="tag">登録済み</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="title-c">送金先情報</div>
+        <div style="text-align:right;margin-bottom:8px;"><span class="edit-btn">✎ 編集</span></div>
+        <div class="card">
+          <div class="view-row"><div class="vl">口座の登録名</div><div class="vv">大星農場（ABA）</div></div>
+          <div class="view-row"><div class="vl">QRリンク</div><div class="vv">https://link.payway.com.kh/ABAPAYD8436667x</div></div>
+          <div class="view-row"><div class="vl">QR画像</div><div class="qr-box"><div class="qr-img"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑩ 送金先情報（編集） -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑩ 送金先情報（編集） <span class="tag">名義一致の注意＋保存青</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="f-body">
+        <div class="title-c">送金先情報</div>
+        <div class="card">
+          <div class="notice-amber"><span>⚠</span><span>送金はこの名義・QR宛に行われます。お間違いのないようご確認ください。</span></div>
+          <div class="field"><label>口座の登録名<span class="req">*</span></label><div class="inp"><span class="ph">ABAアカウント名など</span></div></div>
+          <div class="field"><label>QRリンク</label><div class="inp"><span class="ph">https://link.payway.com.kh/...</span></div><div class="hint">QRリンク または QR画像 のどちらか1つは必須</div></div>
+          <div class="field">
+            <label>QR画像</label>
+            <div class="qr-box"><div class="qr-img"></div></div>
+            <div class="qr-acts"><span class="qa sel">QR画像を選択</span><span class="qa del">削除</span></div>
+          </div>
+          <div class="row2" style="margin-top:4px;"><button class="btn sec">キャンセル</button><button class="btn pri">保存</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <h2>設計メモ（このモックで表現していること）</h2>
+  <p><b>①②ログイン</b>：識別子＝<b>電話番号</b>（ログインID欄は廃止）。FirebaseのメールIDは電話番号から自動生成（裏側）。<b>パスワードをお忘れですか？</b>導線。<b>②エラー＝生Firebaseエラーをやめ「電話番号またはパスワードが違います」</b>（どちらが違うかは特定しない）。ログイン状態は維持（入りっぱなし／ログアウトはプロフィール）。ログイン・新規登録ボタン・リンク＝<b>青</b>。</p>
+  <p><b>③新規登録</b>：<b>ログインID欄を削除</b>（電話＝ID）。必須＝表示名/電話/パスワード/ロール/位置情報、任意＝言語(クメールdefault)/紹介コード。<b>PWA設定ボックスは上部から撤去→④へ</b>。同意は<b>暗黙（チェックボックスなし）＋規約/プラポリのリンク</b>（アプリ内静的画面・中身は現行ドラフト）。電話＝重複チェック＋フォーマット検証＋正規化。精密ピンは登録で取得（配達用）・公開は地区テキストのみ。バリデーションはインライン（未入力欄に赤＋メッセージ＋最初のエラーへスクロール）。</p>
+  <p><b>④登録後オンボーディング</b>：各ステップにアイコン。①ホーム画面追加は<b>iPhone（Safari）／Android（Chrome）で手順が違う</b>ため<b>端末別の図解</b>（本番は端末を自動判別して該当手順だけ表示）。②通知許可（押すとOS許可ダイアログ＝許可率↑／拒否済みなら「設定から許可」導線に切替＝挙動。iOSは①ホーム追加後でないと通知が効かない＝①→②の順）。③音オン＝端末設定なのでアプリから操作不可→操作の図（🔕マナー解除＋🔊音量UP）で「自分でオンにする」を促す（①と同じく端末操作なのでチェックは置かず図解のみ・騒がしい農場/厨房で音は重要なので残す）。<b>農家のみ「送金先を登録」</b>（出品前に必須）。あとで設定も可。</p>
+  <p><b>⑤⑥⑦パスワード回復（SMS-OTP・MVP本命）</b>：電話番号 → SMSで6桁コード（有効期限10分・試行制限・未登録番号でも「送りました」と曖昧表示で番号の有無を漏らさない）→ 新しいパスワード設定 → そのままログイン。回復のときだけSMS＝送信量少・低コスト。<b>SMSが使えない場合のみ 暫定＝運営が番号確認して手動リセット</b>にフォールバック。</p>
+  <p><b>多言語</b>：本番デフォルト＝クメール語。<b>埋め込みGoogle地図の言語もアプリ言語に同期</b>（今クメールでも地図UIが日本語＝要修正）。</p>
+</div>
+
+</body>
+</html>

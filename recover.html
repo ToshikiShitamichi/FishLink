@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
+    <title>FishLink</title>
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+
+    <style>
+        /* 6/6 #131 ⑤⑥⑦ パスワード回復（SMS-OTP・MVPは運営手動リセット暫定） */
+        .rec-head { text-align: center; margin: 18px 0 6px; }
+        .rec-head__title { font-size: 20px; font-weight: 800; color: var(--color-cta); }
+        .rec-head__sub { font-size: 13px; color: var(--color-text-sub); margin-top: 6px; line-height: 1.5; }
+        .rec-back { display: inline-flex; align-items: center; gap: 4px; color: var(--color-text-sub); font-size: 13px; text-decoration: none; margin-bottom: 6px; }
+
+        /* 運営手動リセットのフォールバック案内 */
+        .rec-fallback { display: none; background: #fff7e6; border: 1px solid #f3d998; border-radius: 12px; padding: 14px; margin-top: 4px; }
+        .rec-fallback.show { display: block; }
+        .rec-fallback__title { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; color: #b45309; }
+        .rec-fallback__body { font-size: 12.5px; color: #8a6a28; margin-top: 8px; line-height: 1.6; }
+
+        /* OTP 6桁入力 */
+        .otp-row { display: flex; gap: 8px; justify-content: center; margin: 10px 0 4px; }
+        .otp-row input { width: 44px; height: 54px; text-align: center; font-size: 22px; font-weight: 800; border: 1.5px solid var(--color-border); border-radius: 10px; font-family: inherit; }
+        .otp-row input:focus { border-color: var(--color-cta); box-shadow: 0 0 0 3px var(--color-cta-lt); outline: none; }
+        .rec-resend { text-align: center; font-size: 12px; color: var(--color-text-sub); margin-top: 14px; }
+        .rec-resend a { color: var(--color-cta); font-weight: 700; text-decoration: none; }
+        .rec-note { text-align: center; font-size: 12px; color: var(--color-text-sub); margin-top: 10px; }
+        .field-error { display: none; color: var(--color-danger); font-size: 12px; font-weight: 600; margin-top: 6px; line-height: 1.5; }
+        .field-error.show { display: block; }
+        .input-error, .input-error:focus { border-color: var(--color-danger) !important; background: #fff5f5 !important; }
+    </style>
+</head>
+
+<body>
+    <!-- 言語セレクター -->
+    <div class="lang-selector-wrap">
+        <select id="lang-selector">
+            <option value="km">ខ្មែរ</option>
+            <option value="en">ENGLISH</option>
+            <option value="ja">日本語</option>
+        </select>
+    </div>
+
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="page-center" style="padding-top:40px; padding-bottom:40px;">
+        <div style="width:100%; max-width:400px;">
+
+            <div class="logo" style="margin-bottom:8px;">
+                <img src="/images/logo.png" alt="FishLink" class="logo__img">
+            </div>
+
+            <!-- ⑤ 電話番号入力 -->
+            <div id="step-phone">
+                <div class="rec-head">
+                    <div class="rec-head__title" data-i18n="recover.phoneTitle"></div>
+                    <div class="rec-head__sub" data-i18n="recover.phoneSub"></div>
+                </div>
+                <div class="card">
+                    <div class="form-group">
+                        <label for="rec-phone" data-i18n="recover.phoneLabel"></label>
+                        <input type="tel" id="rec-phone" inputmode="tel" autocomplete="tel"
+                            data-i18n="[placeholder]recover.phonePlaceholder">
+                        <div class="input-hint" data-i18n="recover.phoneHint"></div>
+                        <div class="field-error" id="err-rec-phone" data-i18n="error.phoneInvalid"></div>
+                    </div>
+                    <button class="btn btn-primary btn-cta" id="send-code-btn" data-i18n="recover.sendCode"></button>
+
+                    <!-- 運営手動リセットのフォールバック（SMS基盤確定まで・#133） -->
+                    <div class="rec-fallback" id="rec-fallback">
+                        <div class="rec-fallback__title">
+                            <span class="material-symbols-outlined" style="font-size:18px;">support_agent</span>
+                            <span data-i18n="recover.fallbackTitle"></span>
+                        </div>
+                        <div class="rec-fallback__body" data-i18n="recover.fallbackBody"></div>
+                    </div>
+                </div>
+                <div class="link-text link-text--cta">
+                    <a href="/index.html" data-i18n="recover.backToLogin"></a>
+                </div>
+            </div>
+
+            <!-- ⑥ コード入力（SMS-OTP有効時のみ・#133確定後に稼働） -->
+            <div id="step-code" style="display:none;">
+                <div class="rec-head">
+                    <div class="rec-head__title" data-i18n="recover.codeTitle"></div>
+                    <div class="rec-head__sub" id="code-sub"></div>
+                </div>
+                <div class="card">
+                    <div class="otp-row">
+                        <input type="tel" inputmode="numeric" maxlength="1" class="otp-d">
+                        <input type="tel" inputmode="numeric" maxlength="1" class="otp-d">
+                        <input type="tel" inputmode="numeric" maxlength="1" class="otp-d">
+                        <input type="tel" inputmode="numeric" maxlength="1" class="otp-d">
+                        <input type="tel" inputmode="numeric" maxlength="1" class="otp-d">
+                        <input type="tel" inputmode="numeric" maxlength="1" class="otp-d">
+                    </div>
+                    <div class="field-error" id="err-otp" data-i18n="recover.codeError" style="text-align:center;"></div>
+                    <button class="btn btn-primary btn-cta" id="verify-code-btn" style="margin-top:14px;" data-i18n="recover.verify"></button>
+                    <div class="rec-resend">
+                        <span data-i18n="recover.resendPrefix"></span>
+                        <a href="#" id="resend-link" data-i18n="recover.resend"></a>
+                        <span data-i18n="recover.resendSuffix"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ⑦ 新しいパスワード（SMS-OTP有効時のみ） -->
+            <div id="step-newpw" style="display:none;">
+                <div class="rec-head">
+                    <div class="rec-head__title" data-i18n="recover.newPwTitle"></div>
+                </div>
+                <div class="card">
+                    <div class="form-group">
+                        <label for="new-pw" data-i18n="recover.newPwLabel"></label>
+                        <div class="password-wrap">
+                            <input type="password" id="new-pw" autocomplete="new-password">
+                            <button type="button" class="password-toggle" id="pw-toggle1"><span class="material-symbols-outlined">visibility</span></button>
+                        </div>
+                        <div class="field-error" id="err-new-pw" data-i18n="error.passwordTooShort"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-pw2" data-i18n="recover.newPwConfirm"></label>
+                        <div class="password-wrap">
+                            <input type="password" id="new-pw2" autocomplete="new-password">
+                            <button type="button" class="password-toggle" id="pw-toggle2"><span class="material-symbols-outlined">visibility</span></button>
+                        </div>
+                        <div class="field-error" id="err-new-pw2" data-i18n="recover.pwMismatch"></div>
+                    </div>
+                    <button class="btn btn-primary btn-cta" id="set-pw-btn" data-i18n="recover.setPassword"></button>
+                    <div class="rec-note" data-i18n="recover.setPwNote"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { normalizePhone, isValidCambodiaPhone } from '/js/firebase-config.js';
+
+        // SW 登録
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then((registration) => {
+                    registration.update();
+                    registration.addEventListener('updatefound', () => {
+                        const newSW = registration.installing;
+                        if (!newSW) return;
+                        newSW.addEventListener('statechange', () => {
+                            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                                window.location.reload();
+                            }
+                        });
+                    });
+                })
+                .catch(console.error);
+        }
+
+        await initI18n();
+        initLangSelector();
+        document.body.classList.add('app-ready');
+        document.getElementById('loading').classList.remove('show');
+
+        // ── SMS-OTP 機能フラグ ─────────────────────────────────────
+        // #133（カンボジアでのSMS送信可否・コスト）確定までは false。
+        //   false: ⑤で「コードを送信」を押すと運営手動リセットの案内（フォールバック）を表示。
+        //   true : ⑤→⑥（6桁コード）→⑦（新パスワード）の SMS-OTP フローを稼働（要 functions 実装）。
+        const SMS_OTP_ENABLED = false;
+
+        const phoneInput = document.getElementById('rec-phone');
+        const sendBtn = document.getElementById('send-code-btn');
+        const fallback = document.getElementById('rec-fallback');
+        const errPhone = document.getElementById('err-rec-phone');
+
+        phoneInput.addEventListener('input', () => {
+            phoneInput.classList.remove('input-error');
+            errPhone.classList.remove('show');
+        });
+
+        sendBtn.addEventListener('click', async () => {
+            const raw = phoneInput.value.trim();
+            const norm = normalizePhone(raw);
+            // 形式チェックのみ（番号の有無は漏らさない＝総当たり防止のため曖昧表示）
+            if (!raw || !isValidCambodiaPhone(norm)) {
+                phoneInput.classList.add('input-error');
+                errPhone.classList.add('show');
+                phoneInput.focus({ preventScroll: true });
+                return;
+            }
+
+            if (!SMS_OTP_ENABLED) {
+                // 暫定：SMS基盤が未確定（#133）→ 運営手動リセットの案内を表示
+                fallback.classList.add('show');
+                sendBtn.disabled = true;
+                fallback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                return;
+            }
+
+            // ── 以下、SMS-OTP 有効時の本フロー（#133 確定後に functions と接続）──
+            // 未登録番号でも「コードを送りました」と曖昧表示し、⑥へ進める。
+            document.getElementById('code-sub').textContent =
+                i18next.t('recover.codeSub', { phone: raw });
+            document.getElementById('step-phone').style.display = 'none';
+            document.getElementById('step-code').style.display = 'block';
+        });
+
+        // ── ⑥ OTP 入力補助（次の桁へ自動移動）──────────────────────
+        const otpInputs = Array.from(document.querySelectorAll('.otp-d'));
+        otpInputs.forEach((inp, i) => {
+            inp.addEventListener('input', () => {
+                inp.value = inp.value.replace(/\D/g, '').slice(0, 1);
+                if (inp.value && i < otpInputs.length - 1) otpInputs[i + 1].focus();
+                document.getElementById('err-otp').classList.remove('show');
+            });
+            inp.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !inp.value && i > 0) otpInputs[i - 1].focus();
+            });
+        });
+
+        // パスワード表示トグル
+        function bindToggle(toggleId, inputId) {
+            document.getElementById(toggleId).addEventListener('click', () => {
+                const pw = document.getElementById(inputId);
+                const hidden = pw.type === 'password';
+                pw.type = hidden ? 'text' : 'password';
+                document.getElementById(toggleId).innerHTML = hidden
+                    ? '<span class="material-symbols-outlined">visibility_off</span>'
+                    : '<span class="material-symbols-outlined">visibility</span>';
+            });
+        }
+        bindToggle('pw-toggle1', 'new-pw');
+        bindToggle('pw-toggle2', 'new-pw2');
+
+        // ⑥確認 → ⑦（SMS-OTP有効時のみ。実検証は functions 実装で差し込む）
+        document.getElementById('verify-code-btn').addEventListener('click', () => {
+            const code = otpInputs.map(i => i.value).join('');
+            if (code.length !== 6) {
+                document.getElementById('err-otp').classList.add('show');
+                return;
+            }
+            // TODO(#133): functions で OTP 検証。成功時のみ ⑦ へ。
+            document.getElementById('step-code').style.display = 'none';
+            document.getElementById('step-newpw').style.display = 'block';
+        });
+
+        // ⑦新パスワード設定（SMS-OTP有効時のみ。実更新は functions 実装で差し込む）
+        document.getElementById('set-pw-btn').addEventListener('click', () => {
+            const pw = document.getElementById('new-pw').value;
+            const pw2 = document.getElementById('new-pw2').value;
+            let ok = true;
+            if (!pw || pw.length < 6) { document.getElementById('err-new-pw').classList.add('show'); ok = false; }
+            if (pw !== pw2) { document.getElementById('err-new-pw2').classList.add('show'); ok = false; }
+            if (!ok) return;
+            // TODO(#133): functions でパスワード更新→そのままログイン。
+        });
+    </script>
+</body>
+
+</html>

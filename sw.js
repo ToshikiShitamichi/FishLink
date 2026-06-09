@@ -266,12 +266,32 @@ self.addEventListener('notificationclick', (event) => {
 //   - #129 admin: index.html=「未払い(期限超過)」フィルタ＋赤件数バッジ。order.html=入金控え(振込元名義＋メモ＋入金スクショ)/「送金額をコピー」＋送金スクショ/問題報告の保留通知＋保留解除/FL番号。restaurant/report.html=問題報告で paymentProblemHold=true。
 //   - locales 3言語: review.*(guide/errorAxis/errorSummary/commentPromptBad) / payment.*(copyAmount/copied/reviewAfterPay/reviewAfterConfirm/modal*/receiveAmountHold/statusProblemHold*/remittanceHoldDesc) / admin.tx.tabOverdue・statusOverdue / admin.order.*(hold*/depositProof*/payerName/copyRemitAmount/remitProof*) / admin.reports.typeReview_contact。functions REPORT_TYPE_LABELS に review_contact。
 //   ⚠️ Firestore Rules 変更あり(reviews update=admin) → Console 手動公開が必要。
-const CACHE_NAME = 'fishlink-v119';
+// 6/6 #131/#132 認証クラスタ（v120）:
+//   - 識別子をログインID→電話番号に変更。Firebase は email/password のまま、正規化した電話番号から
+//     合成メール {phone}@fishlink.local を生成して内部ID化（js/firebase-config.js: normalizePhone/
+//     isValidCambodiaPhone/formatPhoneDisplay、js/auth.js: register/login）。ログインはハイブリッド解決＝
+//     入力が電話番号形式なら電話メール、それ以外は旧 {loginId}@fishlink.local にフォールバック（既存/admin救済）。
+//   - index.html: 電話番号入力＋「パスワードをお忘れですか？」(/recover.html)＋CTA青＋友好的エラー(error.invalidCredentials)。
+//   - register.html: ログインID欄削除／PWA設定ボックス撤去→onboarding／暗黙同意(規約/プラポリリンク)／CTA青／
+//     インラインバリデーション(#115/#128方式)／登録後 onboarding.html へ／地図言語をアプリ言語に同期(language=)。
+//   - 新規: onboarding.html(④ ホーム追加/通知/音＋農家送金先・端末自動判別)、recover.html(⑤⑥⑦・SMS_OTP_ENABLED=false で
+//     運営手動リセット暫定・#133確定後にSMS-OTP差込)、terms.html/privacy.html(暗黙同意リンク先・現行ドラフト)。
+//   - #132: post.html 出品ゲートバナー 赤→amber＋CTA青。farmer/account/payment.html=送金先(⑨⑩)に名義一致amber注意／
+//     名義必須＋(QRリンク or QR画像)いずれか必須／payway形式チェック／CTA青／インライン検証。
+//   - locales 3言語: login.phone/phonePlaceholder/forgotPassword、register.consent*/termsLink/privacyLink、
+//     error.phoneInvalid/phoneTaken/invalidCredentials/network/requiredSummary、account.nameMatchNotice/error*/qrEitherHint、
+//     新namespace onboarding.* / recover.* / legal.* / terms.* / privacy.*。functions変更なし。Firestore Rules変更なし。
+//   ⚠️ 既存アカウントは Firestore/Auth とも削除しない（ハイブリッドで旧IDログイン継続）。電話番号ベースへの完全移行は別途。
+const CACHE_NAME = 'fishlink-v120';
 
 const PRECACHE_URLS = [
     '/',
     '/index.html',
     '/register.html',
+    '/onboarding.html',
+    '/recover.html',
+    '/terms.html',
+    '/privacy.html',
     '/manifest.json',
     '/css/style.css',
     '/js/firebase-config.js',
