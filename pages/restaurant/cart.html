@@ -207,6 +207,23 @@
         }
         .group-breakdown .discount { color: #dc2626; }
 
+        /* 6/7 #134 C: クーポンウォレット（コード入力撤廃・1タップ適用・amber） */
+        .cwallet-item {
+            display: flex; align-items: center; gap: 10px;
+            background: #fff7e6; border: 1px solid #f3d998;
+            border-radius: 11px; padding: 11px 12px; margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .cwallet-item:last-child { margin-bottom: 0; }
+        .cwallet-item.selected { border-color: #b36a00; box-shadow: inset 0 0 0 1px #b36a00; }
+        .cwallet-item__main { flex: 1; min-width: 0; }
+        .cwallet-item__amt { font-size: 13px; font-weight: 800; color: #b36a00; }
+        .cwallet-item__meta { font-size: 11px; color: #9a7430; margin-top: 2px; }
+        .cwallet-item__side { text-align: right; flex-shrink: 0; }
+        .cwallet-item__on { font-size: 12px; font-weight: 800; color: var(--color-primary); }
+        .cwallet-item__off { font-size: 12px; font-weight: 700; color: var(--color-cta); }
+        .cwallet-item__rm { font-size: 11px; color: var(--color-cta); font-weight: 700; margin-top: 3px; }
+
         .grand-total-bar {
             position: fixed; bottom: 0; left: 0; right: 0;
             max-width: 480px; margin: 0 auto;
@@ -501,24 +518,17 @@
         </div>
         <div id="confirm-container"></div>
 
-        <!-- 5/24 #82 Phase 2 Chunk 3: クーポンコード入力欄。
-             所有者・未使用・期限内を検証し、適用時は注文金額から差し引く。
-             キャンペーン割引と併用不可（クーポン優先固定）。 -->
-        <div class="coupon-input-block" style="margin:14px 16px; padding:14px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:14px;">
-            <div style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--color-text); margin-bottom:6px;">
-                <span class="material-symbols-outlined" style="font-size:16px; color:#0d6e4c;">card_giftcard</span>
-                <span data-i18n="coupon.inputLabel"></span>
+        <!-- 6/7 #134 C: クーポンはコード入力を撤廃し、ウォレットから1タップ適用。
+             所有者・未使用・期限内のクーポンを並べ、タップで appliedCoupon を切替。
+             案Z＝適用中はキャンペーン割引を出さない（renderConfirm が制御）。 -->
+        <div class="coupon-wallet-block" id="coupon-wallet-block" style="margin:14px 16px; padding:14px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:14px; display:none;">
+            <div style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--color-text); margin-bottom:8px;">
+                <span class="material-symbols-outlined" style="font-size:16px; color:#b36a00;">confirmation_number</span>
+                <span data-i18n="coupon.walletTitle"></span>
             </div>
-            <div style="display:flex; gap:8px;">
-                <input type="text" id="coupon-input" maxlength="8" autocapitalize="off" autocomplete="off" spellcheck="false"
-                    data-i18n="[placeholder]coupon.inputPlaceholder"
-                    style="flex:1; border:1px solid var(--color-border); border-radius:10px; padding:10px 12px; font-size:14px; font-family:monospace; letter-spacing:1px; box-sizing:border-box;">
-                <button type="button" id="coupon-apply" style="border:none; background:#0d6e4c; color:#fff; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap;">
-                    <span data-i18n="coupon.apply"></span>
-                </button>
-            </div>
-            <div id="coupon-status" style="font-size:12px; margin-top:6px; min-height:14px;"></div>
-            <div style="font-size:11px; color:var(--color-text-sub); margin-top:4px;" data-i18n="coupon.inputHelp"></div>
+            <div id="coupon-wallet-list"></div>
+            <div style="font-size:11px; color:var(--color-text-sub); margin-top:8px;" data-i18n="coupon.walletTapHint"></div>
+            <div style="font-size:11px; color:#b36a00; margin-top:5px;" data-i18n="coupon.walletCampaignNote"></div>
         </div>
     </div>
 
@@ -537,8 +547,8 @@
 
     <div class="grand-total-bar" id="grand-total-bar" style="display:none;">
         <!-- 5/24 #82 Phase 2 Chunk 3: クーポン適用時のみ表示。confirm ステージで renderConfirm から制御。 -->
-        <div id="coupon-discount-row" style="display:none; font-size:13px; color:#dc2626; margin-bottom:6px; justify-content:space-between; align-items:center;">
-            <span><span data-i18n="coupon.totalLineLabel"></span> <span id="coupon-discount-code" style="font-family:monospace; font-size:11px; color:var(--color-text-sub); margin-left:4px;"></span></span>
+        <div id="coupon-discount-row" style="display:none; font-size:13px; color:#b36a00; font-weight:700; margin-bottom:6px; justify-content:space-between; align-items:center;">
+            <span><span class="material-symbols-outlined" style="font-size:14px; vertical-align:-2px; margin-right:2px;">confirmation_number</span><span data-i18n="coupon.totalLineLabel"></span> <span id="coupon-discount-code" style="font-family:monospace; font-size:11px; color:var(--color-text-sub); font-weight:400; margin-left:4px;"></span></span>
             <span id="coupon-discount-value">0 KHR</span>
         </div>
         <div id="coupon-disable-campaign-note" style="display:none; font-size:11px; color:#92400e; background:#fef3c7; border:1px solid #fde68a; border-radius:8px; padding:6px 10px; margin-bottom:8px;" data-i18n="coupon.disableCampaign"></div>
@@ -752,6 +762,9 @@
                     leadTimeHours = c.leadTimeHours != null ? c.leadTimeHours : 8;
                 }
 
+                // 6/7 #134 C: クーポンウォレットを先読み（confirm ステージで 1 タップ適用）
+                await loadCouponWallet();
+
                 subscribeCart(window.currentUser.uid, async (items) => {
                     cartItems = items;
                     await render();
@@ -961,7 +974,13 @@
         // 5/27 #94: 言語切替時にカレンダーを再初期化
         // 5/27: 動的描画されたカート本体（chip 文言・農家名以外のラベル等）も再描画しないと
         //   旧言語のままなので render() を呼び直す。initDatepickers は render() 内で呼ばれる。
-        onLanguageChange(() => { render().catch(() => {}); });
+        onLanguageChange(() => {
+            render().catch(() => {});
+            // 6/7 #134 C: 確認画面のクーポンウォレットも言語に追従（紹介元名の語順含め再構築）
+            if (stage === 'confirm') {
+                loadCouponWallet().then(() => { renderCouponWallet(); renderConfirm().catch(() => {}); });
+            }
+        });
 
         // 5/27 #94: 配送日カレンダーを i18next 言語に合わせてローカライズ（flatpickr）
         // ネイティブ <input type="date"> は Chrome/Safari で OS ロケール固定のため、
@@ -1593,66 +1612,89 @@
             location.replace('/pages/restaurant/orders.html');
         }
 
-        // ── 5/24 #82 Phase 2 Chunk 3: クーポンコード入力の検証＆適用 ──
-        (function setupCouponInput() {
-            const input = document.getElementById('coupon-input');
-            const applyBtn = document.getElementById('coupon-apply');
-            const statusEl = document.getElementById('coupon-status');
-            if (!input || !applyBtn || !statusEl) return;
-            const btnLabel = applyBtn.querySelector('[data-i18n]');
+        // ── 6/7 #134 C: クーポンウォレット（コード入力撤廃・1タップ適用）──
+        // 所有者・未使用・期限内のクーポンを取得し、タップで appliedCoupon を切替（1注文1クーポン＝排他）。
+        let availableCoupons = [];   // [{ code, amountKhr, expStr, sourceText }]
 
-            function setStatus(text, color) {
-                statusEl.textContent = text;
-                statusEl.style.color = color;
+        async function loadCouponWallet() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            try {
+                const snap = await getDocs(query(
+                    collection(db, 'coupons'),
+                    where('ownerUid', '==', uid)
+                ));
+                const now = Date.now();
+                const usable = snap.docs.map(d => ({ code: d.id, ...d.data() }))
+                    .filter(c => !c.usedAt && !c.usedOrderId)
+                    .filter(c => { const e = c.expiresAt?.toMillis?.(); return !e || e > now; })
+                    .sort((a, b) => (b.issuedAt?.toMillis?.() || 0) - (a.issuedAt?.toMillis?.() || 0));
+                // 紹介元名を一括取得（N+1 抑止・data-cache 経由）
+                const sourceUids = [...new Set(usable.map(c => c.sourceUid).filter(Boolean))];
+                const sourceNames = {};
+                await Promise.all(sourceUids.map(async (suid) => {
+                    try { const u = await getCachedUser(suid); sourceNames[suid] = u?.displayName || ''; }
+                    catch (e) { /* ignore */ }
+                }));
+                availableCoupons = usable.map(c => {
+                    const expMs = c.expiresAt?.toMillis?.();
+                    const expStr = expMs
+                        ? new Date(expMs).toLocaleDateString(i18next.language || 'en', { year: 'numeric', month: 'short', day: 'numeric' })
+                        : '';
+                    const sName = c.sourceUid ? (sourceNames[c.sourceUid] || '') : '';
+                    let sourceText;
+                    if (!sName) sourceText = i18next.t('myCoupons.sourceUnknown');
+                    else if (c.issuedReason === 'referrer') sourceText = i18next.t('myCoupons.sourceReferrer', { name: sName });
+                    else sourceText = i18next.t('myCoupons.sourceReferred', { name: sName });
+                    return { code: c.code, amountKhr: Number(c.amountKhr || 0), expStr, sourceText };
+                });
+            } catch (e) {
+                console.warn('loadCouponWallet failed:', e);
+                availableCoupons = [];
             }
-            function setBtnLabel(key) {
-                btnLabel.setAttribute('data-i18n', key);
-                btnLabel.textContent = i18next.t(key);
-            }
-            function release() {
+        }
+
+        function renderCouponWallet() {
+            const block = document.getElementById('coupon-wallet-block');
+            const list = document.getElementById('coupon-wallet-list');
+            if (!block || !list) return;
+            // 適用中クーポンがウォレットから消えていたら解除（期限切れ・別タブ使用など）
+            if (appliedCoupon && !availableCoupons.some(c => c.code === appliedCoupon.code)) {
                 appliedCoupon = null;
-                input.value = '';
-                input.disabled = false;
-                setStatus('', '');
-                setBtnLabel('coupon.apply');
-                applyBtn.disabled = false;
-                // confirm ステージで適用解除した場合は即座に表示更新
-                if (stage === 'confirm') renderConfirm();
             }
-
-            applyBtn.addEventListener('click', async () => {
-                // 適用済み状態なら「解除」として動く
-                if (appliedCoupon) { release(); return; }
-                const raw = (input.value || '').trim();
-                if (!raw) { setStatus('', ''); return; }
-                applyBtn.disabled = true;
-                input.disabled = true;
-                setStatus(i18next.t('coupon.checking'), 'var(--color-text-sub)');
-                try {
-                    const myUid = window.currentUser?.uid;
-                    const result = await validateCouponCode(raw, myUid);
-                    if (!result.ok) {
-                        appliedCoupon = null;
-                        setStatus(i18next.t(result.error), '#dc2626');
-                        applyBtn.disabled = false;
-                        input.disabled = false;
-                        return;
-                    }
-                    appliedCoupon = { code: raw, amountKhr: result.amountKhr };
-                    setStatus(i18next.t('coupon.applied', { amount: result.amountKhr.toLocaleString() }), '#047857');
-                    setBtnLabel('coupon.remove');
-                    applyBtn.disabled = false;
-                    // confirm ステージなら即座に再描画して grand total を反映
+            if (availableCoupons.length === 0) {
+                block.style.display = 'none';
+                return;
+            }
+            block.style.display = 'block';
+            list.innerHTML = availableCoupons.map((c, i) => {
+                const sel = appliedCoupon && appliedCoupon.code === c.code;
+                const meta = [c.sourceText, c.expStr ? i18next.t('myCoupons.expiresAt', { date: c.expStr }) : '']
+                    .filter(Boolean).join(' · ');
+                const side = sel
+                    ? `<div class="cwallet-item__on">${i18next.t('coupon.walletApplied')}</div><div class="cwallet-item__rm">${i18next.t('coupon.remove')}</div>`
+                    : `<div class="cwallet-item__off">${i18next.t('coupon.walletApply')}</div>`;
+                return `<div class="cwallet-item ${sel ? 'selected' : ''}" data-coupon-idx="${i}">
+                    <div class="cwallet-item__main">
+                        <div class="cwallet-item__amt">${i18next.t('myCoupons.amountUnit', { amount: c.amountKhr.toLocaleString() })}</div>
+                        <div class="cwallet-item__meta">${escapeHtml(meta)}</div>
+                    </div>
+                    <div class="cwallet-item__side">${side}</div>
+                </div>`;
+            }).join('');
+            list.querySelectorAll('.cwallet-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const c = availableCoupons[Number(el.dataset.couponIdx)];
+                    if (!c) return;
+                    // 同じクーポンをタップ＝解除／別クーポンをタップ＝差し替え（1注文1クーポン）
+                    appliedCoupon = (appliedCoupon && appliedCoupon.code === c.code)
+                        ? null
+                        : { code: c.code, amountKhr: c.amountKhr };
+                    renderCouponWallet();
                     if (stage === 'confirm') renderConfirm();
-                } catch (e) {
-                    console.error('validateCouponCode failed:', e);
-                    appliedCoupon = null;
-                    setStatus(i18next.t('coupon.errorGeneric'), '#dc2626');
-                    applyBtn.disabled = false;
-                    input.disabled = false;
-                }
+                });
             });
-        })();
+        }
 
         // ── チェックアウトボタン：ステージ遷移を制御 ──
         document.getElementById('checkout-btn').addEventListener('click', async () => {
@@ -1684,6 +1726,8 @@
                     }
 
                     // 6/1 #111 (diff10): 「配送料節約の提案」は当面非表示。常に確認画面へ直行。
+                    // 6/7 #134 C: 確認画面に入る前にウォレットを描画（1タップ適用）
+                    renderCouponWallet();
                     await renderConfirm();
                     setStage('confirm');
                 } else if (stage === 'confirm') {

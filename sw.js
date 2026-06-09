@@ -284,7 +284,21 @@ self.addEventListener('notificationclick', (event) => {
 //   ⚠️ 既存アカウントは Firestore/Auth とも削除しない（ハイブリッドで旧IDログイン継続）。電話番号ベースへの完全移行は別途。
 //   - 6/9 追補：terms.html/privacy.html は register から target="_blank"（新規タブ）で開くため history.back() で
 //     戻れない → 「戻る」をタブを閉じる（不可なら history.back / register へフォールバック）に修正。v120 は未デプロイのため v121 に統合。
-const CACHE_NAME = 'fishlink-v121';
+// 6/7 #134/#135 紹介クーポン（リファラル）UI修正＋整合バグ（v122・hosting のみ）:
+//   - #134A プロフィール：account.html×2 の紹介コードカードを緑→ソフトブルー（GAqP緑と区別・--color-cta系）／
+//     シェアボタン青／基本情報ヒント「ログインID…」→「電話番号…」(menuHintBasic)／レストランのクーポンは
+//     コード/コピーを撤去し「カートで使えます」導線(myCoupons.useInCart)に（ウォレット1タップへ統一）。
+//   - #134B シェア：referral.shareText を /register.html?ref={{code}} 自動入力リンク＋コードは文中に小さく残す。
+//     register.html は URL ?ref= を読んで紹介コード欄へ自動入力＋インライン検証（✓有効…）まで実行。
+//   - #134C カート：コード入力欄を撤廃→ウォレットから1タップ適用（confirm で coupon-wallet-block 表示）。
+//     明細・合計のクーポン割引を赤→amber。案Z（クーポン使用中はキャンペーン割引を出さない）は既存ロジック踏襲。
+//   - #135 整合：admin/order.html=入金確認に「紹介クーポン -」行(referralDiscountAmount)／農家送金に「紹介ボーナス +」行
+//     (referralBonusAmount)・amber。farmer/orders.html=承認画面＋承認モーダルに保留ボーナス(pendingFarmerBonus×settings)
+//     のプレビュー行「+5,000（取引完了時に加算）」＋受取予定額に込み。settings farmerBonusHint「紹介元のみ」→「双方」。
+//   - locales 3言語: myCoupons.useInCart、coupon.wallet*(Title/TapHint/CampaignNote/Applied/Apply)、orders.bonusOnComplete、
+//     referral.shareText 改、admin.account.menuHintBasic 改、admin.settings.referral.farmerBonusHint 改。
+//   ⚠️ functions / Firestore Rules / インデックスの変更なし（hosting のみ）。付与ロジックは #82 Phase2 のまま（本番未稼働）。
+const CACHE_NAME = 'fishlink-v122';
 
 const PRECACHE_URLS = [
     '/',

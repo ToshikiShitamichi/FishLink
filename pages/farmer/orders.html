@@ -663,6 +663,27 @@
         let ordersLoadingMore = false;
         let allOrders = [];
 
+        // 6/7 #135 ③: 紹介ボーナス設定（有効化＋金額）。承認画面で保留ボーナスのプレビューに使う。
+        let referralBonusSettings = { enabled: false, amountKhr: 0 };
+        async function loadReferralBonusSettings() {
+            try {
+                const snap = await getDoc(doc(db, 'settings', 'referral'));
+                const s = snap.exists() ? snap.data() : null;
+                referralBonusSettings = {
+                    enabled: s?.enabled === true,
+                    amountKhr: Number(s?.farmerBonusKhr || 0),
+                };
+            } catch (e) { /* 取得失敗時はプレビューを出さない（保守的） */ }
+        }
+        // 承認時点でこの注文の農家に「取引完了時に加算される保留ボーナス」を見せるか
+        function previewBonusFor(order, expired) {
+            const awarded = Number(order.referralBonusAmount || 0);
+            const pending = Number(window.currentUserData?.pendingFarmerBonus || 0);
+            const ok = order.status === 'pending' && !expired && awarded <= 0
+                && referralBonusSettings.enabled && referralBonusSettings.amountKhr > 0 && pending > 0;
+            return ok ? referralBonusSettings.amountKhr : 0;
+        }
+
         // 5/27: 新規注文監視（idle 時は 0 read・変化時のみ +N read）
         //   先頭5件のメタ情報だけ onSnapshot で持ち続け、増減があれば loadOrdersPage を再実行。
         //   重い join 処理は loadOrdersPage 側に任せる。
@@ -843,6 +864,8 @@
         // ── データ取得 & 描画 ──
         waitForUserData(async () => {
             localStorage.setItem('fishlink_orders_seen', String(Date.now()));
+            // 6/7 #135 ③: ボーナス設定を先読みしてから描画（プレビューの判定に使う）
+            await loadReferralBonusSettings();
             await loadOrdersPage({ silent: cachedRendered });
         });
 
@@ -954,6 +977,10 @@
             const receiveAmount = (order.farmerReceiveAmount != null)
                 ? order.farmerReceiveAmount
                 : (fishTotal - netCommission + deliveryFee);
+            // 6/7 #135 ③: 承認時点の保留ボーナス（取引完了時に加算）。受取予定額にも込みで表示。
+            const awardedBonus = Number(order.referralBonusAmount || 0);
+            const previewBonus = previewBonusFor(order, isExpiredPending);
+            const displayReceive = receiveAmount + previewBonus;
 
             let statusBadge = '';
             if (order.status === 'approved') {
@@ -1062,13 +1089,13 @@
                                     <span class="od-amt__l"><span class="material-symbols-outlined">local_offer</span>${i18next.t('orders.farmerCampaignDiscount')}</span>
                                     <span class="od-amt__v">${i18next.t('orders.farmerCampaignDiscountValue', { amount: farmerCampaignDiscount.toLocaleString() })}</span>
                                 </div>` : ''}
-                            ${Number(order.referralBonusAmount || 0) > 0 ? `
+                            ${(awardedBonus > 0 || previewBonus > 0) ? `
                                 <div class="od-amt od-amt--discount">
-                                    <span class="od-amt__l"><span class="material-symbols-outlined">redeem</span>${i18next.t('order.referralBonus')}</span>
-                                    <span class="od-amt__v">+${Number(order.referralBonusAmount).toLocaleString()} KHR</span>
+                                    <span class="od-amt__l"><span class="material-symbols-outlined">redeem</span>${i18next.t('order.referralBonus')}${previewBonus > 0 ? ` <span class="od-subnote">${i18next.t('orders.bonusOnComplete')}</span>` : ''}</span>
+                                    <span class="od-amt__v">+${(awardedBonus > 0 ? awardedBonus : previewBonus).toLocaleString()} KHR</span>
                                 </div>` : ''}
                             <div class="od-amt"><span class="od-amt__l">${i18next.t('orders.deliveryFee')} <span class="od-subnote">（${i18next.t('orders.deliveryNote')}）</span></span><span class="od-amt__v">+${deliveryFee.toLocaleString()} KHR</span></div>
-                            <div class="od-receive"><span class="od-receive__l">${i18next.t('orders.receiveAmount')}</span><span class="od-receive__v">${receiveAmount.toLocaleString()} KHR</span></div>
+                            <div class="od-receive"><span class="od-receive__l">${i18next.t('orders.receiveAmount')}</span><span class="od-receive__v">${displayReceive.toLocaleString()} KHR</span></div>
                         </div>
                         <!-- 5/4: 配送管理／送金状況／レビュー／報告 ボタンは外側の order-card__quick-actions に移動済み -->
                     </div>`;
@@ -1439,9 +1466,12 @@
             if (order && summaryEl) {
                 const restName = order.restData?.displayName || '';
                 const fishTotal = order.fishPrice || 0;
-                const receiveAmount = order.farmerReceiveAmount != null
+                const baseReceive = order.farmerReceiveAmount != null
                     ? order.farmerReceiveAmount
                     : (fishTotal - (order.farmerCommission || 0) + (order.deliveryFee || 0));
+                // 6/7 #135 ③: 保留ボーナスがある時のみ、承認モーダルにもボーナス行＋受取予定額に込み。
+                const modalPreviewBonus = previewBonusFor(order, isOrderExpired(order));
+                const receiveAmount = baseReceive + modalPreviewBonus;
                 const isMulti = Array.isArray(order.items) && order.items.length > 1;
                 const fishLines = [];
                 // 6/1 #112 (diff8): 内臓処理は「(内臓処理あり)/(内臓処理なし)」フル表記
@@ -1464,6 +1494,7 @@
                     ...fishLines,
                     `${i18next.t('orders.deliveryLabel')} ${[order.deliveryDate ? fmtDeliveryDate(order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}`,
                     `${i18next.t('orders.restaurantLabel')}: ${restName}`,
+                    ...(modalPreviewBonus > 0 ? [`${i18next.t('order.referralBonus')} +${modalPreviewBonus.toLocaleString()} KHR ${i18next.t('orders.bonusOnComplete')}`] : []),
                     `${i18next.t('orders.receiveAmount')} ${receiveAmount.toLocaleString()} KHR`,
                 ];
                 summaryEl.textContent = lines.join('\n');

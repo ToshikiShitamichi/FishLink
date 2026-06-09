@@ -467,7 +467,8 @@
         "sourceUnknown": "បានទទួលពីការណែនាំ",
         "loading": "កំពុងផ្ទុក...",
         "errorLoad": "បរាជ័យក្នុងការផ្ទុកគូប៉ុង",
-        "amountUnit": "បញ្ចុះ {{amount}} KHR"
+        "amountUnit": "បញ្ចុះ {{amount}} KHR",
+        "useInCart": "ប្រើនៅក្នុងកន្ត្រក"
     },
     "bonus": {
         "farmerCardTitle": "ដែនកំណត់ប្រាក់រង្វាន់ណែនាំ",
@@ -490,7 +491,12 @@
         "expired": "គូប៉ុងនេះហួសសុពលភាព",
         "errorGeneric": "ការផ្ទៀងផ្ទាត់បរាជ័យ។ សូមព្យាយាមម្ដងទៀត។",
         "disableCampaign": "* បញ្ចុះតម្លៃយុទ្ធនាការត្រូវបានបិទ ពេលប្រើគូប៉ុង",
-        "totalLineLabel": "បញ្ចុះតម្លៃគូប៉ុងណែនាំ"
+        "totalLineLabel": "បញ្ចុះតម្លៃគូប៉ុងណែនាំ",
+        "walletTitle": "គូប៉ុង",
+        "walletTapHint": "* ចុចគូប៉ុងដែលអ្នកមាន ដើម្បីអនុវត្ត (មិនចាំបាច់បញ្ចូលកូដ)",
+        "walletCampaignNote": "* បញ្ចុះតម្លៃយុទ្ធនាការមិនត្រូវបានអនុវត្តពេលប្រើគូប៉ុង (ការផ្តល់ជូនល្អជាងនឹងអនុវត្តដោយស្វ័យប្រវត្តិ)",
+        "walletApplied": "✓ កំពុងអនុវត្ត",
+        "walletApply": "អនុវត្ត"
     },
     "referral": {
         "cardTitle": "កូដណែនាំរបស់អ្នក",
@@ -499,7 +505,7 @@
         "copy": "ចម្លង",
         "copied": "បានចម្លង",
         "share": "ចែករំលែក",
-        "shareText": "មកជួញដូរត្រីចិញ្ចឹមនៅ FISHLINK។ បញ្ចូលកូដណែនាំ {{code}} នៅពេលចុះឈ្មោះ។\nhttps://fishlink-t-shitamichi.web.app",
+        "shareText": "មកជួញដូរត្រីចិញ្ចឹមនៅ FISHLINK។ ចុះឈ្មោះតាមតំណខាងក្រោម កូដណែនាំនឹងបំពេញដោយស្វ័យប្រវត្តិ (កូដ៖ {{code}})។\nhttps://fishlink-t-shitamichi.web.app/register.html?ref={{code}}",
         "phase1Note": "* រង្វាន់ (ប័ណ្ណបញ្ចុះតម្លៃ / ប្រាក់រង្វាន់កសិករ) នឹងបើកដំណើរការបន្តិចម្ដងៗ។",
         "codeInputLabel": "កូដណែនាំ (ស្រេចចិត្ត)",
         "codeInputPlaceholder": "កូដណែនាំ (8 តួ អក្សរ-លេខ)",
@@ -606,6 +612,7 @@
         "reviewCount": "{{count}}",
         "farmerCampaignDiscount": "បញ្ចុះតម្លៃយុទ្ធនាការ",
         "farmerCampaignDiscountValue": "សន្សំបាន {{amount}} KHR",
+        "bonusOnComplete": "(បន្ថែមនៅពេលប្រតិបត្តិការបញ្ចប់)",
         "empty": "មិនមានការបញ្ជាទិញថ្មី",
         "navOrders": "ការបញ្ជាទិញ",
         "approved": "បានយល់ព្រម",
@@ -1107,7 +1114,7 @@
         "statusDelivered": "បានទទួល",
         "statusOther": "កំពុងដំណើរការ",
         "logout": "ចាកចេញ",
-        "menuHintBasic": "ID, ឈ្មោះបង្ហាញ, ទីតាំង",
+        "menuHintBasic": "លេខទូរស័ព្ទ, ឈ្មោះបង្ហាញ, ទីតាំង",
         "menuHintRemit": "ឈ្មោះគណនី, តំណ QR, រូប QR",
         "menuHintPayment": "ឈ្មោះគណនី, QR, តំណ",
         "menuHintSales": "ចំនួនលក់, ប្រតិបត្តិការ",
@@ -1357,7 +1364,7 @@
             "restaurantCouponLabel": "ចំនួនគូប៉ុងសម្រាប់ភោជនីយដ្ឋាន (KHR)",
             "restaurantCouponHint": "គូប៉ុងផ្តល់ឲ្យទាំងភោជនីយដ្ឋានដែលណែនាំ និងភោជនីយដ្ឋានដែលត្រូវបានណែនាំ។ 0 = មិនផ្តល់",
             "farmerBonusLabel": "បូណាស់ណែនាំសម្រាប់កសិករ (KHR)",
-            "farmerBonusHint": "ចំនួនបន្ថែមលើចំនួនទទួលរបស់កសិករដែលណែនាំ។ 0 = មិនផ្តល់",
+            "farmerBonusHint": "ចំនួនបន្ថែមលើចំនួនទទួលរបស់កសិករអ្នកណែនាំ និងអ្នកដែលត្រូវបានណែនាំ ទាំងពីរ។ 0 = មិនផ្តល់",
             "validDaysLabel": "សុពលភាពគូប៉ុង (ថ្ងៃ)",
             "validDaysHint": "ចំនួនថ្ងៃដែលគូប៉ុងមានសុពលភាពចាប់ពីថ្ងៃចេញ។ លំនាំដើម 30 ថ្ងៃ",
             "maxReferralsLabel": "ដែនកំណត់ការណែនាំក្នុងម្នាក់ (នាក់)",

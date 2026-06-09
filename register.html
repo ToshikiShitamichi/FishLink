@@ -447,7 +447,7 @@
             const input = document.getElementById('referral-code-input');
             const statusEl = document.getElementById('referral-code-status');
             if (!input || !statusEl) return;
-            input.addEventListener('blur', async () => {
+            async function checkReferral() {
                 const raw = (input.value || '').trim();
                 if (!raw) { statusEl.textContent = ''; return; }
                 if (!isValidReferralCode(raw)) {
@@ -471,7 +471,17 @@
                     statusEl.textContent = i18next.t('referral.errorGeneric');
                     statusEl.style.color = '#dc2626';
                 }
-            });
+            }
+            input.addEventListener('blur', checkReferral);
+            // 6/7 #134 B: シェアリンク（/register.html?ref=CODE）からの自動入力。
+            //   コードを埋め込んでおき、開いた瞬間に欄へ入れてインライン検証（✓有効…）まで走らせる。
+            try {
+                const refParam = (new URLSearchParams(window.location.search).get('ref') || '').trim();
+                if (refParam && isValidReferralCode(refParam)) {
+                    input.value = refParam;
+                    checkReferral();
+                }
+            } catch (e) { /* ignore */ }
         })();
 
         registerBtn.addEventListener('click', async () => {

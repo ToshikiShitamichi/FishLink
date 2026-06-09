@@ -54,28 +54,28 @@
         }
         .nav-badge { position: absolute; top: 6px; right: 50%; transform: translateX(18px); background: #ef4444; width: 10px; height: 10px; border-radius: 50%; }
 
-        /* 5/23 #82 Phase 1: 紹介コードカード */
+        /* 5/23 #82 Phase 1 → 6/7 #134: 紹介コードカード（ソフトブルー＝GAqP緑と区別） */
         .referral-card {
-            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-            border: 1px solid #a7f3d0;
+            background: var(--color-cta-lt);
+            border: 1px solid #cfe0ee;
             border-radius: 14px;
             padding: 14px;
             margin-bottom: 14px;
         }
         .referral-card__head {
             display: flex; align-items: center; gap: 6px;
-            font-size: 13px; font-weight: 700; color: #065f46;
+            font-size: 13px; font-weight: 700; color: var(--color-cta);
             margin-bottom: 4px;
         }
         .referral-card__head .material-symbols-outlined { font-size: 18px; }
         .referral-card__desc {
-            font-size: 11px; color: #047857;
+            font-size: 11px; color: #3e6a98;
             line-height: 1.4;
             margin-bottom: 10px;
         }
         .referral-card__code {
             background: #fff;
-            border: 1px solid #a7f3d0;
+            border: 1px solid #d5e6f8;
             border-radius: 10px;
             padding: 12px;
             text-align: center;
@@ -83,7 +83,7 @@
             font-size: 22px;
             font-weight: 700;
             letter-spacing: 2px;
-            color: #065f46;
+            color: #0b1b33;
             margin-bottom: 10px;
             user-select: all;
         }
@@ -91,8 +91,8 @@
         .referral-card__btn {
             flex: 1;
             background: #fff;
-            border: 1px solid #a7f3d0;
-            color: #065f46;
+            border: 1px solid var(--color-cta);
+            color: var(--color-cta);
             border-radius: 999px;
             padding: 8px;
             font-size: 12px;
@@ -103,12 +103,12 @@
         }
         .referral-card__btn .material-symbols-outlined { font-size: 16px; }
         .referral-card__btn--primary {
-            background: #0d6e4c;
+            background: var(--color-cta);
             color: #fff;
-            border-color: #0d6e4c;
+            border-color: var(--color-cta);
         }
         .referral-card__phase-note {
-            font-size: 10px; color: #047857;
+            font-size: 10px; color: #7c97b5;
             text-align: center;
             margin-top: 8px;
             font-style: italic;
@@ -128,7 +128,7 @@
             margin-bottom: 10px;
         }
         .coupons-card__head .material-symbols-outlined {
-            font-size: 18px; color: #0d6e4c;
+            font-size: 18px; color: #b36a00;
         }
         .coupons-card__empty {
             font-size: 12px; color: var(--color-text-sub);
@@ -150,38 +150,14 @@
         .coupon-item__meta {
             font-size: 11px; color: #7c2d12; margin-top: 2px;
         }
-        .coupon-item__code-row {
-            display: flex; align-items: center; gap: 8px;
-            margin-top: 8px;
-        }
-        .coupon-item__code {
-            flex: 1;
-            background: #fff;
-            border: 1px solid #fdba74;
-            border-radius: 8px;
-            padding: 8px 10px;
-            font-family: monospace;
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            color: #9a3412;
-            text-align: center;
-            user-select: all;
-        }
-        .coupon-item__copy {
-            background: #c2410c;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: inherit;
+        /* 6/7 #134: コード入力撤廃（カートでウォレットから1タップ適用）。コピー不要のため
+           プロフィールではコードを出さず「カートで使えます」の利用導線だけ示す。 */
+        .coupon-item__use {
             display: flex; align-items: center; gap: 4px;
-            white-space: nowrap;
+            margin-top: 8px;
+            font-size: 11px; font-weight: 700; color: #b36a00;
         }
-        .coupon-item__copy .material-symbols-outlined { font-size: 14px; }
+        .coupon-item__use .material-symbols-outlined { font-size: 14px; }
     </style>
 </head>
 
@@ -538,35 +514,13 @@
                         <div class="coupon-item">
                             <div class="coupon-item__amount">${i18next.t('myCoupons.amountUnit', { amount: Number(c.amountKhr || 0).toLocaleString() })}</div>
                             <div class="coupon-item__meta">${escapeHtml(sourceText)}${expStr ? ' · ' + escapeHtml(i18next.t('myCoupons.expiresAt', { date: expStr })) : ''}</div>
-                            <div class="coupon-item__code-row">
-                                <div class="coupon-item__code">${escapeHtml(c.id)}</div>
-                                <button type="button" class="coupon-item__copy" data-coupon-code="${escapeHtml(c.id)}">
-                                    <span class="material-symbols-outlined">content_copy</span>
-                                    <span data-i18n="myCoupons.copyCode"></span>
-                                </button>
+                            <div class="coupon-item__use">
+                                <span class="material-symbols-outlined">shopping_cart</span>
+                                <span>${escapeHtml(i18next.t('myCoupons.useInCart'))}</span>
                             </div>
                         </div>
                     `;
                 }).join('');
-
-                // コピーボタンのバインド
-                container.querySelectorAll('.coupon-item__copy').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        e.preventDefault();
-                        const code = btn.getAttribute('data-coupon-code');
-                        try {
-                            await navigator.clipboard.writeText(code);
-                        } catch (_) {
-                            const ta = document.createElement('textarea');
-                            ta.value = code;
-                            document.body.appendChild(ta);
-                            ta.select();
-                            try { document.execCommand('copy'); } catch (__) { /* ignore */ }
-                            ta.remove();
-                        }
-                        alert(i18next.t('myCoupons.copied'));
-                    });
-                });
             } catch (e) {
                 console.warn('loadCoupons failed:', e);
                 container.innerHTML = `<div class="coupons-card__empty">${escapeHtml(i18next.t('myCoupons.errorLoad'))}</div>`;

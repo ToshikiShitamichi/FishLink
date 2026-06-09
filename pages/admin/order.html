@@ -100,6 +100,8 @@
         .kv-row__v { color: #0f172a; font-weight: 500; }
         .kv-row__v.bold { font-weight: 700; }
         .kv-row__v.minus { color: #ef4444; }
+        /* 6/7 #135: 紹介クーポン／ボーナスは amber（金額の足し算を合わせる行） */
+        .kv-row__v.amber { color: #b36a00; }
 
         .divider-dashed {
             border-top: 1px dashed #cbd5e1; margin: 8px 0;
@@ -655,6 +657,11 @@
             if (campaign > 0) {
                 payHtml += `<div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.campaignDiscount')}</span><span class="kv-row__v minus">-${campaign.toLocaleString()} KHR</span></div>`;
             }
+            // 6/7 #135 ①: 紹介クーポン割引行（カートで適用済みのみ）。これが無いと合計が合わない。
+            const referralDiscount = orderData.referralDiscountAmount || 0;
+            if (referralDiscount > 0) {
+                payHtml += `<div class="kv-row"><span class="kv-row__k">${i18next.t('order.referralCouponDiscount')}</span><span class="kv-row__v amber">-${referralDiscount.toLocaleString()} KHR</span></div>`;
+            }
             payHtml += `
                 <div class="divider-dashed"></div>
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.total')}</span><span class="kv-row__v bold">${total.toLocaleString()} KHR</span></div>
@@ -669,10 +676,17 @@
             `;
 
             // 送金内訳
+            // 6/7 #135 ②: 紹介ボーナス行（取引完了時に order へ加算済みのみ）。これが無いと合計が合わない。
+            //   農家送金は常に満額（クーポンは FishLink 負担）＝ボーナスは受取額に上乗せ。
+            const remitBonus = orderData.referralBonusAmount || 0;
+            const remitBonusLine = remitBonus > 0
+                ? `<div class="kv-row"><span class="kv-row__k">${i18next.t('order.referralBonus')}</span><span class="kv-row__v amber">+${remitBonus.toLocaleString()} KHR</span></div>`
+                : '';
             document.getElementById('remit-breakdown').innerHTML = `
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishPrice')}</span><span class="kv-row__v">${fishPrice.toLocaleString()} KHR</span></div>
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.deliveryFee')}</span><span class="kv-row__v">${deliveryFee.toLocaleString()} KHR</span></div>
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.commissionDeduct', { rate: commissionRate })}</span><span class="kv-row__v minus">-${commission.toLocaleString()} KHR</span></div>
+                ${remitBonusLine}
                 <div class="divider-dashed"></div>
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.total')}</span><span class="kv-row__v bold">${remitAmount.toLocaleString()} KHR</span></div>
             `;

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 紹介クーポン - モック</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:1000px; margin-bottom:24px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; } .intro b{color:#0B5FB0;} .intro .am{color:#B36A00;}
+
+  .stage { display:flex; flex-wrap:wrap; gap:28px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; background:#FFF; padding:7px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  .phone-label .tag { color:#5A6470; font-weight:500; }
+
+  .phone { width:390px; max-width:100%; height:820px; background:#F4F6F8; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+  .f-header { flex:0 0 auto; background:#FFF; padding:12px 14px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:8px; z-index:2; }
+  .f-header .logo { font-weight:800; color:#0B5FB0; font-size:15px; }
+  .f-header .sp { margin-left:auto; font-size:13px; display:flex; gap:10px; align-items:center; }
+  .f-header .lang { font-size:11px; color:#0B5FB0; font-weight:700; border:1px solid #CFE0EE; border-radius:12px; padding:2px 8px; }
+  .badge-n { position:relative; }
+  .badge-n .dot { position:absolute; top:-5px; right:-7px; background:#E5453F; color:#fff; font-size:9px; font-weight:800; border-radius:8px; padding:0 4px; }
+  .f-body { flex:1 1 auto; overflow-y:auto; padding:14px 14px 24px; }
+
+  .role-l { font-size:12px; color:#5A6470; }
+  .acct-n { font-size:20px; font-weight:800; margin-top:2px; }
+  .acct-h { font-size:12px; color:#9AA3B0; margin-top:2px; margin-bottom:14px; }
+
+  /* 紹介コードカード（ソフトブルー＝GAqP緑と区別） */
+  .ref-card { background:#EAF2FB; border:1px solid #CFE0EE; border-radius:16px; padding:16px; margin-bottom:14px; }
+  .ref-card .rt { font-size:14px; font-weight:800; color:#0B5FB0; display:flex; align-items:center; gap:7px; }
+  .ref-card .rd { font-size:12px; color:#3E6A98; margin:7px 0 12px; line-height:1.6; }
+  .ref-code { background:#FFF; border:1px solid #D5E6F8; border-radius:12px; padding:16px; text-align:center; font-size:24px; font-weight:800; letter-spacing:3px; font-family:ui-monospace,Menlo,monospace; color:#0B1B33; }
+  .ref-acts { display:flex; gap:10px; margin-top:12px; }
+  .ref-acts .b { flex:1; border-radius:10px; padding:11px; font-size:13px; font-weight:800; text-align:center; }
+  .ref-acts .copy { background:#FFF; color:#0B5FB0; border:1.5px solid #0B5FB0; }
+  .ref-acts .share { background:#0B5FB0; color:#FFF; }
+  .ref-note { font-size:11px; color:#7C97B5; margin-top:11px; text-align:center; }
+
+  .card { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .card .ct { font-size:14px; font-weight:800; display:flex; align-items:center; gap:7px; margin-bottom:11px; }
+
+  /* クーポン（amber） */
+  .coupon { background:#FFF7E6; border:1px solid #F3D998; border-radius:12px; padding:13px; }
+  .coupon .camt { font-size:18px; font-weight:800; color:#B36A00; }
+  .coupon .cmeta { font-size:11px; color:#9A7430; margin-top:4px; }
+  .coupon .cuse { font-size:11px; color:#B36A00; font-weight:700; margin-top:8px; }
+
+  /* 農家ボーナス */
+  .bonus { background:#FFF7E6; border:1px solid #F3D998; border-radius:12px; padding:13px; }
+  .bonus .bamt { font-size:18px; font-weight:800; color:#B36A00; }
+  .bonus .bst { font-size:11px; color:#9A7430; margin-top:4px; }
+  .bonus .btot { font-size:12px; color:#5A6470; margin-top:9px; border-top:1px solid #F0E2C2; padding-top:9px; }
+
+  .row { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:13px 14px; margin-bottom:11px; display:flex; align-items:center; gap:11px; }
+  .row .ri { width:34px; height:34px; border-radius:9px; background:#EAF2FB; display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .row .rmain { flex:1; } .row .rt2 { font-size:14px; font-weight:800; } .row .rs { font-size:11px; color:#5A6470; margin-top:2px; }
+  .row .rarr { color:#C7D0DA; }
+
+  /* カート */
+  .info-box { background:#EEF3FB; border:1px solid #D8E4F5; border-radius:12px; padding:12px 13px; margin-bottom:12px; }
+  .info-box .it { font-size:13px; font-weight:800; color:#0B5FB0; }
+  .info-box .ib { font-size:12px; color:#3E6A98; margin-top:4px; line-height:1.5; }
+  .ord { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .ord .otop { display:flex; align-items:center; font-size:13px; font-weight:800; }
+  .ord .odist { margin-left:auto; font-size:11px; color:#5A6470; font-weight:600; }
+  .orow { display:flex; justify-content:space-between; font-size:13px; padding:7px 0; }
+  .orow .ol { color:#3A4250; } .orow .ov { font-weight:700; }
+  .orow.am .ol, .orow.am .ov { color:#B36A00; }
+  .orow.sub { border-top:1px solid #F0F2F5; margin-top:4px; padding-top:9px; font-weight:800; }
+  .deliv { background:#EAF2FB; border-radius:9px; padding:8px 11px; font-size:12px; color:#0B5FB0; font-weight:700; margin-top:8px; }
+  .cou-apply { display:flex; align-items:center; gap:10px; background:#FFF7E6; border:1px solid #F3D998; border-radius:11px; padding:11px 12px; }
+  .cou-apply .ca-main { flex:1; } .cou-apply .ca-t { font-size:13px; font-weight:800; color:#B36A00; } .cou-apply .ca-s { font-size:11px; color:#9A7430; margin-top:2px; }
+  .cou-apply .ca-on { font-size:12px; font-weight:800; color:#2E7D32; }
+  .cou-apply .ca-rm { font-size:11px; color:#0B5FB0; font-weight:700; margin-top:3px; }
+  .tot-card { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:6px 14px; margin-top:12px; }
+
+  .f-footer { flex:0 0 auto; background:#FFF; border-top:1px solid #EEF1F4; padding:11px 14px 16px; }
+  .f-footer .tot { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .f-footer .tot .tl { font-size:13px; color:#5A6470; } .f-footer .tot .tv { font-size:22px; font-weight:800; color:#0B5FB0; }
+  .btn { width:100%; border:none; border-radius:11px; padding:14px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; background:#0B5FB0; color:#FFF; }
+
+  .botnav { flex:0 0 auto; background:#FFF; border-top:1px solid #EEF1F4; display:flex; padding:8px 0 14px; }
+  .botnav .nv { flex:1; text-align:center; font-size:10px; color:#9AA3B0; } .botnav .nv.on { color:#0B5FB0; font-weight:700; } .botnav .nv .ic { font-size:18px; display:block; }
+
+  .note { max-width:1000px; margin-top:24px; background:#FFF; padding:14px 18px; border-radius:12px; font-size:13px; line-height:1.8; color:#4A4A4A; }
+  .note h2 { font-size:14px; color:#0B5FB0; margin:0 0 8px; } .note b{color:#0B5FB0;} .note .am{color:#B36A00;}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 紹介クーポン（モック・修正反映版）</h1>
+  <p>①レストランのプロフィール（紹介コード＋<b>使えるクーポン</b>）／②農家のプロフィール（紹介コード＋<b>紹介ボーナス</b>）／③カートで<b>ウォレットから1タップ適用</b>。</p>
+  <p>紹介カード＝<b>ソフトブルー</b>（GAqP緑と区別）・シェア<b>青</b>／クーポン＝<span class="am">amber</span>／報酬表示はロール別／カートのコード入力は撤廃。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① レストラン プロフィール -->
+  <div class="phone-wrap">
+    <div class="phone-label">① レストラン プロフィール <span class="tag">紹介コード＋使えるクーポン</span></div>
+    <div class="phone">
+      <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp"><span class="lang">🌐 日本語</span><span>🔔</span><span class="badge-n">✓✓<span class="dot">5</span></span></span></div>
+      <div class="f-body">
+        <div class="role-l">レストラン</div>
+        <div class="acct-n">レストラン・アンコール</div>
+        <div class="acct-h">@restaurant_angkor</div>
+
+        <div class="ref-card">
+          <div class="rt">🎁 あなたの紹介コード</div>
+          <div class="rd">このコードを入れて登録した人が初回取引すると、双方に特典がもらえます。</div>
+          <div class="ref-code">PwhUSjvC</div>
+          <div class="ref-acts"><span class="b copy">📋 コピー</span><span class="b share">🔗 シェア</span></div>
+          <div class="ref-note">※ 特典（クーポン・農家ボーナス）は順次提供開始予定です</div>
+        </div>
+
+        <div class="card">
+          <div class="ct">🎟 使えるクーポン</div>
+          <div class="coupon">
+            <div class="camt">2,500 KHR 割引</div>
+            <div class="cmeta">スレイ食堂さんに紹介されて獲得 ・ 〜2026/6/26</div>
+            <div class="cuse">🛒 カートで使えます</div>
+          </div>
+        </div>
+
+        <div class="row"><div class="ri">👤</div><div class="rmain"><div class="rt2">基本情報</div><div class="rs">電話番号・表示名・位置情報</div></div><span class="rarr">›</span></div>
+        <div class="row"><div class="ri">💳</div><div class="rmain"><div class="rt2">支払い情報</div><div class="rs">お支払い方法・履歴</div></div><span class="rarr">›</span></div>
+      </div>
+      <div class="botnav"><span class="nv"><span class="ic">🏠</span>ホーム</span><span class="nv"><span class="ic">🐟</span>魚一覧</span><span class="nv"><span class="ic">🛒</span>カート</span><span class="nv on"><span class="ic">📋</span>注文状況</span></div>
+    </div>
+  </div>
+
+  <!-- ② 農家 プロフィール -->
+  <div class="phone-wrap">
+    <div class="phone-label">② 農家 プロフィール <span class="tag">紹介コード＋紹介ボーナス（ロール別）</span></div>
+    <div class="phone">
+      <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp"><span class="lang">🌐 日本語</span><span>🔔</span><span class="badge-n">✓✓<span class="dot">3</span></span></span></div>
+      <div class="f-body">
+        <div class="role-l">養殖農家</div>
+        <div class="acct-n">大星農場</div>
+        <div class="acct-h">@osei_farm</div>
+
+        <div class="ref-card">
+          <div class="rt">🎁 あなたの紹介コード</div>
+          <div class="rd">このコードを入れて登録した人が初回取引すると、双方に特典がもらえます。</div>
+          <div class="ref-code">SeRDeUuI</div>
+          <div class="ref-acts"><span class="b copy">📋 コピー</span><span class="b share">🔗 シェア</span></div>
+          <div class="ref-note">※ 特典（クーポン・農家ボーナス）は順次提供開始予定です</div>
+        </div>
+
+        <div class="card">
+          <div class="ct">🎁 紹介ボーナス</div>
+          <div class="bonus">
+            <div class="bamt">+5,000 KHR 獲得</div>
+            <div class="bst">次回の送金時にお支払いします</div>
+            <div class="btot">これまでの獲得合計：5,000 KHR</div>
+          </div>
+        </div>
+
+        <div class="row"><div class="ri">👤</div><div class="rmain"><div class="rt2">基本情報</div><div class="rs">電話番号・表示名・位置情報</div></div><span class="rarr">›</span></div>
+        <div class="row"><div class="ri">🏦</div><div class="rmain"><div class="rt2">送金先情報</div><div class="rs">口座名・送金QR・リンク</div></div><span class="rarr">›</span></div>
+      </div>
+      <div class="botnav"><span class="nv"><span class="ic">🐟</span>投稿一覧</span><span class="nv"><span class="ic">＋</span>出品する</span><span class="nv on"><span class="ic">📋</span>注文確認</span></div>
+    </div>
+  </div>
+
+  <!-- ③ カート クーポン適用 -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ カート（クーポン適用） <span class="tag">ウォレットから1タップ・コード入力なし</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp"><span class="lang">🌐 日本語</span></span></div>
+      <div class="f-body">
+        <div style="text-align:center;font-size:17px;font-weight:800;margin:2px 0 12px;">カート</div>
+
+        <div class="ord">
+          <div class="otop">🌾 大星農場 <span class="odist">配送距離 24.8 km</span></div>
+          <div style="font-size:12px;color:#5A6470;margin:6px 0 8px;">レッドティラピア 3 head/kg・5kg（内臓処理あり）</div>
+          <div class="orow"><span class="ol">小計（魚代）</span><span class="ov">39,375 KHR</span></div>
+          <div class="orow"><span class="ol">配送料</span><span class="ov">12,400 KHR</span></div>
+          <div class="orow sub"><span class="ol">この農家への小計</span><span class="ov">51,775 KHR</span></div>
+          <div class="deliv">📅 6/8（月）6:00–7:00</div>
+        </div>
+
+        <div class="card">
+          <div class="ct">🎟 クーポン</div>
+          <div class="cou-apply">
+            <div class="ca-main"><div class="ca-t">2,500 KHR 割引</div><div class="ca-s">〜2026/6/26</div></div>
+            <div style="text-align:right;"><div class="ca-on">✓ 適用中</div><div class="ca-rm">外す</div></div>
+          </div>
+          <div style="font-size:11px;color:#9AA3B0;margin-top:8px;">※ お持ちのクーポンをタップで適用（コード入力は不要）</div>
+          <div style="font-size:11px;color:#B36A00;margin-top:5px;">※ クーポン使用中はキャンペーン割引は適用されません（お得な方が自動適用）</div>
+        </div>
+
+        <div class="tot-card">
+          <div class="orow"><span class="ol">小計</span><span class="ov">51,775 KHR</span></div>
+          <div class="orow am"><span class="ol">🎟 紹介クーポン</span><span class="ov">-2,500 KHR</span></div>
+        </div>
+      </div>
+      <div class="f-footer">
+        <div class="tot"><span class="tl">合計</span><span class="tv">49,275 KHR</span></div>
+        <button class="btn">注文を確定する</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <h2>設計メモ（このモックで表現していること）</h2>
+  <p><b>紹介コードカード</b>：両ロール共通。<b>ソフトブルー</b>（GAqP緑・キャンペーンamberと区別）／<b>シェア＝青</b>／「順次提供予定」注記（Phase 2＝特典の配布が動いたら外す・下道さんに実装状況確認）。シェアは<b>コードを埋め込んだ自動入力リンク</b>を共有（受け取った人は登録画面にコードが入る）。</p>
+  <p><b>報酬表示はロール別</b>：レストラン＝<b>使えるクーポン</b>（amber・カートで1タップ適用）／農家＝<b>紹介ボーナス</b>（受取側・次回送金で支払い・獲得合計）。農家は買わないのでクーポンは出さない。</p>
+  <p><b>③カート</b>：コード入力欄は撤廃。<b>お持ちのクーポンをタップで適用</b>（コードのコピー不要）。明細に「<b>紹介クーポン -2,500</b>」行。合計が2,500引かれる（原資はプラットフォーム負担・農家は満額）。<b>案Z＝クーポン使用中はキャンペーン割引は出さない（排他・お得な方が自動適用）</b>。最低注文額あり（運営設定）。</p>
+  <p><b>運営設定（別途・テキスト修正）</b>：農家用 紹介ボーナスの文言を「紹介元のみ」→「<b>紹介元・被紹介者の双方</b>」に修正。</p>
+  <p><b>農家送金状況</b>：内訳に「紹介ボーナス +5,000」行を追加（精算spec）。</p>
+</div>
+
+</body>
+</html>

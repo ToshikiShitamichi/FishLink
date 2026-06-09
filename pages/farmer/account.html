@@ -77,28 +77,28 @@
             border-radius: 50%;
         }
 
-        /* 5/23 #82 Phase 1: 紹介コードカード */
+        /* 5/23 #82 Phase 1 → 6/7 #134: 紹介コードカード（ソフトブルー＝GAqP緑と区別） */
         .referral-card {
-            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-            border: 1px solid #a7f3d0;
+            background: var(--color-cta-lt);
+            border: 1px solid #cfe0ee;
             border-radius: 14px;
             padding: 14px;
             margin-bottom: 14px;
         }
         .referral-card__head {
             display: flex; align-items: center; gap: 6px;
-            font-size: 13px; font-weight: 700; color: #065f46;
+            font-size: 13px; font-weight: 700; color: var(--color-cta);
             margin-bottom: 4px;
         }
         .referral-card__head .material-symbols-outlined { font-size: 18px; }
         .referral-card__desc {
-            font-size: 11px; color: #047857;
+            font-size: 11px; color: #3e6a98;
             line-height: 1.4;
             margin-bottom: 10px;
         }
         .referral-card__code {
             background: #fff;
-            border: 1px solid #a7f3d0;
+            border: 1px solid #d5e6f8;
             border-radius: 10px;
             padding: 12px;
             text-align: center;
@@ -106,7 +106,7 @@
             font-size: 22px;
             font-weight: 700;
             letter-spacing: 2px;
-            color: #065f46;
+            color: #0b1b33;
             margin-bottom: 10px;
             user-select: all;
         }
@@ -114,8 +114,8 @@
         .referral-card__btn {
             flex: 1;
             background: #fff;
-            border: 1px solid #a7f3d0;
-            color: #065f46;
+            border: 1px solid var(--color-cta);
+            color: var(--color-cta);
             border-radius: 999px;
             padding: 8px;
             font-size: 12px;
@@ -126,12 +126,12 @@
         }
         .referral-card__btn .material-symbols-outlined { font-size: 16px; }
         .referral-card__btn--primary {
-            background: #0d6e4c;
+            background: var(--color-cta);
             color: #fff;
-            border-color: #0d6e4c;
+            border-color: var(--color-cta);
         }
         .referral-card__phase-note {
-            font-size: 10px; color: #047857;
+            font-size: 10px; color: #7c97b5;
             text-align: center;
             margin-top: 8px;
             font-style: italic;

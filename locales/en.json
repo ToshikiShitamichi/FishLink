@@ -467,7 +467,8 @@
         "sourceUnknown": "Earned from referral",
         "loading": "Loading...",
         "errorLoad": "Failed to load coupons",
-        "amountUnit": "{{amount}} KHR off"
+        "amountUnit": "{{amount}} KHR off",
+        "useInCart": "Use it in your cart"
     },
     "bonus": {
         "farmerCardTitle": "Referral Bonus Credits",
@@ -490,7 +491,12 @@
         "expired": "This coupon has expired",
         "errorGeneric": "Verification failed. Please try again.",
         "disableCampaign": "* Campaign discount is disabled while a coupon is applied",
-        "totalLineLabel": "Referral coupon discount"
+        "totalLineLabel": "Referral coupon discount",
+        "walletTitle": "Coupon",
+        "walletTapHint": "* Tap a coupon you own to apply it (no code entry needed)",
+        "walletCampaignNote": "* Campaign discount isn't applied while a coupon is in use (the better deal applies automatically)",
+        "walletApplied": "✓ Applied",
+        "walletApply": "Apply"
     },
     "referral": {
         "cardTitle": "Your referral code",
@@ -499,7 +505,7 @@
         "copy": "Copy",
         "copied": "Copied",
         "share": "Share",
-        "shareText": "Trade fresh farmed fish on FISHLINK. Enter referral code {{code}} when you sign up.\nhttps://fishlink-t-shitamichi.web.app",
+        "shareText": "Trade fresh farmed fish on FISHLINK. Sign up from the link below and the referral code fills in automatically (code: {{code}}).\nhttps://fishlink-t-shitamichi.web.app/register.html?ref={{code}}",
         "phase1Note": "* Rewards (coupons / farmer bonuses) will roll out progressively.",
         "codeInputLabel": "Referral code (optional)",
         "codeInputPlaceholder": "Referral code (8 alphanumeric chars)",
@@ -606,6 +612,7 @@
         "reviewCount": "{{count}}",
         "farmerCampaignDiscount": "Campaign discount",
         "farmerCampaignDiscountValue": "{{amount}} KHR saved",
+        "bonusOnComplete": "(added when the transaction completes)",
         "empty": "No new orders",
         "navOrders": "Orders",
         "approved": "Approved",
@@ -1107,7 +1114,7 @@
         "statusDelivered": "Delivered",
         "statusOther": "In progress",
         "logout": "Logout",
-        "menuHintBasic": "Login ID, display name, location",
+        "menuHintBasic": "Phone number, display name, location",
         "menuHintRemit": "Account name, QR link, QR image",
         "menuHintPayment": "Account name, payment QR, link",
         "menuHintSales": "Sales amount, transaction history",
@@ -1357,7 +1364,7 @@
             "restaurantCouponLabel": "Restaurant coupon amount (KHR)",
             "restaurantCouponHint": "Coupon issued to both the referring and the referred restaurant. 0 disables issuance",
             "farmerBonusLabel": "Farmer referral bonus (KHR)",
-            "farmerBonusHint": "Bonus added on top of the referring farmer's payout. 0 disables it",
+            "farmerBonusHint": "Bonus added on top of the payout for both the referring and the referred farmer. 0 disables it",
             "validDaysLabel": "Coupon validity (days)",
             "validDaysHint": "Days a coupon stays valid from issuance. Default 30",
             "maxReferralsLabel": "Max referrals per user",

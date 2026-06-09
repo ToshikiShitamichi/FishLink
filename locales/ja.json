@@ -467,7 +467,8 @@
         "sourceUnknown": "紹介で獲得",
         "loading": "読み込み中...",
         "errorLoad": "クーポンの取得に失敗しました",
-        "amountUnit": "{{amount}} KHR 割引"
+        "amountUnit": "{{amount}} KHR 割引",
+        "useInCart": "カートで使えます"
     },
     "bonus": {
         "farmerCardTitle": "紹介ボーナス枠",
@@ -490,7 +491,12 @@
         "expired": "クーポンの有効期限が切れています",
         "errorGeneric": "確認に失敗しました。再度お試しください",
         "disableCampaign": "※ クーポン使用中のためキャンペーン割引は無効になります",
-        "totalLineLabel": "紹介クーポン割引"
+        "totalLineLabel": "紹介クーポン割引",
+        "walletTitle": "クーポン",
+        "walletTapHint": "※ お持ちのクーポンをタップで適用（コード入力は不要）",
+        "walletCampaignNote": "※ クーポン使用中はキャンペーン割引は適用されません（お得な方が自動適用）",
+        "walletApplied": "✓ 適用中",
+        "walletApply": "適用"
     },
     "referral": {
         "cardTitle": "あなたの紹介コード",
@@ -499,7 +505,7 @@
         "copy": "コピー",
         "copied": "コピーしました",
         "share": "シェア",
-        "shareText": "FISHLINK で養殖魚を取引しましょう。新規登録時に紹介コード {{code}} を入力してください。\nhttps://fishlink-t-shitamichi.web.app",
+        "shareText": "FISHLINK で養殖魚を取引しましょう。下のリンクから登録すると紹介コードが自動で入ります（コード: {{code}}）。\nhttps://fishlink-t-shitamichi.web.app/register.html?ref={{code}}",
         "phase1Note": "※ 特典（クーポン発行・農家ボーナス）は順次提供開始予定です。",
         "codeInputLabel": "紹介コード（任意）",
         "codeInputPlaceholder": "紹介コード（8桁・英数字）",
@@ -606,6 +612,7 @@
         "reviewCount": "{{count}}件",
         "farmerCampaignDiscount": "キャンペーン割引",
         "farmerCampaignDiscountValue": "{{amount}} KHR お得",
+        "bonusOnComplete": "（取引完了時に加算）",
         "empty": "新しい注文はありません",
         "navOrders": "注文確認",
         "approved": "承認済み",
@@ -1107,7 +1114,7 @@
         "statusDelivered": "受け取り完了",
         "statusOther": "進行中",
         "logout": "ログアウト",
-        "menuHintBasic": "ログインID・表示名・位置情報",
+        "menuHintBasic": "電話番号・表示名・位置情報",
         "menuHintRemit": "口座名・QRリンク・QR画像",
         "menuHintPayment": "口座名・支払いQR・支払いリンク",
         "menuHintSales": "売上金額・取引履歴",
@@ -1357,7 +1364,7 @@
             "restaurantCouponLabel": "レストラン用 割引クーポン金額（KHR）",
             "restaurantCouponHint": "紹介元レストランと招待されたレストラン双方に発行されるクーポンの金額。0 にすると発行されません",
             "farmerBonusLabel": "農家用 紹介ボーナス金額（KHR）",
-            "farmerBonusHint": "紹介元農家の受取額に上乗せされるボーナス金額。0 にすると付与されません",
+            "farmerBonusHint": "紹介元・被紹介者の双方の農家の受取額に上乗せされるボーナス金額。0 にすると付与されません",
             "validDaysLabel": "クーポン有効期限（日）",
             "validDaysHint": "発行されたクーポンの有効期限（発行日からの日数）。デフォルト 30 日",
             "maxReferralsLabel": "1ユーザーあたりの紹介上限（人）",
