@@ -266,7 +266,7 @@ self.addEventListener('notificationclick', (event) => {
 //   - #129 admin: index.html=「未払い(期限超過)」フィルタ＋赤件数バッジ。order.html=入金控え(振込元名義＋メモ＋入金スクショ)/「送金額をコピー」＋送金スクショ/問題報告の保留通知＋保留解除/FL番号。restaurant/report.html=問題報告で paymentProblemHold=true。
 //   - locales 3言語: review.*(guide/errorAxis/errorSummary/commentPromptBad) / payment.*(copyAmount/copied/reviewAfterPay/reviewAfterConfirm/modal*/receiveAmountHold/statusProblemHold*/remittanceHoldDesc) / admin.tx.tabOverdue・statusOverdue / admin.order.*(hold*/depositProof*/payerName/copyRemitAmount/remitProof*) / admin.reports.typeReview_contact。functions REPORT_TYPE_LABELS に review_contact。
 //   ⚠️ Firestore Rules 変更あり(reviews update=admin) → Console 手動公開が必要。
-// 6/6 #131/#132 認証クラスタ（v120）:
+// 6/6 #131/#132 認証クラスタ（v121・6/9 追補込み）:
 //   - 識別子をログインID→電話番号に変更。Firebase は email/password のまま、正規化した電話番号から
 //     合成メール {phone}@fishlink.local を生成して内部ID化（js/firebase-config.js: normalizePhone/
 //     isValidCambodiaPhone/formatPhoneDisplay、js/auth.js: register/login）。ログインはハイブリッド解決＝
@@ -282,7 +282,9 @@ self.addEventListener('notificationclick', (event) => {
 //     error.phoneInvalid/phoneTaken/invalidCredentials/network/requiredSummary、account.nameMatchNotice/error*/qrEitherHint、
 //     新namespace onboarding.* / recover.* / legal.* / terms.* / privacy.*。functions変更なし。Firestore Rules変更なし。
 //   ⚠️ 既存アカウントは Firestore/Auth とも削除しない（ハイブリッドで旧IDログイン継続）。電話番号ベースへの完全移行は別途。
-const CACHE_NAME = 'fishlink-v120';
+//   - 6/9 追補：terms.html/privacy.html は register から target="_blank"（新規タブ）で開くため history.back() で
+//     戻れない → 「戻る」をタブを閉じる（不可なら history.back / register へフォールバック）に修正。v120 は未デプロイのため v121 に統合。
+const CACHE_NAME = 'fishlink-v121';
 
 const PRECACHE_URLS = [
     '/',
