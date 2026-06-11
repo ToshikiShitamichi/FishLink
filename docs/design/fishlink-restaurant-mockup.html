@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK レストランページ - モック</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:980px; margin-bottom:24px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; }
+  .intro b { color:#0B5FB0; }
+
+  .stage { display:flex; flex-wrap:wrap; gap:28px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; background:#FFF; padding:7px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:center; max-width:390px; }
+  .phone-label .tag { color:#5A6470; font-weight:500; }
+
+  .phone { width:390px; max-width:100%; height:820px; background:#F7F9FB; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+
+  .p-header { flex:0 0 auto; background:#FFF; padding:12px 16px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:8px; z-index:2; }
+  .p-header .logo { font-weight:800; color:#0B5FB0; font-size:15px; }
+  .p-header .sp { margin-left:auto; font-size:12px; border:1px solid #DDE3E9; border-radius:14px; padding:3px 10px; }
+  .p-title { text-align:center; font-size:17px; font-weight:800; padding:10px 0 4px; }
+
+  .p-body { flex:1 1 auto; overflow-y:auto; padding:6px 16px 30px; }
+
+  /* 自己プレビューの案内バナー */
+  .self-note { display:flex; align-items:center; gap:8px; background:#EAF2FB; border:1px solid #C5DBF2; color:#0B5FB0; font-size:12px; font-weight:700; padding:9px 12px; border-radius:10px; margin:6px 0 4px; line-height:1.5; }
+
+  /* プロフィールヘッダー（アイコン＋名前） */
+  .prof { text-align:center; padding:14px 0 4px; }
+  .prof .ava { width:88px; height:88px; border-radius:50%; margin:0 auto; background:#D8E2EC; display:flex; align-items:center; justify-content:center; font-size:38px; color:#9AAFC2; overflow:hidden; border:3px solid #FFF; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+  .prof .ava img { width:100%; height:100%; object-fit:cover; }
+  .prof .ava.shop { background:linear-gradient(135deg,#f3c98f,#e89a5b); }
+  .prof .pname { font-size:23px; font-weight:800; margin-top:12px; }
+  .prof .rate { display:inline-block; background:#FFF3DC; color:#B36A00; font-weight:800; font-size:13px; padding:4px 12px; border-radius:14px; margin-top:8px; }
+  .prof .rate.new { background:#EEF1F4; color:#5A6470; }
+  .prof .meta-line { font-size:12.5px; color:#5A6470; margin-top:9px; line-height:1.5; }
+  .prof .meta-line b { color:#1A1A1A; font-weight:800; }
+
+  /* 地図 */
+  .map-box { position:relative; width:100%; height:160px; border-radius:12px; overflow:hidden; margin-top:12px; border:1px solid #E2E8E0; background:linear-gradient(135deg,#e9efe7 0%,#dde7d8 55%,#e6eef0 100%); }
+  .map-box .rd { position:absolute; background:#FFF; opacity:.85; }
+  .map-box .rd.h { height:8px; left:-5%; right:-5%; top:54%; transform:rotate(-7deg); }
+  .map-box .rd.v { width:7px; top:-5%; bottom:-5%; left:60%; transform:rotate(9deg); }
+  .map-box .rd.s { height:4px; left:8%; width:50%; top:30%; transform:rotate(4deg); opacity:.6; }
+  .map-box .blk { position:absolute; background:#cfe0d9; opacity:.6; border-radius:3px; }
+  .map-box .pin { position:absolute; top:46%; left:50%; transform:translate(-50%,-100%); font-size:30px; line-height:1; filter:drop-shadow(0 2px 2px rgba(0,0,0,.25)); }
+  .map-box .gm-btn { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); background:#FFF; color:#0B5FB0; font-size:13px; font-weight:800; padding:8px 16px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.18); white-space:nowrap; }
+  .map-box .attr { position:absolute; bottom:4px; right:6px; font-size:9px; color:#7A857E; }
+
+  .sec-h { font-size:15px; font-weight:800; margin:18px 0 8px; }
+
+  /* お店の紹介（任意・中立ボックス） */
+  .intro-box { background:#F7F9FB; border:1px solid #E7ECF1; border-radius:12px; padding:12px 14px; }
+  .intro-box .ib-l { font-size:12px; font-weight:800; color:#5A6470; }
+  .intro-box .ib-t { font-size:13px; color:#33414E; margin-top:4px; line-height:1.6; }
+
+  /* お店の様子（風景写真・任意） */
+  .scene-img { width:100%; height:190px; border-radius:12px; background:linear-gradient(135deg,#d9c3a6,#c89f76); object-fit:cover; }
+
+  /* レビュー（メトリクス・ニュートラル統一） */
+  .rev-block { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-top:6px; }
+  .rev-top { display:flex; align-items:center; justify-content:space-between; }
+  .rev-top .rt-ttl { font-size:15px; font-weight:800; }
+  .rev-top .rt-link { font-size:13px; font-weight:700; color:#0B5FB0; cursor:pointer; }
+  .metrics { display:flex; gap:10px; margin-top:12px; }
+  .metric { flex:1; background:#F7F9FB; border-radius:10px; padding:12px 8px; text-align:center; }
+  .metric .m-l { font-size:11px; color:#5A6470; line-height:1.4; }
+  .metric .m-v { font-size:22px; font-weight:800; margin-top:6px; color:#1A1A1A; }
+  /* レビュー0件の空状態 */
+  .rev-empty { background:#F7F9FB; border:1px dashed #D5DCE3; border-radius:12px; padding:18px 14px; text-align:center; color:#7A8593; font-size:13px; margin-top:6px; }
+
+  /* レビューコメント */
+  .rc { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .rc-head { display:flex; align-items:center; gap:8px; }
+  .rc-ava { width:30px; height:30px; border-radius:50%; background:#DCE9DD; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .rc-name { font-size:13px; font-weight:800; }
+  .rc-date { margin-left:auto; font-size:11px; color:#9AA3B0; }
+  .rc-thumb { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; padding:3px 9px; border-radius:9px; margin:8px 0 6px; }
+  .rc-thumb.good { background:#EAF6EE; color:#1FA463; }
+  .rc-thumb.bad { background:#FDECEA; color:#E5453F; }
+  .rc-thumb .ico { width:14px; height:14px; }
+  .rc-text { font-size:13px; line-height:1.5; }
+  .rc-more { display:block; text-align:center; font-size:13px; font-weight:700; color:#0B5FB0; cursor:pointer; padding:6px; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK レストランページ — モック（生産者ページの対）</h1>
+  <p><b>用途</b>＝農家が承認待ち詳細でレストラン名タップ→このページ（「誰に魚を回すか＝未払い/受取トラブルのリスク判断」用）。生産者ページのミラー。</p>
+  <p><b>反映した決定</b>：ヘッダー★%＝<b>総合評価</b>（全画面統一・件数＝総レビュー・★は非赤）／信頼ブロック＝<b>取引数＋登録時期のみ（“率”は出さない）</b>・取引0件＝「新規」／3軸メトリクス＝<b>総合評価/やり取り/受取対応・ニュートラル統一</b>／レビューコメント＝<b>最新3件＋もっと見る・線画スマイリー（絵文字不可）</b>／写真は<b>アイコン＋お店の様子の2枠</b>（様子は未登録なら非表示）／<b>地図は出す＋「Google Mapsで開く」</b>（農家向け＝配達先の地図・L250と一貫／生産者ページはテキストのみ）／連絡先は出さない。</p>
+  <p><b>自己プレビュー</b>＝レストラン本人がプロフィールから「農家に見えている自分」をread-onlyで確認（評者名は伏せず非匿名＝農家が見るのと同一）。リアルタイムの未払い/問題報告中の警告は<b>出さない</b>（運営アカバンで担保）。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① 通常レストラン（農家が承認時に見る・全要素あり） -->
+  <div class="phone-wrap">
+    <div class="phone-label">① 通常レストラン <span class="tag">農家が承認時に見る・アイコン/様子写真あり・地図あり</span></div>
+    <div class="phone">
+      <div class="p-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="p-title">レストラン情報</div>
+      <div class="p-body">
+        <div class="prof">
+          <div class="ava shop">🍴</div>
+          <div class="pname">レストラン・アンコール</div>
+          <div class="rate">★ 93%（43件）</div>
+          <div class="meta-line">📍 タケオ州, Samraong　・　取引 <b>50件</b>　・　2025/12〜</div>
+        </div>
+
+        <!-- 地図（農家向け＝配達先・「Google Mapsで開く」） -->
+        <div class="map-box">
+          <div class="blk" style="width:50px;height:34px;left:14%;top:16%"></div>
+          <div class="blk" style="width:38px;height:46px;left:70%;top:20%"></div>
+          <div class="blk" style="width:44px;height:30px;left:24%;top:66%"></div>
+          <div class="rd s"></div>
+          <div class="rd h"></div>
+          <div class="rd v"></div>
+          <div class="pin">📍</div>
+          <div class="gm-btn">Google Mapsで開く</div>
+          <div class="attr">地図データ ©2026</div>
+        </div>
+
+        <div class="sec-h">お店の紹介</div>
+        <div class="intro-box">
+          <div class="ib-l">お店から</div>
+          <div class="ib-t">プノンペンで20年続く食堂です。新鮮な川魚を毎日仕入れて調理しています。安定した数量で発注します。</div>
+        </div>
+
+        <div class="sec-h">お店の様子</div>
+        <div class="scene-img"></div>
+
+        <div class="sec-h">レビュー（43件）</div>
+        <div class="rev-block">
+          <div class="rev-top">
+            <span class="rt-ttl">評価</span>
+            <span class="rt-link">レビューを見る</span>
+          </div>
+          <div class="metrics">
+            <div class="metric"><div class="m-l">総合評価<br>良かった率</div><div class="m-v">93%</div></div>
+            <div class="metric"><div class="m-l">やり取り<br>良かった率</div><div class="m-v">98%</div></div>
+            <div class="metric"><div class="m-l">受取対応<br>良かった率</div><div class="m-v">100%</div></div>
+          </div>
+        </div>
+
+        <div class="sec-h">レビューコメント（43件）</div>
+        <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🌾</span><span class="rc-name">大星農場</span><span class="rc-date">2026/05/26</span></div>
+          <span class="rc-thumb good"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14.5s1.4 2 4 2 4-2 4-2"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/></svg>良かった</span>
+          <div class="rc-text">支払いがスムーズで助かりました。またお願いします。</div>
+        </div>
+        <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🌾</span><span class="rc-name">タケオ養殖場</span><span class="rc-date">2026/05/13</span></div>
+          <span class="rc-thumb good"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14.5s1.4 2 4 2 4-2 4-2"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/></svg>良かった</span>
+          <div class="rc-text">受け取りも丁寧で、やり取りもスムーズでした。</div>
+        </div>
+        <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🌾</span><span class="rc-name">メコン淡水魚</span><span class="rc-date">2026/05/07</span></div>
+          <span class="rc-thumb bad"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M16 15.5s-1.4-2-4-2-4 2-4 2"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/></svg>残念だった</span>
+          <div class="rc-text">受け取りの時間に少し待たされました。</div>
+        </div>
+        <span class="rc-more">もっと見る（残り40件）</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 新規レストラン（取引0件・レビュー0件・空状態） -->
+  <div class="phone-wrap">
+    <div class="phone-label">② 新規レストラン <span class="tag">取引0件→「新規」／レビュー0件→空状態／様子写真・紹介は未登録で非表示</span></div>
+    <div class="phone">
+      <div class="p-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="p-title">レストラン情報</div>
+      <div class="p-body">
+        <div class="prof">
+          <div class="ava">🍴</div>
+          <div class="pname">クメールキッチン</div>
+          <div class="rate new">新規</div>
+          <div class="meta-line">📍 プノンペン　・　取引 <b>0件</b>　・　2026/6〜</div>
+        </div>
+
+        <!-- 地図は新規でも表示（場所は登録済み・配達先） -->
+        <div class="map-box">
+          <div class="blk" style="width:46px;height:34px;left:18%;top:18%"></div>
+          <div class="blk" style="width:40px;height:40px;left:64%;top:24%"></div>
+          <div class="rd h"></div>
+          <div class="rd v"></div>
+          <div class="pin">📍</div>
+          <div class="gm-btn">Google Mapsで開く</div>
+          <div class="attr">地図データ ©2026</div>
+        </div>
+
+        <!-- お店の紹介：未登録→セクションごと非表示（ここには出ない） -->
+        <!-- お店の様子：未登録→セクションごと非表示（ここには出ない） -->
+
+        <div class="sec-h">レビュー（0件）</div>
+        <div class="rev-empty">まだレビューはありません</div>
+
+        <div class="sec-h">レビューコメント</div>
+        <div class="rev-empty">取引が完了するとレビューが表示されます</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 自己プレビュー（レストラン本人がプロフィールから） -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ 自己プレビュー <span class="tag">本人がプロフィールから・read-only／評者名は非匿名（①と同一）</span></div>
+    <div class="phone">
+      <div class="p-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="p-title">レストラン情報</div>
+      <div class="p-body">
+        <div class="self-note">👁 これは農家から見えるあなたのページです（編集はプロフィールから）</div>
+        <div class="prof">
+          <div class="ava shop">🍴</div>
+          <div class="pname">レストラン・アンコール</div>
+          <div class="rate">★ 93%（43件）</div>
+          <div class="meta-line">📍 タケオ州, Samraong　・　取引 <b>50件</b>　・　2025/12〜</div>
+        </div>
+
+        <div class="map-box">
+          <div class="blk" style="width:50px;height:34px;left:14%;top:16%"></div>
+          <div class="blk" style="width:38px;height:46px;left:70%;top:20%"></div>
+          <div class="blk" style="width:44px;height:30px;left:24%;top:66%"></div>
+          <div class="rd s"></div>
+          <div class="rd h"></div>
+          <div class="rd v"></div>
+          <div class="pin">📍</div>
+          <div class="gm-btn">Google Mapsで開く</div>
+          <div class="attr">地図データ ©2026</div>
+        </div>
+
+        <div class="sec-h">お店の紹介</div>
+        <div class="intro-box">
+          <div class="ib-l">お店から</div>
+          <div class="ib-t">プノンペンで20年続く食堂です。新鮮な川魚を毎日仕入れて調理しています。安定した数量で発注します。</div>
+        </div>
+
+        <div class="sec-h">お店の様子</div>
+        <div class="scene-img"></div>
+
+        <div class="sec-h">レビュー（43件）</div>
+        <div class="rev-block">
+          <div class="rev-top">
+            <span class="rt-ttl">評価</span>
+            <span class="rt-link">レビューを見る</span>
+          </div>
+          <div class="metrics">
+            <div class="metric"><div class="m-l">総合評価<br>良かった率</div><div class="m-v">93%</div></div>
+            <div class="metric"><div class="m-l">やり取り<br>良かった率</div><div class="m-v">98%</div></div>
+            <div class="metric"><div class="m-l">受取対応<br>良かった率</div><div class="m-v">100%</div></div>
+          </div>
+        </div>
+
+        <div class="sec-h">レビューコメント（43件）</div>
+        <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🌾</span><span class="rc-name">大星農場</span><span class="rc-date">2026/05/26</span></div>
+          <span class="rc-thumb good"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14.5s1.4 2 4 2 4-2 4-2"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/></svg>良かった</span>
+          <div class="rc-text">支払いがスムーズで助かりました。またお願いします。</div>
+        </div>
+        <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🌾</span><span class="rc-name">メコン淡水魚</span><span class="rc-date">2026/05/07</span></div>
+          <span class="rc-thumb bad"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M16 15.5s-1.4-2-4-2-4 2-4 2"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/></svg>残念だった</span>
+          <div class="rc-text">受け取りの時間に少し待たされました。</div>
+        </div>
+        <span class="rc-more">もっと見る（残り41件）</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -69,7 +69,19 @@
       "Bash(grep -n \"storage\" firebase.json)",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.claude/settings.json','utf8'\\)\\); console.log\\('settings.json valid JSON'\\)\")",
       "Bash(rm -f tmp_extract_pdf.py tmp_pdf_text.txt)",
-      "Bash(ls tmp_extract_pdf.py)"
+      "Bash(ls tmp_extract_pdf.py)",
+      "Bash(node --check functions/scripts/backfill-tradecount.js)",
+      "Bash(cp js/review-card.js /tmp/rc-check.mjs)",
+      "Bash(node --check /tmp/rc-check.mjs)",
+      "Bash(rm -f /tmp/rc-check.mjs)",
+      "Bash(git --no-pager diff --stat)",
+      "Bash(node -e \"console.log\\('firebase-admin version:', require\\('./functions/node_modules/firebase-admin/package.json'\\).version\\)\")",
+      "Bash(node -e \"const p=require\\('./functions/package.json'\\); console.log\\('declared:', p.dependencies && p.dependencies['firebase-admin']\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/km.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/en.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/ja.json','utf8'\\)\\);console.log\\('OK locales'\\)\")",
+      "Bash(git --no-pager diff --stat CLAUDE.md)",
+      "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('pages/admin/settings.html','utf8'\\); const re=/getElementById\\\\\\('backfill-tradecount-btn'\\\\\\)/g; console.log\\('button handler refs:', \\(c.match\\(re\\)||[]\\).length\\); console.log\\('button el present:', c.includes\\('id=\\\\\"backfill-tradecount-btn\\\\\"'\\)\\)\")",
+      "Bash(node -e \"['ja','en','km'].forEach\\(f=>JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/'+f+'.json','utf8'\\)\\)\\);console.log\\('OK'\\)\")",
+      "Bash(git --no-pager log --oneline -5)"
     ]
   }
 }

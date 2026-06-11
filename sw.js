@@ -298,7 +298,24 @@ self.addEventListener('notificationclick', (event) => {
 //   - locales 3言語: myCoupons.useInCart、coupon.wallet*(Title/TapHint/CampaignNote/Applied/Apply)、orders.bonusOnComplete、
 //     referral.shareText 改、admin.account.menuHintBasic 改、admin.settings.referral.farmerBonusHint 改。
 //   ⚠️ functions / Firestore Rules / インデックスの変更なし（hosting のみ）。付与ロジックは #82 Phase2 のまま（本番未稼働）。
-const CACHE_NAME = 'fishlink-v122';
+// 6/10 #137/#138 レストランページ修正＋生産者ページ波及（v123）:
+//   - #137 レストランページ（pages/farmer/restaurant.html）を全面改修：カバー1枚→アイコン円形＋お店の様子の2枠／
+//     信頼ブロックのメタ行「📍地区 ・ 取引N件 ・ YYYY/M〜」追加（“率”は出さない）／3軸メトリクスをニュートラル統一／
+//     ★非赤＋`★N%（件数）`・0件=新規／お店の紹介（未記入は非表示）／レビューコメント=最新3件＋もっと見る・線画スマイリー／
+//     自己プレビューは編集ボタン廃止→案内バナー（profile.selfPreviewNote）。地図は常時表示（農家向け＝配達先）。
+//   - #138 生産者ページ（pages/restaurant/farmer.html）：レビューの👍👎絵文字→線画スマイリー／信頼ブロックに「取引N件」追加。
+//   - js/review-card.js を新規 PRECACHE 対象に追加（両ページ共通のレビューコメント描画＝sentiment_satisfied/dissatisfied）。
+//   - locales 3言語に profile.tradeCount / viewReviews / shopIntro / shopIntroFrom / shopScene / selfPreviewNote
+//     / selfPreviewNoteProducer / previewPublicPage を追加。
+//   - 6/11 導線修正（案A・#137 §10）：マイページ「レストラン情報」「生産者ページ」を編集画面(account/profile.html)直リンクに
+//     変更し、編集画面に「公開ページをプレビュー」リンクを追加。生産者ページ(restaurant/farmer.html)の編集ボタンを撤去し
+//     自己プレビューバナーへ（レストランページ#137 §9 と対称）。対象=account.html×2・account/profile.html×2・restaurant/farmer.html。
+//   - 6/11 §6/§2：レストランのプロフィール編集(restaurant/account/profile.html)に「店のアイコン(avatarUrl)」のアップロード/削除と
+//     「お店の紹介文(restaurantMessage・textarea)」の編集を追加（農家編集と同方式・公開ページに反映）。既存ギャラリーのラベルを
+//     「レストラン写真」→「お店の様子」に統一。locales に profile.shopIcon / shopIntroPlaceholder 追加。
+//   ⚠️ functions 変更あり（onOrderUpdated 完了遷移で users.tradeCount を +1／callable backfillTradeCount 追加）＝バックエンドデプロイ要。
+//      既存完了注文は admin/settings.html「取引数を集計」ボタン（callable）で一度だけバックフィル。Firestore Rules / インデックス変更なし。
+const CACHE_NAME = 'fishlink-v123';
 
 const PRECACHE_URLS = [
     '/',
@@ -322,6 +339,7 @@ const PRECACHE_URLS = [
     '/js/image-cache.js',
     '/js/render-cache.js',
     '/js/chat-timeline.js',
+    '/js/review-card.js',
     '/locales/ja.json',
     '/locales/en.json',
     '/locales/km.json',

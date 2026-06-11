@@ -267,9 +267,9 @@
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
 
-                <!-- 5/12 #72: 「レストラン情報」のメニュー項目自体を公開ページへの導線に。
-                     編集は公開ページ内の「プロフィールを編集」ボタンから入る。 -->
-                <a class="acc-menu-item" id="public-page-link" href="#">
+                <!-- 6/11 #137 §10: 「レストラン情報」はプロフィール編集画面へ。公開プレビューは
+                     編集画面内の「公開ページをプレビュー」リンクから（公開ページに編集導線は置かない）。 -->
+                <a class="acc-menu-item" href="/pages/restaurant/account/profile.html">
                     <div class="acc-menu-item__icon" style="background:#ede9fe; color:#5b21b6;"><span class="material-symbols-outlined">storefront</span></div>
                     <div class="acc-menu-item__body">
                         <div class="acc-menu-item__title" data-i18n="profile.restaurantInfoTitle"></div>
@@ -538,9 +538,8 @@
                     const badge = document.getElementById('cart-badge');
                     if (badge) badge.style.display = items.length > 0 ? 'block' : 'none';
                 });
-                // 5/12 #72: 公開ページは自分の uid を渡して開く
-                const link = document.getElementById('public-page-link');
-                if (link) link.href = `/pages/farmer/restaurant.html?id=${window.currentUser.uid}`;
+                // 6/11 #137 §10: 「レストラン情報」はプロフィール編集画面へ直リンク（静的 href）。
+                //   農家から見える公開ページは編集画面内の「公開ページをプレビュー」から開く。
                 // 5/23 #82 Phase 1: 紹介コード表示
                 showReferralCode().then(saveAccountRender);   // 5/25 #91/#92 拡張: 完了後にキャッシュ更新
                 // 5/24 #82 Phase 2 Chunk 4: クーポン一覧読み込み

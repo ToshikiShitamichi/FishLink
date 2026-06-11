@@ -25,6 +25,18 @@
         .edit-toggle { display: flex; justify-content: flex-end; margin-bottom: 8px; }
         .edit-btn { background: #eef2ff; color: #3730a3; border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
         .label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 8px; }
+        /* 6/11 #137 §6: 店のアイコン（円形アバター）。農家プロフィール編集と同じ要領。 */
+        .avatar-box { display: flex; justify-content: center; }
+        .avatar-circle {
+            width: 120px; height: 120px; border-radius: 50%;
+            background: #fff; border: 1px dashed var(--color-border);
+            overflow: hidden; display: flex; align-items: center; justify-content: center;
+            color: #94a3b8;
+        }
+        .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+        /* 6/11 #137 §2: お店の紹介文（restaurantMessage） */
+        .intro-view { font-size: 14px; color: var(--color-text); line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+        .intro-input { width: 100%; border: 1px solid var(--color-border); border-radius: 10px; padding: 8px 10px; font-size: 16px; font-family: inherit; min-height: 80px; resize: vertical; box-sizing: border-box; }
         /* 5/12 #72: 複数写真ギャラリー */
         .photos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .photos-grid__cell { position: relative; aspect-ratio: 1 / 1; background: #fff; border: 1px dashed var(--color-border); border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; color: #94a3b8; }
@@ -54,6 +66,12 @@
 
         <div class="sub-page">
 
+        <!-- 6/11 #137 §10: 農家から見える公開ページのプレビュー導線（編集はこの画面・公開ページに編集ボタンは置かない） -->
+        <a id="preview-public-link" href="#" style="display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:14px; padding:10px; background:var(--color-cta-lt); color:var(--color-cta); border-radius:12px; font-size:13px; font-weight:700; text-decoration:none;">
+            <span class="material-symbols-outlined" style="font-size:18px;">visibility</span>
+            <span data-i18n="profile.previewPublicPage"></span>
+        </a>
+
         <div class="edit-toggle">
             <button class="edit-btn" id="btn-edit">
                 <span class="material-symbols-outlined" style="font-size:14px;">edit</span>
@@ -62,14 +80,39 @@
         </div>
 
         <div id="view-mode">
-            <div class="label" data-i18n="profile.restaurantPhoto"></div>
-            <!-- 5/12 #72: 複数枚対応（restaurantPhotos[]） -->
+            <!-- 6/11 #137 §6: 店のアイコン（円形アバター・公開ページの丸アイコン） -->
+            <div class="label" data-i18n="profile.shopIcon"></div>
+            <div class="avatar-box">
+                <div class="avatar-circle" id="v-avatar">
+                    <span class="material-symbols-outlined" style="font-size:56px;">storefront</span>
+                </div>
+            </div>
+            <!-- お店の紹介（restaurantMessage・公開ページの「お店の紹介」セクション・未記入は公開側で非表示） -->
+            <div class="label" data-i18n="profile.shopIntro" style="margin-top:16px;"></div>
+            <div class="intro-view" id="v-message">-</div>
+            <!-- お店の様子（restaurantPhotos[]・公開ページの「お店の様子」セクション） -->
+            <div class="label" data-i18n="profile.shopScene" style="margin-top:16px;"></div>
             <div id="v-photos-grid" class="photos-grid"></div>
         </div>
 
         <div id="edit-mode" style="display:none;">
-            <div class="label" data-i18n="profile.restaurantPhoto"></div>
-            <!-- 5/12 #72: 複数枚対応。最大5枚まで。 -->
+            <!-- 6/11 #137 §6: 店のアイコン（円形アバター） -->
+            <div class="label" data-i18n="profile.shopIcon"></div>
+            <div class="avatar-box">
+                <div class="avatar-circle" id="e-avatar">
+                    <span class="material-symbols-outlined" style="font-size:56px;">storefront</span>
+                </div>
+            </div>
+            <div class="img-actions">
+                <button type="button" id="btn-avatar-upload" data-i18n="profile.uploadPhoto"></button>
+                <button type="button" id="btn-avatar-remove" class="danger" data-i18n="profile.removePhoto"></button>
+                <input type="file" id="avatar-file" accept="image/*" style="display:none;">
+            </div>
+            <!-- お店の紹介（restaurantMessage） -->
+            <div class="label" data-i18n="profile.shopIntro" style="margin-top:16px;"></div>
+            <textarea id="in-message" class="intro-input" rows="3" data-i18n="[placeholder]profile.shopIntroPlaceholder"></textarea>
+            <!-- お店の様子（restaurantPhotos[]・最大5枚） -->
+            <div class="label" data-i18n="profile.shopScene" style="margin-top:16px;"></div>
             <div id="e-photos-grid" class="photos-grid"></div>
             <input type="file" id="photo-file" accept="image/*" multiple style="display:none;">
             <div class="save-row">
@@ -102,11 +145,22 @@
         const MAX_PHOTOS = 5;
         let userData = null;
         // 5/12 #72: restaurantPhotos[] を一級扱い。restaurantPhotoUrl は配列の [0] として書き戻して互換維持。
-        let editState = { photos: [] };
+        // 6/11 #137 §6: 店のアイコン（avatarUrl）も編集対象に追加（農家プロフィール編集と同じ状態管理）。
+        let editState = { photos: [], avatarUrl: null, avatarFile: null, avatarRemoved: false };
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
             else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        // 6/11 #137 §6: アイコン円形プレビュー（未設定は storefront デフォルト）
+        function showAvatar(id, url) {
+            const box = document.getElementById(id);
+            if (url) {
+                box.innerHTML = `<img ${asCachedImgAttrs(url)} alt="avatar">`;
+            } else {
+                box.innerHTML = `<span class="material-symbols-outlined" style="font-size:56px;">storefront</span>`;
+            }
         }
 
         function readRestaurantPhotos(u) {
@@ -156,10 +210,15 @@
 
         function renderView() {
             renderViewGrid(readRestaurantPhotos(userData));
+            showAvatar('v-avatar', userData.avatarUrl || null);
+            // 6/11 #137 §2: お店の紹介（restaurantMessage）。未記入は「-」。公開側は空ならセクション非表示。
+            document.getElementById('v-message').textContent = userData.restaurantMessage || '-';
             // 5/25 #91/#92 拡張: 次回訪問用にキャッシュ保存
             try {
                 saveRenderState('restaurant_account_profile', {
                     gridHtml: document.getElementById('v-photos-grid')?.innerHTML || '',
+                    avatarHtml: document.getElementById('v-avatar')?.innerHTML || '',
+                    messageText: document.getElementById('v-message')?.textContent || '',
                 });
             } catch (e) { /* ignore */ }
         }
@@ -171,12 +230,21 @@
                 if (!cached) return;
                 const g = document.getElementById('v-photos-grid');
                 if (g && cached.gridHtml) g.innerHTML = cached.gridHtml;
+                const a = document.getElementById('v-avatar');
+                if (a && cached.avatarHtml) a.innerHTML = cached.avatarHtml;
+                const m = document.getElementById('v-message');
+                if (m && cached.messageText) m.textContent = cached.messageText;
             } catch (e) { /* ignore */ }
         })();
 
         document.getElementById('btn-edit').addEventListener('click', () => {
-            editState = { photos: readRestaurantPhotos(userData).map(url => ({ url })) };
+            editState = {
+                photos: readRestaurantPhotos(userData).map(url => ({ url })),
+                avatarUrl: userData.avatarUrl || null, avatarFile: null, avatarRemoved: false,
+            };
             renderEditGrid();
+            showAvatar('e-avatar', editState.avatarUrl);
+            document.getElementById('in-message').value = userData.restaurantMessage || '';
             document.getElementById('view-mode').style.display = 'none';
             document.getElementById('edit-mode').style.display = 'block';
             document.getElementById('btn-edit').style.display = 'none';
@@ -199,6 +267,24 @@
             renderEditGrid();
             e.target.value = '';
         });
+        // 6/11 #137 §6: 店のアイコン（avatarUrl）のアップロード/削除（農家プロフィール編集と同じ要領）
+        document.getElementById('btn-avatar-upload').addEventListener('click', () => document.getElementById('avatar-file').click());
+        document.getElementById('avatar-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            editState.avatarFile = file;
+            editState.avatarRemoved = false;
+            const reader = new FileReader();
+            reader.onload = (ev) => showAvatar('e-avatar', ev.target.result);
+            reader.readAsDataURL(file);
+        });
+        document.getElementById('btn-avatar-remove').addEventListener('click', () => {
+            editState.avatarFile = null;
+            editState.avatarRemoved = true;
+            editState.avatarUrl = null;
+            document.getElementById('avatar-file').value = '';
+            showAvatar('e-avatar', null);
+        });
         document.getElementById('btn-save').addEventListener('click', async () => {
             const uid = window.currentUser?.uid;
             if (!uid) return;
@@ -206,6 +292,8 @@
             btn.disabled = true;
             loading.classList.add('show');
             try {
+                // 6/11 #137 §2: お店の紹介文（restaurantMessage）
+                const restaurantMessage = document.getElementById('in-message').value.trim();
                 const restaurantPhotos = [];
                 for (const p of editState.photos) {
                     if (p.url) { restaurantPhotos.push(p.url); continue; }
@@ -217,14 +305,31 @@
                     }
                 }
                 const restaurantPhotoUrl = restaurantPhotos[0] || null;
+
+                // 6/11 #137 §6: 店のアイコン（avatarUrl）。新規ファイルはリサイズしてアップロード（最大512px）。
+                let avatarUrl = editState.avatarUrl;
+                if (editState.avatarFile) {
+                    const baseName = (editState.avatarFile.name || 'avatar').replace(/\.[^.]+$/, '');
+                    const storageRef = ref(storage, `profile/${uid}/avatar_${Date.now()}_${baseName}.jpg`);
+                    avatarUrl = await uploadImageResized(storageRef, editState.avatarFile, {
+                        resize: { maxWidth: 512, maxHeight: 512 },
+                    });
+                } else if (editState.avatarRemoved) {
+                    avatarUrl = null;
+                }
+
                 await updateDoc(doc(db, 'users', uid), {
                     restaurantPhotos,
                     restaurantPhotoUrl,
+                    avatarUrl: avatarUrl || null,
+                    restaurantMessage: restaurantMessage || null,
                 });
                 // 5/12 #69 追補：他画面のキャッシュにも反映させるため自分のドキュメントキャッシュを破棄
                 invalidateDataCache('users', uid);
                 userData.restaurantPhotos = restaurantPhotos;
                 userData.restaurantPhotoUrl = restaurantPhotoUrl;
+                userData.avatarUrl = avatarUrl || null;
+                userData.restaurantMessage = restaurantMessage || null;
                 renderView();
                 document.getElementById('btn-cancel').click();
             } catch (err) {
@@ -239,6 +344,10 @@
         waitForUserData(() => {
             userData = { ...window.currentUserData };
             renderView();
+            // 6/11 #137 §10: 「農家から見える公開ページ」プレビューへのリンク（自分の uid を渡す）
+            const uid = window.currentUser?.uid;
+            const pl = document.getElementById('preview-public-link');
+            if (uid && pl) pl.href = `/pages/farmer/restaurant.html?id=${uid}`;
             loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
     </script>

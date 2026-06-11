@@ -836,7 +836,17 @@
         "editProfile": "Edit profile",
         "messagePlaceholder": "Leave a message for customers",
         "uploadPhoto": "Choose photo",
-        "removePhoto": "Remove"
+        "removePhoto": "Remove",
+        "tradeCount": "{{count}} trades",
+        "viewReviews": "View reviews",
+        "shopIntro": "About the shop",
+        "shopIntroFrom": "From the shop",
+        "shopScene": "Shop photos",
+        "selfPreviewNote": "This is your page as farmers see it (edit from your profile)",
+        "selfPreviewNoteProducer": "This is your page as buyers see it (edit from your profile)",
+        "previewPublicPage": "Preview public page",
+        "shopIcon": "Shop icon",
+        "shopIntroPlaceholder": "Write a short introduction for your shop"
     },
     "cart": {
         "title": "Cart",

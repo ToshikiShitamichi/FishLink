@@ -836,7 +836,17 @@
         "editProfile": "プロフィール編集",
         "messagePlaceholder": "お客様への一言を書いてください",
         "uploadPhoto": "写真を選択",
-        "removePhoto": "削除"
+        "removePhoto": "削除",
+        "tradeCount": "取引 {{count}}件",
+        "viewReviews": "レビューを見る",
+        "shopIntro": "お店の紹介",
+        "shopIntroFrom": "お店から",
+        "shopScene": "お店の様子",
+        "selfPreviewNote": "これは農家から見えるあなたのページです（編集はプロフィールから）",
+        "selfPreviewNoteProducer": "これは買い手から見えるあなたのページです（編集はプロフィールから）",
+        "previewPublicPage": "公開ページをプレビュー",
+        "shopIcon": "店のアイコン",
+        "shopIntroPlaceholder": "お店の紹介を書いてください"
     },
     "cart": {
         "title": "カート",

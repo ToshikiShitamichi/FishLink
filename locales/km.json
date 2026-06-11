@@ -836,7 +836,17 @@
         "editProfile": "កែប្រវត្តិរូប",
         "messagePlaceholder": "ទុកសារមួយឲ្យអតិថិជន",
         "uploadPhoto": "ជ្រើសរើសរូបភាព",
-        "removePhoto": "លុប"
+        "removePhoto": "លុប",
+        "tradeCount": "ការជួញដូរ {{count}}",
+        "viewReviews": "មើលការវាយតម្លៃ",
+        "shopIntro": "អំពីភោជនីយដ្ឋាន",
+        "shopIntroFrom": "ពីភោជនីយដ្ឋាន",
+        "shopScene": "បរិយាកាសភោជនីយដ្ឋាន",
+        "selfPreviewNote": "នេះជាទំព័ររបស់អ្នកដែលកសិករឃើញ (កែនៅក្នុងប្រវត្តិរូប)",
+        "selfPreviewNoteProducer": "នេះជាទំព័ររបស់អ្នកដែលអ្នកទិញឃើញ (កែនៅក្នុងប្រវត្តិរូប)",
+        "previewPublicPage": "មើលទំព័រសាធារណៈ",
+        "shopIcon": "រូបតំណាងហាង",
+        "shopIntroPlaceholder": "សរសេរការណែនាំខ្លីៗអំពីភោជនីយដ្ឋានរបស់អ្នក"
     },
     "cart": {
         "title": "កន្ត្រក",

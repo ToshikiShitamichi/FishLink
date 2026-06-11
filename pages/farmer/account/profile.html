@@ -67,6 +67,12 @@
 
         <div class="sub-page">
 
+        <!-- 6/11 #137 §10（農家側も同様）: 買い手から見える公開ページのプレビュー導線（編集はこの画面・公開ページに編集ボタンは置かない） -->
+        <a id="preview-public-link" href="#" style="display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:14px; padding:10px; background:var(--color-cta-lt); color:var(--color-cta); border-radius:12px; font-size:13px; font-weight:700; text-decoration:none;">
+            <span class="material-symbols-outlined" style="font-size:18px;">visibility</span>
+            <span data-i18n="profile.previewPublicPage"></span>
+        </a>
+
         <div class="edit-toggle">
             <button class="edit-btn" id="btn-edit">
                 <span class="material-symbols-outlined" style="font-size:14px;">edit</span>
@@ -360,6 +366,10 @@
         waitForUserData(() => {
             userData = { ...window.currentUserData };
             renderView();
+            // 6/11 #137 §10（農家側も同様）: 「買い手から見える公開ページ」プレビューへのリンク（自分の uid を渡す）
+            const uid = window.currentUser?.uid;
+            const pl = document.getElementById('preview-public-link');
+            if (uid && pl) pl.href = `/pages/restaurant/farmer.html?id=${uid}`;
             loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
     </script>

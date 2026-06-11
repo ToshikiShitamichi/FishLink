@@ -17,6 +17,15 @@
     <style>
         .profile-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
 
+        /* 6/11 #137 §9（農家側も同様）: 自己プレビューの案内バナー（read-only・編集はプロフィール画面側） */
+        .self-note {
+            display: none; align-items: center; gap: 8px;
+            background: #eaf2fb; border: 1px solid #c5dbf2; color: #0b5fb0;
+            font-size: 12px; font-weight: 700; padding: 9px 12px;
+            border-radius: 10px; margin-bottom: 12px; line-height: 1.5;
+        }
+        .self-note .material-symbols-outlined { font-size: 18px; flex-shrink: 0; }
+
         .farmer-hero { text-align: center; padding: 24px 0 8px; }
         .farmer-hero__avatar {
             width: 96px; height: 96px;
@@ -50,6 +59,8 @@
         .farmer-hero__location .material-symbols-outlined {
             font-size: 16px; line-height: 1;
         }
+        /* 6/10 #138: 信頼ブロックの「取引N件」（取引完了の累計・レストランページと対称） */
+        .farmer-hero__trades { font-size: 12.5px; color: var(--color-text-sub); margin-top: 6px; }
 
         .message-box {
             background: #ecfdf5;
@@ -195,12 +206,10 @@
 
     <div class="profile-page">
 
-        <!-- 5/12 #72: 自分自身のページを見ている場合のみ表示する編集ボタン -->
-        <div id="self-edit-bar" style="display:none; margin-bottom:12px;">
-            <a href="/pages/farmer/account/profile.html" class="edit-btn" style="display:inline-flex; align-items:center; gap:4px; background:#eef2ff; color:#3730a3; border:none; border-radius:20px; padding:8px 14px; font-size:13px; font-weight:600; text-decoration:none;">
-                <span class="material-symbols-outlined" style="font-size:16px;">edit</span>
-                <span data-i18n="account.editProfile"></span>
-            </a>
+        <!-- 6/11 #137 §9（農家側も同様）: 自己プレビューは read-only。編集導線は出さず案内バナーのみ（編集はプロフィール画面側）。 -->
+        <div class="self-note" id="self-note">
+            <span class="material-symbols-outlined">visibility</span>
+            <span data-i18n="profile.selfPreviewNoteProducer"></span>
         </div>
 
         <div class="farmer-hero">
@@ -217,6 +226,8 @@
                 <span class="material-symbols-outlined" style="font-size:14px;">location_on</span>
                 <span id="location">-</span>
             </div>
+            <!-- 6/10 #138: 信頼ブロックに「取引N件」追加（取引完了の累計・レストランページと対称） -->
+            <div class="farmer-hero__trades" id="trade-line"></div>
             <!-- 6/3 #118: GAqP はヘッダー下のcompactバッジを廃止し「認証情報」ボックスに一本化（#6） -->
         </div>
 
@@ -244,7 +255,7 @@
             <div class="subrating-head">
                 <!-- 5/25 #84: タイトルに件数を含める形に変更（renderFarmerPage で動的セット） -->
                 <div class="subrating-head__title" id="subrating-title" data-i18n="review.title"></div>
-                <a class="subrating-head__link" id="reviews-link" href="#reviews-section" data-i18n-target="review-count">レビューを見る</a>
+                <a class="subrating-head__link" id="reviews-link" href="#reviews-section" data-i18n="profile.viewReviews"></a>
             </div>
             <div class="subrating-grid">
                 <div class="subrating-card">
@@ -285,13 +296,15 @@
             doc, getDoc, collection, collectionGroup, query, where, orderBy, getDocs
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { formatProvince, formatLocation } from '/js/province-utils.js';
-        import { getReviewerAvatarUrl, getPondPhotos, gaqpBadgeHtml } from '/js/profile-utils.js';
+        import { getPondPhotos, gaqpBadgeHtml } from '/js/profile-utils.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase B: 同一タブ内 users の重複取得を抑止
         import { getCachedUser } from '/js/data-cache.js';
         // 5/23 #69 Phase J: 画面描画状態の永続キャッシュ
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // 6/10 #138: レビューコメントの共通描画（線画スマイリー・#137と共通化）
+        import { renderReviewComments } from '/js/review-card.js';
 
         const loading = document.getElementById('loading');
         // 6/3 #118: 出品中の魚の買い手向け価格（手数料込み）算出用。settings/campaign から取得（既定5%）。
@@ -303,45 +316,21 @@
         const targetUid = new URLSearchParams(location.search).get('id');
         if (!targetUid) { history.back(); }
 
-        // 5/12 #72: 自分自身を見ている場合は編集ボタンを表示
-        function showSelfEditBarIfNeeded() {
+        // 6/11 #137 §9（農家側も同様）: 自分自身のページを見ている場合は自己プレビューバナーを表示（編集ボタンは出さない）
+        function showSelfNoteIfNeeded() {
             if (window.currentUser?.uid && window.currentUser.uid === targetUid) {
-                const bar = document.getElementById('self-edit-bar');
-                if (bar) bar.style.display = 'block';
+                const note = document.getElementById('self-note');
+                if (note) note.style.display = 'flex';
             }
         }
         // currentUser は watchAuthState 後にセットされるため、ポーリングで待つ
         (function waitForCurrent() {
-            if (window.currentUser) { showSelfEditBarIfNeeded(); return; }
+            if (window.currentUser) { showSelfNoteIfNeeded(); return; }
             setTimeout(waitForCurrent, 200);
         })();
 
-        function fmtDate(ts) {
-            const d = ts?.toDate?.() || new Date(ts || 0);
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const da = String(d.getDate()).padStart(2, '0');
-            return `${y}/${m}/${da}`;
-        }
-
-        // 「よい / 残念だった」のバッジ表示（2段階評価）
-        function verdictBadge(verdict) {
-            if (verdict === 'good') {
-                return `<span style="display:inline-flex; align-items:center; gap:4px; background:#ecfdf5; color:#047857; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700;">
-                    <span class="material-symbols-outlined" style="font-size:14px;">thumb_up</span>${i18next.t('review.verdictGood')}</span>`;
-            }
-            if (verdict === 'bad') {
-                return `<span style="display:inline-flex; align-items:center; gap:4px; background:#fef2f2; color:#b91c1c; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700;">
-                    <span class="material-symbols-outlined" style="font-size:14px;">thumb_down</span>${i18next.t('review.verdictBad')}</span>`;
-            }
-            return '';
-        }
-        // 旧データ（rating 1-5）の互換: 4以上なら good 扱い
-        function legacyToVerdict(r) {
-            if (r.verdict) return r.verdict;
-            const avg = Number(r.avgRating || r.overall || 0);
-            return avg >= 4 ? 'good' : avg > 0 ? 'bad' : null;
-        }
+        // 6/10 #138: レビューカードの描画（線画スマイリー・もっと見る）は js/review-card.js に共通化。
+        //   旧 fmtDate / verdictBadge(thumb_up/down) / legacyToVerdict はそちらへ移設（#137 と統一）。
 
         function fmtKhr(n) { return `${Number(n || 0).toLocaleString()} KHR`; }
 
@@ -365,6 +354,10 @@
             document.getElementById('name').textContent = user.displayName || '-';
             const loc = formatLocation(user) || '-';
             document.getElementById('location').textContent = loc;
+
+            // 6/10 #138: 取引完了の累計（信頼ブロック・取引N件）。レストランページと対称。
+            const tradeEl = document.getElementById('trade-line');
+            if (tradeEl) tradeEl.textContent = i18next.t('profile.tradeCount', { count: Number(user.tradeCount || 0) });
 
             if (user.avatarUrl) {
                 document.getElementById('avatar').innerHTML = `<img ${asCachedImgAttrs(user.avatarUrl)} alt="avatar">`;
@@ -467,47 +460,8 @@
                 }).join('')}</div>`;
             }
 
-            // 6/3 #118: レビューコメント＝最新3件＋「もっと見る（残り◯件）」でインライン展開（専用画面は作らない・#8）
-            const listEl = document.getElementById('reviews-list');
-            if (!reviewsWithComment || reviewsWithComment.length === 0) {
-                listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
-                return;
-            }
-            const REVIEW_INITIAL = 3;
-            const cardHtml = (r, hidden) => {
-                const v = legacyToVerdict(r);
-                const reviewer = (reviewerMap && reviewerMap[r.fromUid]) || {};
-                const reviewerName = reviewer.displayName || i18next.t('profile.anonymousReviewer');
-                const reviewerAvatar = getReviewerAvatarUrl(reviewer);
-                const avatarHtml = reviewerAvatar
-                    ? `<img ${asCachedImgAttrs(reviewerAvatar)} alt="" loading="lazy">`
-                    : `<span class="material-symbols-outlined">${reviewer.role === 'farmer' ? 'person' : 'storefront'}</span>`;
-                return `
-                    <div class="review-card"${hidden ? ' data-extra-review style="display:none;"' : ''}>
-                        <div class="review-card__reviewer">
-                            <div class="review-card__avatar">${avatarHtml}</div>
-                            <div class="review-card__reviewer-name">${escapeHtml(reviewerName)}</div>
-                        </div>
-                        <div class="review-card__head">
-                            ${verdictBadge(v)}
-                            <div class="review-card__date">${fmtDate(r.createdAt)}</div>
-                        </div>
-                        <div class="review-card__comment">${escapeHtml(r.comment)}</div>
-                    </div>
-                `;
-            };
-            const remaining = reviewsWithComment.length - REVIEW_INITIAL;
-            const moreBtn = remaining > 0
-                ? `<button type="button" class="reviews-more" id="reviews-more-btn">${escapeHtml(i18next.t('profile.reviewsMore', { count: remaining }))}</button>`
-                : '';
-            listEl.innerHTML = reviewsWithComment.map((r, i) => cardHtml(r, i >= REVIEW_INITIAL)).join('') + moreBtn;
-            const moreBtnEl = document.getElementById('reviews-more-btn');
-            if (moreBtnEl) {
-                moreBtnEl.addEventListener('click', () => {
-                    listEl.querySelectorAll('[data-extra-review]').forEach(el => { el.style.display = ''; });
-                    moreBtnEl.remove();
-                });
-            }
+            // 6/10 #138: レビューコメント（最新3件＋もっと見る・線画スマイリー）＝#137 と共通描画
+            renderReviewComments(document.getElementById('reviews-list'), reviewsWithComment, reviewerMap, 3);
         }
 
         async function load({ silent = false } = {}) {

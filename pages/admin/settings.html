@@ -338,6 +338,16 @@
                     </div>
                     <div id="migrate-districts-km-result" style="font-size:12px; color:#475569; margin-top:8px; white-space:pre-wrap;"></div>
                 </div>
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label">取引数（取引N件）を集計</div>
+                            <div class="form-row__hint">既存の<strong>完了済み注文</strong>から各ユーザーの <code>tradeCount</code>（プロフィールの「取引N件」）を集計します。冪等・再実行可（タイムアウト時は再クリックで続きから）。以降の完了は自動で加算されます。</div>
+                        </div>
+                        <button class="save-btn" id="backfill-tradecount-btn" type="button" style="background:#f59e0b;">実行</button>
+                    </div>
+                    <div id="backfill-tradecount-result" style="font-size:12px; color:#475569; margin-top:8px; white-space:pre-wrap;"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -535,6 +545,26 @@
                 const { data } = await fn();
                 resultEl.textContent = `完了: total=${data.total} / updated=${data.updated} / skipped=${data.skipped} / failed=${data.failed}\n`
                     + (data.failures?.length ? `失敗例: ${JSON.stringify(data.failures)}` : '');
+            } catch (err) {
+                console.error(err);
+                resultEl.textContent = `エラー: ${err.message || err}`;
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // 6/10 #137/#138: 取引数(tradeCount=「取引N件」)のバックフィル。完了済み注文を集計（冪等・再実行可）
+        document.getElementById('backfill-tradecount-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('backfill-tradecount-btn');
+            const resultEl = document.getElementById('backfill-tradecount-result');
+            if (!confirm('既存の完了済み注文から各ユーザーの取引数(tradeCount)を集計します。冪等（再実行可）です。実行しますか？')) return;
+            btn.disabled = true;
+            resultEl.textContent = '実行中... (注文数によっては時間がかかります)';
+            try {
+                const functions = getFunctions(undefined, 'asia-southeast1');
+                const fn = httpsCallable(functions, 'backfillTradeCount', { timeout: 540000 });
+                const { data } = await fn();
+                resultEl.textContent = `完了: total=${data.total} / counted=${data.counted} / skipped(集計済)=${data.skipped} / failed=${data.failed}`;
             } catch (err) {
                 console.error(err);
                 resultEl.textContent = `エラー: ${err.message || err}`;

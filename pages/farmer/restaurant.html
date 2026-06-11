@@ -17,32 +17,50 @@
     <style>
         .profile-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
 
-        .hero-photo {
-            width: 100%;
-            height: 220px;
-            border-radius: 18px;
-            overflow: hidden;
-            background: #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 14px;
+        /* 6/10 #137 §9: 自己プレビューの案内バナー（本人がプロフィールから read-only で開いたとき） */
+        .self-note {
+            display: none; align-items: center; gap: 8px;
+            background: #eaf2fb; border: 1px solid #c5dbf2; color: #0b5fb0;
+            font-size: 12px; font-weight: 700; padding: 9px 12px;
+            border-radius: 10px; margin-bottom: 12px; line-height: 1.5;
         }
-        .hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+        .self-note .material-symbols-outlined { font-size: 18px; flex-shrink: 0; }
 
-        .name-block { margin-bottom: 10px; }
-        .name-block__name { font-size: 22px; font-weight: 700; color: var(--color-text); }
-        .name-block__location { font-size: 13px; color: var(--color-text-sub); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
-        .name-block__rating { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
-        .name-block__rating .material-symbols-outlined { color: #ef4444; font-size: 20px; font-variation-settings: 'FILL' 1; }
-        .name-block__rating-value { font-size: 16px; font-weight: 700; }
-        .name-block__rating-count { font-size: 13px; color: var(--color-text-sub); }
+        /* 6/10 #137 §6: プロフィール（アイコン円形＋店名＋★%＋メタ行）。生産者ページと対称。 */
+        .rest-prof { text-align: center; padding: 8px 0 4px; }
+        .rest-avatar {
+            width: 96px; height: 96px; border-radius: 50%;
+            background: #e2e8f0; margin: 0 auto 12px;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        .rest-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .rest-name { font-size: 22px; font-weight: 700; }
+        /* 6/10 #137: ★%（件数）。★は非赤（amber=評価バッジ・生産者ページと統一）。0件=新規=グレー。 */
+        .rest-rating {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #fef3c7; color: #92400e;
+            padding: 4px 12px; border-radius: 20px;
+            font-size: 13px; font-weight: 700; line-height: 1; margin-top: 8px;
+        }
+        .rest-rating .material-symbols-outlined {
+            font-size: 16px; color: #f59e0b;
+            font-variation-settings: 'FILL' 1, 'wght' 500, 'opsz' 24; line-height: 1;
+        }
+        .rest-rating__count { font-weight: 600; }
+        .rest-rating--new { background: #eef1f4; color: #5a6470; }
+        /* 6/10 #137 §5: 信頼ブロックのメタ行＝📍地区 ・ 取引N件 ・ YYYY/M〜 */
+        .rest-meta {
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+            font-size: 12.5px; color: var(--color-text-sub); margin-top: 9px; line-height: 1.6;
+        }
+        .rest-meta__pin { font-size: 15px; line-height: 1; vertical-align: -2px; }
+        .rest-meta__dot { margin: 0 7px; color: #cbd5e1; }
 
         .map-block {
             background: #f1f5f9;
             border-radius: 16px;
             height: 160px;
-            margin-bottom: 14px;
+            margin: 16px 0 14px;
             position: relative;
             overflow: hidden;
         }
@@ -59,31 +77,38 @@
             font-weight: 600;
             box-shadow: 0 2px 6px rgba(0,0,0,.1);
         }
-        .map-footer a { color: #0369a1; text-decoration: none; }
+        .map-footer a { color: var(--color-cta); text-decoration: none; }
 
         .section { margin-bottom: 20px; }
-        .section__title { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+        .section__title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
 
-        .subrating-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
+        /* 6/10 #137 §2: お店の紹介（任意・中立ボックス・未記入なら非表示） */
+        .intro-box { background: #f8fafc; border: 1px solid var(--color-border); border-radius: 14px; padding: 12px 14px; }
+        .intro-box__label { font-size: 12px; font-weight: 700; color: var(--color-text-sub); margin-bottom: 4px; }
+        .intro-box__text { font-size: 13px; color: var(--color-text); line-height: 1.6; white-space: pre-wrap; }
+
+        /* 6/10 #137 §6: お店の様子（風景写真・任意・未登録なら非表示） */
+        .scene-photo { width: 100%; border-radius: 14px; overflow: hidden; background: #e2e8f0; margin-bottom: 10px; }
+        .scene-photo img { width: 100%; height: 100%; object-fit: cover; display: block; max-height: 220px; }
+
+        /* 6/10 #137 §4: レビュー（3軸メトリクス）＝ニュートラル統一（薄グレーカード＋濃色数字・意味色を使わない） */
+        .subrating-wrap {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 14px;
         }
-        .subrating-card {
-            border-radius: 14px;
-            padding: 10px;
-            text-align: center;
-        }
-        .subrating-card--orange { background: #fff7ed; }
-        .subrating-card--blue { background: #eff6ff; }
-        .subrating-card--green { background: #f0fdf4; }
+        .subrating-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .subrating-head__title { font-size: 14px; font-weight: 700; }
+        .subrating-head__link { font-size: 12px; color: var(--color-cta); font-weight: 600; text-decoration: none; cursor: pointer; }
+        .subrating-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .subrating-card { background: #f8fafc; border-radius: 12px; padding: 10px; text-align: center; }
         .subrating-card__label { font-size: 11px; color: var(--color-text-sub); }
         .subrating-card__sub { font-size: 10px; color: var(--color-text-sub); margin-top: 2px; }
-        .subrating-card__value { font-size: 20px; font-weight: 700; margin-top: 2px; }
-        .subrating-card--orange .subrating-card__value { color: #ea580c; }
-        .subrating-card--blue .subrating-card__value { color: #2563eb; }
-        .subrating-card--green .subrating-card__value { color: #16a34a; }
+        .subrating-card__value { font-size: 20px; font-weight: 700; margin-top: 4px; color: var(--color-text); }
 
+        /* 6/10 #137 §8: レビューコメント（共通描画 js/review-card.js と対のスタイル） */
         .review-card {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
@@ -92,16 +117,9 @@
             margin-bottom: 8px;
         }
         .review-card__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-        .review-card__name { font-size: 14px; font-weight: 700; }
         .review-card__date { font-size: 11px; color: var(--color-text-sub); }
-        .review-card__stars { color: #ef4444; font-size: 14px; font-variation-settings: 'FILL' 1; margin-bottom: 4px; }
-        .review-card__stars .material-symbols-outlined { font-size: 16px; }
         .review-card__comment { font-size: 13px; color: var(--color-text); line-height: 1.5; }
-        /* 5/11 #64: レビュー者の名前+アバター */
-        .review-card__reviewer {
-            display: flex; align-items: center; gap: 8px;
-            margin-bottom: 8px;
-        }
+        .review-card__reviewer { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         .review-card__avatar {
             width: 28px; height: 28px; border-radius: 50%;
             background: #e2e8f0; overflow: hidden;
@@ -115,6 +133,7 @@
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             flex: 1; min-width: 0;
         }
+        .reviews-more { display: block; text-align: center; font-size: 13px; font-weight: 700; color: var(--color-cta); cursor: pointer; padding: 8px; background: none; border: none; width: 100%; font-family: inherit; }
 
         .empty-small { text-align: center; padding: 20px; color: var(--color-text-sub); font-size: 13px; }
         .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
@@ -141,28 +160,23 @@
 
     <div class="profile-page">
 
-        <!-- 5/12 #72: 自分自身のページを見ている場合のみ表示する編集ボタン -->
-        <div id="self-edit-bar" style="display:none; margin-bottom:12px;">
-            <a href="/pages/restaurant/account/profile.html" class="edit-btn" style="display:inline-flex; align-items:center; gap:4px; background:#eef2ff; color:#3730a3; border:none; border-radius:20px; padding:8px 14px; font-size:13px; font-weight:600; text-decoration:none;">
-                <span class="material-symbols-outlined" style="font-size:16px;">edit</span>
-                <span data-i18n="account.editProfile"></span>
-            </a>
+        <!-- 6/10 #137 §9: 自己プレビュー時のみ表示（本人＝農家から見える自分のページの確認）。編集導線は出さない（プロフィール画面側）。 -->
+        <div class="self-note" id="self-note">
+            <span class="material-symbols-outlined">visibility</span>
+            <span data-i18n="profile.selfPreviewNote"></span>
         </div>
 
-        <div class="hero-photo" id="hero-photo">
-            <span class="material-symbols-outlined" style="font-size:60px; color:#94a3b8;">storefront</span>
-        </div>
-
-        <div class="name-block">
-            <div class="name-block__name" id="name">-</div>
-            <div class="name-block__location"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span><span id="location">-</span></div>
-            <div class="name-block__rating">
-                <span class="material-symbols-outlined">star</span>
-                <span class="name-block__rating-value" id="rating-value">0.0</span>
-                <span class="name-block__rating-count" id="rating-count">0件のレビュー</span>
+        <!-- プロフィール：アイコン（円形・常時）＋店名＋★%（件数）＋メタ行 -->
+        <div class="rest-prof">
+            <div class="rest-avatar" id="avatar">
+                <span class="material-symbols-outlined" style="font-size:50px; color:#94a3b8;">storefront</span>
             </div>
+            <div class="rest-name" id="name">-</div>
+            <div class="rest-rating" id="rating-badge"></div>
+            <div class="rest-meta" id="meta-line"></div>
         </div>
 
+        <!-- 地図（農家向け＝配達先・常に表示・新規でも） -->
         <div class="map-block" id="map-block">
             <iframe class="map-iframe" id="map-iframe" style="display:none;"></iframe>
             <div class="map-footer">
@@ -170,33 +184,50 @@
             </div>
         </div>
 
-        <div class="section">
-            <!-- 5/25 #84: 「評価サマリー」→「レビュー（N件）」形式に変更（renderRestaurantPage で動的セット） -->
-            <div class="section__title" id="summary-title" data-i18n="profile.summary"></div>
+        <!-- お店の紹介（任意・未記入ならセクションごと非表示） -->
+        <div class="section" id="intro-section" style="display:none;">
+            <div class="section__title" data-i18n="profile.shopIntro"></div>
+            <div class="intro-box">
+                <div class="intro-box__label" data-i18n="profile.shopIntroFrom"></div>
+                <div class="intro-box__text" id="intro-text"></div>
+            </div>
+        </div>
+
+        <!-- お店の様子（任意・未登録ならセクションごと非表示） -->
+        <div class="section" id="scene-section" style="display:none;">
+            <div class="section__title" data-i18n="profile.shopScene"></div>
+            <div id="scene-photos"></div>
+        </div>
+
+        <!-- レビュー（3軸メトリクス・ニュートラル統一） -->
+        <div class="subrating-wrap">
+            <div class="subrating-head">
+                <div class="subrating-head__title" id="subrating-title" data-i18n="review.title"></div>
+                <a class="subrating-head__link" id="reviews-link" href="#reviews-section" data-i18n="profile.viewReviews"></a>
+            </div>
             <div class="subrating-grid">
-                <div class="subrating-card subrating-card--orange">
+                <div class="subrating-card">
                     <div class="subrating-card__label" data-i18n="profile.ratingOverall"></div>
                     <div class="subrating-card__sub" data-i18n="profile.goodRate"></div>
-                    <div class="subrating-card__value" id="sub-overall">0.0</div>
+                    <div class="subrating-card__value" id="sub-overall">—</div>
                 </div>
-                <div class="subrating-card subrating-card--blue">
+                <div class="subrating-card">
                     <div class="subrating-card__label" data-i18n="profile.ratingCommunication"></div>
                     <div class="subrating-card__sub" data-i18n="profile.goodRate"></div>
-                    <div class="subrating-card__value" id="sub-communication">0.0</div>
+                    <div class="subrating-card__value" id="sub-communication">—</div>
                 </div>
-                <div class="subrating-card subrating-card--green">
+                <div class="subrating-card">
                     <div class="subrating-card__label" data-i18n="profile.ratingReception"></div>
                     <div class="subrating-card__sub" data-i18n="profile.goodRate"></div>
-                    <div class="subrating-card__value" id="sub-reception">0.0</div>
+                    <div class="subrating-card__value" id="sub-reception">—</div>
                 </div>
             </div>
         </div>
 
+        <!-- レビューコメント（最新3件＋もっと見る・線画スマイリー） -->
         <div class="section" id="reviews-section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <!-- 5/25 #84: 「レビューコメント」→「レビューコメント（N件）」形式に変更（renderRestaurantPage で動的セット） -->
                 <div class="section__title" id="reviews-section-title" style="margin:0;" data-i18n="profile.reviewComments"></div>
-                <div id="review-count-label" style="font-size:12px; color:var(--color-text-sub); display:none;"></div>
             </div>
             <div id="reviews-list"></div>
         </div>
@@ -207,16 +238,18 @@
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import {
-            doc, getDoc, collectionGroup, query, where, orderBy, getDocs
+            collectionGroup, query, where, orderBy, getDocs
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
-        import { formatProvince, formatLocation } from '/js/province-utils.js';
-        import { getReviewerAvatarUrl, getRestaurantPhotos } from '/js/profile-utils.js';
+        import { formatLocation } from '/js/province-utils.js';
+        import { getRestaurantPhotos } from '/js/profile-utils.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase B: 同一タブ内 users の重複取得を抑止
         import { getCachedUser } from '/js/data-cache.js';
         // 5/23 #69 Phase J: 画面描画状態の永続キャッシュ
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // 6/10 #137/#138: レビューコメントの共通描画（線画スマイリー・3件＋もっと見る）
+        import { renderReviewComments } from '/js/review-card.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -226,87 +259,119 @@
         const targetUid = new URLSearchParams(location.search).get('id');
         if (!targetUid) { history.back(); }
 
-        // 5/12 #72: 自分自身を見ている場合は編集ボタンを表示
+        // 6/10 #137 §9: 自分自身のページを見ている場合は自己プレビューバナーを表示（編集ボタンは出さない）
         (function waitForCurrent() {
             if (window.currentUser) {
                 if (window.currentUser.uid === targetUid) {
-                    const bar = document.getElementById('self-edit-bar');
-                    if (bar) bar.style.display = 'block';
+                    const note = document.getElementById('self-note');
+                    if (note) note.style.display = 'flex';
                 }
                 return;
             }
             setTimeout(waitForCurrent, 200);
         })();
 
-        function fmtDate(ts) {
-            const d = ts?.toDate?.() || new Date(ts || 0);
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const da = String(d.getDate()).padStart(2, '0');
-            return `${y}/${m}/${da}`;
-        }
-
-        function verdictBadge(verdict) {
-            if (verdict === 'good') {
-                return `<span style="display:inline-flex; align-items:center; gap:4px; background:#ecfdf5; color:#047857; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700;">
-                    <span class="material-symbols-outlined" style="font-size:14px;">thumb_up</span>${i18next.t('review.verdictGood')}</span>`;
-            }
-            if (verdict === 'bad') {
-                return `<span style="display:inline-flex; align-items:center; gap:4px; background:#fef2f2; color:#b91c1c; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700;">
-                    <span class="material-symbols-outlined" style="font-size:14px;">thumb_down</span>${i18next.t('review.verdictBad')}</span>`;
-            }
-            return '';
-        }
-        function legacyToVerdict(r) {
-            if (r.verdict) return r.verdict;
-            const avg = Number(r.avgRating || r.overall || 0);
-            return avg >= 4 ? 'good' : avg > 0 ? 'bad' : null;
-        }
-
-        // 5/7 #56: コメントを innerHTML に流し込むので XSS 防止のためエスケープ
+        // 5/7 #56: コメント等を innerHTML に流し込むので XSS 防止のためエスケープ
         function escapeHtml(s) {
             return String(s).replace(/[&<>"']/g, c => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
             }[c]));
         }
 
+        // 6/10 #137 §5: 登録時期の「YYYY/M」表示。Timestamp / millis 数値 / {seconds}（cache 復元）に対応。
+        function fmtYearMonth(ts) {
+            if (!ts) return '';
+            let d;
+            if (ts.toDate) d = ts.toDate();
+            else if (typeof ts === 'number') d = new Date(ts);
+            else if (ts.seconds != null) d = new Date(ts.seconds * 1000);
+            else d = new Date(ts);
+            if (isNaN(d.getTime())) return '';
+            return `${d.getFullYear()}/${d.getMonth() + 1}`;
+        }
+
+        // 5/7 #56: 「レビューを見る」でレビューコメント欄へスムーズスクロール（同ページ内アンカー）
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('#reviews-link');
+            if (!link) return;
+            e.preventDefault();
+            document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
         // 5/23 #69 Phase J: 描画ロジックを fetch から分離。cached / fresh 両方から呼ぶ。
         function renderRestaurantPage(user, reviewsWithComment, reviewerMap) {
-            // 店舗写真
-            const restPhotos = getRestaurantPhotos(user);
-            const heroEl = document.getElementById('hero-photo');
-            if (restPhotos.length === 1) {
-                heroEl.innerHTML = `<img ${asCachedImgAttrs(restPhotos[0])} alt="${escapeHtml(user.displayName || '')}">`;
-            } else if (restPhotos.length > 1) {
-                heroEl.style.padding = '0';
-                heroEl.style.background = '#000';
-                heroEl.innerHTML = `
-                    <div style="display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; width:100%; height:100%;">
-                        ${restPhotos.map(u => `
-                            <div style="flex:0 0 100%; scroll-snap-align:start; height:100%;">
-                                <img ${asCachedImgAttrs(u)} alt="" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
+            // アイコン写真（円形・常時表示・未設定はデフォルト storefront アイコン）
+            if (user.avatarUrl) {
+                document.getElementById('avatar').innerHTML =
+                    `<img ${asCachedImgAttrs(user.avatarUrl)} alt="${escapeHtml(user.displayName || '')}">`;
             }
-            // 名前・場所
-            document.getElementById('name').textContent = user.displayName || '-';
-            const loc = formatLocation(user) || '-';
-            document.getElementById('location').textContent = loc;
 
-            // 評価
+            // 名前
+            document.getElementById('name').textContent = user.displayName || '-';
+
+            // 6/10 #137 §4: ★%（件数）。★は非赤。0件＝「新規」（％を出さない）。
             const goodRate = Number(user.avgRating || 0);
             const count = Number(user.reviewCount || 0);
-            document.getElementById('rating-value').textContent = `${Math.round(goodRate)}%`;
-            document.getElementById('rating-count').textContent = `${count}${i18next.t('order.reviews')}`;
-            // 5/25 #84 + 5/27 #98: レビュー欄は全件数、コメント欄はコメント付きレビュー件数を別々に表示
+            const ratingEl = document.getElementById('rating-badge');
+            if (count === 0) {
+                ratingEl.className = 'rest-rating rest-rating--new';
+                ratingEl.innerHTML = `<span>${escapeHtml(i18next.t('fishlist.newFarmer'))}</span>`;
+            } else {
+                ratingEl.className = 'rest-rating';
+                ratingEl.innerHTML = `<span class="material-symbols-outlined">star</span><span>${Math.round(goodRate)}%</span><span class="rest-rating__count">（${count}${i18next.t('order.reviews')}）</span>`;
+            }
+
+            // 6/10 #137 §5: メタ行＝📍地区 ・ 取引N件 ・ YYYY/M〜（“率”指標は出さない）
+            const loc = formatLocation(user) || '-';
+            const trade = Number(user.tradeCount || 0);
+            const ym = fmtYearMonth(user.createdAt);
+            const parts = [
+                `<span class="material-symbols-outlined rest-meta__pin">location_on</span>${escapeHtml(loc)}`,
+                escapeHtml(i18next.t('profile.tradeCount', { count: trade })),
+            ];
+            if (ym) parts.push(`${escapeHtml(ym)}〜`);
+            document.getElementById('meta-line').innerHTML =
+                parts.join('<span class="rest-meta__dot">・</span>');
+
+            // 地図（常に表示・新規でも・場所は登録済み）
+            if (user.location?.lat && user.location?.lng) {
+                const mapsUrl = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}`;
+                document.getElementById('map-link-footer').href = mapsUrl;
+                const iframe = document.getElementById('map-iframe');
+                iframe.src = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}&z=15&output=embed`;
+                iframe.style.display = 'block';
+            }
+
+            // 6/10 #137 §2: お店の紹介（未記入ならセクションごと非表示）。編集UIはプロフィール画面側（別途）。
+            const introText = String(user.restaurantMessage || user.introText || '').trim();
+            const introSection = document.getElementById('intro-section');
+            if (introText) {
+                introSection.style.display = 'block';
+                document.getElementById('intro-text').textContent = introText;
+            } else {
+                introSection.style.display = 'none';
+            }
+
+            // 6/10 #137 §6: お店の様子（風景写真・未登録ならセクションごと非表示）
+            const scenePhotos = getRestaurantPhotos(user);
+            const sceneSection = document.getElementById('scene-section');
+            if (scenePhotos.length > 0) {
+                sceneSection.style.display = 'block';
+                document.getElementById('scene-photos').innerHTML = scenePhotos
+                    .map(u => `<div class="scene-photo"><img ${asCachedImgAttrs(u)} alt="" loading="lazy"></div>`)
+                    .join('');
+            } else {
+                sceneSection.style.display = 'none';
+            }
+
+            // レビュー（N件）＝総レビュー件数／コメント欄＝コメント付き件数
             const commentCount = Array.isArray(reviewsWithComment) ? reviewsWithComment.length : 0;
-            const summaryTitleEl = document.getElementById('summary-title');
-            if (summaryTitleEl) summaryTitleEl.textContent = i18next.t('profile.reviewsTitleWithCount', { count });
+            const subTitleEl = document.getElementById('subrating-title');
+            if (subTitleEl) subTitleEl.textContent = i18next.t('profile.reviewsTitleWithCount', { count });
             const reviewsTitleEl = document.getElementById('reviews-section-title');
             if (reviewsTitleEl) reviewsTitleEl.textContent = i18next.t('profile.reviewCommentsTitleWithCount', { count: commentCount });
 
+            // 6/10 #137 §4: 3軸メトリクス（総合評価／やり取り／受取対応）の良かった率%
             const sub = user.subRatings || {};
             const fmtSubRate = (s) => {
                 if (s && typeof s === 'object' && 'good' in s && 'total' in s && s.total > 0) {
@@ -318,43 +383,8 @@
             document.getElementById('sub-communication').textContent = fmtSubRate(sub.communication);
             document.getElementById('sub-reception').textContent = fmtSubRate(sub.reception);
 
-            // 地図
-            if (user.location?.lat && user.location?.lng) {
-                const mapsUrl = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}`;
-                document.getElementById('map-link-footer').href = mapsUrl;
-                const iframe = document.getElementById('map-iframe');
-                iframe.src = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}&z=15&output=embed`;
-                iframe.style.display = 'block';
-            }
-
-            // レビュー
-            const listEl = document.getElementById('reviews-list');
-            if (!reviewsWithComment || reviewsWithComment.length === 0) {
-                listEl.innerHTML = `<div class="empty-small">${i18next.t('profile.noReviews')}</div>`;
-                return;
-            }
-            listEl.innerHTML = reviewsWithComment.map(r => {
-                const v = legacyToVerdict(r);
-                const reviewer = (reviewerMap && reviewerMap[r.fromUid]) || {};
-                const reviewerName = reviewer.displayName || i18next.t('profile.anonymousReviewer');
-                const reviewerAvatar = getReviewerAvatarUrl(reviewer);
-                const avatarHtml = reviewerAvatar
-                    ? `<img ${asCachedImgAttrs(reviewerAvatar)} alt="" loading="lazy">`
-                    : `<span class="material-symbols-outlined">${reviewer.role === 'restaurant' ? 'restaurant' : 'person'}</span>`;
-                return `
-                    <div class="review-card">
-                        <div class="review-card__reviewer">
-                            <div class="review-card__avatar">${avatarHtml}</div>
-                            <div class="review-card__reviewer-name">${escapeHtml(reviewerName)}</div>
-                        </div>
-                        <div class="review-card__head">
-                            ${verdictBadge(v)}
-                            <div class="review-card__date">${fmtDate(r.createdAt)}</div>
-                        </div>
-                        <div class="review-card__comment">${escapeHtml(r.comment)}</div>
-                    </div>
-                `;
-            }).join('');
+            // 6/10 #137 §8: レビューコメント（最新3件＋もっと見る・線画スマイリー）＝共通描画
+            renderReviewComments(document.getElementById('reviews-list'), reviewsWithComment, reviewerMap, 3);
         }
 
         async function load({ silent = false } = {}) {
@@ -374,7 +404,8 @@
                     const reviewSnap = await getDocs(q);
                     const reviews = [];
                     reviewSnap.forEach(d => { reviews.push({ id: d.id, ...d.data() }); });
-                    reviewsWithComment = reviews.filter(r => r.comment && String(r.comment).trim() !== '');
+                    // 6/5 #128: モデレーションで非表示(hidden)にされたレビューは公開から除外
+                    reviewsWithComment = reviews.filter(r => !r.hidden && r.comment && String(r.comment).trim() !== '');
                     const reviewerIds = [...new Set(reviewsWithComment.map(r => r.fromUid).filter(Boolean))];
                     await Promise.all(reviewerIds.map(async (uid) => {
                         try { reviewerMap[uid] = (await getCachedUser(uid)) || {}; }
@@ -386,14 +417,14 @@
 
                 renderRestaurantPage(user, reviewsWithComment, reviewerMap);
 
-                // 5/23 #69 Phase J: 次回訪問用に cache 保存
+                // 5/23 #69 Phase J: 次回訪問用に cache 保存（Timestamp は millis 化して保存）
                 try {
                     const reviewsForCache = reviewsWithComment.map(r => ({
                         ...r,
                         createdAt: r.createdAt?.toMillis?.() || r.createdAt || null,
                     }));
                     saveRenderState(`restaurant:${targetUid}`, {
-                        user,
+                        user: { ...user, createdAt: user.createdAt?.toMillis?.() ?? user.createdAt ?? null },
                         reviewsWithComment: reviewsForCache,
                         reviewerMap,
                     });

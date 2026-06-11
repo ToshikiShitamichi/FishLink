@@ -945,6 +945,29 @@ exports.onOrderUpdated = onDocumentUpdated(
         await clearTodo(after.restaurantId, 'rest_reply', orderId);
         await createTodo(after.restaurantId, 'rest_pay', orderId);
 
+        // 6/10 #137/#138: 取引完了の累計（プロフィールの信頼ブロック「取引N件」・spec §5）。
+        //   農家・レストラン双方の users.tradeCount を +1。辞退/キャンセル（'declined' 等）は
+        //   completed にならず数えない。
+        //   ⚠️ statusChanged ガードは「ユニークなイベント1回」では二重発火しないが、
+        //      Cloud Functions の onDocumentUpdated は at-least-once（同一イベントの再配信あり）で、
+        //      increment は非冪等。よって注文ドキュメントの一度きりマーカー tradeCounted を
+        //      トランザクションで立て、既に立っていればスキップ＝再配信・バックフィルとの二重計上を防ぐ
+        //      （同ブロックの consumeFarmerBonusForOrder と同方式）。既存の完了済み注文は
+        //      functions/scripts/backfill-tradecount.js が同じマーカー方式で一度だけ埋める。
+        const orderRef = event.data.after.ref;
+        try {
+          await db.runTransaction(async (tx) => {
+            const snap = await tx.get(orderRef);
+            if (!snap.exists || snap.data()?.tradeCounted === true) return; // 再配信/集計済みはスキップ
+            const inc = admin.FieldValue.increment(1);
+            if (after.farmerId) tx.set(db.doc(`users/${after.farmerId}`), { tradeCount: inc }, { merge: true });
+            if (after.restaurantId) tx.set(db.doc(`users/${after.restaurantId}`), { tradeCount: inc }, { merge: true });
+            tx.update(orderRef, { tradeCounted: true });
+          });
+        } catch (e) {
+          console.error('tradeCount tx failed', orderId, e);
+        }
+
         // 5/24 #82 Phase 2 Chunk 2: 紹介関係の確定 + 双方特典付与 + 農家ボーナス消費
         // - referredBy 未確定の場合は pendingReferralCode を referredBy に昇格 + 双方に特典発行
         // - 農家側は毎回 pendingFarmerBonus を 1 消費して order に上乗せ
@@ -1861,6 +1884,55 @@ exports.migrateDeliveredToCompleted = onCall(
     await batch.commit();
 
     return { migrated: snap.size };
+  }
+);
+
+// ── 一回限り: 既存の完了済み注文から users.tradeCount を集計（管理者のみ・冪等・再実行可） ──
+// 6/10 #137/#138: プロフィールの信頼ブロック「取引N件」のバックフィル（admin/settings.html のボタンから実行）。
+//   ライブ集計（onOrderUpdated）と同じ「increment + 注文の一度きりマーカー tradeCounted」方式の
+//   トランザクションで処理＝同時実行・再実行しても二重計上しない（マーカー済みはスキップ）。
+//   タイムアウト時は再クリックで続きから（マーカー済みをスキップして再開）。
+//   functions/scripts/backfill-tradecount.js は UI 不可/大量データ時のフォールバック（同一ロジック）。
+exports.backfillTradeCount = onCall(
+  {
+    region: "asia-southeast1",
+    timeoutSeconds: 540,
+    invoker: "public",
+    cors: true,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required");
+    }
+    const callerSnap = await db.doc(`users/${request.auth.uid}`).get();
+    if (callerSnap.data()?.role !== "admin") {
+      throw new HttpsError("permission-denied", "Admin role required");
+    }
+    const admin = require("firebase-admin/firestore");
+
+    const snap = await db.collection("orders").where("status", "==", "completed").get();
+    let counted = 0, skipped = 0, failed = 0;
+    for (const docSnap of snap.docs) {
+      const oref = docSnap.ref;
+      try {
+        const res = await db.runTransaction(async (tx) => {
+          const o = await tx.get(oref);
+          if (!o.exists) return false;
+          const data = o.data() || {};
+          if (data.tradeCounted === true) return false; // 集計済み（再実行 or ライブが先に処理）
+          const inc = admin.FieldValue.increment(1);
+          if (data.farmerId) tx.set(db.doc(`users/${data.farmerId}`), { tradeCount: inc }, { merge: true });
+          if (data.restaurantId) tx.set(db.doc(`users/${data.restaurantId}`), { tradeCount: inc }, { merge: true });
+          tx.update(oref, { tradeCounted: true });
+          return true;
+        });
+        if (res) counted++; else skipped++;
+      } catch (e) {
+        console.error("backfillTradeCount tx failed", docSnap.id, e);
+        failed++;
+      }
+    }
+    return { total: snap.size, counted, skipped, failed };
   }
 );
 
