@@ -315,7 +315,7 @@ self.addEventListener('notificationclick', (event) => {
 //     「レストラン写真」→「お店の様子」に統一。locales に profile.shopIcon / shopIntroPlaceholder 追加。
 //   ⚠️ functions 変更あり（onOrderUpdated 完了遷移で users.tradeCount を +1／callable backfillTradeCount 追加）＝バックエンドデプロイ要。
 //      既存完了注文は admin/settings.html「取引数を集計」ボタン（callable）で一度だけバックフィル。Firestore Rules / インデックス変更なし。
-const CACHE_NAME = 'fishlink-v123';
+const CACHE_NAME = 'fishlink-v125';
 
 const PRECACHE_URLS = [
     '/',
@@ -346,7 +346,7 @@ const PRECACHE_URLS = [
     '/icons/icon-192.png',
     '/icons/icon-512.png',
     '/images/role-fish.svg',
-    // 5/23 #76: 魚種カテゴリアイコン（CAA 10種）
+    // 5/23 #76 / #141: 魚種カテゴリアイコン（固定12種＝CAA11種＋オニテナガエビ prawn）
     '/images/striped_snakehead.png',
     '/images/walking_catfish.png',
     '/images/red_tilapia.png',
@@ -355,8 +355,10 @@ const PRECACHE_URLS = [
     '/images/spot_pangasius.png',
     '/images/pangasius.png',
     '/images/giant_snakehead.png',
+    '/images/barramundi.png',
     '/images/climbing_perch.png',
     '/images/frog.png',
+    '/images/prawn.png',
 ];
 
 self.addEventListener('install', (event) => {

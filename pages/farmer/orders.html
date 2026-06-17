@@ -532,6 +532,49 @@
         .approve-modal__btn--cancel { background: #fff; color: var(--color-text); border: 1px solid var(--color-border); }
         .approve-modal__btn--ok { background: var(--color-cta); color: #fff; border: none; }
         .approve-modal__btn--ok:hover { background: var(--color-cta-dk); }
+
+        /* #142 注文確認 A案フィード（対応が必要→進行中→取引履歴1行） */
+        .fo-sec { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 800; margin: 16px 0 9px; }
+        .fo-sec__n { background: #eef1f4; color: #5a6470; font-size: 11px; font-weight: 800; padding: 1px 9px; border-radius: 10px; }
+        .fo-sec--act { color: #d14343; }
+        .fo-sec--act .fo-sec__n { background: #fdecea; color: #d14343; }
+        .fo-sec--hist { color: #5a6470; font-size: 13px; }
+        .fo-card { background: #fff; border: 1px solid #eef1f4; border-radius: 14px; padding: 13px; margin-bottom: 11px; display: block; text-decoration: none; color: inherit; }
+        .fo-card--urgent { border-color: #f3c0bd; box-shadow: 0 0 0 2px #fbe3e1 inset; }
+        .fo-top { display: flex; gap: 11px; }
+        .fo-th { width: 56px; height: 56px; border-radius: 9px; flex: 0 0 auto; background: #eef3f7; display: flex; align-items: center; justify-content: center; color: #9dbed4; overflow: hidden; }
+        .fo-th img { width: 100%; height: 100%; object-fit: cover; }
+        .fo-th .material-symbols-outlined { font-size: 26px; }
+        .fo-ci { flex: 1; min-width: 0; }
+        .fo-date { font-size: 11px; color: var(--color-text-sub); display: flex; align-items: center; gap: 4px; }
+        .fo-date .material-symbols-outlined { font-size: 14px; }
+        .fo-name { font-size: 15px; font-weight: 800; margin-top: 2px; }
+        .fo-rest { font-size: 11px; color: var(--color-text-sub); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+        .fo-rest .material-symbols-outlined { font-size: 13px; }
+        .fo-fl { font-size: 10px; color: #9aa3b0; margin-top: 2px; font-family: monospace; }
+        .fo-badge { font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 10px; float: right; margin-left: 6px; }
+        .fo-badge--wait { background: #fff3dc; color: #b36a00; }
+        .fo-badge--prep { background: #eef1f4; color: #5a6470; }
+        .fo-badge--deliv { background: var(--color-cta-lt); color: var(--color-cta); }
+        .fo-badge--arrived { background: #e0f2ef; color: #0b7a6b; }
+        .fo-deadline { display: flex; align-items: center; gap: 6px; background: #fdecea; color: #d14343; font-size: 12.5px; font-weight: 800; padding: 8px 11px; border-radius: 9px; margin-top: 10px; }
+        .fo-deadline.warn { background: #fff7e6; color: #b36a00; }
+        .fo-deadline .material-symbols-outlined { font-size: 16px; }
+        .fo-arrivenote { display: flex; align-items: center; gap: 6px; background: #f0f4f8; color: #42566b; font-size: 12px; font-weight: 700; padding: 8px 11px; border-radius: 9px; margin-top: 10px; }
+        .fo-arrivenote .material-symbols-outlined { font-size: 16px; }
+        .fo-btn { display: block; width: 100%; box-sizing: border-box; text-align: center; font-size: 13px; font-weight: 800; padding: 11px; border-radius: 10px; margin-top: 11px; border: none; cursor: pointer; font-family: inherit; text-decoration: none; }
+        .fo-btn--pri { background: var(--color-cta); color: #fff; }
+        .fo-btn--sec { background: #fff; color: var(--color-cta); border: 1.5px solid var(--color-cta); }
+        .fo-histrow { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #eef1f4; border-radius: 12px; padding: 13px 14px; text-decoration: none; color: inherit; margin-bottom: 11px; }
+        .fo-histrow > .material-symbols-outlined { font-size: 22px; color: var(--color-text-sub); }
+        .fo-histrow__t { flex: 1; }
+        .fo-histrow__t1 { font-size: 13.5px; font-weight: 800; color: var(--color-text); }
+        .fo-histrow__t2 { font-size: 11.5px; color: var(--color-text-sub); margin-top: 3px; }
+        .fo-histrow__g { color: #c2ccd6; font-weight: 800; font-size: 18px; }
+        .fo-allclear { display: flex; align-items: center; justify-content: center; gap: 6px; color: #5a6470; font-size: 13px; font-weight: 700; padding: 22px 12px; }
+        .fo-allclear .material-symbols-outlined { color: #2e7d32; font-size: 20px; }
+        .fo-back { display: inline-flex; align-items: center; gap: 4px; color: var(--color-cta); font-weight: 700; font-size: 14px; text-decoration: none; margin: 4px 0 12px; }
+        .fo-back .material-symbols-outlined { font-size: 18px; }
     </style>
 </head>
 
@@ -617,7 +660,7 @@
         import { subscribeTodos } from '/js/todos.js';
         import { subscribeNotifications } from '/js/notifications.js';
         import {
-            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc, onSnapshot, addDoc, serverTimestamp
+            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc, onSnapshot, addDoc, serverTimestamp, runTransaction
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { getOrderNumber } from '/js/order-utils.js';
         // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ（stale-while-revalidate）
@@ -899,18 +942,19 @@
         }
 
         function renderOrderCard(order) {
-            // 注文時点のスナップショット優先（編集後も注文表示は不変）
-            const fishTypeKey = order.snapFishType || order.listingData.fishType;
+            // 注文時点のスナップショット優先（編集後も注文表示は不変）。
+            // listingData は load 由来で常に enrich されるが、詳細ビュー②等の流用に備えて optional chaining。
+            const fishTypeKey = order.snapFishType || order.listingData?.fishType;
             const fishName = i18next.exists(`fish.${fishTypeKey}`)
                 ? i18next.t(`fish.${fishTypeKey}`)
                 : (fishTypeKey || '');
-            const size = order.snapSize || order.listingData.size || '';
-            const photoUrl = order.snapPhotoUrl || order.listingData.photoUrl;
+            const size = order.snapSize || order.listingData?.size || '';
+            const photoUrl = order.snapPhotoUrl || order.listingData?.photoUrl;
             // 単価表示：注文時点の fishPrice / quantity から逆算（内臓処理込みの実効単価）
             // 旧注文で fishPrice が無い場合は snap → 現listing の順でフォールバック
             // 6/1 #112 (diff4): 魚単価と内臓処理を分解表示するため両方を保持（農家視点・手数料抜きの基本単価）
-            const basePrice = (order.snapPrice != null) ? order.snapPrice : (order.listingData.price || 0);
-            const gutFee = (order.snapGutPrice != null) ? order.snapGutPrice : (order.listingData.gutPrice || 0);
+            const basePrice = (order.snapPrice != null) ? order.snapPrice : (order.listingData?.price || 0);
+            const gutFee = (order.snapGutPrice != null) ? order.snapGutPrice : (order.listingData?.gutPrice || 0);
             let price = 0;
             if (order.fishPrice && order.quantity) {
                 price = Math.round(order.fishPrice / order.quantity);
@@ -1196,148 +1240,158 @@
             return (a.deliveryTime || '').localeCompare(b.deliveryTime || '');
         }
 
-        function renderOrders() {
-            const isRemitted = (o) => ['remitted', 'done'].includes(o.adminStatus);
-            const today = todayIsoKHM();
+        // ── #142 A案フィード 共通ヘルパー ──
+        function deadlineInfo(order) {
+            const createdMs = order.createdAt?.toMillis ? order.createdAt.toMillis() : 0;
+            const deadlineMs = createdMs + 60 * 60 * 1000;
+            const remainMin = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 60000));
+            const d = new Date(deadlineMs);
+            const timeStr = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+            const level = remainMin <= 10 ? 'danger' : (remainMin <= 30 ? 'warn' : 'normal');
+            return { remainMin, timeStr, level };
+        }
+        function foThumb(order) {
+            const url = order.snapPhotoUrl || order.listingData?.photoUrl || '';
+            return url ? `<img ${asCachedImgAttrs(url)} alt="" loading="lazy">` : `<span class="material-symbols-outlined">set_meal</span>`;
+        }
+        function foFishLabel(order) {
+            const key = order.snapFishType || order.listingData?.fishType || '';
+            const name = key ? (i18next.exists(`fish.${key}`) ? i18next.t(`fish.${key}`) : key) : '';
+            const size = order.snapSize || order.listingData?.size || '';
+            const itemCount = Array.isArray(order.items) ? order.items.length : 1;
+            const add = itemCount > 1 ? ` <span style="color:#5a6470; font-weight:600;">${i18next.t('orders.otherItemsAddon', { n: itemCount - 1 })}</span>` : '';
+            return `${name}${size ? `（${size} head/kg）` : ''} ${order.quantity || 0}kg${add}`;
+        }
+        function foMeta(order) {
+            return [order.deliveryDate ? fmtDeliveryDate(order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ');
+        }
+        function foRest(order) {
+            const name = order.restData?.displayName || '';
+            const prov = order.restData?.province || '';
+            return prov ? `${name}（${prov}）` : name;
+        }
 
-            // 4/28: 対応中（pending未期限切れ + approved/preparing/delivering）を本日／明日以降で分割
-            const inProgress = allOrders.filter(o =>
-                ['pending', 'approved', 'preparing', 'delivering'].includes(o.status)
-                && !(o.status === 'pending' && isOrderExpired(o))
-            );
-            const todayActive = inProgress
-                .filter(o => (o.deliveryDateIso || '') && (o.deliveryDateIso || '') <= today)
-                .sort(sortByDelivery);
-            const futureActive = inProgress
-                .filter(o => (o.deliveryDateIso || '') > today || !o.deliveryDateIso)
-                .sort(sortByDelivery);
+        // 承認待ち＝要約カード（全詳細はタップで承認待ち詳細②へ＝?detail=id）
+        function renderApprovalSummaryCard(order) {
+            const di = deadlineInfo(order);
+            const deadlineCls = di.level === 'warn' ? ' warn' : '';
+            return `
+                <a class="fo-card fo-card--urgent" id="order-${order.id}" href="/pages/farmer/orders.html?detail=${order.id}">
+                    <div class="fo-top">
+                        <div class="fo-th">${foThumb(order)}</div>
+                        <div class="fo-ci">
+                            <span class="fo-badge fo-badge--wait">${i18next.t('delivery.pending')}</span>
+                            <div class="fo-date"><span class="material-symbols-outlined">event</span>${foMeta(order)}</div>
+                            <div class="fo-name">${foFishLabel(order)}</div>
+                            <div class="fo-rest"><span class="material-symbols-outlined">storefront</span>${foRest(order)}</div>
+                            <div class="fo-fl">${getOrderNumber(order)}</div>
+                        </div>
+                    </div>
+                    <div class="fo-deadline${deadlineCls}"><span class="material-symbols-outlined">schedule</span>${i18next.t('orders.deadline', { time: di.timeStr })} ・ ${i18next.t('orders.deadlineRemain', { min: di.remainMin })}</div>
+                    <div class="fo-btn fo-btn--pri">${i18next.t('orders.respondCta')}</div>
+                </a>`;
+        }
 
-            // 期限切れpendingは辞退扱いへ
-            const expiredOrders = allOrders.filter(o => o.status === 'pending' && isOrderExpired(o));
+        // 進行中（準備中／配送中／到着＝配達中のまま order.arrivedAt で判定）
+        function renderProgressCard(order) {
+            const isArrived = order.status === 'delivering' && order.arrivedAt;
+            let badge, arriveNote = '';
+            if (isArrived) {
+                badge = `<span class="fo-badge fo-badge--arrived"><span class="material-symbols-outlined" style="font-size:12px; vertical-align:-2px;">location_on</span>${i18next.t('orders.arrivedBadge')}</span>`;
+                arriveNote = `<div class="fo-arrivenote"><span class="material-symbols-outlined">inventory_2</span>${i18next.t('orders.arrivedNote')}</div>`;
+            } else if (order.status === 'delivering') {
+                badge = `<span class="fo-badge fo-badge--deliv">${i18next.t('delivery.delivering')}</span>`;
+            } else {
+                badge = `<span class="fo-badge fo-badge--prep">${i18next.t('delivery.preparing')}</span>`;
+            }
+            return `
+                <a class="fo-card" id="order-${order.id}" href="/pages/farmer/delivery.html?id=${order.id}">
+                    <div class="fo-top">
+                        <div class="fo-th">${foThumb(order)}</div>
+                        <div class="fo-ci">
+                            ${badge}
+                            <div class="fo-date"><span class="material-symbols-outlined">event</span>${foMeta(order)}</div>
+                            <div class="fo-name">${foFishLabel(order)}</div>
+                            <div class="fo-rest"><span class="material-symbols-outlined">storefront</span>${foRest(order)}</div>
+                            <div class="fo-fl">${getOrderNumber(order)}</div>
+                        </div>
+                    </div>
+                    ${arriveNote}
+                    <div class="fo-btn fo-btn--sec">${i18next.t('delivery.goDelivery')}</div>
+                </a>`;
+        }
 
-            // 5/4: 履歴系（完了済み・辞退済み）は新しい順、対応必要系はそのまま納品日順
-            const sortByCreatedDesc = (a, b) =>
-                (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
-
-            // トグル群（送金待ち / 完了済み / 辞退済み）
-            const waitingRemittanceOrders = allOrders.filter(o =>
-                ['delivered', 'completed'].includes(o.status) && !isRemitted(o)
-            ).sort(sortByDelivery);
-            const completedOrders = allOrders.filter(o =>
-                ['delivered', 'completed'].includes(o.status) && isRemitted(o)
-            ).sort(sortByCreatedDesc);
-            const declinedOrders = [
-                ...allOrders.filter(o => o.status === 'declined'),
-                ...expiredOrders,
-            ].sort(sortByCreatedDesc);
-
+        // 承認待ち詳細②（既存 renderOrderCard を流用・1件フル展開）
+        function renderDetailView(id) {
+            const order = allOrders.find(o => o.id === id);
             const listEl = document.getElementById('orders-list');
-            listEl.innerHTML = '';
+            document.getElementById('load-more-wrap').style.display = 'none';
+            if (!order) { location.href = '/pages/farmer/orders.html'; return; }
+            listEl.innerHTML = `<a class="fo-back" href="/pages/farmer/orders.html"><span class="material-symbols-outlined">arrow_back</span>${i18next.t('orders.backToList')}</a>` + renderOrderCard(order);
+            const card = document.getElementById('order-' + id);
+            if (card) card.classList.add('expanded');
+            bindEvents([order], { bindToggle: false });
+        }
+
+        function renderOrders() {
+            const detailId = new URLSearchParams(location.search).get('detail');
+            const listEl = document.getElementById('orders-list');
+            if (detailId) { renderDetailView(detailId); return; }
+
+            const isRemitted = (o) => ['remitted', 'done'].includes(o.adminStatus);
+
+            // 対応が必要＝承認待ち（未期限切れ）。承認期限の近い順＝古い注文が先（注文時刻+1h が早い）。
+            const awaiting = allOrders
+                .filter(o => o.status === 'pending' && !isOrderExpired(o))
+                .sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+            // 進行中＝承認済み/準備中/配送中（到着＝配達中のまま）
+            const inProgress = allOrders
+                .filter(o => ['approved', 'preparing', 'delivering'].includes(o.status))
+                .sort(sortByDelivery);
+            // 履歴系カウント（送金待ち / 完了 / 辞退・キャンセル）
+            const waitingRemittanceOrders = allOrders.filter(o => ['delivered', 'completed'].includes(o.status) && !isRemitted(o));
+            const completedOrders = allOrders.filter(o => ['delivered', 'completed'].includes(o.status) && isRemitted(o));
+            const expiredOrders = allOrders.filter(o => o.status === 'pending' && isOrderExpired(o));
+            const ndOrders = [...allOrders.filter(o => ['declined', 'cancelled'].includes(o.status)), ...expiredOrders];
+
+            const actionCount = awaiting.length;
+            const hasHistory = (waitingRemittanceOrders.length + completedOrders.length + ndOrders.length) > 0;
 
             if (allOrders.length === 0) {
                 listEl.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">inbox</span></div>
-                        <div class="empty-state__text">${i18next.t('orders.empty')}</div>
-                    </div>
-                `;
+                        <div class="empty-state__text">${i18next.t('orders.noOrdersYet')}</div>
+                        <a href="/pages/farmer/post.html" class="fo-btn fo-btn--pri" style="display:inline-block; width:auto; padding:11px 22px; margin-top:14px;">${i18next.t('dashboard.newPost')}</a>
+                    </div>`;
                 return;
             }
 
-            // 大グループ① 本日の対応
-            if (todayActive.length > 0) {
-                listEl.innerHTML += `<div class="section-label">${i18next.t('orders.todaySection', { count: todayActive.length })}</div>`;
-                todayActive.forEach(o => { listEl.innerHTML += renderOrderCard(o); });
+            let html = '';
+            if (actionCount > 0) {
+                html += `<div class="fo-sec fo-sec--act">${i18next.t('orders.actionNeeded')} <span class="fo-sec__n">${actionCount}</span></div>`;
+                html += awaiting.map(renderApprovalSummaryCard).join('');
             }
-
-            // 大グループ② 明日以降の対応
-            if (futureActive.length > 0) {
-                listEl.innerHTML += `<div class="section-label">${i18next.t('orders.futureSection', { count: futureActive.length })}</div>`;
-                futureActive.forEach(o => { listEl.innerHTML += renderOrderCard(o); });
+            if (inProgress.length > 0) {
+                html += `<div class="fo-sec">${i18next.t('orders.inProgressNow')} <span class="fo-sec__n">${inProgress.length}</span></div>`;
+                html += inProgress.map(renderProgressCard).join('');
             }
-
-            // トグル① 送金待ち
-            if (waitingRemittanceOrders.length > 0) {
-                const html = waitingRemittanceOrders.map(o => renderOrderCard(o)).join('');
-                listEl.innerHTML += `
-                    <div class="accordion-header" id="acc-waiting-remit">
-                        ${i18next.t('orders.waitingRemittanceClosed', { count: waitingRemittanceOrders.length })}
-                    </div>
-                    <div class="accordion-body" id="acc-waiting-remit-body">${html}</div>
-                `;
+            if (actionCount === 0 && inProgress.length === 0) {
+                html += `<div class="fo-allclear"><span class="material-symbols-outlined">check_circle</span>${i18next.t('orders.allClear')}</div>`;
             }
-
-            // 5/4: 履歴系は最新N件のみ初期表示し、「もっと見る」で全件展開
-            const TRUNCATE_INITIAL = 3;
-            function renderTruncated(items, restId) {
-                if (items.length <= TRUNCATE_INITIAL) {
-                    return items.map(o => renderOrderCard(o)).join('');
-                }
-                const initial = items.slice(0, TRUNCATE_INITIAL).map(o => renderOrderCard(o)).join('');
-                const rest = items.slice(TRUNCATE_INITIAL).map(o => renderOrderCard(o)).join('');
-                const remainCount = items.length - TRUNCATE_INITIAL;
-                return `
-                    ${initial}
-                    <div id="${restId}" style="display:none;">${rest}</div>
-                    <button type="button" class="show-more-btn" data-target="${restId}"
-                        style="display:block; width:100%; padding:10px; margin-top:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; color:#475569; font-weight:600; font-size:13px; cursor:pointer; font-family:inherit;">
-                        ${i18next.t('orders.showMore', { count: remainCount })}
-                    </button>
-                `;
+            if (hasHistory) {
+                html += `<div class="fo-sec fo-sec--hist">${i18next.t('orders.historyLabel')}</div>`;
+                html += `
+                    <a class="fo-histrow" href="/pages/farmer/account/sales.html">
+                        <span class="material-symbols-outlined">receipt_long</span>
+                        <div class="fo-histrow__t">
+                            <div class="fo-histrow__t1">${i18next.t('orders.tradeHistoryLink')}</div>
+                            <div class="fo-histrow__t2">${i18next.t('orders.tradeHistoryCounts', { remit: waitingRemittanceOrders.length, done: completedOrders.length, nd: ndOrders.length })}</div>
+                        </div>
+                        <span class="fo-histrow__g">›</span>
+                    </a>`;
             }
-
-            // トグル② 完了済み（送金完了）
-            if (completedOrders.length > 0) {
-                const html = renderTruncated(completedOrders, 'completed-rest');
-                listEl.innerHTML += `
-                    <div class="accordion-header" id="acc-completed">
-                        ${i18next.t('orders.approvedSectionClosed', { count: completedOrders.length })}
-                    </div>
-                    <div class="accordion-body" id="acc-completed-body">${html}</div>
-                `;
-            }
-
-            // トグル③ 辞退済み
-            if (declinedOrders.length > 0) {
-                const html = renderTruncated(declinedOrders, 'declined-rest');
-                listEl.innerHTML += `
-                    <div class="accordion-header" id="acc-declined">
-                        ${i18next.t('orders.declinedSectionClosed', { count: declinedOrders.length })}
-                    </div>
-                    <div class="accordion-body" id="acc-declined-body">${html}</div>
-                `;
-            }
-
-            // イベント登録
-            const pendingOrders = inProgress.filter(o => o.status === 'pending');
-            bindEvents(pendingOrders);
-
-            const bindAcc = (id, bodyId, openKey, closedKey, count) => {
-                document.getElementById(id)?.addEventListener('click', function () {
-                    const body = document.getElementById(bodyId);
-                    body.classList.toggle('open');
-                    this.textContent = body.classList.contains('open')
-                        ? i18next.t(openKey, { count })
-                        : i18next.t(closedKey, { count });
-                });
-            };
-            bindAcc('acc-waiting-remit', 'acc-waiting-remit-body',
-                'orders.waitingRemittanceOpen', 'orders.waitingRemittanceClosed', waitingRemittanceOrders.length);
-            bindAcc('acc-completed', 'acc-completed-body',
-                'orders.approvedSectionOpen', 'orders.approvedSectionClosed', completedOrders.length);
-            bindAcc('acc-declined', 'acc-declined-body',
-                'orders.declinedSectionOpen', 'orders.declinedSectionClosed', declinedOrders.length);
-
-            // 5/4: 「もっと見る」ボタン
-            document.querySelectorAll('.show-more-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const targetId = btn.dataset.target;
-                    const target = document.getElementById(targetId);
-                    if (target) target.style.display = 'block';
-                    btn.style.display = 'none';
-                });
-            });
-
+            listEl.innerHTML = html;
             scrollToHashTarget();
         }
 
@@ -1374,16 +1428,18 @@
         const orderStates = {}; // { orderId: 'approve' | 'decline' }
         const declineReasons = {}; // { orderId: 'reason text' }
 
-        function bindEvents(orders) {
-            // アコーディオン開閉
-            document.querySelectorAll('.order-row[data-toggle]').forEach(row => {
-                row.addEventListener('click', (e) => {
-                    // 既に開いているカードの中のリンク/ボタンは無視
-                    if (e.target.closest('a,button,input,textarea')) return;
-                    const card = row.closest('.order-card');
-                    if (card) card.classList.toggle('expanded');
+        function bindEvents(orders, opts = {}) {
+            // アコーディオン開閉（詳細ビュー②ではトグル無効＝常時展開）
+            if (opts.bindToggle !== false) {
+                document.querySelectorAll('.order-row[data-toggle]').forEach(row => {
+                    row.addEventListener('click', (e) => {
+                        // 既に開いているカードの中のリンク/ボタンは無視
+                        if (e.target.closest('a,button,input,textarea')) return;
+                        const card = row.closest('.order-card');
+                        if (card) card.classList.toggle('expanded');
+                    });
                 });
-            });
+            }
 
             // ラジオ切り替え
             document.querySelectorAll('.radio-option').forEach(el => {
@@ -1446,8 +1502,8 @@
                             declineReason: fullReason
                         });
 
-                        // 在庫復元・FCM通知はCloud Functionsが自動処理
-                        location.reload();
+                        // 在庫復元・FCM通知はCloud Functionsが自動処理。一覧（A案フィード）へ戻す
+                        location.href = '/pages/farmer/orders.html';
                     } catch (err) {
                         console.error(err);
                     } finally {
@@ -1517,7 +1573,15 @@
             if (btn) btn.disabled = true;
             loading.classList.add('show');
             try {
-                await updateDoc(doc(db, 'orders', orderId), { status: 'approved' });
+                // #142/#143 競合ロック：トランザクションで status==pending を確認してから承認。
+                //   先に買い手キャンセルが成立していれば（status!=='pending'）弾く＝二重成立しない。
+                await runTransaction(db, async (tx) => {
+                    const ref = doc(db, 'orders', orderId);
+                    const snap = await tx.get(ref);
+                    if (!snap.exists()) throw new Error('notfound');
+                    if (snap.data().status !== 'pending') throw new Error('not_pending');
+                    tx.update(ref, { status: 'approved' });
+                });
                 // 6/4 #126: 配送管理チャットの起点に「注文が承認されました」システム行を残す
                 //   type:'status' なので onMessageCreated は返信todo/FCM を作らない（承認FCMはステータス変更側で送信）
                 try {
@@ -1534,10 +1598,16 @@
                 location.href = `/pages/farmer/delivery.html?id=${orderId}`;
             } catch (err) {
                 console.error(err);
-                if (btn) btn.disabled = false;
-                document.getElementById('approve-modal-ok').disabled = false;
                 loading.classList.remove('show'); document.body.classList.add('app-ready');
                 closeApproveModal();
+                if (err.message === 'not_pending') {
+                    // 買い手が先にキャンセル → 承認は弾く
+                    alert(i18next.t('orders.approveFailedCancelled'));
+                    location.href = '/pages/farmer/orders.html';
+                } else {
+                    if (btn) btn.disabled = false;
+                    document.getElementById('approve-modal-ok').disabled = false;
+                }
             }
         });
 

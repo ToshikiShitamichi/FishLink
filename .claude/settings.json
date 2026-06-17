@@ -81,7 +81,19 @@
       "Bash(git --no-pager diff --stat CLAUDE.md)",
       "Bash(node -e \"const c=require\\('fs'\\).readFileSync\\('pages/admin/settings.html','utf8'\\); const re=/getElementById\\\\\\('backfill-tradecount-btn'\\\\\\)/g; console.log\\('button handler refs:', \\(c.match\\(re\\)||[]\\).length\\); console.log\\('button el present:', c.includes\\('id=\\\\\"backfill-tradecount-btn\\\\\"'\\)\\)\")",
       "Bash(node -e \"['ja','en','km'].forEach\\(f=>JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/'+f+'.json','utf8'\\)\\)\\);console.log\\('OK'\\)\")",
-      "Bash(git --no-pager log --oneline -5)"
+      "Bash(git --no-pager log --oneline -5)",
+      "Bash(grep -E \"\\\\.js$|firestore\")",
+      "Bash(grep -n 'function renderOrders\\\\|function renderOrderCard\\\\|function isOrderExpired\\\\|function fmtDeliveryDate\\\\|id=\"orders-list\"\\\\|id=\"approve-modal\"\\\\|approve-modal-ok\\\\|updateDoc\\(doc\\(db, .orders., orderId\\), { status\\\\|runTransaction\\\\|addEventListener\\\\|<style>\\\\|</style>\\\\|<body>\\\\|class=\"bottom\\\\|response-section\\\\|decline-panel\\\\|previewBonusFor\\\\|function renderOrders\\\\|const inProgress\\\\|accordion-header\\\\|allOrders =' pages/farmer/orders.html)",
+      "Bash(node _i18ncheck.cjs)",
+      "Bash(grep -n \"緑\\\\|青\\\\|green\\\\|blue\\\\|CTA\\\\|reset\" C:\\\\\\\\work\\\\\\\\FishLink\\\\\\\\CLAUDE.md)",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(git blame *)",
+      "Bash(cat > *)",
+      "Bash(grep -v \"//\")"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }

@@ -220,7 +220,7 @@
             text-align: center;
             font-size: 12px;
             font-weight: 700;
-            color: #0d6e4c;
+            color: var(--color-cta);
             text-decoration: none;
             padding: 6px;
         }
@@ -333,7 +333,7 @@
         }
         .qty-display:focus {
             outline: none;
-            border-color: var(--color-primary);
+            border-color: var(--color-cta);
             background: #fff;
         }
         /* number input の上下スピナー非表示（モバイルで触感を統一） */
@@ -365,9 +365,10 @@
         }
 
         .gut-btn.active {
-            border: 2px solid #16a34a;
-            background: #f0fdf4;
-            color: #166534;
+            /* #140: 選択状態＝青（緑=GAqP/成功/送料無料 専用） */
+            border: 2px solid var(--color-cta);
+            background: var(--color-cta-lt);
+            color: var(--color-cta);
             font-weight: 600;
         }
 
@@ -426,7 +427,8 @@
         }
 
         .price-line__value.discount {
-            color: #16a34a;
+            /* #140: 割引＝amber（緑=GAqP/成功/送料無料 専用・カート明細と統一） */
+            color: #b36a00;
         }
 
         .price-total {

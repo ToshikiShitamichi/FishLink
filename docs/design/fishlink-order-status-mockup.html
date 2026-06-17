@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>買い手 注文状況（A案）— モック</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:760px; margin-bottom:22px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro b { color:#0B5FB0; }
+
+  .col { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .lab { font-size:13px; font-weight:800; background:#FFF; padding:8px 14px; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:center; max-width:380px; }
+  .lab .t { color:#5A6470; font-weight:500; display:block; margin-top:3px; font-size:11.5px; }
+
+  .phone { width:390px; height:800px; background:#F7F9FB; border-radius:34px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+  .hd { background:#FFF; padding:12px 16px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:8px; }
+  .hd .lg { font-weight:800; color:#0B5FB0; font-size:15px; }
+  .hd .sp { margin-left:auto; font-size:13px; color:#5A6470; }
+  .tt { text-align:center; font-weight:800; font-size:17px; padding:10px 0 2px; }
+  .bd { flex:1; overflow-y:auto; padding:8px 14px 26px; }
+
+  .sh { font-size:14px; font-weight:800; margin:14px 0 9px; display:flex; align-items:center; gap:7px; }
+  .sh .n { background:#EEF1F4; color:#5A6470; font-size:11px; font-weight:800; padding:1px 9px; border-radius:10px; }
+  .sh.act { color:#D14343; }
+  .sh.act .n { background:#FDECEA; color:#D14343; }
+  .sh.hist { color:#5A6470; font-size:13px; }
+
+  .c { background:#FFF; border:1px solid #EAEEF2; border-radius:14px; padding:13px; margin-bottom:11px; }
+  .c.urgent { border-color:#F3C0BD; box-shadow:0 0 0 2px #FBE3E1 inset; }
+  .ctop { display:flex; gap:11px; }
+  .th { width:54px; height:54px; border-radius:9px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); flex:0 0 auto; }
+  .ci { flex:1; min-width:0; }
+  .nm { font-size:15px; font-weight:800; }
+  .fl { font-size:10.5px; color:#0B5FB0; margin-top:2px; }
+  .meta { font-size:11.5px; color:#5A6470; margin-top:3px; }
+  .badge { font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:10px; height:fit-content; }
+  .badge.pay { background:#FFF3DC; color:#B36A00; }
+  .badge.dec { background:#FDECEA; color:#D14343; }
+  .badge.confirm { background:#EEF1F4; color:#5A6470; }
+  .badge.deliv { background:#EAF2FB; color:#0B5FB0; }
+  .price { font-size:21px; font-weight:800; margin-top:8px; }
+  .warn { display:flex; align-items:center; gap:6px; background:#FDECEA; color:#D14343; font-size:12.5px; font-weight:800; padding:8px 11px; border-radius:9px; margin-top:9px; }
+  .note { background:#F7F9FB; border:1px solid #EAEEF2; border-radius:9px; padding:9px 11px; font-size:12px; color:#5A6470; margin-top:9px; line-height:1.5; }
+  .statusline { display:flex; align-items:center; gap:6px; background:#F0F4F8; color:#42566B; font-size:12px; font-weight:700; padding:8px 11px; border-radius:9px; margin-top:9px; }
+  .btn { display:block; text-align:center; font-size:13px; font-weight:800; padding:11px; border-radius:10px; margin-top:10px; }
+  .btn.pri { background:#0B5FB0; color:#FFF; }
+  .btn.sec { background:#FFF; color:#0B5FB0; border:1.5px solid #0B5FB0; }
+  .closebtn { display:block; text-align:center; font-size:12.5px; font-weight:700; color:#9AA3B0; padding:8px; margin-top:2px; }
+
+  .histrow { display:flex; align-items:center; gap:12px; background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:13px 14px; }
+  .histrow .hi { font-size:18px; }
+  .histrow .ht { flex:1; }
+  .histrow .h1 { font-size:13.5px; font-weight:800; }
+  .histrow .h2 { font-size:11.5px; color:#5A6470; margin-top:3px; }
+  .histrow .hg { color:#9AA3B0; font-weight:800; font-size:16px; }
+
+  .nav { background:#FFF; border-top:1px solid #EEF1F4; display:flex; padding:8px 0; }
+  .nav .it { flex:1; text-align:center; font-size:10.5px; color:#9AA3B0; }
+  .nav .it.on { color:#0B5FB0; font-weight:800; }
+  .nav .it .ic { font-size:17px; display:block; margin-bottom:1px; }
+
+  /* 購入・取引 */
+  .stage { display:flex; flex-wrap:wrap; gap:26px; justify-content:center; align-items:flex-start; }
+  .ctrl { display:flex; gap:8px; align-items:center; padding:2px 0 12px; }
+  .period { font-size:13px; font-weight:800; padding:8px 14px; border-radius:18px; border:1px solid #CDD8E3; background:#FFF; color:#0B5FB0; display:flex; align-items:center; gap:7px; }
+  .period .ar { color:#9AA3B0; font-size:11px; }
+  .chip { font-size:12.5px; font-weight:700; padding:8px 14px; border-radius:18px; border:1px solid #DCE3EA; background:#FFF; color:#33414E; }
+  .chip.dec2 { color:#C2410C; border-color:#F0C9B0; }
+  .chip.dec2.on { background:#C2410C; color:#FFF; border-color:#C2410C; }
+  .sm { background:#FFF; border:1px solid #EAEEF2; border-radius:12px; padding:13px; margin-bottom:13px; }
+  .sm .smt { display:flex; gap:8px; }
+  .sm .smc { flex:1; text-align:center; }
+  .sm .smc .v { font-size:16px; font-weight:800; }
+  .sm .smc .v.amt { color:#0B5FB0; }
+  .sm .smc .v .u { font-size:10px; color:#5A6470; font-weight:600; }
+  .sm .smc .l { font-size:10px; color:#5A6470; margin-top:3px; }
+  .lcard { background:#FFF; border:1px solid #EAEEF2; border-radius:14px; padding:12px; margin-bottom:10px; display:flex; gap:11px; align-items:center; }
+  .lcard .lth { width:52px; height:52px; border-radius:9px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); flex-shrink:0; }
+  .lcard .lci { flex:1; min-width:0; }
+  .lcard .badge { float:right; }
+  .badge.done { background:#EAEFF3; color:#42566B; }
+  .badge.cancel { background:#EEF1F4; color:#7A8593; }
+  .lcard .ldate { font-size:11.5px; color:#C2620E; font-weight:700; }
+  .lcard .lname { font-size:14px; font-weight:800; margin-top:2px; }
+  .lcard .lsub { font-size:11.5px; color:#5A6470; margin-top:2px; }
+  .lcard .lsub .shop { color:#0B5FB0; font-weight:700; }
+  .lcard .lamt { font-size:11.5px; color:#5A6470; margin-top:4px; }
+  .lcard .lamt b { color:#1A1A1A; font-size:13px; }
+  .lcard .chev { color:#C2CCD6; font-size:20px; font-weight:700; }
+  .dechead { background:#FFF; border:1px solid #EAEEF2; border-radius:12px; padding:14px; margin-bottom:13px; text-align:center; }
+  .dechead .v { font-size:18px; font-weight:800; color:#C2410C; }
+  .dechead .l { font-size:11px; color:#5A6470; margin-top:3px; }
+  .dreason { background:#F7F9FB; border:1px solid #EAEEF2; border-radius:9px; padding:8px 11px; font-size:12px; color:#5A6470; margin-top:10px; }
+  .dreason b { color:#33414E; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>買い手（レストラン）「注文状況」— A案（農家側のミラー）</h1>
+  <p>構造＝<b>対応が必要 → 進行中 → 「購入履歴を見る」1行</b>。買い手固有：<b>対応が必要＝お支払い待ち（KHQR・最重要）＋辞退された注文（再注文）</b>／進行中＝農家確認中・出荷・配達中（待つ）／履歴＝完了・過去の辞退は<b>購入・取引</b>へ。<b>CTAは青</b>（お支払いへ進む/再注文/配送状況を確認）、<b>赤は「支払期限を過ぎています」注記だけ</b>。</p>
+</div>
+
+<div class="stage">
+
+<div class="col">
+  <div class="lab">① 注文状況（A案）<span class="t">対応が必要［お支払い待ち＋辞退］→ 進行中 → 購入履歴1行</span></div>
+  <div class="phone">
+    <div class="hd"><span class="lg">🐟 FISHLINK</span><span class="sp">🌐 日本語　🔔12　✓✓7　👤</span></div>
+    <div class="tt">注文状況</div>
+    <div class="bd">
+
+      <div class="sh act">対応が必要 <span class="n">2</span></div>
+
+      <!-- お支払い待ち（最重要） -->
+      <div class="c urgent">
+        <div class="ctop">
+          <div class="th"></div>
+          <div class="ci">
+            <span class="badge pay" style="float:right">お支払い待ち</span>
+            <div class="nm">パンガシウス（8 head/kg）5kg</div>
+            <div class="fl">FL-260612-001</div>
+            <div class="meta">🏠 大星農場 ・ 6/13（金）7:00–8:00</div>
+            <div class="price">58,525 KHR</div>
+          </div>
+        </div>
+        <div class="warn">⏰ 支払期限を過ぎています</div>
+        <button class="btn pri">お支払いへ進む</button>
+      </div>
+
+      <!-- 辞退された注文（再注文） -->
+      <div class="c">
+        <div class="ctop">
+          <div class="th"></div>
+          <div class="ci">
+            <span class="badge dec" style="float:right">辞退済み</span>
+            <div class="nm">ヒレナマズ（5-7 head/kg）5kg</div>
+            <div class="fl">FL-260611-001</div>
+            <div class="meta">🏠 タケオ養殖場 ・ 6/12（木）7:00–8:00</div>
+          </div>
+        </div>
+        <div class="note">農家に在庫切れで辞退されました。別の農家から同じ魚を再注文できます。</div>
+        <button class="btn pri">同じ魚を再注文する</button>
+        <div class="closebtn">× 閉じる</div>
+      </div>
+
+      <div class="sh">進行中 <span class="n">2</span></div>
+
+      <!-- 農家確認中 -->
+      <div class="c">
+        <div class="ctop">
+          <div class="th"></div>
+          <div class="ci">
+            <span class="badge confirm" style="float:right">農家確認中</span>
+            <div class="nm">レッドティラピア（3 head/kg）5kg</div>
+            <div class="fl">FL-260612-008</div>
+            <div class="meta">🏠 クメール養殖 ・ 6/14（土）6:00–7:00</div>
+          </div>
+        </div>
+        <div class="statusline">⏳ 農家が在庫を確認しています</div>
+      </div>
+
+      <!-- 配達中 -->
+      <div class="c">
+        <div class="ctop">
+          <div class="th"></div>
+          <div class="ci">
+            <span class="badge deliv" style="float:right">配達中</span>
+            <div class="nm">ナイルティラピア（3 head/kg）10kg</div>
+            <div class="fl">FL-260611-006</div>
+            <div class="meta">🏠 メコン淡水魚 ・ 6/13（金）11:00–12:00</div>
+          </div>
+        </div>
+        <button class="btn sec">配送状況を確認</button>
+      </div>
+
+      <div class="sh hist">履歴</div>
+      <div class="histrow">
+        <span class="hi">🧾</span>
+        <div class="ht"><div class="h1">購入履歴を見る</div><div class="h2">完了 22 ・ 辞退・キャンセル 9</div></div>
+        <span class="hg">›</span>
+      </div>
+
+    </div>
+    <div class="nav">
+      <div class="it"><span class="ic">🏠</span>ホーム</div>
+      <div class="it"><span class="ic">🐟</span>魚一覧</div>
+      <div class="it"><span class="ic">🛒</span>カート</div>
+      <div class="it on"><span class="ic">🚚</span>注文状況</div>
+    </div>
+  </div>
+</div>
+
+<!-- ② 購入・取引（通常） -->
+<div class="col">
+  <div class="lab">② 購入・取引（通常）<span class="t">注文状況「購入履歴を見る」/マイページ「購入確認」の着地・期間▾＋辞退・軽いリスト</span></div>
+  <div class="phone">
+    <div class="hd"><span style="font-size:18px">←</span><span class="lg">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+    <div class="tt">購入・取引</div>
+    <div class="bd">
+      <div class="ctrl"><button class="period">過去1か月 <span class="ar">▾</span></button><span class="chip dec2">辞退・キャンセル</span></div>
+      <div class="sm"><div class="smt">
+        <div class="smc"><div class="v amt">512,400<span class="u"> KHR</span></div><div class="l">購入額</div></div>
+        <div class="smc"><div class="v">11<span class="u"> 件</span></div><div class="l">取引数</div></div>
+        <div class="smc"><div class="v">46,582<span class="u"> KHR</span></div><div class="l">平均単価</div></div>
+      </div></div>
+
+      <div class="lcard"><div class="lth"></div><div class="lci">
+        <span class="badge done">取引完了</span>
+        <div class="ldate">📅 6/8（日）6:00–7:00</div>
+        <div class="lname">キノボリウオ（10 head/kg）5kg</div>
+        <div class="lsub">🏠 <span class="shop">大星農場</span></div>
+        <div class="lamt">支払額 <b>42,000 KHR</b></div>
+      </div><span class="chev">›</span></div>
+
+      <div class="lcard"><div class="lth"></div><div class="lci">
+        <span class="badge done">取引完了</span>
+        <div class="ldate">📅 6/4（木）7:00–8:00</div>
+        <div class="lname">レッドティラピア（3 head/kg）5kg</div>
+        <div class="lsub">🏠 <span class="shop">クメール養殖</span></div>
+        <div class="lamt">支払額 <b>48,963 KHR</b></div>
+      </div><span class="chev">›</span></div>
+
+      <div class="lcard"><div class="lth"></div><div class="lci">
+        <span class="badge done">取引完了</span>
+        <div class="ldate">📅 5/30（金）6:00–7:00</div>
+        <div class="lname">ナイルティラピア（3 head/kg）10kg</div>
+        <div class="lsub">🏠 <span class="shop">メコン淡水魚</span></div>
+        <div class="lamt">支払額 <b>71,200 KHR</b></div>
+      </div><span class="chev">›</span></div>
+
+      <div class="lcard"><div class="lth"></div><div class="lci">
+        <span class="badge done">取引完了</span>
+        <div class="ldate">📅 5/26（月）7:00–8:00</div>
+        <div class="lname">ヒレナマズ（5-7 head/kg）5kg</div>
+        <div class="lsub">🏠 <span class="shop">タケオ養殖場</span></div>
+        <div class="lamt">支払額 <b>54,050 KHR</b></div>
+      </div><span class="chev">›</span></div>
+
+      <span class="closebtn" style="color:#0B5FB0">もっと見る</span>
+    </div>
+  </div>
+</div>
+
+<!-- ③ 購入・取引（辞退選択時） -->
+<div class="col">
+  <div class="lab">③ 購入・取引（辞退選択時）<span class="t">辞退チップON＝件数＋断られた理由リスト</span></div>
+  <div class="phone">
+    <div class="hd"><span style="font-size:18px">←</span><span class="lg">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+    <div class="tt">購入・取引</div>
+    <div class="bd">
+      <div class="ctrl"><button class="period">過去1か月 <span class="ar">▾</span></button><span class="chip dec2 on">辞退・キャンセル</span></div>
+      <div class="dechead">
+        <div class="v">成立しなかった注文 9件</div>
+        <div class="l">農家の辞退・自分のキャンセルの記録（購入には含まれません）</div>
+      </div>
+
+      <div class="c">
+        <div class="ctop"><div class="th"></div><div class="ci">
+          <span class="badge dec" style="float:right">辞退済み</span>
+          <div class="nm">ヒレナマズ（5-7 head/kg）5kg</div>
+          <div class="fl">FL-260611-001</div>
+          <div class="meta">🏠 タケオ養殖場 ・ 6/12（木）7:00–8:00</div>
+        </div></div>
+        <div class="dreason">農家の辞退 ・ 理由：<b>在庫が足りない</b></div>
+      </div>
+
+      <div class="c">
+        <div class="ctop"><div class="th"></div><div class="ci">
+          <span class="badge cancel" style="float:right">キャンセル</span>
+          <div class="nm">シルバーバーブ（10 head/kg）5kg</div>
+          <div class="fl">FL-260606-002</div>
+          <div class="meta">🏠 大星農場 ・ 6/6（金）6:00–7:00</div>
+        </div></div>
+        <div class="dreason">自分でキャンセル（農家の承認前）</div>
+      </div>
+
+      <div class="c">
+        <div class="ctop"><div class="th"></div><div class="ci">
+          <span class="badge dec" style="float:right">辞退済み</span>
+          <div class="nm">パンガシウス（8 head/kg）5kg</div>
+          <div class="fl">FL-260610-001</div>
+          <div class="meta">🏠 大星農場 ・ 6/11（水）6:00–7:00</div>
+        </div></div>
+        <div class="dreason">理由：<b>納品時間に対応できない</b></div>
+      </div>
+
+      <div class="c">
+        <div class="ctop"><div class="th"></div><div class="ci">
+          <span class="badge dec" style="float:right">辞退済み</span>
+          <div class="nm">レッドティラピア（3 head/kg）5kg</div>
+          <div class="fl">FL-260607-003</div>
+          <div class="meta">🏠 クメール養殖 ・ 6/8（日）6:00–7:00</div>
+        </div></div>
+        <div class="dreason">理由：<b>配送が難しい</b></div>
+      </div>
+
+      <span class="closebtn" style="color:#0B5FB0">もっと見る（あと4件）</span>
+    </div>
+  </div>
+</div>
+
+</div>
+
+</body>
+</html>

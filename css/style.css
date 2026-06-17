@@ -521,7 +521,8 @@ body.app-ready .loading-overlay.show {
 }
 
 .bottom-nav__item.active {
-    color: var(--color-primary);
+    /* #140: アクティブ＝青（緑=GAqP/成功/送料無料 専用・両アプリ共通） */
+    color: var(--color-cta);
 }
 
 .bottom-nav__icon {

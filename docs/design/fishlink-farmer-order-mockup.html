@@ -53,6 +53,62 @@
   .accordion { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:13px 14px; margin-bottom:10px; font-size:13px; font-weight:700; color:#3A4250; display:flex; align-items:center; gap:6px; }
   .accordion .ac-c { color:#5A6470; font-weight:600; }
 
+  /* ① A案リスト（対応が必要→進行中→取引履歴1行） */
+  .sec-h2 { font-size:14px; font-weight:800; margin:14px 0 9px; display:flex; align-items:center; gap:7px; }
+  .sec-h2 .n { background:#EEF1F4; color:#5A6470; font-size:11px; font-weight:800; padding:1px 9px; border-radius:10px; }
+  .sec-h2.act { color:#D14343; }
+  .sec-h2.act .n { background:#FDECEA; color:#D14343; }
+  .sec-h2.hist { color:#5A6470; font-size:13px; }
+  .ocard.urgent { border-color:#F3C0BD; box-shadow:0 0 0 2px #FBE3E1 inset; }
+  .badge.deliv { background:#EAF2FB; color:#0B5FB0; }
+  .badge.gray { background:#EEF1F4; color:#5A6470; }
+  .badge.arrived { background:#E0F2EF; color:#0B7A6B; }
+  .deadline { display:flex; align-items:center; gap:6px; background:#FDECEA; color:#D14343; font-size:12.5px; font-weight:800; padding:8px 11px; border-radius:9px; margin-top:10px; }
+  .arrivenote { display:flex; align-items:center; gap:6px; background:#F0F4F8; color:#42566B; font-size:12px; font-weight:700; padding:8px 11px; border-radius:9px; margin-top:10px; }
+  .histrow { display:flex; align-items:center; gap:12px; background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:13px 14px; }
+  .histrow .hi { font-size:18px; }
+  .histrow .ht { flex:1; }
+  .histrow .h1 { font-size:13.5px; font-weight:800; }
+  .histrow .h2 { font-size:11.5px; color:#5A6470; margin-top:3px; }
+  .histrow .hg { color:#9AA3B0; font-weight:800; font-size:16px; }
+
+  /* ⑥ 売上・取引 */
+  .ctrl { display:flex; gap:8px; align-items:center; padding:2px 0 12px; }
+  .period { font-size:13px; font-weight:800; padding:8px 14px; border-radius:18px; border:1px solid #CDD8E3; background:#FFF; color:#0B5FB0; display:flex; align-items:center; gap:7px; }
+  .period .ar { color:#9AA3B0; font-size:11px; }
+  .chip { font-size:12.5px; font-weight:700; padding:8px 14px; border-radius:18px; border:1px solid #DCE3EA; background:#FFF; color:#33414E; }
+  .chip.dec { color:#C2410C; border-color:#F0C9B0; }
+  .chip.dec.on { background:#C2410C; color:#FFF; border-color:#C2410C; }
+  .dechead { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:14px; margin-bottom:13px; text-align:center; }
+  .dechead .v { font-size:18px; font-weight:800; color:#C2410C; }
+  .dechead .l { font-size:11px; color:#5A6470; margin-top:3px; }
+  .badge.declined { background:#FDECEA; color:#D14343; }
+  .lreason { background:#F7F9FB; border:1px solid #EEF1F4; border-radius:9px; padding:8px 11px; font-size:12px; color:#5A6470; margin-top:10px; }
+  .lreason b { color:#33414E; }
+  .sm { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:13px; margin-bottom:13px; }
+  .sm .smt { display:flex; gap:8px; }
+  .sm .smc { flex:1; text-align:center; }
+  .sm .smc .v { font-size:16px; font-weight:800; }
+  .sm .smc .v.amt { color:#0B5FB0; }
+  .sm .smc .v .u { font-size:10px; color:#5A6470; font-weight:600; }
+  .sm .smc .l { font-size:10px; color:#5A6470; margin-top:3px; }
+  .sm .pend { margin-top:11px; padding-top:10px; border-top:1px dashed #E2E8EF; font-size:12px; color:#B36A00; font-weight:700; text-align:center; }
+  .sm .pend .note { color:#9AA3B0; font-weight:500; font-size:11px; }
+  .lcard { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:12px; margin-bottom:10px; display:flex; gap:11px; align-items:center; }
+  .lcard .lth { width:52px; height:52px; border-radius:9px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); flex-shrink:0; }
+  .lcard .lci { flex:1; min-width:0; }
+  .lcard .badge { float:right; }
+  .badge.paywait { background:#FFF3DC; color:#B36A00; }
+  .badge.txdone { background:#EAEFF3; color:#42566B; }
+  .badge.cancel { background:#EEF1F4; color:#7A8593; }
+  .lcard .ldate { font-size:11.5px; color:#C2620E; font-weight:700; }
+  .lcard .lname { font-size:14px; font-weight:800; margin-top:2px; }
+  .lcard .lsub { font-size:11.5px; color:#5A6470; margin-top:2px; }
+  .lcard .lsub .shop { color:#0B5FB0; font-weight:700; }
+  .lcard .lamt { font-size:11.5px; color:#5A6470; margin-top:4px; }
+  .lcard .lamt b { color:#1A1A1A; font-size:13px; }
+  .lcard .chev { color:#C2CCD6; font-size:20px; font-weight:700; }
+
   /* 詳細：行 */
   .det-photo { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
   .det-photo .dp-img { width:54px; height:54px; border-radius:10px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); flex-shrink:0; }
@@ -127,20 +183,47 @@
   .modal .mbtn.cancel { background:#ECEEF0; color:#5A6470; }
   .modal .mbtn.ok { background:#0B5FB0; color:#FFF; }
 
-  /* 配送管理：チャット */
+  /* 配送管理：チャット（chat-mock と同期） */
   .chat-head { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:11px 13px; margin-bottom:10px; }
   .chat-head .ch-name { font-size:14px; font-weight:800; }
-  .chat-head .ch-sub { font-size:11px; color:#5A6470; margin-top:2px; }
+  .chat-head .ch-sub { font-size:11px; color:#5A6470; margin-top:3px; }
   .chat-head .ch-loc { font-size:12px; color:#0B5FB0; font-weight:700; margin-top:6px; }
-  .bubble { max-width:78%; border-radius:14px; padding:9px 12px; font-size:13px; margin-bottom:8px; line-height:1.5; }
-  .bubble.me { background:#DCE9F8; margin-left:auto; }
-  .bubble.them { background:#FFF; border:1px solid #EEF1F4; }
-  .bubble .au { font-size:13px; }
-  .bubble .tm { font-size:10px; color:#9AA3B0; text-align:right; margin-top:2px; }
+
+  /* 日付区切り（D） */
+  .date-sep { display:flex; align-items:center; gap:10px; margin:8px 0 12px; color:#9AA3B0; font-size:11px; font-weight:600; }
+  .date-sep::before, .date-sep::after { content:""; flex:1; height:1px; background:#DDE3E9; }
+
+  /* 会話バブル */
+  .bubble { max-width:78%; border-radius:14px; padding:9px 12px; font-size:13px; margin-bottom:9px; line-height:1.5; }
+  .bubble.me { background:#DCE9F8; margin-left:auto; border-bottom-right-radius:4px; }
+  .bubble.them { background:#FFF; border:1px solid #EEF1F4; margin-right:auto; border-bottom-left-radius:4px; }
+  .bubble .tm { font-size:10px; color:#9AA3B0; text-align:right; margin-top:3px; }
+
+  /* 音声メッセージ（E：▶＋波形＋秒数） */
+  .voice { display:flex; align-items:center; gap:9px; }
+  .voice .vp { width:26px; height:26px; border-radius:50%; background:#0B5FB0; color:#FFF; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
+  .wave { display:flex; align-items:center; gap:2px; height:20px; }
+  .wave i { width:2.5px; background:#7FA8D4; border-radius:2px; display:block; }
+  .bubble.them .wave i { background:#9AB4D0; }
+  .voice .vdur { font-size:11px; color:#5A6470; font-weight:600; }
+
+  /* ステータスのシステム行（B：中央・淡色・ラインアイコン） */
+  .sys { width:fit-content; max-width:88%; margin:4px auto 12px; text-align:center; background:#EAF2FB; color:#0B5FB0; border:1px solid #D5E6F8; border-radius:14px; padding:7px 14px; font-size:12px; font-weight:700; }
+  .sys .ic { display:inline-block; vertical-align:-2px; margin-right:5px; }
+  .sys .ic svg { width:14px; height:14px; display:block; }
+  .sys .st { font-weight:600; color:#5A8AC0; margin-left:6px; }
+  .sys.warn { background:#FFF4E2; color:#B36A00; border-color:#F3D998; }
+  .sys.warn .st { color:#C79350; }
+
+  /* 配送ステータス送信ブロック（農家側のみ・押下制御B） */
   .status-send { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:11px 12px; margin-top:8px; }
   .status-send .ss-t { font-size:12px; font-weight:800; color:#5A6470; margin-bottom:8px; }
   .status-send .ss-btns { display:flex; flex-wrap:wrap; gap:7px; }
-  .status-send .ss-b { border:1px solid #C5DBF2; background:#EAF2FB; color:#0B5FB0; border-radius:9px; padding:8px 12px; font-size:12px; font-weight:700; cursor:pointer; }
+  .status-send .ss-b { border:1px solid #DDE3E9; background:#F5F8FB; color:#5A6470; border-radius:9px; padding:8px 12px; font-size:12px; font-weight:700; cursor:pointer; }
+  .status-send .ss-b.next { border:1.5px solid #0B5FB0; background:#EAF2FB; color:#0B5FB0; }
+  .status-send .ss-b.warn { border:1px solid #F3D998; background:#FFF7E6; color:#B36A00; }
+  .status-send .ss-b.done { opacity:.5; text-decoration:line-through; }
+
   .msg-input { display:flex; gap:8px; align-items:center; margin-top:8px; }
   .msg-input .mi-box { flex:1; border:1px solid #DDE3E9; border-radius:20px; padding:9px 14px; font-size:13px; color:#AEB6C0; background:#FFF; }
   .msg-input .mi-send { background:#0B5FB0; color:#FFF; border-radius:18px; padding:9px 16px; font-size:13px; font-weight:800; }
@@ -152,54 +235,84 @@
   <h1>FISHLINK 農家側 — 注文確認 / 承認・辞退 / 配送管理（モック）</h1>
   <p>反映：手数料は<b>通常5%（−1,875）を出しキャンペーンで戻す</b>形（ラベルと額のズレ解消）／評価は<b>★93%（40件）</b>（小数廃止）／<b>魚単価は分解表示（魚単価7,000＋内臓処理500）</b>／CTAは<b>青</b>（オレンジ廃止）／承認確認は<b>自前モーダル</b>（標準ダイアログ置換）。</p>
   <p>承認期限＝<b>1時間（運営パラメータ）＋10分前リマインド</b>・期限切れは<b>自動辞退</b>。辞退は<b>理由を構造化選択</b>。部分承認は<b>MVPは二択維持</b>（数量の部分承認は次フェーズ）。送料は<b>農家へ全額パススルー</b>（手数料は魚代のみ）。レビューは<b>完了後のみ解禁</b>。</p>
+  <p><b>【2026-06-11 注文確認リスト再設計＝A案・優先フィード型】</b>①＝<b>対応が必要（承認待ち・要約カード＋承認期限＋「対応する」→詳細②）→ 進行中（準備中/配送中/到着・「配送管理へ」）→ 「取引履歴を見る」1行</b>。承認待ちの全詳細インライン展開を廃止／配達日グルーピング廃止（承認期限順）／到着＝進行中に「到着」バッジ＋「お受け取り・お支払いをお待ちください」。<b>⑥＝売上・取引</b>（注文確認「取引履歴を見る」とマイページ「売上確認」の着地を統合）＝期間 ▾（本日/過去1週間/過去1か月/日付指定/すべて）＋辞退チップ／サマリ＝<b>受取額（手取り）</b>＋うち送金待ち（ある時だけ・本日夕方に送金予定）／<b>軽いリスト＝状態・金額のみ・タップで送金状況画面</b>（送金状況/レビュー送信/問題報告はそこ）／辞退選択時は件数＋理由リスト。</p>
 </div>
 
 <div class="stage">
 
-  <!-- ① 注文確認リスト -->
+  <!-- ① 注文確認リスト（A案・優先フィード型） -->
   <div class="phone-wrap">
-    <div class="phone-label">① 注文確認リスト <span class="tag">本日の対応＋送金待ち/完了/辞退</span></div>
+    <div class="phone-label">① 注文確認リスト <span class="tag">対応が必要→進行中→取引履歴1行（A案）</span></div>
     <div class="phone">
       <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp">🔔 ✓✓ 🌐 👤</span></div>
-      <div class="f-title">注文内容を確認</div>
+      <div class="f-title">注文確認</div>
       <div class="f-body">
-        <div class="today-head">📋 本日の対応（2件）</div>
 
-        <div class="ocard">
+        <div class="sec-h2 act">対応が必要 <span class="n">1</span></div>
+        <div class="ocard urgent">
           <div class="oc-top">
             <div class="oc-img"></div>
             <div class="oc-main">
-              <div class="oc-date">📅 6/1 7:00–8:00</div>
-              <div class="oc-name">レッドティラピア 5kg</div>
-              <div class="oc-rest">🏬 test_restaurant5 (takeo)</div>
-              <div class="oc-fl">FL-260601-003</div>
+              <div class="oc-date">📅 6/12（木）7:00–8:00</div>
+              <div class="oc-name">ヒレナマズ（5-7 head/kg）5kg</div>
+              <div class="oc-rest">🏬 レストラン・アンコール</div>
+              <div class="oc-fl">FL-260611-001</div>
             </div>
             <span class="badge wait">承認待ち</span>
           </div>
-          <div class="oc-actions"><button class="btn pri full">注文内容を確認して対応する</button></div>
+          <div class="deadline">⏰ 承認期限 15:24 ・ あと60分</div>
+          <div class="oc-actions"><button class="btn pri full">対応する</button></div>
         </div>
 
+        <div class="sec-h2">進行中 <span class="n">3</span></div>
         <div class="ocard">
           <div class="oc-top">
             <div class="oc-img"></div>
             <div class="oc-main">
-              <div class="oc-date">📅 5/26 7:00–8:00</div>
-              <div class="oc-name">ヒレナマズ 5kg</div>
-              <div class="oc-rest">🏬 test_restaurant5 (takeo)</div>
-              <div class="oc-fl">FL-260526-002</div>
+              <div class="oc-date">📅 6/11（水）6:00–7:00</div>
+              <div class="oc-name">レッドティラピア（3 head/kg）5kg</div>
+              <div class="oc-rest">🏬 クメールキッチン</div>
+              <div class="oc-fl">FL-260610-004</div>
             </div>
-            <span class="badge prep">準備中</span>
+            <span class="badge deliv">配送中</span>
           </div>
-          <div class="oc-actions">
-            <button class="btn pri full">配送管理へ</button>
-            <div class="row2"><button class="btn sec">問題を報告</button></div>
+          <div class="oc-actions"><button class="btn sec full">配送管理へ</button></div>
+        </div>
+        <div class="ocard">
+          <div class="oc-top">
+            <div class="oc-img"></div>
+            <div class="oc-main">
+              <div class="oc-date">📅 6/12（木）6:00–7:00</div>
+              <div class="oc-name">パンガシウス（8 head/kg）8kg</div>
+              <div class="oc-rest">🏬 アンコール食堂</div>
+              <div class="oc-fl">FL-260611-005</div>
+            </div>
+            <span class="badge gray">準備中</span>
           </div>
-          <div class="amt-note" style="margin-top:8px;">※ レビューの送信は「完了」後に表示されます</div>
+          <div class="oc-actions"><button class="btn sec full">配送管理へ</button></div>
+        </div>
+        <div class="ocard">
+          <div class="oc-top">
+            <div class="oc-img"></div>
+            <div class="oc-main">
+              <div class="oc-date">📅 6/11（水）11:00–12:00</div>
+              <div class="oc-name">ナイルティラピア（3 head/kg）10kg</div>
+              <div class="oc-rest">🏬 サクラ食堂</div>
+              <div class="oc-fl">FL-260610-006</div>
+            </div>
+            <span class="badge arrived">📍 到着</span>
+          </div>
+          <div class="arrivenote">📦 お受け取り・お支払いをお待ちください</div>
+          <div class="oc-actions"><button class="btn sec full">配送管理へ</button></div>
         </div>
 
-        <div class="accordion">▸ 送金待ち <span class="ac-c">（14件）</span></div>
-        <div class="accordion">▸ 完了済み <span class="ac-c">（3件）</span></div>
-        <div class="accordion">▸ 辞退済み <span class="ac-c">（10件）</span></div>
+        <div class="sec-h2 hist">履歴</div>
+        <div class="histrow">
+          <span class="hi">🧾</span>
+          <div class="ht"><div class="h1">取引履歴を見る</div><div class="h2">送金待ち 12 ・ 完了 4 ・ 辞退・キャンセル 13</div></div>
+          <span class="hg">›</span>
+        </div>
+
       </div>
       <div class="botnav"><div class="nv"><span class="ic">🐟</span>投稿一覧</div><div class="nv"><span class="ic">➕</span>出品する</div><div class="nv on"><span class="ic">📑</span>注文確認</div></div>
     </div>
@@ -326,25 +439,173 @@
     <div class="phone-label">⑤ 配送管理 <span class="tag">チャット＋ステータス送信＋配送完了</span></div>
     <div class="phone">
       <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">📞 🌐</span></div>
-      <div class="f-body" style="padding-bottom:200px;">
+      <div class="f-body" style="padding-bottom:280px;">
         <div class="chat-head">
-          <div class="ch-name">ヒレナマズ 5kg ・ test_restaurant5</div>
-          <div class="ch-sub">準備中 ・ 納品日 5/26 7:00–8:00 ・ FL-260526-002</div>
-          <div class="ch-loc">📍 takeo, Samraong ・ 地図を見る</div>
+          <div class="ch-name">レストラン・アンコール</div>
+          <div class="ch-sub">配達中 ・ レッドティラピア 5kg ・ 納品 6/4（水）7:00–8:00 ・ FL-260604-007</div>
+          <div class="ch-loc">📍 プノンペン, Daun Penh ・ 地図を見る</div>
         </div>
-        <div class="bubble them"><span class="au">🎤 ボイスメッセージ 0:07</span><div class="tm">5/26 17:32</div></div>
-        <div class="bubble me"><span class="au">🎤 ボイスメッセージ 0:06</span><div class="tm">5/31 09:33</div></div>
-        <div class="bubble me">準備を開始しました<div class="tm">6/1 11:06</div></div>
+
+        <div class="date-sep">6月4日（水）</div>
+
+        <div class="sys"><span class="ic"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3.2 8.6 6.4 11.8 12.8 4.4"/></svg></span>注文が承認されました <span class="st">6:02</span></div>
+
+        <div class="bubble me">おはようございます。本日分、これから準備します。<div class="tm">6:05</div></div>
+
+        <div class="sys"><span class="ic"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.3 L13.7 5.3 V10.7 L8 13.7 L2.3 10.7 V5.3 Z"/><path d="M2.4 5.4 L8 8.3 L13.6 5.4"/><path d="M8 8.3 V13.6"/></svg></span>出荷の準備を始めました <span class="st">6:18</span></div>
+
+        <div class="bubble them">よろしくお願いします🙏<div class="tm">6:20</div></div>
+
+        <div class="sys"><span class="ic"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 4.4 H9.4 V11 H1.8 Z"/><path d="M9.4 6.6 H12.2 L14.2 8.9 V11 H9.4 Z"/><circle cx="4.3" cy="12" r="1.25"/><circle cx="11.7" cy="12" r="1.25"/></svg></span>配達に向かっています <span class="st">6:40</span></div>
+
+        <div class="bubble me">
+          <div class="voice">
+            <span class="vp">▶</span>
+            <span class="wave"><i style="height:6px"></i><i style="height:12px"></i><i style="height:18px"></i><i style="height:9px"></i><i style="height:15px"></i><i style="height:7px"></i><i style="height:13px"></i><i style="height:5px"></i></span>
+            <span class="vdur">0:07</span>
+          </div>
+          <div class="tm">6:42</div>
+        </div>
+
+        <div class="sys warn"><span class="ic"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8.3" r="5.4"/><path d="M8 5.2 V8.3 L10.3 9.7"/></svg></span>少し遅れそうです <span class="st">6:55</span></div>
+
+        <div class="bubble them">了解です、お気をつけて。<div class="tm">6:57</div></div>
       </div>
       <div class="f-footer">
         <div class="status-send">
           <div class="ss-t">配送ステータスを送信</div>
           <div class="ss-btns">
-            <span class="ss-b">準備開始</span><span class="ss-b">配送開始</span><span class="ss-b">少し遅れそうです</span><span class="ss-b">到着</span>
+            <span class="ss-b done">準備開始</span><span class="ss-b done">配送開始</span><span class="ss-b warn">少し遅れそうです</span><span class="ss-b next">到着</span>
           </div>
         </div>
         <div class="msg-input"><span>📷 🎤</span><div class="mi-box">メッセージを入力…</div><span class="mi-send">送信</span></div>
         <button class="btn pri full" style="margin-top:10px;">配送完了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 売上・取引（取引履歴＋売上集計を統合） -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑥ 売上・取引 <span class="tag">注文確認「取引履歴を見る」/マイページ「売上確認」の着地・期間▾＋辞退・軽いリスト</span></div>
+    <div class="phone">
+      <div class="f-header"><span style="font-size:18px">←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 👤</span></div>
+      <div class="f-title">売上・取引</div>
+      <div class="f-body">
+        <div class="ctrl"><button class="period">過去1か月 <span class="ar">▾</span></button><span class="chip dec">辞退・キャンセル</span></div>
+        <div class="sm">
+          <div class="smt">
+            <div class="smc"><div class="v amt">623,676<span class="u"> KHR</span></div><div class="l">受取額</div></div>
+            <div class="smc"><div class="v">13<span class="u"> 件</span></div><div class="l">取引数</div></div>
+            <div class="smc"><div class="v">47,975<span class="u"> KHR</span></div><div class="l">平均単価</div></div>
+          </div>
+          <div class="pend">うち送金待ち 58,838 KHR <span class="note">・ 本日夕方に送金予定</span></div>
+        </div>
+
+        <div class="lcard"><div class="lth"></div><div class="lci">
+          <span class="badge paywait">送金待ち</span>
+          <div class="ldate">📅 5/22（金）7:00–8:00</div>
+          <div class="lname">ヒレナマズ（10 head/kg）5kg</div>
+          <div class="lsub">🏬 <span class="shop">レストラン・アンコール</span></div>
+          <div class="lamt">受取予定額 <b>58,838 KHR</b></div>
+        </div><span class="chev">›</span></div>
+
+        <div class="lcard"><div class="lth"></div><div class="lci">
+          <span class="badge txdone">取引完了</span>
+          <div class="ldate">📅 6/5（木）7:00–8:00</div>
+          <div class="lname">レッドティラピア（3 head/kg）5kg</div>
+          <div class="lsub">🏬 <span class="shop">クメールキッチン</span></div>
+          <div class="lamt">受取額 <b>48,963 KHR</b></div>
+        </div><span class="chev">›</span></div>
+
+        <div class="lcard"><div class="lth"></div><div class="lci">
+          <span class="badge txdone">取引完了</span>
+          <div class="ldate">📅 5/1（木）6:00–7:00</div>
+          <div class="lname">ヒレナマズ（10 head/kg）5kg</div>
+          <div class="lsub">🏬 <span class="shop">レストラン・アンコール</span></div>
+          <div class="lamt">受取額 <b>54,050 KHR</b></div>
+        </div><span class="chev">›</span></div>
+
+        <div class="lcard"><div class="lth"></div><div class="lci">
+          <span class="badge txdone">取引完了</span>
+          <div class="ldate">📅 4/28（月）7:00–8:00</div>
+          <div class="lname">パンガシウス（8 head/kg）8kg</div>
+          <div class="lsub">🏬 <span class="shop">アンコール食堂</span></div>
+          <div class="lamt">受取額 <b>71,200 KHR</b></div>
+        </div><span class="chev">›</span></div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑦ 売上・取引（「辞退」選択時） -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑦ 売上・取引（辞退選択時） <span class="tag">辞退チップON＝お金サマリ→件数＋理由リストに切替</span></div>
+    <div class="phone">
+      <div class="f-header"><span style="font-size:18px">←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 👤</span></div>
+      <div class="f-title">売上・取引</div>
+      <div class="f-body">
+        <div class="ctrl"><button class="period">過去1か月 <span class="ar">▾</span></button><span class="chip dec on">辞退・キャンセル</span></div>
+        <div class="dechead">
+          <div class="v">成立しなかった注文 13件</div>
+          <div class="l">自分の辞退・買い手のキャンセルの記録（売上には含まれません）</div>
+        </div>
+
+        <div class="ocard">
+          <div class="oc-top">
+            <div class="oc-img"></div>
+            <div class="oc-main">
+              <div class="oc-date">📅 6/11（水）6:00–7:00</div>
+              <div class="oc-name">パンガシウス（8 head/kg）5kg</div>
+              <div class="oc-rest">🏬 アンコール食堂</div>
+              <div class="oc-fl">FL-260610-001</div>
+            </div>
+            <span class="badge declined">辞退済み</span>
+          </div>
+          <div class="lreason">自分が辞退 ・ 理由：<b>在庫が足りない</b></div>
+        </div>
+
+        <div class="ocard">
+          <div class="oc-top">
+            <div class="oc-img"></div>
+            <div class="oc-main">
+              <div class="oc-date">📅 6/9（月）6:00–7:00</div>
+              <div class="oc-name">シルバーバーブ（10 head/kg）5kg</div>
+              <div class="oc-rest">🏬 レストラン・アンコール</div>
+              <div class="oc-fl">FL-260609-004</div>
+            </div>
+            <span class="badge cancel">キャンセル</span>
+          </div>
+          <div class="lreason">買い手がキャンセル（承認前）</div>
+        </div>
+
+        <div class="ocard">
+          <div class="oc-top">
+            <div class="oc-img"></div>
+            <div class="oc-main">
+              <div class="oc-date">📅 6/8（日）6:00–7:00</div>
+              <div class="oc-name">ナイルティラピア（3 head/kg）5kg</div>
+              <div class="oc-rest">🏬 レストラン・アンコール</div>
+              <div class="oc-fl">FL-260607-003</div>
+            </div>
+            <span class="badge declined">辞退済み</span>
+          </div>
+          <div class="lreason">辞退理由：<b>納品時間に対応できない</b></div>
+        </div>
+
+        <div class="ocard">
+          <div class="oc-top">
+            <div class="oc-img"></div>
+            <div class="oc-main">
+              <div class="oc-date">📅 6/4（木）6:00–7:00</div>
+              <div class="oc-name">レッドティラピア（3 head/kg）5kg</div>
+              <div class="oc-rest">🏬 クメールキッチン</div>
+              <div class="oc-fl">FL-260603-001</div>
+            </div>
+            <span class="badge declined">辞退済み</span>
+          </div>
+          <div class="lreason">辞退理由：<b>配送が難しい</b></div>
+        </div>
+
       </div>
     </div>
   </div>

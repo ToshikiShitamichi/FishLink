@@ -16,33 +16,65 @@
     <style>
         .sub-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
         .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
-        .tab-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-        .tab-chip { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--color-border); background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .tab-chip.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+
+        /* #142 売上・取引：期間ドロップダウン＋辞退・キャンセルチップ */
+        .pt-ctrl { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; position: relative; }
+        .pt-period { font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 18px; border: 1px solid var(--color-border); background: #fff; color: var(--color-cta); display: flex; align-items: center; gap: 7px; cursor: pointer; font-family: inherit; }
+        .pt-period .ar { color: #9aa3b0; font-size: 16px; }
+        .pt-pop { display: none; position: absolute; top: calc(100% + 4px); left: 0; background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .15); padding: 6px; min-width: 160px; z-index: 30; }
+        .pt-pop.show { display: block; }
+        .pt-pop__opt { padding: 9px 12px; font-size: 13px; border-radius: 8px; cursor: pointer; color: var(--color-text); }
+        .pt-pop__opt.active { background: var(--color-cta-lt); color: var(--color-cta); font-weight: 700; }
+        .pt-chip { font-size: 12.5px; font-weight: 700; padding: 8px 14px; border-radius: 18px; border: 1px solid #f0c9b0; background: #fff; color: #c2410c; cursor: pointer; font-family: inherit; }
+        .pt-chip.on { background: #c2410c; color: #fff; border-color: #c2410c; }
+
         .custom-range { display: none; gap: 8px; flex-wrap: wrap; background: #f8fafc; border-radius: 14px; padding: 10px; margin-bottom: 12px; align-items: flex-end; }
         .custom-range.show { display: flex; }
         .custom-range > div { flex: 1; min-width: 120px; }
         .custom-range label { font-size: 11px; color: var(--color-text-sub); }
         .custom-range input { width: 100%; border: 1px solid var(--color-border); border-radius: 10px; padding: 6px 8px; font-size: 16px; font-family: inherit; margin-top: 2px; }
-        .custom-range button { border: none; background: var(--color-primary); color: #fff; border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-        .summary-card { background: #f8fafc; border-radius: 14px; padding: 10px; }
-        .summary-card__label { font-size: 11px; color: var(--color-text-sub); }
-        .summary-card__value { font-size: 15px; font-weight: 700; margin-top: 2px; }
-        .trade-item { background: #fff; border: 1px solid var(--color-border); border-radius: 14px; padding: 12px; margin-bottom: 8px; }
-        .trade-item__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
-        .trade-item__date { font-size: 12px; color: var(--color-text-sub); }
-        .trade-item__counter { font-size: 14px; font-weight: 700; margin-top: 2px; }
-        .trade-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
-        .trade-badge.completed { background: #0f172a; color: #fff; }
-        .trade-badge.remitted { background: #ccfbf1; color: #115e59; }
-        .trade-badge.payment-confirmed { background: #dcfce7; color: #166534; }
-        .trade-badge.delivered { background: #fef3c7; color: #92400e; }
-        .trade-badge.other { background: #f1f5f9; color: #334155; }
-        .trade-item__row { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; }
-        .trade-item__row .k { color: var(--color-text-sub); }
-        .view-more { display: block; margin: 6px auto 0; background: #fff; border: 1px solid var(--color-border); border-radius: 12px; padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--color-text); }
-        .empty-small { text-align: center; padding: 20px; color: var(--color-text-sub); font-size: 13px; }
+        .custom-range button { border: none; background: var(--color-cta); color: #fff; border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+        /* サマリ（受取額＝手取り・青） */
+        .sm { background: #f8fafc; border: 1px solid var(--color-border); border-radius: 12px; padding: 13px; margin-bottom: 13px; }
+        .sm__row { display: flex; gap: 8px; }
+        .sm__c { flex: 1; text-align: center; }
+        .sm__v { font-size: 16px; font-weight: 800; }
+        .sm__v.amt { color: var(--color-cta); }
+        .sm__v .u { font-size: 10px; color: var(--color-text-sub); font-weight: 600; }
+        .sm__l { font-size: 10px; color: var(--color-text-sub); margin-top: 3px; }
+        .sm__pend { margin-top: 11px; padding-top: 10px; border-top: 1px dashed #e2e8ef; font-size: 12px; color: #b36a00; font-weight: 700; text-align: center; }
+        .sm__pend .note { color: #9aa3b0; font-weight: 500; font-size: 11px; }
+
+        /* 成立しなかった注文サマリ */
+        .dechead { background: #fff; border: 1px solid var(--color-border); border-radius: 12px; padding: 14px; margin-bottom: 13px; text-align: center; }
+        .dechead__v { font-size: 18px; font-weight: 800; color: #c2410c; }
+        .dechead__l { font-size: 11px; color: var(--color-text-sub); margin-top: 3px; }
+
+        /* 軽いカード */
+        .lcard { background: #fff; border: 1px solid var(--color-border); border-radius: 14px; padding: 12px; margin-bottom: 10px; display: flex; gap: 11px; align-items: center; }
+        .lcard.tap { cursor: pointer; }
+        .lcard__th { width: 52px; height: 52px; border-radius: 9px; background: #eef3f7; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #9dbed4; overflow: hidden; }
+        .lcard__th img { width: 100%; height: 100%; object-fit: cover; }
+        .lcard__th .material-symbols-outlined { font-size: 24px; }
+        .lcard__ci { flex: 1; min-width: 0; }
+        .lcard__badge { float: right; font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 10px; margin-left: 6px; }
+        .lcard__badge--paywait { background: #fff3dc; color: #b36a00; }
+        .lcard__badge--done { background: #eaeff3; color: #42566b; }
+        .lcard__badge--dec { background: #fdecea; color: #d14343; }
+        .lcard__badge--cancel { background: #eef1f4; color: #7a8593; }
+        .lcard__date { font-size: 11.5px; color: var(--color-text-sub); }
+        .lcard__name { font-size: 14px; font-weight: 800; margin-top: 2px; }
+        .lcard__shop { font-size: 11.5px; margin-top: 2px; color: var(--color-text-sub); }
+        .lcard__shop a { color: var(--color-cta); font-weight: 700; text-decoration: none; }
+        .lcard__amt { font-size: 11.5px; color: var(--color-text-sub); margin-top: 4px; }
+        .lcard__amt b { color: var(--color-text); font-size: 13px; }
+        .lcard__chev { color: #c2ccd6; font-size: 20px; font-weight: 700; flex-shrink: 0; }
+        .dreason { background: #f8fafc; border: 1px solid var(--color-border); border-radius: 9px; padding: 8px 11px; font-size: 12px; color: var(--color-text-sub); margin-top: 8px; }
+        .dreason b { color: #33414e; }
+
+        .view-more { display: block; margin: 6px auto 0; background: #fff; border: 1px solid var(--color-border); border-radius: 12px; padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--color-cta); }
+        .empty-small { text-align: center; padding: 28px 20px; color: var(--color-text-sub); font-size: 13px; }
     </style>
 </head>
 <body>
@@ -60,49 +92,56 @@
             </select>
         </div>
 
-        <div class="sub-page__title" data-i18n="account.salesTitle"></div>
+        <div class="sub-page__title" data-i18n="account.salesTradeTitle"></div>
 
         <div class="sub-page">
 
-        <div class="tab-row" id="period-tabs">
-            <button class="tab-chip active" data-period="today" data-i18n="account.tabToday"></button>
-            <button class="tab-chip" data-period="week" data-i18n="account.tabWeek"></button>
-            <button class="tab-chip" data-period="month" data-i18n="account.tabMonth"></button>
-            <button class="tab-chip" data-period="custom" data-i18n="account.tabCustom"></button>
-        </div>
-
-        <div class="custom-range" id="custom-range">
-            <div><label data-i18n="account.customFrom"></label><input type="date" id="range-from"></div>
-            <div><label data-i18n="account.customTo"></label><input type="date" id="range-to"></div>
-            <button type="button" id="range-apply" data-i18n="account.customApply"></button>
-        </div>
-
-        <div class="summary-grid">
-            <div class="summary-card">
-                <div class="summary-card__label" data-i18n="account.amountSales"></div>
-                <div class="summary-card__value" id="sum-amount">0 KHR</div>
+            <div class="pt-ctrl">
+                <button type="button" class="pt-period" id="period-btn">
+                    <span id="period-label"></span><span class="ar material-symbols-outlined">expand_more</span>
+                </button>
+                <button type="button" class="pt-chip" id="nd-chip" data-i18n="account.declineCancelChip"></button>
+                <div class="pt-pop" id="period-pop">
+                    <div class="pt-pop__opt" data-period="today" data-i18n="account.periodToday"></div>
+                    <div class="pt-pop__opt" data-period="week" data-i18n="account.periodWeek"></div>
+                    <div class="pt-pop__opt active" data-period="month" data-i18n="account.periodMonth"></div>
+                    <div class="pt-pop__opt" data-period="custom" data-i18n="account.periodCustom"></div>
+                    <div class="pt-pop__opt" data-period="all" data-i18n="account.periodAll"></div>
+                </div>
             </div>
-            <div class="summary-card">
-                <div class="summary-card__label" data-i18n="account.count"></div>
-                <div class="summary-card__value" id="sum-count">0</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-card__label" data-i18n="account.avgSales"></div>
-                <div class="summary-card__value" id="sum-avg">0 KHR</div>
-            </div>
-        </div>
 
-        <div id="trade-list"></div>
-        <button class="view-more" id="view-more" style="display:none;" data-i18n="account.viewMore"></button>
+            <div class="custom-range" id="custom-range">
+                <div><label data-i18n="account.customFrom"></label><input type="date" id="range-from"></div>
+                <div><label data-i18n="account.customTo"></label><input type="date" id="range-to"></div>
+                <button type="button" id="range-apply" data-i18n="account.customApply"></button>
+            </div>
+
+            <!-- 通常サマリ -->
+            <div class="sm" id="summary-money">
+                <div class="sm__row">
+                    <div class="sm__c"><div class="sm__v amt" id="sum-amount">0<span class="u"> KHR</span></div><div class="sm__l" data-i18n="account.receiveAmountSum"></div></div>
+                    <div class="sm__c"><div class="sm__v" id="sum-count">0</div><div class="sm__l" data-i18n="account.count"></div></div>
+                    <div class="sm__c"><div class="sm__v" id="sum-avg">0<span class="u"> KHR</span></div><div class="sm__l" data-i18n="account.avgSales"></div></div>
+                </div>
+                <div class="sm__pend" id="sum-pending" style="display:none;"></div>
+            </div>
+
+            <!-- 成立しなかった注文サマリ -->
+            <div class="dechead" id="summary-nd" style="display:none;">
+                <div class="dechead__v" id="nd-count"></div>
+                <div class="dechead__l" data-i18n="account.notCompletedNoteFarmer"></div>
+            </div>
+
+            <div id="trade-list"></div>
+            <button class="view-more" id="view-more" style="display:none;" data-i18n="account.viewMore"></button>
         </div>
     </div>
 
     <script type="module">
-        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
         import { db } from '/js/firebase-config.js';
         import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
-        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
         import { saveRenderState, loadRenderState, serializeTimestamps, reviveTimestamps } from '/js/render-cache.js';
 
         const loading = document.getElementById('loading');
@@ -110,8 +149,10 @@
         await initI18n();
         initLangSelector();
 
-        let allTrades = [];
-        let currentPeriod = 'today';
+        let completedTrades = [];   // 成立した取引（delivered/completed）
+        let ndTrades = [];          // 成立しなかった（declined/cancelled）
+        let currentPeriod = 'month';
+        let ndMode = false;
         let customFromMs = 0, customToMs = 0;
         let displayCount = 5;
 
@@ -120,49 +161,65 @@
             else setTimeout(() => waitForUserData(cb), 200);
         }
 
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
         const fmtKhr = n => `${Number(n || 0).toLocaleString()} KHR`;
-        function fmtDate(ts) {
-            const d = ts?.toDate?.() || new Date(ts || 0);
-            const y = d.getFullYear();
-            const mo = String(d.getMonth() + 1).padStart(2, '0');
-            const da = String(d.getDate()).padStart(2, '0');
-            const hh = String(d.getHours()).padStart(2, '0');
-            const mm = String(d.getMinutes()).padStart(2, '0');
-            return `${y}/${mo}/${da} ${hh}:${mm}`;
+        const WEEKDAY_SHORT = {
+            ja: ['日', '月', '火', '水', '木', '金', '土'],
+            en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            km: ['អា', 'ច', 'អ', 'ពុ', 'ព្រ', 'សុ', 'ស'],
+        };
+        function fmtDeliveryDate(iso) {
+            const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!m) return iso || '';
+            const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            const lang = (typeof i18next !== 'undefined' && i18next.language) || 'km';
+            const wd = (WEEKDAY_SHORT[lang] || WEEKDAY_SHORT.en)[d.getDay()];
+            return `${Number(m[2])}/${Number(m[3])}（${wd}）`;
         }
-        function statusBadge(o) {
-            if (o.adminStatus === 'done') return { cls: 'completed', label: i18next.t('account.statusCompleted') };
-            if (o.adminStatus === 'remitted') return { cls: 'remitted', label: i18next.t('account.statusRemitted') };
-            if (o.adminStatus === 'payment_confirmed') return { cls: 'payment-confirmed', label: i18next.t('account.statusPaymentConfirmed') };
-            // 4/28: delivered は廃止、両方とも「完了」として扱う
-            if (o.status === 'completed' || o.status === 'delivered') return { cls: 'delivered', label: i18next.t('account.statusCompleted') };
-            return { cls: 'other', label: i18next.t('account.statusOther') };
+        function fishLabel(key) {
+            return key ? (i18next.exists(`fish.${key}`) ? i18next.t(`fish.${key}`) : key).trim() : '';
         }
+        function fishNameWithQty(t) {
+            const items = Array.isArray(t.items) ? t.items : null;
+            if (items && items.length > 1) {
+                const first = items[0] || {};
+                return `${fishLabel(first.snapFishType)}${first.snapSize ? `（${first.snapSize} head/kg）` : ''} ${first.quantity || 0}kg`
+                    + ` <span style="color:var(--color-text-sub); font-weight:600;">${i18next.t('orders.otherItemsAddon', { n: items.length - 1 })}</span>`;
+            }
+            const size = t.snapSize ? `（${escapeHtml(t.snapSize)} head/kg）` : '';
+            return `${escapeHtml(fishLabel(t.snapFishType))}${size} ${t.quantity || 0}kg`;
+        }
+        function thumbHtml(t) {
+            const url = t.snapPhotoUrl || '';
+            return url ? `<img src="${escapeHtml(url)}" alt="" loading="lazy">` : `<span class="material-symbols-outlined">set_meal</span>`;
+        }
+        function periodLabel() {
+            return i18next.t(`account.period${currentPeriod.charAt(0).toUpperCase()}${currentPeriod.slice(1)}`);
+        }
+        const isRemitted = (o) => ['remitted', 'done'].includes(o.adminStatus);
 
         function filterByPeriod(trades) {
+            if (currentPeriod === 'all') return trades;
+            const inRange = (msStart, msEnd) => trades.filter(t => {
+                const ms = t.createdAt?.toMillis?.() || 0;
+                return ms >= msStart && ms <= msEnd;
+            });
             if (currentPeriod === 'today') {
                 const s = new Date(); s.setHours(0, 0, 0, 0);
                 const e = new Date(); e.setHours(23, 59, 59, 999);
-                return trades.filter(t => {
-                    const ms = t.createdAt?.toMillis?.() || 0;
-                    return ms >= s.getTime() && ms <= e.getTime();
-                });
+                return inRange(s.getTime(), e.getTime());
             }
             if (currentPeriod === 'week') {
                 const e = new Date(); e.setHours(23, 59, 59, 999);
-                const s = new Date(); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - 6); // 直近7日
-                return trades.filter(t => {
-                    const ms = t.createdAt?.toMillis?.() || 0;
-                    return ms >= s.getTime() && ms <= e.getTime();
-                });
+                const s = new Date(); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - 6);
+                return inRange(s.getTime(), e.getTime());
             }
             if (currentPeriod === 'month') {
                 const e = new Date(); e.setHours(23, 59, 59, 999);
-                const s = new Date(); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - 29); // 直近30日
-                return trades.filter(t => {
-                    const ms = t.createdAt?.toMillis?.() || 0;
-                    return ms >= s.getTime() && ms <= e.getTime();
-                });
+                const s = new Date(); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - 29);
+                return inRange(s.getTime(), e.getTime());
             }
             if (currentPeriod === 'custom') {
                 if (!customFromMs && !customToMs) return trades;
@@ -176,16 +233,73 @@
             return trades;
         }
 
+        function shopLink(t) {
+            const name = escapeHtml(t.restName || '');
+            if (!name) return '';
+            return t.restaurantId
+                ? `<a href="/pages/farmer/restaurant.html?id=${t.restaurantId}">${name}</a>`
+                : name;
+        }
+
         function render() {
-            const filtered = filterByPeriod(allTrades);
+            document.getElementById('period-label').textContent = periodLabel();
+            document.querySelectorAll('#period-pop .pt-pop__opt').forEach(o => o.classList.toggle('active', o.dataset.period === currentPeriod));
+            document.getElementById('nd-chip').classList.toggle('on', ndMode);
+            document.getElementById('summary-money').style.display = ndMode ? 'none' : 'block';
+            document.getElementById('summary-nd').style.display = ndMode ? 'block' : 'none';
+
+            const listEl = document.getElementById('trade-list');
+
+            if (ndMode) {
+                const filtered = filterByPeriod(ndTrades);
+                document.getElementById('nd-count').textContent = i18next.t('account.notCompletedCount', { count: filtered.length });
+                if (filtered.length === 0) {
+                    listEl.innerHTML = `<div class="empty-small">${i18next.t('account.emptyHistory')}</div>`;
+                    document.getElementById('view-more').style.display = 'none';
+                    return;
+                }
+                const shown = filtered.slice(0, displayCount);
+                listEl.innerHTML = shown.map(t => {
+                    const isCancel = t.status === 'cancelled';
+                    const badge = isCancel
+                        ? `<span class="lcard__badge lcard__badge--cancel">${i18next.t('account.cancelledBadge')}</span>`
+                        : `<span class="lcard__badge lcard__badge--dec">${i18next.t('delivery.declined')}</span>`;
+                    const reason = isCancel
+                        ? i18next.t('account.cancelByBuyer')
+                        : i18next.t('account.declineByFarmer', { reason: escapeHtml(t.declineReason || i18next.t('orders.declineReason1')) });
+                    return `
+                        <div class="lcard" style="flex-wrap:wrap;">
+                            <div class="lcard__th">${thumbHtml(t)}</div>
+                            <div class="lcard__ci">
+                                ${badge}
+                                <div class="lcard__date">${fmtDeliveryDate(t.deliveryDateIso || t.deliveryDate)} ${escapeHtml(t.deliveryTime || '')}</div>
+                                <div class="lcard__name">${fishNameWithQty(t)}</div>
+                                <div class="lcard__shop">${shopLink(t)}</div>
+                            </div>
+                            <div class="dreason" style="flex-basis:100%;">${reason}</div>
+                        </div>`;
+                }).join('');
+                document.getElementById('view-more').style.display = filtered.length > displayCount ? 'block' : 'none';
+                return;
+            }
+
+            // 通常（成立した売上＝受取額・手取り）
+            const filtered = filterByPeriod(completedTrades);
             const total = filtered.reduce((s, t) => s + (t.farmerReceiveAmount || 0), 0);
             const count = filtered.length;
             const avg = count > 0 ? Math.round(total / count) : 0;
-            document.getElementById('sum-amount').textContent = fmtKhr(total);
-            document.getElementById('sum-count').textContent = `${count}${i18next.t('account.countUnit')}`;
-            document.getElementById('sum-avg').textContent = fmtKhr(avg);
+            const pending = filtered.filter(t => !isRemitted(t)).reduce((s, t) => s + (t.farmerReceiveAmount || 0), 0);
+            document.getElementById('sum-amount').innerHTML = `${Number(total).toLocaleString()}<span class="u"> KHR</span>`;
+            document.getElementById('sum-count').textContent = `${count}`;
+            document.getElementById('sum-avg').innerHTML = `${Number(avg).toLocaleString()}<span class="u"> KHR</span>`;
+            const pendEl = document.getElementById('sum-pending');
+            if (pending > 0) {
+                pendEl.style.display = 'block';
+                pendEl.innerHTML = `${i18next.t('account.pendingRemit', { amount: fmtKhr(pending) })} <span class="note">・ ${i18next.t('account.remitTodayNote')}</span>`;
+            } else {
+                pendEl.style.display = 'none';
+            }
 
-            const listEl = document.getElementById('trade-list');
             if (filtered.length === 0) {
                 listEl.innerHTML = `<div class="empty-small">${i18next.t('account.emptyHistory')}</div>`;
                 document.getElementById('view-more').style.display = 'none';
@@ -193,51 +307,23 @@
             }
             const shown = filtered.slice(0, displayCount);
             listEl.innerHTML = shown.map(t => {
-                const b = statusBadge(t);
-                // 5/5 #5: 売上の品目（魚種・数量・内臓処理）が分かるよう明細表示
-                const items = Array.isArray(t.items) ? t.items : null;
-                const isMulti = items && items.length > 1;
-                let itemsHtml;
-                if (isMulti) {
-                    itemsHtml = items.map(it => {
-                        const itType = it.snapFishType || '';
-                        const itName = itType
-                            ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim()
-                            : '';
-                        const gutText = it.gutProcessing
-                            ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
-                            : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
-                        return `<div style="font-size:12px; color:#475569; padding:1px 0;">・${itName} ${it.quantity}kg・${gutText}</div>`;
-                    }).join('');
-                } else {
-                    const itType = t.snapFishType || '';
-                    const itName = itType
-                        ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim()
-                        : '';
-                    const gutText = t.gutProcessing
-                        ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
-                        : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
-                    itemsHtml = `<div style="font-size:13px; color:var(--color-text); padding:1px 0;">${itName} ${t.quantity || 0}kg・${gutText}</div>`;
-                }
-                // 5/27 #101 ④: 紹介ボーナス行を追加（適用済みのみ表示）
-                const referralBonus = Number(t.referralBonusAmount || 0);
-                const bonusRow = referralBonus > 0
-                    ? `<div class="trade-item__row"><span class="k">${i18next.t('order.referralBonus')}</span><span style="font-weight:600; color:#0d6e4c;">+${fmtKhr(referralBonus)}</span></div>`
-                    : '';
+                const remitted = isRemitted(t);
+                const badge = remitted
+                    ? `<span class="lcard__badge lcard__badge--done">${i18next.t('account.statusCompleted')}</span>`
+                    : `<span class="lcard__badge lcard__badge--paywait">${i18next.t('account.remitWaitBadge')}</span>`;
+                const amtLabel = remitted ? i18next.t('account.receiveAmountSum') : i18next.t('orders.receiveAmount');
                 return `
-                    <div class="trade-item">
-                        <div class="trade-item__head">
-                            <div>
-                                <div class="trade-item__date">${fmtDate(t.createdAt)}</div>
-                                <div class="trade-item__counter">${t.restName || ''}</div>
-                            </div>
-                            <span class="trade-badge ${b.cls}">${b.label}</span>
+                    <div class="lcard tap" data-id="${t.id}">
+                        <div class="lcard__th">${thumbHtml(t)}</div>
+                        <div class="lcard__ci">
+                            ${badge}
+                            <div class="lcard__date">${fmtDeliveryDate(t.deliveryDateIso || t.deliveryDate)} ${escapeHtml(t.deliveryTime || '')}</div>
+                            <div class="lcard__name">${fishNameWithQty(t)}</div>
+                            <div class="lcard__shop">${shopLink(t)}</div>
+                            <div class="lcard__amt">${amtLabel} <b>${fmtKhr(t.farmerReceiveAmount)}</b></div>
                         </div>
-                        <div style="margin:4px 0 6px;">${itemsHtml}</div>
-                        ${bonusRow}
-                        <div class="trade-item__row"><span class="k">${i18next.t('account.amountSales')}</span><span style="font-weight:600;">${fmtKhr(t.farmerReceiveAmount)}</span></div>
-                    </div>
-                `;
+                        <span class="lcard__chev">›</span>
+                    </div>`;
             }).join('');
             document.getElementById('view-more').style.display = filtered.length > displayCount ? 'block' : 'none';
         }
@@ -247,12 +333,15 @@
             if (!uid) return;
             const q = query(collection(db, 'orders'), where('farmerId', '==', uid), orderBy('createdAt', 'desc'));
             const snap = await getDocs(q);
-            allTrades = [];
+            completedTrades = [];
+            ndTrades = [];
             const restIds = new Set();
             snap.forEach(d => {
                 const o = d.data();
-                if (!['delivered', 'completed'].includes(o.status)) return;
-                allTrades.push({ id: d.id, ...o });
+                const t = { id: d.id, ...o };
+                if (['delivered', 'completed'].includes(o.status)) completedTrades.push(t);
+                else if (['declined', 'cancelled'].includes(o.status)) ndTrades.push(t);
+                else return;
                 if (o.restaurantId) restIds.add(o.restaurantId);
             });
             const restMap = {};
@@ -260,24 +349,39 @@
                 const s = await getDoc(doc(db, 'users', rid));
                 restMap[rid] = s.exists() ? s.data() : {};
             }));
-            allTrades.forEach(t => { t.restName = restMap[t.restaurantId]?.displayName || ''; });
+            [...completedTrades, ...ndTrades].forEach(t => { t.restName = restMap[t.restaurantId]?.displayName || ''; });
             render();
-            // 5/25 #91/#92 拡張: 次回訪問用にキャッシュ保存
             try {
-                saveRenderState('farmer_sales', { trades: serializeTimestamps(allTrades) });
+                saveRenderState('farmer_sales', {
+                    completed: serializeTimestamps(completedTrades),
+                    nd: serializeTimestamps(ndTrades),
+                });
             } catch (e) { /* ignore */ }
         }
 
+        // 取引カードのタップ → 送金状況画面（レビュー送信/問題報告はそこ）
+        document.getElementById('trade-list').addEventListener('click', (e) => {
+            if (e.target.closest('a')) return; // レストラン名リンクは自前で遷移
+            const card = e.target.closest('.lcard.tap');
+            if (card && card.dataset.id) location.href = `/pages/farmer/payment.html?id=${card.dataset.id}`;
+        });
+
         document.getElementById('view-more').addEventListener('click', () => { displayCount += 10; render(); });
-        document.getElementById('period-tabs').addEventListener('click', (e) => {
-            const btn = e.target.closest('button.tab-chip');
-            if (!btn) return;
-            currentPeriod = btn.dataset.period;
-            document.querySelectorAll('#period-tabs .tab-chip').forEach(c => c.classList.toggle('active', c === btn));
+
+        // 期間ドロップダウン
+        const periodPop = document.getElementById('period-pop');
+        document.getElementById('period-btn').addEventListener('click', (e) => { e.stopPropagation(); periodPop.classList.toggle('show'); });
+        document.addEventListener('click', () => periodPop.classList.remove('show'));
+        periodPop.addEventListener('click', (e) => {
+            const opt = e.target.closest('.pt-pop__opt');
+            if (!opt) return;
+            currentPeriod = opt.dataset.period;
+            periodPop.classList.remove('show');
             document.getElementById('custom-range').classList.toggle('show', currentPeriod === 'custom');
             displayCount = 5;
             render();
         });
+        document.getElementById('nd-chip').addEventListener('click', () => { ndMode = !ndMode; displayCount = 5; render(); });
         document.getElementById('range-apply').addEventListener('click', () => {
             const from = document.getElementById('range-from').value;
             const to = document.getElementById('range-to').value;
@@ -286,13 +390,15 @@
             displayCount = 5;
             render();
         });
+        onLanguageChange(() => render());
 
-        // 5/25 #91/#92 拡張: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
+        // 描画キャッシュ
         let cachedRendered = false;
         try {
             const cached = loadRenderState('farmer_sales');
-            if (cached?.trades?.length) {
-                allTrades = reviveTimestamps(cached.trades);
+            if (cached && (cached.completed || cached.nd)) {
+                completedTrades = reviveTimestamps(cached.completed || []);
+                ndTrades = reviveTimestamps(cached.nd || []);
                 render();
                 loading.classList.remove('show');
                 document.body.classList.add('app-ready');

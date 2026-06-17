@@ -397,6 +397,11 @@
                     if (orderStatus) {
                         await updateDoc(doc(db, 'orders', orderId), { status: orderStatus });
                         if (orderData) orderData.status = orderStatus;
+                    } else if (statusKind === 'arrived') {
+                        // #142: 到着＝注文ステータスは「配達中」のまま（spec §5）。
+                        //   農家の注文確認リストで「📍到着」バッジ＋受け取り待ち注記を出すため arrivedAt を記録。
+                        await updateDoc(doc(db, 'orders', orderId), { arrivedAt: serverTimestamp() });
+                        if (orderData) orderData.arrivedAt = true;
                     }
                 } catch (e) {
                     console.error('status send failed:', e);

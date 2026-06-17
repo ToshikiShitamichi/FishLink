@@ -144,13 +144,65 @@
             gap: 4px;
             margin-top: 10px;
             padding: 10px;
-            background: #0d6e4c; color: #fff;
+            background: var(--color-cta); color: #fff;
             border-radius: 10px;
             font-size: 13px; font-weight: 700;
             text-decoration: none;
         }
         .order-cta .material-symbols-outlined { font-size: 16px; }
         .order-cta--paid { background: #475569; }
+
+        /* #143 注文状況 A案フィード（対応が必要→進行中→購入履歴1行） */
+        .os-sec { display:flex; align-items:center; gap:7px; font-size:14px; font-weight:800; margin:16px 4px 9px; }
+        .os-sec__n { background:#eef1f4; color:#5a6470; font-size:11px; font-weight:800; padding:1px 9px; border-radius:10px; }
+        .os-sec--act { color:#d14343; }
+        .os-sec--act .os-sec__n { background:#fdecea; color:#d14343; }
+        .os-sec--hist { color:#5a6470; font-size:13px; }
+        .os-card { background:var(--color-surface); border:1px solid var(--color-border); border-radius:14px; padding:13px; margin-bottom:11px; display:block; text-decoration:none; color:inherit; }
+        .os-card--urgent { border-color:#f3c0bd; box-shadow:0 0 0 2px #fbe3e1 inset; }
+        .os-card__top { display:flex; gap:11px; }
+        .os-card__th { width:54px; height:54px; border-radius:9px; flex:0 0 auto; background:#eef3f7; display:flex; align-items:center; justify-content:center; color:#9dbed4; overflow:hidden; }
+        .os-card__th img { width:100%; height:100%; object-fit:cover; }
+        .os-card__th .material-symbols-outlined { font-size:26px; }
+        .os-card__ci { flex:1; min-width:0; }
+        .os-card__nm { font-size:15px; font-weight:800; }
+        .os-card__fl { font-size:10.5px; color:var(--color-cta); margin-top:2px; font-family:monospace; }
+        .os-card__meta { font-size:11.5px; color:var(--color-text-sub); margin-top:3px; }
+        .os-card__meta .material-symbols-outlined { font-size:13px; vertical-align:-2px; }
+        .os-badge { font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:10px; float:right; margin-left:6px; }
+        .os-badge--pay { background:#fff3dc; color:#b36a00; }
+        .os-badge--dec { background:#fdecea; color:#d14343; }
+        .os-badge--confirm { background:#eef1f4; color:#5a6470; }
+        .os-badge--deliv { background:var(--color-cta-lt); color:var(--color-cta); }
+        .os-amt { font-size:21px; font-weight:800; color:var(--color-cta); margin-top:8px; }
+        .os-warn { display:flex; align-items:center; gap:6px; background:#fdecea; color:#d14343; font-size:12.5px; font-weight:800; padding:8px 11px; border-radius:9px; margin-top:9px; }
+        .os-warn .material-symbols-outlined { font-size:16px; }
+        .os-note { background:var(--color-bg); border:1px solid var(--color-border); border-radius:9px; padding:9px 11px; font-size:12px; color:var(--color-text-sub); margin-top:9px; line-height:1.5; }
+        .os-statusline { display:flex; align-items:center; gap:6px; background:#f0f4f8; color:#42566b; font-size:12px; font-weight:700; padding:8px 11px; border-radius:9px; margin-top:9px; }
+        .os-statusline .material-symbols-outlined { font-size:16px; }
+        .os-btn { display:block; width:100%; box-sizing:border-box; text-align:center; font-size:13px; font-weight:800; padding:11px; border-radius:10px; margin-top:10px; border:none; cursor:pointer; font-family:inherit; text-decoration:none; }
+        .os-btn--pri { background:var(--color-cta); color:#fff; }
+        .os-btn--sec { background:var(--color-surface); color:var(--color-cta); border:1.5px solid var(--color-cta); }
+        .os-cancel { display:block; width:100%; text-align:center; font-size:12.5px; font-weight:700; color:var(--color-text-sub); background:none; border:none; padding:9px; margin-top:4px; cursor:pointer; font-family:inherit; }
+        .os-close { display:block; width:100%; text-align:center; font-size:12.5px; font-weight:700; color:#9aa3b0; padding:8px; margin-top:2px; cursor:pointer; background:none; border:none; font-family:inherit; }
+        .os-histrow { display:flex; align-items:center; gap:12px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:12px; padding:13px 14px; text-decoration:none; color:inherit; margin-bottom:11px; }
+        .os-histrow > .material-symbols-outlined { font-size:22px; color:var(--color-text-sub); }
+        .os-histrow__t { flex:1; }
+        .os-histrow__t1 { font-size:13.5px; font-weight:800; color:var(--color-text); }
+        .os-histrow__t2 { font-size:11.5px; color:var(--color-text-sub); margin-top:3px; }
+        .os-histrow__g { color:#c2ccd6; font-weight:800; font-size:18px; }
+        .os-allclear { display:flex; align-items:center; justify-content:center; gap:6px; color:#5a6470; font-size:13px; font-weight:700; padding:22px 12px; }
+        .os-allclear .material-symbols-outlined { color:var(--color-primary); font-size:20px; }
+        /* キャンセル確認モーダル（自前・標準ダイアログ置換） */
+        .os-modal-ov { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:60; display:none; align-items:center; justify-content:center; padding:24px; }
+        .os-modal-ov.show { display:flex; }
+        .os-modal { width:100%; max-width:360px; background:#fff; border-radius:16px; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,.25); }
+        .os-modal__t { font-size:16px; font-weight:800; margin-bottom:8px; }
+        .os-modal__b { font-size:13px; color:var(--color-text-sub); line-height:1.6; margin-bottom:14px; }
+        .os-modal__act { display:flex; gap:10px; }
+        .os-modal__btn { flex:1; border-radius:10px; padding:12px; font-size:14px; font-weight:800; border:none; cursor:pointer; font-family:inherit; }
+        .os-modal__btn--keep { background:#eceef0; color:#5a6470; }
+        .os-modal__btn--ok { background:var(--color-danger); color:#fff; }
     </style>
 </head>
 
@@ -222,6 +274,18 @@
         </a>
     </nav>
 
+    <!-- #143 注文キャンセル確認モーダル（農家の承認前のみ） -->
+    <div class="os-modal-ov" id="cancel-modal">
+        <div class="os-modal">
+            <div class="os-modal__t" data-i18n="orders.cancelModalTitle"></div>
+            <div class="os-modal__b" data-i18n="orders.cancelModalBody"></div>
+            <div class="os-modal__act">
+                <button type="button" class="os-modal__btn os-modal__btn--keep" id="cancel-modal-keep" data-i18n="orders.cancelModalKeep"></button>
+                <button type="button" class="os-modal__btn os-modal__btn--ok" id="cancel-modal-ok" data-i18n="orders.cancelModalOk"></button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
@@ -234,7 +298,8 @@
         // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
         import { saveRenderState, loadRenderState, serializeTimestamps, reviveTimestamps } from '/js/render-cache.js';
         import {
-            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc
+            collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc,
+            runTransaction, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 
         const loading = document.getElementById('loading');
@@ -260,162 +325,134 @@
             return `${yy}-${mm}-${dd}`;
         }
 
-        // お支払い待ちカード（強調版）：金額・支払期限を目立たせる
-        function renderPayNowItem(d, order, fishName) {
+        // ── #143 A案フィード 共通ヘルパー ──
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        const WEEKDAY_SHORT = {
+            ja: ['日', '月', '火', '水', '木', '金', '土'],
+            en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            km: ['អា', 'ច', 'អ', 'ពុ', 'ព្រ', 'សុ', 'ស'],
+        };
+        function fmtDeliveryDate(iso) {
+            const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!m) return iso || '';
+            const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            const lang = (typeof i18next !== 'undefined' && i18next.language) || 'km';
+            const wd = (WEEKDAY_SHORT[lang] || WEEKDAY_SHORT.en)[d.getDay()];
+            return `${Number(m[2])}/${Number(m[3])}（${wd}）`;
+        }
+        function thumbHtml(order) {
+            const url = order.snapPhotoUrl || '';
+            return url ? `<img src="${escapeHtml(url)}" alt="" loading="lazy">` : `<span class="material-symbols-outlined">set_meal</span>`;
+        }
+        function multiBadgeHtml(order) {
+            const itemCount = Array.isArray(order.items) ? order.items.length : 1;
+            return itemCount > 1
+                ? ` <span style="display:inline-block; margin-left:4px; padding:1px 8px; background:#eef1f4; color:#5a6470; border-radius:10px; font-size:10px; font-weight:700;">+${itemCount - 1} ${i18next.t('orders.otherItems')}</span>`
+                : '';
+        }
+        function metaLineHtml(order, farmerName) {
+            const parts = [];
+            if (farmerName) parts.push(`<span class="material-symbols-outlined">storefront</span> ${escapeHtml(farmerName)}`);
+            const dt = [fmtDeliveryDate(order.deliveryDateIso), order.deliveryTime || ''].filter(Boolean).join(' ');
+            if (dt) parts.push(dt);
+            return parts.join(' ・ ');
+        }
+
+        // 辞退カードの「対応が必要」からの片付け（localStorage・購入履歴には残る）
+        const DECLINED_DISMISS_KEY = 'fishlink_orders_declined_dismissed';
+        function getDismissedDeclined() {
+            try { return new Set(JSON.parse(localStorage.getItem(DECLINED_DISMISS_KEY) || '[]')); } catch (e) { return new Set(); }
+        }
+        function addDismissedDeclined(id) {
+            const s = getDismissedDeclined(); s.add(id);
+            try { localStorage.setItem(DECLINED_DISMISS_KEY, JSON.stringify([...s])); } catch (e) { /* ignore */ }
+        }
+
+        // お支払い待ち（urgent・最重要・支払金額＝青）
+        function renderPayNowCard(o) {
+            const { d, order, fishName, farmerName } = o;
             const orderNo = getOrderNumber({ id: d.id, ...order });
             const total = (order.totalAmount || 0).toLocaleString();
             const deadlineMs = order.paymentDeadline?.toMillis?.() || null;
             const isOverdue = deadlineMs && Date.now() > deadlineMs;
-            let deadlineLine = '';
-            if (deadlineMs) {
-                const dd = new Date(deadlineMs);
-                const hh = String(dd.getHours()).padStart(2, '0');
-                const mm = String(dd.getMinutes()).padStart(2, '0');
-                const label = isOverdue
-                    ? i18next.t('orders.deadlinePassedShort')
-                    : i18next.t('orders.payByTime', { time: `${hh}:${mm}` });
-                deadlineLine = `
-                    <div class="pay-now__deadline">
-                        <span class="material-symbols-outlined">schedule</span>
-                        ${label}
-                    </div>`;
-            }
-
-            const itemCount = Array.isArray(order.items) ? order.items.length : 1;
-            const multiBadge = itemCount > 1
-                ? ` <span style="display:inline-block; margin-left:4px; padding:1px 8px; background:#fef3c7; color:#92400e; border-radius:10px; font-size:10px; font-weight:700;">+${itemCount - 1} ${i18next.t('orders.otherItems')}</span>`
+            const warn = isOverdue
+                ? `<div class="os-warn"><span class="material-symbols-outlined">schedule</span>${i18next.t('orders.deadlinePassedShort')}</div>`
                 : '';
-
             return `
-                <a class="order-item pay-now ${isOverdue ? 'overdue' : ''}" id="order-${d.id}" href="/pages/restaurant/payment.html?id=${d.id}">
-                    <div class="order-item__top">
-                        <div class="order-item__fish">${fishName}${multiBadge}</div>
-                        <div class="order-item__status st-completed">${i18next.t('orders.payNow')}</div>
+                <a class="os-card os-card--urgent" href="/pages/restaurant/payment.html?id=${d.id}">
+                    <div class="os-card__top">
+                        <div class="os-card__th">${thumbHtml(order)}</div>
+                        <div class="os-card__ci">
+                            <span class="os-badge os-badge--pay">${i18next.t('orders.payWaitBadge')}</span>
+                            <div class="os-card__nm">${fishName}${multiBadgeHtml(order)}</div>
+                            <div class="os-card__fl">${orderNo}</div>
+                            <div class="os-card__meta">${metaLineHtml(order, farmerName)}</div>
+                            <div class="os-amt">${total} KHR</div>
+                        </div>
                     </div>
-                    <div style="font-size:11px; color:#94a3b8; font-family:monospace; margin-top:2px;">${orderNo}</div>
-                    <div class="order-item__meta" style="margin-top:6px;">
-                        ${order.quantity}kg · ${order.deliveryDate || ''} ${order.deliveryTime || ''}
-                    </div>
-                    <div class="pay-now__amount">${total} KHR</div>
-                    ${deadlineLine}
-                    <div class="pay-now__cta">${i18next.t('payment.goToPayment')}</div>
-                </a>
-            `;
+                    ${warn}
+                    <div class="os-btn os-btn--pri">${i18next.t('payment.goToPayment')}</div>
+                </a>`;
         }
 
-        function renderOrderItem(d, order, fishName, hasReview = false) {
-            // 4/28: delivered ステータス廃止。旧データ保護のため delivered は completed として表示
-            const effectiveStatus = order.status === 'delivered' ? 'completed' : order.status;
-            const statusKey = `delivery.${effectiveStatus}`;
-            const statusText = i18next.exists(statusKey) ? i18next.t(statusKey) : effectiveStatus;
-            const stClass = `st-${effectiveStatus}`;
-            const canTrack = ['approved', 'preparing', 'delivering'].includes(effectiveStatus);
-            const isCompleted = effectiveStatus === 'completed';
-            const isPending = order.status === 'pending';
-            let href = '#';
-            let actionLabel = '';
-            if (canTrack || isPending) {
-                href = `/pages/restaurant/delivery.html?id=${d.id}`;
-                actionLabel = isPending ? i18next.t('delivery.pendingBanner') : i18next.t('delivery.goTracking');
-            } else if (isCompleted) {
-                href = `/pages/restaurant/payment.html?id=${d.id}`;
-                actionLabel = order.paymentStatus === 'paid'
-                    ? i18next.t('payment.viewPayment')
-                    : i18next.t('payment.goToPayment');
-            }
-
-            // 4/28: 承認以降は常にレビュー・問題報告へ導線を出す（旧: 支払済み完了のみ）
-            const showReviewLink = ['approved', 'preparing', 'delivering', 'completed', 'delivered'].includes(order.status);
-
-            const itemCount = Array.isArray(order.items) ? order.items.length : 1;
-            const multiBadge = itemCount > 1
-                ? ` <span style="display:inline-block; margin-left:4px; padding:1px 8px; background:#fef3c7; color:#92400e; border-radius:10px; font-size:10px; font-weight:700;">+${itemCount - 1} ${i18next.t('orders.otherItems')}</span>`
-                : '';
-
-            // 5/1: レビュー済みなら無効化表示
-            const reviewBtn = hasReview
-                ? `<span class="order-action order-action--reviewed">
-                        <span class="material-symbols-outlined" style="font-size:14px;">check</span>
-                        ${i18next.t('review.reviewed')}
-                    </span>`
-                : `<a class="order-action order-action--review" href="/pages/restaurant/review.html?id=${d.id}">
-                        <span class="material-symbols-outlined" style="font-size:14px;">star</span>
-                        ${i18next.t('review.submit')}
-                    </a>`;
-            const reviewActionsHtml = showReviewLink ? `
-                <div class="order-actions">
-                    ${reviewBtn}
-                    <a class="order-action order-action--report" href="/pages/restaurant/report.html?id=${d.id}">
-                        <span class="material-symbols-outlined" style="font-size:14px;">flag</span>
-                        ${i18next.t('review.reportIssue')}
-                    </a>
-                </div>
-            ` : '';
-
-            // カード内のメイン CTA（配送状況へ／支払いへ／辞退時は再注文へ）
-            let ctaHtml = '';
-            const isDeclined = order.status === 'declined';
-            if (canTrack || isPending) {
-                const ctaIcon = isPending ? 'hourglass_top' : 'local_shipping';
-                ctaHtml = `
-                    <a class="order-cta" href="/pages/restaurant/delivery.html?id=${d.id}">
-                        <span class="material-symbols-outlined">${ctaIcon}</span>
-                        ${actionLabel}
-                    </a>`;
-            } else if (isCompleted) {
-                const isPaid = order.paymentStatus === 'paid';
-                ctaHtml = `
-                    <a class="order-cta ${isPaid ? 'order-cta--paid' : ''}" href="/pages/restaurant/payment.html?id=${d.id}">
-                        <span class="material-symbols-outlined">${isPaid ? 'receipt_long' : 'payments'}</span>
-                        ${actionLabel}
-                    </a>`;
-            } else if (isDeclined) {
-                // 辞退時：再注文へ誘導
-                ctaHtml = `
-                    <div style="margin-top:10px; padding:10px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:10px; color:#991b1b; font-size:13px; line-height:1.5;">
-                        ${i18next.t('orders.declinedNotice')}
-                    </div>
-                    <a class="order-cta" style="background:#0d6e4c;" href="/pages/restaurant/dashboard.html">
-                        <span class="material-symbols-outlined">refresh</span>
-                        ${i18next.t('orders.reorderCta')}
-                    </a>`;
-            }
-
-            // 5/4: 複数魚種注文の場合、各アイテムの明細を表示（魚種・数量・内臓処理）
-            const isMulti = Array.isArray(order.items) && order.items.length > 1;
-            let metaHtml;
-            if (isMulti) {
-                const itemRows = order.items.map(it => {
-                    const itType = it.snapFishType || '';
-                    const itName = itType
-                        ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim()
-                        : '';
-                    const gutText = it.gutProcessing
-                        ? `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutYes')}`
-                        : `${i18next.t('orders.gutProcessing')}${i18next.t('orders.gutNo')}`;
-                    return `<div style="font-size:12px; color:#475569; padding-left:4px;">・${itName} ${it.quantity}kg・${gutText}</div>`;
-                }).join('');
-                metaHtml = `
-                    <div class="order-item__meta">${order.deliveryDate || ''} ${order.deliveryTime || ''}</div>
-                    <div style="margin-top:4px;">${itemRows}</div>`;
-            } else {
-                metaHtml = `<div class="order-item__meta">${order.quantity}kg · ${order.deliveryDate || ''} ${order.deliveryTime || ''}</div>`;
-            }
-
+        // 辞退された注文（同じ魚を再注文／× 閉じる）
+        function renderDeclinedCard(o) {
+            const { d, order, fishName, farmerName } = o;
+            const orderNo = getOrderNumber({ id: d.id, ...order });
+            const fishType = order.snapFishType || '';
+            const reorderHref = fishType
+                ? `/pages/restaurant/fish-list.html?fishType=${encodeURIComponent(fishType)}`
+                : '/pages/restaurant/fish-list.html';
             return `
-                <div class="order-block${showReviewLink ? ' has-actions' : ''}">
-                    <div class="order-item" id="order-${d.id}">
-                        <div class="order-item__top">
-                            <div class="order-item__fish">${fishName}${multiBadge}</div>
-                            <div class="order-item__status ${stClass}">${statusText}</div>
+                <div class="os-card" id="order-${d.id}">
+                    <div class="os-card__top">
+                        <div class="os-card__th">${thumbHtml(order)}</div>
+                        <div class="os-card__ci">
+                            <span class="os-badge os-badge--dec">${i18next.t('delivery.declined')}</span>
+                            <div class="os-card__nm">${fishName}${multiBadgeHtml(order)}</div>
+                            <div class="os-card__fl">${orderNo}</div>
+                            <div class="os-card__meta">${metaLineHtml(order, farmerName)}</div>
                         </div>
-                        <div style="font-size:11px; color:#94a3b8; font-family:monospace; margin-top:2px;">${getOrderNumber({ id: d.id, ...order })}</div>
-                        ${metaHtml}
-                        ${ctaHtml}
                     </div>
-                    ${reviewActionsHtml}
-                </div>
-            `;
+                    <div class="os-note">${i18next.t('orders.declinedNotice')}</div>
+                    <a class="os-btn os-btn--pri" data-reorder-id="${d.id}" href="${reorderHref}">${i18next.t('orders.reorderSameFish')}</a>
+                    <button type="button" class="os-close" data-act="dismiss-declined" data-id="${d.id}">${i18next.t('orders.closeLabel')}</button>
+                </div>`;
+        }
+
+        // 進行中（農家確認中／出荷準備・配達中）
+        function renderInProgressCard(o) {
+            const { d, order, fishName, farmerName } = o;
+            const orderNo = getOrderNumber({ id: d.id, ...order });
+            const isPending = order.status === 'pending';
+            const badge = isPending
+                ? `<span class="os-badge os-badge--confirm">${i18next.t('orders.confirmingBadge')}</span>`
+                : `<span class="os-badge ${order.status === 'delivering' ? 'os-badge--deliv' : 'os-badge--confirm'}">${i18next.t('delivery.' + order.status)}</span>`;
+            const head = `
+                <div class="os-card__top">
+                    <div class="os-card__th">${thumbHtml(order)}</div>
+                    <div class="os-card__ci">
+                        ${badge}
+                        <div class="os-card__nm">${fishName}${multiBadgeHtml(order)}</div>
+                        <div class="os-card__fl">${orderNo}</div>
+                        <div class="os-card__meta">${metaLineHtml(order, farmerName)}</div>
+                    </div>
+                </div>`;
+            if (isPending) {
+                return `
+                    <div class="os-card" id="order-${d.id}">
+                        ${head}
+                        <div class="os-statusline"><span class="material-symbols-outlined">hourglass_top</span>${i18next.t('orders.farmerConfirming')}</div>
+                        <button type="button" class="os-cancel" data-act="cancel-order" data-id="${d.id}">${i18next.t('orders.cancelOrder')}</button>
+                    </div>`;
+            }
+            return `
+                <a class="os-card" href="/pages/restaurant/delivery.html?id=${d.id}">
+                    ${head}
+                    <div class="os-btn os-btn--sec">${i18next.t('delivery.goTracking')}</div>
+                </a>`;
         }
 
         const ORDERS_PAGE_SIZE = 30;
@@ -423,6 +460,7 @@
         let ordersHasMore = false;
         let ordersLoadingMore = false;
         let allOrdersCache = [];
+        const farmerNameCache = new Map();   // #143: farmerId -> 農家表示名（カード「🏬 農家名」用）
 
         // 5/25 #91/#92 拡張: 描画ロジックを fetch から分離。cached / fresh 両方から呼ぶ。
         //   allOrdersCache の各要素は { d:{id}, order, fishName, hasReview } 形式（d は Firestore doc snap 互換）
@@ -431,133 +469,110 @@
             if (!listEl) return;
             const allOrders = allOrdersCache;
 
-            const isCompletedStatus = (s) => s === 'completed' || s === 'delivered';
-            const isInProgress = (s) => ['pending', 'approved', 'preparing', 'delivering'].includes(s);
+            if (allOrders.length === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">local_shipping</span></div>
+                        <div>${i18next.t('orders.noOrdersYet')}</div>
+                        <a href="/pages/restaurant/fish-list.html" class="os-btn os-btn--pri" style="display:inline-block; width:auto; padding:11px 22px; margin-top:14px;">${i18next.t('orders.findFish')}</a>
+                    </div>`;
+                return;
+            }
 
-            const sortByPaymentDeadline = (a, b) => {
-                const da = a.order.paymentDeadline?.toMillis?.() || 0;
-                const dbb = b.order.paymentDeadline?.toMillis?.() || 0;
-                return da - dbb;
-            };
+            const isCompletedStatus = (s) => s === 'completed' || s === 'delivered';
+            const sortByPaymentDeadline = (a, b) =>
+                (a.order.paymentDeadline?.toMillis?.() || 0) - (b.order.paymentDeadline?.toMillis?.() || 0);
             const sortByDelivery = (a, b) => {
                 const da = a.order.deliveryDateIso || '';
                 const dbb = b.order.deliveryDateIso || '';
                 if (da !== dbb) return da.localeCompare(dbb);
                 return (a.order.deliveryTime || '').localeCompare(b.order.deliveryTime || '');
             };
-
-            const awaitingPayment = allOrders
-                .filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus !== 'paid')
-                .sort(sortByPaymentDeadline);
-            const inProgress = allOrders
-                .filter(o => isInProgress(o.order.status))
-                .sort(sortByDelivery);
-            const today = todayIsoKHM();
-            const inProgressToday = inProgress
-                .filter(o => (o.order.deliveryDateIso || '') && (o.order.deliveryDateIso || '') <= today);
-            const inProgressFuture = inProgress
-                .filter(o => (o.order.deliveryDateIso || '') > today || !o.order.deliveryDateIso);
             const sortByCreatedDesc = (a, b) =>
                 (b.order.createdAt?.toMillis?.() || 0) - (a.order.createdAt?.toMillis?.() || 0);
-            const completed = allOrders
-                .filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus === 'paid')
-                .sort(sortByCreatedDesc);
-            const declined = allOrders
-                .filter(o => o.order.status === 'declined')
-                .sort(sortByCreatedDesc);
 
-            listEl.innerHTML = '';
+            const dismissed = getDismissedDeclined();
+            const payNow = allOrders
+                .filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus !== 'paid')
+                .sort(sortByPaymentDeadline);
+            const declinedAll = allOrders.filter(o => o.order.status === 'declined');
+            const declinedVisible = declinedAll.filter(o => !dismissed.has(o.d.id)).sort(sortByCreatedDesc);
+            const confirming = allOrders.filter(o => o.order.status === 'pending').sort(sortByDelivery);
+            const shipping = allOrders.filter(o => ['approved', 'preparing', 'delivering'].includes(o.order.status)).sort(sortByDelivery);
+            const inProgress = [...confirming, ...shipping];
+            const completedPaid = allOrders.filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus === 'paid');
+            const cancelled = allOrders.filter(o => o.order.status === 'cancelled');
 
-            if (awaitingPayment.length > 0) {
-                listEl.innerHTML += `<div class="section-label payment-label">${i18next.t('orders.awaitingPaymentSection', { count: awaitingPayment.length })}</div>`;
-                awaitingPayment.forEach(o => {
-                    listEl.innerHTML += renderPayNowItem(o.d, o.order, o.fishName);
-                });
+            const actionCount = payNow.length + declinedVisible.length;
+            const ndCount = declinedAll.length + cancelled.length;
+            const doneCount = completedPaid.length;
+            const hasHistory = doneCount + ndCount > 0;
+
+            let html = '';
+            if (actionCount > 0) {
+                html += `<div class="os-sec os-sec--act">${i18next.t('orders.actionNeeded')} <span class="os-sec__n">${actionCount}</span></div>`;
+                html += payNow.map(renderPayNowCard).join('');
+                html += declinedVisible.map(renderDeclinedCard).join('');
             }
-
-            if (inProgressToday.length > 0) {
-                listEl.innerHTML += `<div class="section-label">${i18next.t('orders.todaySection', { count: inProgressToday.length })}</div>`;
-                inProgressToday.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName, o.hasReview); });
+            if (inProgress.length > 0) {
+                html += `<div class="os-sec">${i18next.t('orders.inProgressNow')} <span class="os-sec__n">${inProgress.length}</span></div>`;
+                html += inProgress.map(renderInProgressCard).join('');
             }
-
-            if (inProgressFuture.length > 0) {
-                listEl.innerHTML += `<div class="section-label">${i18next.t('orders.futureSection', { count: inProgressFuture.length })}</div>`;
-                inProgressFuture.forEach(o => { listEl.innerHTML += renderOrderItem(o.d, o.order, o.fishName, o.hasReview); });
+            if (actionCount === 0 && inProgress.length === 0) {
+                html += `<div class="os-allclear"><span class="material-symbols-outlined">check_circle</span>${i18next.t('orders.allClear')}</div>`;
             }
+            if (hasHistory) {
+                html += `<div class="os-sec os-sec--hist">${i18next.t('orders.historyLabel')}</div>`;
+                html += `
+                    <a class="os-histrow" href="/pages/restaurant/account/purchases.html">
+                        <span class="material-symbols-outlined">receipt_long</span>
+                        <div class="os-histrow__t">
+                            <div class="os-histrow__t1">${i18next.t('orders.purchaseHistoryLink')}</div>
+                            <div class="os-histrow__t2">${i18next.t('orders.purchaseHistoryCounts', { done: doneCount, nd: ndCount })}</div>
+                        </div>
+                        <span class="os-histrow__g">›</span>
+                    </a>`;
+            }
+            listEl.innerHTML = html;
 
-            const TRUNCATE_INITIAL = 3;
-            function renderTruncated(items, restId) {
-                if (items.length <= TRUNCATE_INITIAL) {
-                    return items.map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
+            listEl.querySelectorAll('[data-act="cancel-order"]').forEach(btn =>
+                btn.addEventListener('click', () => openCancelModal(btn.dataset.id)));
+            listEl.querySelectorAll('[data-act="dismiss-declined"]').forEach(btn =>
+                btn.addEventListener('click', () => { addDismissedDeclined(btn.dataset.id); renderAllOrders(); }));
+            listEl.querySelectorAll('a.os-btn[data-reorder-id]').forEach(a =>
+                a.addEventListener('click', () => addDismissedDeclined(a.dataset.reorderId)));
+        }
+
+        // 注文キャンセル（承認前のみ・競合ロック＝トランザクションで status==pending を確認・先に押した方が成立）
+        async function cancelOrder(orderId) {
+            const ref = doc(db, 'orders', orderId);
+            await runTransaction(db, async (tx) => {
+                const snap = await tx.get(ref);
+                if (!snap.exists()) throw new Error('notfound');
+                if (snap.data().status !== 'pending') throw new Error('not_pending');
+                tx.update(ref, { status: 'cancelled', cancelledAt: serverTimestamp(), cancelledBy: 'restaurant' });
+            });
+        }
+        function openCancelModal(orderId) {
+            const ov = document.getElementById('cancel-modal');
+            const okBtn = document.getElementById('cancel-modal-ok');
+            const keepBtn = document.getElementById('cancel-modal-keep');
+            ov.classList.add('show');
+            keepBtn.onclick = () => ov.classList.remove('show');
+            okBtn.onclick = async () => {
+                okBtn.disabled = true;
+                try {
+                    await cancelOrder(orderId);
+                    ov.classList.remove('show');
+                    await loadOrders();
+                } catch (e) {
+                    ov.classList.remove('show');
+                    alert(e.message === 'not_pending' ? i18next.t('orders.cancelFailedApproved') : i18next.t('payment.errorSubmit'));
+                    await loadOrders();
+                } finally {
+                    okBtn.disabled = false;
                 }
-                const initial = items.slice(0, TRUNCATE_INITIAL).map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
-                const rest = items.slice(TRUNCATE_INITIAL).map(o => renderOrderItem(o.d, o.order, o.fishName, o.hasReview)).join('');
-                const remainCount = items.length - TRUNCATE_INITIAL;
-                return `
-                    ${initial}
-                    <div id="${restId}" style="display:none;">${rest}</div>
-                    <button type="button" class="show-more-btn" data-target="${restId}"
-                        style="display:block; width:100%; padding:10px; margin-top:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; color:#475569; font-weight:600; font-size:13px; cursor:pointer; font-family:inherit;">
-                        ${i18next.t('orders.showMore', { count: remainCount })}
-                    </button>
-                `;
-            }
-
-            if (completed.length > 0) {
-                listEl.innerHTML += `
-                    <div class="accordion-header" id="acc-completed">${i18next.t('orders.approvedSectionClosed', { count: completed.length })}</div>
-                    <div class="accordion-body" id="acc-completed-body">${renderTruncated(completed, 'completed-rest')}</div>`;
-            }
-
-            if (declined.length > 0) {
-                listEl.innerHTML += `
-                    <div class="accordion-header" id="acc-declined">${i18next.t('orders.declinedSectionClosed', { count: declined.length })}</div>
-                    <div class="accordion-body" id="acc-declined-body">${renderTruncated(declined, 'declined-rest')}</div>`;
-            }
-
-            document.getElementById('acc-completed')?.addEventListener('click', function() {
-                const body = document.getElementById('acc-completed-body');
-                body.classList.toggle('open');
-                this.textContent = body.classList.contains('open')
-                    ? i18next.t('orders.approvedSectionOpen', { count: completed.length })
-                    : i18next.t('orders.approvedSectionClosed', { count: completed.length });
-            });
-            document.getElementById('acc-declined')?.addEventListener('click', function() {
-                const body = document.getElementById('acc-declined-body');
-                body.classList.toggle('open');
-                this.textContent = body.classList.contains('open')
-                    ? i18next.t('orders.declinedSectionOpen', { count: declined.length })
-                    : i18next.t('orders.declinedSectionClosed', { count: declined.length });
-            });
-
-            document.querySelectorAll('.show-more-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const targetId = btn.dataset.target;
-                    const target = document.getElementById(targetId);
-                    if (target) target.style.display = 'block';
-                    btn.style.display = 'none';
-                });
-            });
-
-            if (location.hash) {
-                let target;
-                try { target = document.querySelector(location.hash); } catch (e) { target = null; }
-                if (target) {
-                    const accBody = target.closest('.accordion-body');
-                    if (accBody && !accBody.classList.contains('open')) {
-                        const hdrId = accBody.id.replace('-body', '');
-                        document.getElementById(hdrId)?.click();
-                    }
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            target.style.transition = 'box-shadow 0.4s';
-                            target.style.boxShadow = '0 0 0 3px #fbbf24';
-                            setTimeout(() => { target.style.boxShadow = ''; }, 2500);
-                        });
-                    });
-                }
-            }
+            };
         }
 
         // 5/25 #91/#92 拡張: silent=true で spinner を出さない（cached 描画後の裏側 fresh fetch 用）
@@ -586,7 +601,8 @@
                 const listEl = document.getElementById('orders-list');
 
                 if (!append && snap.empty) {
-                    listEl.innerHTML = `<div class="empty-state"><div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">local_shipping</span></div><div>${i18next.t('orders.empty')}</div></div>`;
+                    allOrdersCache = [];
+                    renderAllOrders();   // #143: 完全新規＝「まだ注文がありません」＋魚を探す導線
                     document.getElementById('load-more-wrap').style.display = 'none';
                     return;
                 }
@@ -614,8 +630,20 @@
                     let fishName = fishTypeKey
                         ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey)
                         : '';
-                    return { d, order, fishName, hasReview: false };
+                    return { d, order, fishName, farmerName: '', hasReview: false };
                 });
+
+                // #143: 農家表示名を一括取得（カード「🏬 農家名」用・farmerNameCache でページ跨ぎ再利用）
+                const farmerIdsToFetch = [...new Set(
+                    newOrders.map(o => o.order.farmerId).filter(fid => fid && !farmerNameCache.has(fid))
+                )];
+                await Promise.all(farmerIdsToFetch.map(async fid => {
+                    try {
+                        const us = await getDoc(doc(db, 'users', fid));
+                        farmerNameCache.set(fid, us.exists() ? (us.data().displayName || '') : '');
+                    } catch (e) { farmerNameCache.set(fid, ''); }
+                }));
+                newOrders.forEach(o => { o.farmerName = farmerNameCache.get(o.order.farmerId) || ''; });
 
                 // 5/1: レビュー有無を一括取得（approved以降の注文のみ・並列）
                 const reviewableNew = newOrders.filter(o =>
@@ -642,6 +670,7 @@
                             id: o.d.id,
                             order: serializeTimestamps(o.order),
                             fishName: o.fishName,
+                            farmerName: o.farmerName || '',
                             hasReview: !!o.hasReview,
                         }));
                         saveRenderState('restaurant_orders', { items: cacheItems, hasMore: ordersHasMore });
@@ -681,6 +710,7 @@
                     d: { id: it.id },
                     order: reviveTimestamps(it.order),
                     fishName: it.fishName,
+                    farmerName: it.farmerName || '',
                     hasReview: !!it.hasReview,
                 }));
                 ordersHasMore = !!cached.hasMore;

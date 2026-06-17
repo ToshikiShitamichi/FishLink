@@ -48,9 +48,10 @@
             display: flex; align-items: center; gap: 7px;
             font-size: 16px; font-weight: 700; color: var(--color-text);
         }
-        .section__title .material-symbols-outlined { font-size: 18px; color: var(--color-primary); }
+        .section__title .material-symbols-outlined { font-size: 18px; color: var(--color-cta); }
         .section__more {
-            font-size: 12px; font-weight: 600; color: var(--color-primary);
+            /* #139: もっと見る/注文状況 等のリンクは青（緑=GAqP/成功/送料無料 専用） */
+            font-size: 12px; font-weight: 600; color: var(--color-cta);
             text-decoration: none; display: inline-flex; align-items: center; gap: 2px;
             white-space: nowrap;
         }
@@ -171,16 +172,18 @@
         .tile__circle--other { display: flex; align-items: center; justify-content: center; background: var(--color-primary-lt); }
         .tile__circle--other .material-symbols-outlined { font-size: 30px; color: var(--color-primary); }
 
-        /* 5/31 #106: キャンペーンバナー（検索バー直下・キャンペーン中のみ表示） */
+        /* 5/31 #106 / #139: キャンペーンバナー（検索バー直下・キャンペーン中のみ表示）
+           色＝オレンジグラデ（割引＝amber/オレンジ系。緑はGAqP/成功/送料無料 専用なので割引に使わない） */
         .home-campaign {
-            margin: 4px 16px 6px; background: var(--color-primary-lt); border: 1px solid var(--color-primary);
+            margin: 4px 16px 6px; background: linear-gradient(135deg, #F5A623, #EA6A0A); border: none;
             border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 2px 8px rgba(234, 106, 10, .25);
         }
         .home-campaign__main { display: flex; gap: 10px; align-items: center; flex: 1; min-width: 0; }
-        .home-campaign__main > .material-symbols-outlined { color: var(--color-primary); flex-shrink: 0; }
-        .home-campaign__title { font-size: 14px; font-weight: 800; color: var(--color-primary); }
-        .home-campaign__sub { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
-        .home-campaign__close { background: none; border: none; color: var(--color-text-sub); cursor: pointer; padding: 4px; flex-shrink: 0; display: flex; }
+        .home-campaign__main > .material-symbols-outlined { color: #fff; flex-shrink: 0; }
+        .home-campaign__title { font-size: 14px; font-weight: 800; color: #fff; }
+        .home-campaign__sub { font-size: 12px; color: rgba(255, 255, 255, .92); margin-top: 2px; }
+        .home-campaign__close { background: none; border: none; color: rgba(255, 255, 255, .9); cursor: pointer; padding: 4px; flex-shrink: 0; display: flex; }
         /* 5/31 #106: 評価0件の「新規」表示 */
         .fl-new { color: var(--color-text-sub); font-weight: 600; }
 
@@ -198,7 +201,8 @@
             overflow: hidden;
         }
         .pcard__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .pcard__img .material-symbols-outlined { font-size: 34px; color: #9dbed4; }
+        /* #139E: 直下の子に限定＝プレースホルダー用。バッジ内(.gaqp-badge)のアイコンには効かせない（GAqPバッジをコンパクト維持） */
+        .pcard__img > .material-symbols-outlined { font-size: 34px; color: #9dbed4; }
         .gaqp-badge {
             position: absolute; top: 8px; left: 8px;
             background: var(--color-primary); color: #fff;
@@ -260,7 +264,8 @@
             display: flex; align-items: center; justify-content: center; overflow: hidden;
         }
         .fcard__cover img { width: 100%; height: 100%; object-fit: cover; }
-        .fcard__cover .material-symbols-outlined { font-size: 30px; color: #7fa6c2; }
+        /* #139E: 直下の子に限定＝プレースホルダー用。バッジ内(.gaqp-badge)のアイコン(30px化＝大きな丸シール)を防ぐ＝商品カードと同じコンパクトピルに統一 */
+        .fcard__cover > .material-symbols-outlined { font-size: 30px; color: #7fa6c2; }
         .fcard__body { padding: 34px 13px 13px; position: relative; }
         .fcard__avatar {
             position: absolute; top: -24px; left: 13px;
@@ -278,8 +283,9 @@
         .fcard__tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
         .fcard__tag { font-size: 11px; background: var(--color-primary-lt); color: var(--color-primary-dk); padding: 3px 8px; border-radius: 6px; font-weight: 600; }
         .fcard__btn {
+            /* #139: 「農家を見る」CTAは青（緑=GAqP/成功/送料無料 専用） */
             margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 4px;
-            border: 1.5px solid var(--color-primary); color: var(--color-primary);
+            border: 1.5px solid var(--color-cta); color: var(--color-cta);
             border-radius: 10px; padding: 9px; font-size: 13px; font-weight: 700; cursor: pointer;
         }
         .fcard__btn .material-symbols-outlined { font-size: 16px; }
@@ -482,11 +488,11 @@
         initLangSelector();
         initHeaderPopovers();
 
-        // #102: 魚種は CAA 参考価格の 10 種固定（CLAUDE.md 参照）
+        // #102: 魚種マスタ＝固定12種（うちCAA参考価格あり11種／prawn=オニテナガエビはCAA価格なし・#141）
         const FISH_CATEGORIES = [
             'striped_snakehead', 'walking_catfish', 'red_tilapia', 'nile_tilapia',
             'silver_barb', 'spot_pangasius', 'pangasius', 'giant_snakehead',
-            'barramundi', 'climbing_perch', 'frog',
+            'barramundi', 'climbing_perch', 'frog', 'prawn',
         ];
 
         function escapeHtml(s) {
@@ -530,7 +536,8 @@
             if (!el) return;
             const normal = Number(c.serviceRate ?? 0.05);
             const discount = Number(c.campaignDiscount || 0);   // fishPrice 比の割引率
-            if (c.bannerActive !== true || discount <= 0) { el.style.display = 'none'; return; }
+            // #139 表示条件＝バナー表示ON ＆ キャンペーン有効(campaignActive) ＆ 割引>0 ＆ 今日≤終了日
+            if (c.bannerActive !== true || c.campaignActive !== true || discount <= 0) { el.style.display = 'none'; return; }
             // 終了日（YYYY-MM-DD）。設定済みで今日を超過していれば非表示。
             const endDate = c.campaignEndDate || '';
             if (endDate) {
@@ -542,7 +549,8 @@
             const sig = `${normal}_${discount}_${until}`;
             if (localStorage.getItem('fishlink_campaign_dismissed') === sig) { el.style.display = 'none'; return; }
 
-            const discountPct = Math.round(discount * 100);
+            // #139 割引%は運営値（campaignDiscount）をそのまま表示。小数1桁を保持（2.5%→「2.5」・整数化で3%にしない）
+            const discountPct = Math.round(discount * 1000) / 10;
             const residual = normal - discount;                 // キャンペーン中の実効手数料率
             let title;
             if (residual <= 0.0001) title = i18next.t('home.campaignFree');

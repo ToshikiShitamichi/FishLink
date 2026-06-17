@@ -346,6 +346,12 @@ const MESSAGES = {
     en: { title: "Your order was declined", body: "{{farmer}} {{fish}} {{qty}}kg\nPlease choose another fish and order again" },
     km: { title: "ការបញ្ជាទិញត្រូវបានបដិសេធ", body: "{{farmer}} {{fish}} {{qty}}kg\nសូមជ្រើសរើសត្រីផ្សេងទៀតដើម្បីបញ្ជាទិញម្ដងទៀត" },
   },
+  // #142/#143: 買い手が承認前にキャンセル → 農家へ通知（辞退＝農家都合とは別ラベル）
+  cancelled: {
+    ja: { title: "注文がキャンセルされました", body: "{{restaurant}} {{fish}} {{qty}}kg\nレストランが承認前にキャンセルしました" },
+    en: { title: "An order was cancelled", body: "{{restaurant}} {{fish}} {{qty}}kg\nThe restaurant cancelled before approval" },
+    km: { title: "ការបញ្ជាទិញត្រូវបានបោះបង់", body: "{{restaurant}} {{fish}} {{qty}}kg\nភោជនីយដ្ឋានបានបោះបង់មុនពេលយល់ព្រម" },
+  },
   expiredDeclinedFarmer: {
     ja: { title: "{{restaurant}} の注文が期限切れ辞退", body: "{{fish}} {{qty}}kg" },
     en: { title: "Order from {{restaurant}} auto-declined (expired)", body: "{{fish}} {{qty}}kg" },
@@ -923,6 +929,11 @@ exports.onOrderUpdated = onDocumentUpdated(
         await clearAllTodosForOrder(after.farmerId, orderId);
         await clearAllTodosForOrder(after.restaurantId, orderId);
       }
+      // #142/#143 キャンセル（買い手が承認前にキャンセル）→ 両者の関連todoを全て解消（辞退と同様・承認期限停止）
+      if (after.status === "cancelled") {
+        await clearAllTodosForOrder(after.farmerId, orderId);
+        await clearAllTodosForOrder(after.restaurantId, orderId);
+      }
       // 準備中 → 準備todo解消＋配送todo作成
       if (after.status === "preparing") {
         await clearTodo(after.farmerId, 'farmer_prepare', orderId);
@@ -1093,6 +1104,34 @@ exports.onOrderUpdated = onDocumentUpdated(
       }
     }
 
+    // #142/#143 キャンセル時：在庫復元（承認前キャンセル＝注文時に減らした在庫を戻す）。
+    //   ★ before.status === 'pending' を必須にする＝「承認前キャンセル」だけ在庫を戻す。
+    //     クライアントの競合ロック（トランザクション）に加えたサーバ側ガード。承認後（在庫は
+    //     差し引かれたまま）など pending 以外からの cancelled では在庫を戻さない＝過剰復元を防ぐ。
+    //   at-least-once 再配信での二重復元も、注文ドキュメントの一度きりマーカー
+    //   cancelStockRestored をトランザクションで立てて防ぐ（tradeCount と同方式・冪等）。
+    if (after.status === "cancelled" && before.status === "pending") {
+      const orderRef = event.data.after.ref;
+      try {
+        await db.runTransaction(async (tx) => {
+          const snap = await tx.get(orderRef);
+          if (!snap.exists || snap.data()?.cancelStockRestored === true) return;
+          const items = Array.isArray(after.items) && after.items.length > 0
+            ? after.items
+            : (after.listingId ? [{ listingId: after.listingId, quantity: after.quantity }] : []);
+          for (const it of items) {
+            if (!it.listingId || !it.quantity) continue;
+            tx.set(db.doc(`fishListings/${it.listingId}`),
+              { stock: admin.FieldValue.increment(it.quantity) }, { merge: true });
+          }
+          tx.update(orderRef, { cancelStockRestored: true });
+        });
+        console.log("Stock restored (cancel):", orderId);
+      } catch (e) {
+        console.error("cancel stock restore failed", orderId, e);
+      }
+    }
+
     // 期限切れ自動辞退は autoDeclineExpiredOrders 内で両者に通知するため、ここではスキップ
     if (after.status === "declined" && after.autoDeclined === true) {
       console.log("Skip onOrderUpdated notify: auto-declined order", orderId);
@@ -1118,6 +1157,24 @@ exports.onOrderUpdated = onDocumentUpdated(
     const qtyLabel = afterItems.length > 1
       ? `${firstItem.quantity || ""} 他${afterItems.length - 1}件`
       : String(firstItem.quantity || after.quantity || "");
+
+    // #142/#143 買い手キャンセル（承認前）→ 農家へ通知（辞退＝農家都合とは別ラベル）。
+    //   before.status === 'pending' の正当な遷移のみ通知（承認後など不正遷移では通知しない）。
+    if (after.status === "cancelled" && before.status === "pending") {
+      const farmerLang = farmerSnap.data()?.lang || "en";
+      const restName = restData.displayName || "Restaurant";
+      const cVars = { restaurant: restName, fish: fishName, qty: qtyLabel };
+      const cMsg = getMessage("cancelled", farmerLang, cVars);
+      await notifyUser(after.farmerId, {
+        type: "order_cancelled",
+        title: cMsg.title, body: cMsg.body,
+        msgKey: "cancelled", vars: cVars,
+        url: `/pages/farmer/orders.html`,
+        orderId,
+      });
+      console.log("Cancel notification sent to farmer:", after.farmerId, "lang:", farmerLang);
+      return;
+    }
 
     // preparing/delivering/completed は農家のクイック操作で必ずチャットメッセージが
     // 同時送信されるため、ここでの statusUpdate 通知は重複となり省略する。

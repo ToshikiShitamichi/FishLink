@@ -390,6 +390,7 @@
                         <option value="barramundi" data-i18n="fish.barramundi"></option>
                         <option value="climbing_perch" data-i18n="fish.climbing_perch"></option>
                         <option value="frog" data-i18n="fish.frog"></option>
+                        <option value="prawn" data-i18n="fish.prawn"></option>
                         <option value="other" data-i18n="fish.other"></option>
                     </select>
                     <div class="field-error" id="err-fish-type" data-i18n="post.errorFishType"></div>
@@ -794,7 +795,8 @@
             const valueEl = document.getElementById('caa-value');
             const sizeEl = document.getElementById('caa-size');
 
-            if (!fishTypeValue || fishTypeValue === 'other') {
+            // #141: CAA参考価格は固定11種（CAA_FISH_TYPES）のみ。その他・オニテナガエビ(prawn)等は参考価格なし扱い
+            if (!fishTypeValue || !CAA_FISH_TYPES.includes(fishTypeValue)) {
                 regionEl.textContent = i18next.t('post.caaNoData');
                 regionEl.style.color = '#888';
                 valueEl.style.display = 'none';
