@@ -16,82 +16,76 @@
     <style>
         body { background: #f8fafc; }
 
-        .chat-page {
-            max-width: 480px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            background: #f8fafc;
-        }
+        /* hidden 属性を最優先で効かせる。.chat-input-bar/.sc-attach/.sc-existing は display:flex を
+           明示しており、UA 既定の [hidden]{display:none} が負けて非チャット画面でも表示されてしまうため。 */
+        [hidden] { display: none !important; }
 
+        .chat-page { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; height: 100vh; background: #f8fafc; }
         .chat-page__head {
-            display: flex; align-items: center; gap: 8px;
-            padding: 12px 16px;
-            border-bottom: 1px solid #e2e8f0;
-            background: #fff;
-            position: sticky; top: 0; z-index: 5;
+            display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0; background: #fff; position: sticky; top: 0; z-index: 5;
         }
-
         .chat-page__back {
             display: flex; align-items: center; justify-content: center;
-            width: 36px; height: 36px;
-            border-radius: 999px;
-            color: #475569;
-            text-decoration: none;
+            width: 36px; height: 36px; border-radius: 999px; color: #475569;
+            background: none; border: none; cursor: pointer;
         }
         .chat-page__back:hover { background: #f1f5f9; }
+        .chat-page__title { font-size: 16px; font-weight: 700; color: #0f172a; }
+        .chat-body { flex: 1; overflow-y: auto; padding: 16px; }
 
-        .chat-page__title {
-            font-size: 16px; font-weight: 700; color: #0f172a;
+        /* ① カテゴリ選択 */
+        .sc-q { font-size: 15px; font-weight: 800; margin: 2px 0 14px; color: #0f172a; }
+        .sc-existing {
+            display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+            background: var(--color-cta-lt); border: 1px solid #cfe0f3; border-radius: 12px;
+            padding: 13px 14px; margin-bottom: 16px; cursor: pointer;
         }
-        .chat-page__sub {
-            font-size: 11px; color: #64748b;
+        .sc-existing__ic { width: 38px; height: 38px; border-radius: 50%; background: var(--color-cta); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sc-existing__b { flex: 1; min-width: 0; }
+        .sc-existing__t { font-size: 14px; font-weight: 700; color: var(--color-cta-dk); }
+        .sc-existing__h { font-size: 11.5px; color: #5b7794; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sc-existing__dot { width: 9px; height: 9px; border-radius: 50%; background: #dc2626; flex-shrink: 0; }
+        .sc-cat {
+            display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+            padding: 14px; margin-bottom: 10px; cursor: pointer;
+        }
+        .sc-cat:hover { background: #f8fafc; }
+        .sc-cat__ic { color: var(--color-cta); display: flex; flex-shrink: 0; }
+        .sc-cat__nm { flex: 1; font-size: 14px; font-weight: 700; color: #0f172a; }
+        .sc-cat__ar { color: #cbd5e1; display: flex; }
+
+        /* ② 振り分け */
+        .sc-sec { font-size: 13px; font-weight: 800; color: #475569; margin: 18px 0 9px; }
+        .sc-sec:first-child { margin-top: 2px; }
+        .sc-hint { font-size: 11.5px; color: #94a3b8; margin: -2px 0 9px; line-height: 1.5; }
+        .sc-desk { display: flex; flex-direction: column; gap: 9px; }
+        .sc-deskbtn {
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            font-size: 13.5px; font-weight: 800; padding: 12px; border-radius: 10px;
+            border: 1.5px solid var(--color-cta); color: var(--color-cta); background: #fff;
+            text-decoration: none; cursor: pointer;
+        }
+        .sc-deskbtn.danger { border-color: var(--color-danger); color: var(--color-danger); }
+        .sc-deskbtn .material-symbols-outlined { font-size: 18px; }
+        .sc-escnote { font-size: 11.5px; color: #94a3b8; text-align: center; margin: 20px 0 8px; }
+        .sc-escbtn {
+            display: block; width: 100%; text-align: center; font-size: 14px; font-weight: 800;
+            padding: 13px; border-radius: 12px; background: var(--color-cta); color: #fff;
+            border: none; cursor: pointer;
         }
 
-        .chat-thread {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-            display: flex; flex-direction: column; gap: 8px;
+        /* ③ チャット */
+        .sc-note {
+            background: #fff7e6; border: 1px solid #f3d998; border-radius: 10px;
+            padding: 10px 12px; font-size: 11.5px; color: #8a6a2a; line-height: 1.6; margin-bottom: 14px;
         }
+        .sc-note b { color: #7a5a1a; display: block; margin-bottom: 3px; }
+        .sc-note ul { margin: 0; padding-left: 18px; }
+        .chat-empty { text-align: center; color: #94a3b8; padding: 50px 16px; font-size: 13px; }
 
-        .chat-msg {
-            max-width: 80%;
-            padding: 10px 14px;
-            border-radius: 14px;
-            font-size: 14px;
-            line-height: 1.4;
-            word-break: break-word;
-            box-shadow: 0 1px 2px rgba(15,23,42,0.04);
-        }
-        .chat-msg.user {
-            background: #0d6e4c; color: #fff;
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
-        }
-        .chat-msg.admin {
-            background: #fff; color: #0f172a;
-            align-self: flex-start;
-            border: 1px solid #e2e8f0;
-            border-bottom-left-radius: 4px;
-        }
-        .chat-msg__time {
-            font-size: 10px; opacity: 0.7; margin-top: 4px;
-        }
-
-        .chat-empty {
-            text-align: center; color: #94a3b8;
-            padding: 60px 16px; font-size: 13px;
-        }
-
-        .chat-input-bar {
-            display: flex; gap: 8px;
-            padding: 10px 12px;
-            border-top: 1px solid #e2e8f0;
-            background: #fff;
-        }
-        /* 6/3 #120: 連絡先マスク警告（アンバー） */
+        /* 連絡先マスク警告（アンバー） */
         .mask-warn {
             display: flex; gap: 6px; align-items: flex-start;
             background: #fff7e6; border: 1px solid #f3d998; color: #b36a00;
@@ -100,63 +94,21 @@
         }
         .mask-warn .material-symbols-outlined { flex-shrink: 0; }
 
-        .chat-input {
-            flex: 1;
-            padding: 10px 14px;
-            font-size: 16px; /* iOS auto zoom 防止 */
-            border: 1px solid #e2e8f0;
-            border-radius: 999px;
-            font-family: inherit;
-            outline: none;
-        }
-        .chat-input:focus { border-color: #0d6e4c; }
-        .chat-input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
-
-        .send-btn {
-            width: 44px; height: 44px;
-            border: none; border-radius: 50%;
-            background: #0d6e4c; color: #fff;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-            cursor: pointer;
-        }
+        /* 添付プレビュー＋入力バー */
+        .sc-attach { display: flex; gap: 8px; padding: 8px 12px 0; flex-wrap: wrap; }
+        .sc-attach__th { position: relative; width: 56px; height: 56px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+        .sc-attach__th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .sc-attach__del { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .sc-attach__del .material-symbols-outlined { font-size: 13px; }
+        .chat-input-bar { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid #e2e8f0; background: #fff; align-items: center; }
+        .sc-cam { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; color: var(--color-cta); cursor: pointer; flex-shrink: 0; }
+        .sc-cam:hover { background: var(--color-cta-lt); }
+        .chat-input { flex: 1; padding: 10px 14px; font-size: 16px; border: 1px solid #e2e8f0; border-radius: 999px; font-family: inherit; outline: none; }
+        .chat-input:focus { border-color: var(--color-cta); }
+        .send-btn { width: 44px; height: 44px; border: none; border-radius: 50%; background: var(--color-cta); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
         .send-btn:disabled { background: #94a3b8; cursor: not-allowed; }
         .send-btn .material-symbols-outlined { font-size: 20px; }
-
-        /* 5/25 #90: 問い合わせカテゴリ選択 UI（Phase 1） */
-        .chat-category-bar {
-            background: #fff;
-            border-top: 1px solid #e2e8f0;
-            padding: 10px 12px;
-            font-size: 12px;
-        }
-        .chat-category-bar__label {
-            display: block; font-weight: 700; color: #475569;
-            margin-bottom: 6px;
-        }
-        .chat-category-bar__select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            font-family: inherit; font-size: 14px;
-            background: #fff;
-        }
-        .chat-category-bar__select:focus { outline: none; border-color: #0d6e4c; }
-        .chat-category-bar.unset .chat-category-bar__select {
-            border-color: #f59e0b; background: #fffbeb;
-        }
-        .chat-msg__category {
-            display: inline-block;
-            font-size: 10px; font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.85);
-            color: #0d6e4c;
-            margin-bottom: 4px;
-        }
-        .chat-msg.user .chat-msg__category { color: #0d6e4c; }
-        .chat-msg.admin .chat-msg__category { color: #475569; border: 1px solid #e2e8f0; }
+        .sc-otherbtn { display: block; width: 100%; text-align: center; font-size: 12.5px; font-weight: 700; color: var(--color-cta); background: none; border: none; padding: 12px; cursor: pointer; }
     </style>
 </head>
 
@@ -165,53 +117,60 @@
 
     <div class="chat-page">
         <div class="chat-page__head">
-            <a href="#" class="chat-page__back" id="back-btn">
+            <button class="chat-page__back" id="back-btn" aria-label="back">
                 <span class="material-symbols-outlined">arrow_back</span>
-            </a>
-            <div>
-                <div class="chat-page__title" data-i18n="adminChat.title"></div>
-                <div class="chat-page__sub" data-i18n="adminChat.subtitle"></div>
+            </button>
+            <div class="chat-page__title" id="head-title"></div>
+        </div>
+
+        <!-- ① カテゴリ選択 -->
+        <div class="chat-body" id="view-cat" hidden>
+            <div class="sc-q" data-i18n="adminChat.catSelectTitle"></div>
+            <button class="sc-existing" id="existing-card" hidden>
+                <span class="sc-existing__ic"><span class="material-symbols-outlined">forum</span></span>
+                <span class="sc-existing__b">
+                    <span class="sc-existing__t" data-i18n="adminChat.existingTitle"></span>
+                    <span class="sc-existing__h" data-i18n="adminChat.existingHint"></span>
+                </span>
+                <span class="sc-existing__dot" id="existing-dot" hidden></span>
+                <span class="material-symbols-outlined" style="color:#cbd5e1;">chevron_right</span>
+            </button>
+            <div id="cat-tiles"></div>
+        </div>
+
+        <!-- ② 振り分け -->
+        <div class="chat-body" id="view-deflect" hidden></div>
+
+        <!-- ③ 運営チャット -->
+        <div class="chat-body" id="view-chat" hidden>
+            <div class="sc-note">
+                <b data-i18n="adminChat.guidanceTitle"></b>
+                <ul>
+                    <li data-i18n="adminChat.guidance1"></li>
+                    <li data-i18n="adminChat.guidance2"></li>
+                    <li data-i18n="adminChat.guidance3"></li>
+                </ul>
             </div>
+            <div class="sup-thread" id="chat-thread">
+                <div class="chat-empty" data-i18n="adminChat.empty"></div>
+            </div>
+            <button class="sc-otherbtn" id="other-inquiry" data-i18n="adminChat.otherInquiry"></button>
         </div>
 
-        <!-- 5/4: 運営チャット案内（運営負荷軽減のためルールを提示） -->
-        <div style="margin: 12px 16px; padding: 12px 14px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 12px; font-size: 12px; color: #92400e; line-height: 1.6;">
-            <div style="font-weight: 700; margin-bottom: 4px;" data-i18n="adminChat.guidanceTitle"></div>
-            <ul style="margin: 0; padding-left: 18px;">
-                <li data-i18n="adminChat.guidance1"></li>
-                <li data-i18n="adminChat.guidance2"></li>
-                <li data-i18n="adminChat.guidance3"></li>
-            </ul>
-        </div>
-
-        <div class="chat-thread" id="chat-thread">
-            <div class="chat-empty" data-i18n="adminChat.loading"></div>
-        </div>
-
-        <!-- 5/25 #90: 問い合わせカテゴリ選択（送信前に必須） -->
-        <div class="chat-category-bar unset" id="category-bar">
-            <label class="chat-category-bar__label" data-i18n="adminChat.categoryLabel" for="category-select"></label>
-            <select class="chat-category-bar__select" id="category-select">
-                <option value="" data-i18n="adminChat.categoryPlaceholder"></option>
-                <option value="order" data-i18n="adminChat.categoryOrder"></option>
-                <option value="payment" data-i18n="adminChat.categoryPayment"></option>
-                <option value="delivery" data-i18n="adminChat.categoryDelivery"></option>
-                <option value="posting" data-i18n="adminChat.categoryPosting"></option>
-                <option value="account" data-i18n="adminChat.categoryAccount"></option>
-                <option value="trouble" data-i18n="adminChat.categoryTrouble"></option>
-                <option value="other" data-i18n="adminChat.categoryOther"></option>
-            </select>
-        </div>
-
-        <!-- 6/3 #120: 連絡先マスク警告（アンバー） -->
+        <!-- 連絡先マスク警告 -->
         <div class="mask-warn" id="mask-warn" style="display:none;">
             <span class="material-symbols-outlined" style="font-size:16px;">warning</span>
             <span data-i18n="comments.maskWarning"></span>
         </div>
 
-        <div class="chat-input-bar">
-            <input type="text" class="chat-input" id="chat-input"
-                placeholder="" data-i18n-placeholder="adminChat.placeholder">
+        <!-- 添付プレビュー＋入力バー（チャット表示中のみ） -->
+        <div class="sc-attach" id="attach-strip" hidden></div>
+        <div class="chat-input-bar" id="input-bar" hidden>
+            <label class="sc-cam" id="img-label" data-i18n="[title]adminChat.sendImage">
+                <span class="material-symbols-outlined">add_photo_alternate</span>
+                <input type="file" id="img-input" accept="image/*" multiple hidden>
+            </label>
+            <input type="text" class="chat-input" id="chat-input" placeholder="" data-i18n="[placeholder]adminChat.placeholder">
             <button class="send-btn" id="send-btn" aria-label="send">
                 <span class="material-symbols-outlined">send</span>
             </button>
@@ -221,15 +180,17 @@
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
-        import { db } from '/js/firebase-config.js';
+        import { db, storage } from '/js/firebase-config.js';
         import {
-            collection, query, orderBy, onSnapshot,
-            addDoc, serverTimestamp, getDocs, where, updateDoc
+            collection, query, orderBy, onSnapshot, addDoc, serverTimestamp,
+            getDocs, where, updateDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
-        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
+        import { ref } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
-        // 6/3 #120: 連絡先マスク
         import { maskContacts } from '/js/contact-mask.js';
+        import { uploadImageResized } from '/js/image-resize.js';
+        import { asCachedImgAttrs } from '/js/image-cache.js';
+        import { loadFaqs, renderFaqAccordionHtml, bindFaqAccordion } from '/js/faq-display.js';
 
         const loading = document.getElementById('loading');
 
@@ -237,179 +198,296 @@
         await initI18n();
         initLangSelector();
 
-        // 5/27: 静的 HTML を即座に可視化（waitForUserData / onSnapshot が遅延・失敗しても白画面を回避）
-        // 既存ロジックは後続で再度 app-ready を付けるが冪等（class 追加は重複しても無害）。
         loading.classList.remove('show');
         document.body.classList.add('app-ready');
 
-        function waitForUserData(cb) {
-            if (window.currentUserData) cb();
-            else setTimeout(() => waitForUserData(cb), 200);
+        // §3 カテゴリ（コード固定・ロール別出し分け）。アイコンは Material Symbols（絵文字不可）。
+        const CATEGORIES = [
+            { code: 'order', icon: 'inventory_2', roles: ['farmer', 'restaurant'] },
+            { code: 'payment', icon: 'payments', roles: ['farmer', 'restaurant'] },
+            { code: 'delivery', icon: 'local_shipping', roles: ['farmer', 'restaurant'] },
+            { code: 'referral', icon: 'redeem', roles: ['farmer', 'restaurant'] },
+            { code: 'account', icon: 'person', roles: ['farmer', 'restaurant'] },
+            { code: 'posting', icon: 'sell', roles: ['farmer'] },
+            { code: 'other', icon: 'chat', roles: ['farmer', 'restaurant'] },
+        ];
+        // §4 振り分け窓口（ロール別の該当画面＝特定注文でなくリスト/ハブへ）
+        const DESK = {
+            farmer: {
+                order: [{ k: 'deskOrders', href: '/pages/farmer/orders.html' }, { k: 'deskReport', href: '/pages/farmer/orders.html', danger: true }],
+                delivery: [{ k: 'deskOrders', href: '/pages/farmer/orders.html' }, { k: 'deskReport', href: '/pages/farmer/orders.html', danger: true }],
+                payment: [{ k: 'deskSales', href: '/pages/farmer/account/sales.html' }, { k: 'deskRemitStatus', href: '/pages/farmer/payment.html' }],
+                referral: [{ k: 'deskReferral', href: '/pages/farmer/account.html' }],
+                account: [{ k: 'deskBasic', href: '/pages/farmer/account/basic.html' }, { k: 'deskRecover', href: '/recover.html' }],
+                posting: [{ k: 'deskPostingList', href: '/pages/farmer/dashboard.html' }, { k: 'deskPost', href: '/pages/farmer/post.html' }],
+                other: [],
+            },
+            restaurant: {
+                order: [{ k: 'deskOrderStatus', href: '/pages/restaurant/orders.html' }, { k: 'deskReport', href: '/pages/restaurant/orders.html', danger: true }],
+                delivery: [{ k: 'deskOrderStatus', href: '/pages/restaurant/orders.html' }, { k: 'deskReport', href: '/pages/restaurant/orders.html', danger: true }],
+                payment: [{ k: 'deskOrderStatus', href: '/pages/restaurant/orders.html' }, { k: 'deskPayment', href: '/pages/restaurant/payment.html' }],
+                referral: [{ k: 'deskReferral', href: '/pages/restaurant/account.html' }],
+                account: [{ k: 'deskBasic', href: '/pages/restaurant/account/basic.html' }, { k: 'deskRecover', href: '/recover.html' }],
+                other: [],
+            },
+        };
+        const HINT_KEY = { order: 'deskHintOrder', delivery: 'deskHintOrder', payment: 'deskHintPayment', referral: 'deskHintReferral', account: 'deskHintAccount', posting: 'deskHintPosting' };
+
+        const WEEKDAY = { ja: ['日', '月', '火', '水', '木', '金', '土'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], km: ['អា', 'ច', 'អ', 'ពុ', 'ព្រ', 'សុ', 'ស'] };
+        function lang() { return (i18next.language || 'km'); }
+        function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+        function catLabel(code) { const key = `adminChat.category${cap(code)}`; return i18next.exists(key) ? i18next.t(key) : code; }
+        function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+        function fmtDateSep(d) {
+            const wd = (WEEKDAY[lang()] || WEEKDAY.en)[d.getDay()];
+            if (lang() === 'ja') return `${d.getMonth() + 1}月${d.getDate()}日（${wd}）`;
+            if (lang() === 'km') return `${d.getDate()}/${d.getMonth() + 1}（${wd}）`;
+            return `${WEEKDAY.en[d.getDay()]}, ${d.getMonth() + 1}/${d.getDate()}`;
+        }
+        function fmtTime(d) { return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+
+        let uid = null;
+        let messagesCache = [];     // {id, ...data} ordered asc
+        let pendingCategory = null; // 振り分けから持ち込むカテゴリ（送信時に件区切りを判定）
+        let selectedFiles = [];     // {file, preview}
+        let currentView = 'cat';
+
+        function waitForUserData(cb) { if (window.currentUserData) cb(); else setTimeout(() => waitForUserData(cb), 200); }
+
+        // ── ビュー切替 ──────────────────────────────────────────────
+        function showView(name, opts = {}) {
+            currentView = name;
+            document.getElementById('view-cat').hidden = name !== 'cat';
+            document.getElementById('view-deflect').hidden = name !== 'deflect';
+            document.getElementById('view-chat').hidden = name !== 'chat';
+            const chatUi = name === 'chat';
+            document.getElementById('input-bar').hidden = !chatUi;
+            document.getElementById('attach-strip').hidden = !chatUi || selectedFiles.length === 0;
+            document.getElementById('mask-warn').style.display = 'none';
+            const title = name === 'cat' ? i18next.t('adminChat.inquiryTitle')
+                : name === 'deflect' ? catLabel(opts.category || pendingCategory || 'other')
+                : i18next.t('adminChat.title');
+            document.getElementById('head-title').textContent = title;
+            if (chatUi) { markAdminMessagesRead(); renderThread(); scrollThread(); }
         }
 
-        document.getElementById('back-btn').addEventListener('click', (e) => {
-            e.preventDefault();
+        document.getElementById('back-btn').addEventListener('click', () => {
+            if (currentView === 'deflect') { showView('cat'); return; }
+            if (currentView === 'chat') { showView('cat'); return; }
+            // cat → 戻る＝マイページ
             const role = window.currentUserData?.role;
             const fallback = role === 'farmer' ? '/pages/farmer/account.html' : '/pages/restaurant/account.html';
-            if (history.length > 1) history.back();
-            else location.href = fallback;
+            if (history.length > 1) history.back(); else location.href = fallback;
         });
 
-        function escapeHtml(s) {
-            return String(s || '').replace(/[&<>"']/g, c => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-            }[c]));
+        // ── ① カテゴリタイル ────────────────────────────────────────
+        function renderCatTiles() {
+            const role = window.currentUserData?.role || 'restaurant';
+            const host = document.getElementById('cat-tiles');
+            host.innerHTML = CATEGORIES.filter(c => c.roles.includes(role)).map(c => `
+                <button class="sc-cat" data-cat="${c.code}">
+                    <span class="sc-cat__ic"><span class="material-symbols-outlined">${c.icon}</span></span>
+                    <span class="sc-cat__nm">${escapeHtml(catLabel(c.code))}</span>
+                    <span class="sc-cat__ar"><span class="material-symbols-outlined">chevron_right</span></span>
+                </button>`).join('');
+            host.querySelectorAll('.sc-cat').forEach(b => b.addEventListener('click', () => openDeflect(b.dataset.cat)));
         }
 
-        function fmtTime(ts) {
-            if (!ts) return '';
-            const d = ts.toDate ? ts.toDate() : new Date(ts);
-            return d.toLocaleString();
+        // ── ② 振り分け ──────────────────────────────────────────────
+        async function openDeflect(category) {
+            pendingCategory = category;
+            const role = window.currentUserData?.role || 'restaurant';
+            const host = document.getElementById('view-deflect');
+            showView('deflect', { category });
+            host.innerHTML = `<div class="chat-empty">${escapeHtml(i18next.t('adminChat.loading'))}</div>`;
+
+            const faqs = await loadFaqs(category);
+            const faqHtml = renderFaqAccordionHtml(faqs, lang());
+            const desk = (DESK[role] && DESK[role][category]) || [];
+            const hintKey = HINT_KEY[category];
+
+            let html = '';
+            if (faqHtml) html += `<div class="sc-sec">${escapeHtml(i18next.t('adminChat.faqSectionTitle'))}</div>${faqHtml}`;
+            if (desk.length) {
+                html += `<div class="sc-sec">${escapeHtml(i18next.t('adminChat.deskSectionTitle'))}</div>`;
+                if (hintKey) html += `<div class="sc-hint">${escapeHtml(i18next.t('adminChat.' + hintKey))}</div>`;
+                html += `<div class="sc-desk">` + desk.map(d =>
+                    `<a class="sc-deskbtn ${d.danger ? 'danger' : ''}" href="${d.href}">
+                        <span class="material-symbols-outlined">${d.danger ? 'flag' : 'open_in_new'}</span>${escapeHtml(i18next.t('adminChat.' + d.k))}
+                    </a>`).join('') + `</div>`;
+            }
+            html += `<div class="sc-escnote">${escapeHtml(i18next.t('adminChat.escalateNote'))}</div>`;
+            html += `<button class="sc-escbtn" id="escalate-btn">${escapeHtml(i18next.t('adminChat.escalateBtn'))}</button>`;
+            host.innerHTML = html;
+
+            bindFaqAccordion(host);
+            document.getElementById('escalate-btn').addEventListener('click', () => { showView('chat'); scrollThread(); document.getElementById('chat-input').focus(); });
         }
 
-        // 5/25 #90: カテゴリラベル解決
-        function categoryLabel(cat) {
-            if (!cat) return '';
-            const key = `adminChat.category${cat.charAt(0).toUpperCase()}${cat.slice(1)}`;
-            return i18next.exists(key) ? i18next.t(key) : cat;
+        // ── ③ チャットスレッド描画（青の往復・件区切り・日付区切り） ──
+        function getLastSeparatorCategory() {
+            for (let i = messagesCache.length - 1; i >= 0; i--) {
+                if (messagesCache[i].type === 'separator') return messagesCache[i].category || null;
+            }
+            return null;
         }
-
-        function renderThread(snap) {
+        function renderThread() {
             const thread = document.getElementById('chat-thread');
-            if (snap.empty) {
-                thread.innerHTML = `<div class="chat-empty">${i18next.t('adminChat.empty')}</div>`;
+            if (!thread) return;
+            if (messagesCache.length === 0) {
+                thread.innerHTML = `<div class="chat-empty">${escapeHtml(i18next.t('adminChat.empty'))}</div>`;
                 return;
             }
-            thread.innerHTML = snap.docs.map(d => {
-                const m = d.data();
-                const cls = m.senderRole === 'user' ? 'user' : 'admin';
-                const time = fmtTime(m.createdAt);
-                // 5/25 #90: 問い合わせカテゴリのバッジを表示（ユーザー側メッセージのみ）
-                const catBadge = (cls === 'user' && m.category)
-                    ? `<div class="chat-msg__category">${escapeHtml(categoryLabel(m.category))}</div>`
-                    : '';
-                return `
-                    <div class="chat-msg ${cls}">
-                        ${catBadge}${escapeHtml(m.text || '')}
-                        <div class="chat-msg__time">${time}</div>
-                    </div>
-                `;
-            }).join('');
-            requestAnimationFrame(() => {
-                thread.scrollTop = thread.scrollHeight;
-            });
+            let html = '';
+            let lastDateKey = null;
+            for (const m of messagesCache) {
+                const t = m.createdAt?.toDate ? m.createdAt.toDate() : null;
+                if (t) {
+                    const dk = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}`;
+                    if (dk !== lastDateKey) { html += `<div class="sup-datesep">${escapeHtml(fmtDateSep(t))}</div>`; lastDateKey = dk; }
+                }
+                if (m.type === 'separator') {
+                    html += `<div class="sup-catsep"><span>— ${escapeHtml(catLabel(m.category || 'other'))} —</span></div>`;
+                    continue;
+                }
+                const isMe = m.senderRole === 'user';
+                const imgs = m.imageUrls || (m.imageUrl ? [m.imageUrl] : []);
+                const imgHtml = imgs.length ? `<div class="sup-bub__imgs">${imgs.map(u => `<a class="sup-bub__img" href="${escapeHtml(u)}" target="_blank" rel="noopener"><img ${asCachedImgAttrs(u)} alt=""></a>`).join('')}</div>` : '';
+                const text = (m.text || '').trim();
+                html += `<div class="sup-bub ${isMe ? 'me' : 'them'}">${text ? escapeHtml(text).replace(/\n/g, '<br>') : ''}${imgHtml}<div class="sup-bub__time">${t ? escapeHtml(fmtTime(t)) : ''}</div></div>`;
+            }
+            thread.innerHTML = html;
+        }
+        function scrollThread() {
+            // スクロール領域は #view-chat（.chat-body overflow-y:auto）。最新メッセージを下端に。
+            const v = document.getElementById('view-chat');
+            if (v) requestAnimationFrame(() => { v.scrollTop = v.scrollHeight; });
         }
 
-        async function markAdminMessagesRead(uid) {
+        async function markAdminMessagesRead() {
+            if (!uid) return;
             try {
-                const snap = await getDocs(query(
-                    collection(db, `adminChats/${uid}/messages`),
-                    where('senderRole', '==', 'admin'),
-                    where('isRead', '==', false)
-                ));
+                const snap = await getDocs(query(collection(db, `adminChats/${uid}/messages`), where('senderRole', '==', 'admin'), where('isRead', '==', false)));
                 await Promise.all(snap.docs.map(d => updateDoc(d.ref, { isRead: true })));
             } catch (e) { /* ignore */ }
         }
 
-        // 5/25 #91/#92 拡張: 過去メッセージの HTML を即時復元（onSnapshot 初回到達で上書きされる）
-        let cachedThreadShown = false;
-        waitForUserData(() => {
-            const uid = window.currentUser.uid;
-            try {
-                const cached = loadRenderState(`admin_chat:${uid}`);
-                if (cached?.threadHtml) {
-                    document.getElementById('chat-thread').innerHTML = cached.threadHtml;
-                    loading.classList.remove('show');
-                    document.body.classList.add('app-ready');
-                    cachedThreadShown = true;
-                }
-            } catch (e) { /* ignore */ }
+        // ── 既存会話カード（①） ─────────────────────────────────────
+        function updateExistingCard() {
+            const card = document.getElementById('existing-card');
+            const dot = document.getElementById('existing-dot');
+            const hasMsg = messagesCache.some(m => m.type !== 'separator');
+            card.hidden = !hasMsg;
+            const hasUnread = messagesCache.some(m => m.senderRole === 'admin' && m.isRead === false);
+            dot.hidden = !hasUnread;
+        }
 
-            const q = query(
-                collection(db, `adminChats/${uid}/messages`),
-                orderBy('createdAt', 'asc')
-            );
-            // 5/25 #92: 初回 snapshot で spinner 解除（旧来は解除処理が無く i18n の 10 秒 failsafe 待ち）
-            let firstSnapshot = true;
-            onSnapshot(q, (snap) => {
-                renderThread(snap);
-                markAdminMessagesRead(uid);
-                if (firstSnapshot) {
-                    loading.classList.remove('show'); document.body.classList.add('app-ready');
-                    firstSnapshot = false;
-                }
-                // 5/25 #91/#92 拡張: 次回訪問用に thread HTML を保存
-                try {
-                    saveRenderState(`admin_chat:${uid}`, {
-                        threadHtml: document.getElementById('chat-thread').innerHTML,
-                    });
-                } catch (e) { /* ignore */ }
-            });
-            // フォールバック：onSnapshot 初回到達前にネットワーク不調で何も来なくても 2.5s で UI を有効化
-            //   cachedThreadShown が true なら既に spinner 解除済みなのでスキップ
-            setTimeout(() => {
-                if (firstSnapshot && !cachedThreadShown) {
-                    loading.classList.remove('show'); document.body.classList.add('app-ready');
-                }
-            }, 2500);
+        // ── 添付プレビュー ──────────────────────────────────────────
+        function renderAttachStrip() {
+            const strip = document.getElementById('attach-strip');
+            strip.hidden = currentView !== 'chat' || selectedFiles.length === 0;
+            strip.innerHTML = selectedFiles.map((f, i) =>
+                `<div class="sc-attach__th"><img src="${f.preview}" alt=""><button class="sc-attach__del" data-i="${i}" type="button"><span class="material-symbols-outlined">close</span></button></div>`
+            ).join('');
+            strip.querySelectorAll('.sc-attach__del').forEach(b => b.addEventListener('click', () => {
+                const i = Number(b.dataset.i);
+                URL.revokeObjectURL(selectedFiles[i]?.preview);
+                selectedFiles.splice(i, 1); renderAttachStrip();
+            }));
+        }
+        function clearSelectedFiles() { selectedFiles.forEach(f => URL.revokeObjectURL(f.preview)); selectedFiles = []; renderAttachStrip(); }
 
+        // ── 送信 ────────────────────────────────────────────────────
+        async function send() {
             const input = document.getElementById('chat-input');
             const sendBtn = document.getElementById('send-btn');
-            // 5/25 #90: カテゴリ選択 UI のセットアップ
-            const categoryBar = document.getElementById('category-bar');
-            const categorySelect = document.getElementById('category-select');
-            // 5/27: カテゴリ未選択時は入力欄と送信ボタンを無効化（タイプ自体を不可に）
-            function syncInputEnabled() {
-                const has = !!categorySelect.value;
-                input.disabled = !has;
-                sendBtn.disabled = !has;
-                input.placeholder = has
-                    ? i18next.t('adminChat.placeholder')
-                    : i18next.t('adminChat.categoryLabel');
-                if (has) categoryBar.classList.remove('unset');
-                else categoryBar.classList.add('unset');
-            }
-            categorySelect.addEventListener('change', syncInputEnabled);
-            syncInputEnabled();
-
-            async function send() {
-                const text = input.value.trim();
-                if (!text) return;
-                const category = categorySelect.value;
-                if (!category) { categorySelect.focus(); return; }  // 念のためのガード
-                sendBtn.disabled = true;
-                try {
-                    // 6/3 #120: 連絡先（電話番号・SNS・URL）を検知→伏字。発動時は警告表示。
-                    const maskRes = maskContacts(text, i18next.t('comments.maskedContact'));
-                    document.getElementById('mask-warn').style.display = maskRes.hit ? 'flex' : 'none';
-                    await addDoc(collection(db, `adminChats/${uid}/messages`), {
-                        senderId: uid,
-                        senderRole: 'user',
-                        text: maskRes.masked,
-                        category,                                // 5/25 #90
-                        isRead: false,
-                        ...(maskRes.hit ? { contactMasked: true } : {}),
-                        createdAt: serverTimestamp(),
-                    });
-                    input.value = '';
-                } catch (err) {
-                    alert(err.message || 'Failed');
-                } finally {
-                    syncInputEnabled();
+            const text = input.value.trim();
+            const files = selectedFiles.slice();
+            if (!text && files.length === 0) return;
+            sendBtn.disabled = true;
+            try {
+                const msgCol = collection(db, `adminChats/${uid}/messages`);
+                const lastSepCat = getLastSeparatorCategory();
+                const cat = pendingCategory || lastSepCat || 'other';
+                // 件の区切り（— カテゴリ —）：新しい件のときだけ1回挿入
+                if (pendingCategory && pendingCategory !== lastSepCat) {
+                    await addDoc(msgCol, { senderRole: 'system', type: 'separator', category: pendingCategory, createdAt: serverTimestamp() });
                 }
-            }
-
-            sendBtn.addEventListener('click', send);
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    send();
+                // 画像アップロード（複数可）
+                const imageUrls = [];
+                for (let i = 0; i < files.length; i++) {
+                    const sref = ref(storage, `adminChats/${uid}/${Date.now()}_${i}.jpg`);
+                    imageUrls.push(await uploadImageResized(sref, files[i].file));
                 }
+                // 連絡先マスク
+                const maskRes = maskContacts(text, i18next.t('comments.maskedContact'));
+                document.getElementById('mask-warn').style.display = maskRes.hit ? 'flex' : 'none';
+                await addDoc(msgCol, {
+                    senderId: uid, senderRole: 'user',
+                    text: maskRes.masked,
+                    category: cat,
+                    ...(imageUrls.length ? { imageUrls } : {}),
+                    isRead: false,
+                    ...(maskRes.hit ? { contactMasked: true } : {}),
+                    createdAt: serverTimestamp(),
+                });
+                input.value = '';
+                clearSelectedFiles();
+                pendingCategory = null; // この件は確定
+            } catch (err) {
+                alert(err.message || 'Failed');
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        // ── 起動 ────────────────────────────────────────────────────
+        waitForUserData(() => {
+            uid = window.currentUser.uid;
+            renderCatTiles();
+
+            // 描画キャッシュ（チャットスレッドの即時復元・任意）
+            try {
+                const cached = loadRenderState(`admin_chat:${uid}`);
+                if (cached?.threadHtml) document.getElementById('chat-thread').innerHTML = cached.threadHtml;
+            } catch (e) { /* ignore */ }
+
+            // 初期ビュー：?view=chat（通知タップ／既存会話）ならチャット、それ以外はカテゴリ選択
+            const params = new URLSearchParams(location.search);
+            showView(params.get('view') === 'chat' ? 'chat' : 'cat');
+
+            // メッセージ購読（スレッド＋既存会話カード＋未読）
+            const q = query(collection(db, `adminChats/${uid}/messages`), orderBy('createdAt', 'asc'));
+            onSnapshot(q, (snap) => {
+                messagesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                updateExistingCard();
+                if (currentView === 'chat') { renderThread(); markAdminMessagesRead(); scrollThread(); }
+                try { saveRenderState(`admin_chat:${uid}`, { threadHtml: document.getElementById('chat-thread').innerHTML }); } catch (e) { /* ignore */ }
             });
+
+            // 既存会話カード → チャット
+            document.getElementById('existing-card').addEventListener('click', () => { pendingCategory = null; showView('chat'); });
+            // 別の件で問い合わせる → カテゴリ選び直し
+            document.getElementById('other-inquiry').addEventListener('click', () => showView('cat'));
+
+            // 画像選択
+            document.getElementById('img-input').addEventListener('change', (ev) => {
+                Array.from(ev.target.files || []).forEach(file => {
+                    if (file.type.startsWith('image/')) selectedFiles.push({ file, preview: URL.createObjectURL(file) });
+                });
+                ev.target.value = '';
+                renderAttachStrip();
+            });
+            // 送信
+            document.getElementById('send-btn').addEventListener('click', send);
+            document.getElementById('chat-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } });
         });
 
         onLanguageChange(() => {
-            // i18n applies to placeholder/title automatically
+            renderCatTiles();
+            if (currentView === 'deflect' && pendingCategory) { openDeflect(pendingCategory); return; }
+            if (currentView === 'chat') renderThread();
+            showView(currentView, { category: pendingCategory });
         });
     </script>
 </body>

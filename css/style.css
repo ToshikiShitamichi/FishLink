@@ -807,3 +807,41 @@ body.app-ready .loading-overlay.show {
 }
 .chat-modal__btn--cancel { background: #eceef0; color: #5a6470; }
 .chat-modal__btn--ok { background: var(--color-cta); color: #fff; }
+
+/* ── 6/14 #144/#145 運営チャット（サポート）再設計 ──────────────── */
+/* 青の往復バブル（user 側 admin-chat.html / admin 側 users.html で共有）。
+   自分=青系(右)／相手=白(左)。件の区切り「— 配送について —」・日付区切り・時刻のみ。 */
+.sup-thread { display: flex; flex-direction: column; gap: 2px; }
+.sup-datesep { text-align: center; font-size: 11px; color: #94a3b8; font-weight: 600; margin: 8px 0 6px; }
+.sup-catsep { text-align: center; margin: 8px 0 10px; }
+.sup-catsep span {
+    display: inline-block; background: var(--color-cta-lt); color: var(--color-cta);
+    font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 12px;
+}
+.sup-bub {
+    max-width: 80%; border-radius: 14px; padding: 9px 12px;
+    font-size: 14px; line-height: 1.5; word-break: break-word; margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+}
+.sup-bub.me { background: #dce9f8; color: #0f172a; align-self: flex-end; border-bottom-right-radius: 4px; }
+.sup-bub.them { background: #fff; color: #0f172a; align-self: flex-start; border: 1px solid #e2e8f0; border-bottom-left-radius: 4px; }
+.sup-bub__time { font-size: 10px; color: #94a3b8; text-align: right; margin-top: 3px; }
+.sup-bub__imgs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.sup-bub__img { display: block; width: 132px; max-width: 60vw; border-radius: 8px; overflow: hidden; }
+.sup-bub__img img { width: 100%; height: auto; display: block; }
+
+/* ② 振り分け画面 FAQ アコーディオン（faq-display.js が出力する .faqd-*） */
+.faqd-list { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+.faqd-item { border-bottom: 1px solid #f1f5f9; }
+.faqd-item:last-child { border-bottom: none; }
+.faqd-qrow {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 13px 14px; font-size: 14px; font-weight: 700; color: #0f172a;
+    background: none; border: none; text-align: left; cursor: pointer; font-family: inherit;
+}
+.faqd-caret { font-size: 18px; color: var(--color-cta); flex-shrink: 0; }
+.faqd-q { flex: 1; }
+.faqd-ans { padding: 0 14px 14px 36px; font-size: 13px; color: #475569; line-height: 1.7; }
+.faqd-imgs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.faqd-img { display: block; width: 140px; max-width: 60vw; border-radius: 8px; overflow: hidden; }
+.faqd-img img { width: 100%; height: auto; display: block; }

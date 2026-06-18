@@ -215,10 +215,25 @@
         }
         .send-btn {
             padding: 0 18px; border: none; border-radius: 8px;
-            background: #0d6e4c; color: #fff; font-weight: 700;
+            background: var(--color-cta); color: #fff; font-weight: 700;
             font-size: 13px; cursor: pointer; flex-shrink: 0;
         }
         .send-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+        /* 6/14 #145: 運営チャット 未対応/対応済 ＋ 件区切り */
+        .chat-section__head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .chat-section__head h3 { margin: 0; }
+        .sup-status { font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 10px; }
+        .sup-status.todo { background: #fdecea; color: #d14343; }
+        .sup-status.done { background: #eef1f4; color: #64748b; }
+        .sup-done-btn {
+            margin-left: auto; font-size: 12px; font-weight: 800; color: var(--color-cta);
+            border: 1.5px solid var(--color-cta); border-radius: 8px; padding: 5px 11px;
+            background: #fff; cursor: pointer;
+        }
+        .sup-done-btn:disabled { color: #94a3b8; border-color: #cbd5e1; cursor: not-allowed; }
+        .filter-chip.todo-chip { border-color: #f59e0b; color: #b45309; }
+        .filter-chip.todo-chip.active { background: #f59e0b; color: #fff; border-color: #f59e0b; }
 
         @media (max-width: 480px) {
             .admin-shell { padding: 14px; }
@@ -247,6 +262,7 @@
                     <a href="/pages/admin/referral.html" data-i18n="admin.navReferral"></a>
                     <a href="/pages/admin/caa.html" data-i18n="admin.navCaa"></a>
                     <a href="/pages/admin/reports.html" data-i18n="admin.navReports"></a>
+                    <a href="/pages/admin/faq.html" data-i18n="admin.navFaq"></a>
                     <a href="#" id="logout-btn" data-i18n="admin.navLogout"></a>
                 </nav>
                 <select id="lang-selector">
@@ -268,6 +284,7 @@
                     <button class="filter-chip" data-role="restaurant" data-i18n="admin.users.roleRestaurant"></button>
                     <button class="filter-chip" data-role="admin" data-i18n="admin.users.roleAdmin"></button>
                     <button class="filter-chip" data-role="banned" data-i18n="admin.users.roleBanned"></button>
+                    <button class="filter-chip todo-chip" id="todo-filter" data-i18n="admin.users.filterTodo"></button>
                 </div>
                 <div class="users-list-wrap" id="users-list"></div>
             </div>
@@ -292,6 +309,8 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 5/25 #91/#92 拡張: 画面 HTML を即時復元
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // 6/14 #145: 運営チャットの画像をキャッシュ付き属性で表示
+        import { asCachedImgAttrs } from '/js/image-cache.js';
 
         const loading = document.getElementById('loading');
         const functions = getFunctions(undefined, 'asia-southeast1');
@@ -323,6 +342,7 @@
         let allUsers = [];
         let currentRoleFilter = '';
         let currentSearch = '';
+        let todoOnly = false;   // 6/14 #145: 未対応のみフィルタ
         let selectedUid = null;
         let chatUnsub = null;
         // 5/1: 各ユーザーの最終チャット情報（uid → { lastMessage, lastMessageAt, hasUnreadFromUser, lastSenderRole }）
@@ -336,6 +356,8 @@
                 chatSummaries = {};
                 snap.forEach(d => { chatSummaries[d.id] = d.data() || {}; });
                 renderUserList();
+                // 6/14 #145: 選択中ユーザーの未対応/対応済バッジを最新化
+                if (selectedUid) setChatStatusUi(isTodo(chatSummaries[selectedUid] || {}));
             }, (err) => {
                 console.warn('adminChats subscribe failed:', err);
             });
@@ -383,6 +405,7 @@
                 } else if (currentRoleFilter && u.role !== currentRoleFilter) {
                     return false;
                 }
+                if (todoOnly && !isTodo(chatSummaries[u.uid])) return false;
                 if (term) {
                     const hay = `${u.loginId || ''} ${u.displayName || ''} ${u.phone || ''} ${u.province || ''}`.toLowerCase();
                     if (!hay.includes(term)) return false;
@@ -390,13 +413,13 @@
                 return true;
             });
 
-            // ソート：未読あり → 最終チャット日時（新しい順）→ createdAt（既存）
+            // ソート：未対応あり → 最終チャット日時（新しい順）→ createdAt（既存）
             filtered.sort((a, b) => {
                 const sa = chatSummaries[a.uid] || {};
                 const sb = chatSummaries[b.uid] || {};
-                const ua = sa.hasUnreadFromUser ? 1 : 0;
-                const ub = sb.hasUnreadFromUser ? 1 : 0;
-                if (ua !== ub) return ub - ua;  // 未読を上に
+                const ua = isTodo(sa) ? 1 : 0;
+                const ub = isTodo(sb) ? 1 : 0;
+                if (ua !== ub) return ub - ua;  // 未対応を上に
                 const ta = sa.lastMessageAt?.toMillis?.() || 0;
                 const tb = sb.lastMessageAt?.toMillis?.() || 0;
                 return tb - ta;  // チャット履歴がある人を上に（新しい順）
@@ -417,7 +440,7 @@
                     ? `<span class="user-row__badge banned">${i18next.t('admin.users.banned')}</span>`
                     : '';
                 const summary = chatSummaries[u.uid] || {};
-                const hasUnread = summary.hasUnreadFromUser === true;
+                const hasUnread = isTodo(summary);
                 const unreadBadge = hasUnread
                     ? `<span class="user-row__badge unread">!</span>`
                     : '';
@@ -465,6 +488,33 @@
             return d.toLocaleString();
         }
 
+        // 6/14 #145: 運営チャット用ヘルパー
+        const WEEKDAY = { ja: ['日', '月', '火', '水', '木', '金', '土'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], km: ['អា', 'ច', 'អ', 'ពុ', 'ព្រ', 'សុ', 'ស'] };
+        function curLang() { return i18next.language || 'km'; }
+        function catLabelAdmin(code) {
+            if (!code) return '';
+            const key = `adminChat.category${code.charAt(0).toUpperCase()}${code.slice(1)}`;
+            return i18next.exists(key) ? i18next.t(key) : code;
+        }
+        function fmtDateSep(d) {
+            const wd = (WEEKDAY[curLang()] || WEEKDAY.en)[d.getDay()];
+            if (curLang() === 'ja') return `${d.getMonth() + 1}月${d.getDate()}日（${wd}）`;
+            if (curLang() === 'km') return `${d.getDate()}/${d.getMonth() + 1}（${wd}）`;
+            return `${WEEKDAY.en[d.getDay()]}, ${d.getMonth() + 1}/${d.getDate()}`;
+        }
+        function fmtHm(d) { return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+        // 未対応＝supportStatus==='todo'（旧データは hasUnreadFromUser にフォールバック）
+        function isTodo(summary) {
+            if (!summary) return false;
+            return summary.supportStatus ? summary.supportStatus === 'todo' : !!summary.hasUnreadFromUser;
+        }
+        // 評価＝★N%（件数）・0件は「新規」（横断ルール）
+        function ratingLabel(u) {
+            const c = u.reviewCount ?? 0;
+            if (c <= 0) return i18next.t('admin.users.ratingNew');
+            return `★${Math.round(u.avgRating ?? 0)}% (${c})`;
+        }
+
         async function selectUser(uid) {
             selectedUid = uid;
             // 一覧の active 表示更新
@@ -485,6 +535,7 @@
 
             const placeText = [formatProvince(u.province), u.district].filter(Boolean).join(', ');
             const isBanned = u.isBanned === true;
+            const todoNow = isTodo(chatSummaries[uid] || {});  // 6/14 #145: 未対応/対応済
 
             pane.innerHTML = `
                 <div class="detail-header">
@@ -504,7 +555,7 @@
                     <dt>${i18next.t('admin.users.detail.lang')}</dt>
                     <dd>${escapeHtml(u.lang || '')}</dd>
                     <dt>${i18next.t('admin.users.detail.rating')}</dt>
-                    <dd>${(u.avgRating ?? 0).toFixed(2)} (${u.reviewCount ?? 0})</dd>
+                    <dd>${escapeHtml(ratingLabel(u))}</dd>
                     <dt>${i18next.t('admin.users.detail.createdAt')}</dt>
                     <dd>${fmtTs(u.createdAt)}</dd>
                 </dl>
@@ -559,7 +610,13 @@
                 </div>
 
                 <div class="chat-section">
-                    <h3>${i18next.t('admin.users.chatTitle')}</h3>
+                    <div class="chat-section__head">
+                        <h3>${i18next.t('admin.users.chatTitle')}</h3>
+                        <span class="sup-status ${todoNow ? 'todo' : 'done'}" id="chat-status">${todoNow ? i18next.t('admin.users.statusTodo') : i18next.t('admin.users.statusDone')}</span>
+                        <button class="sup-done-btn" id="mark-done-btn"${todoNow ? '' : ' disabled'}>
+                            <span class="material-symbols-outlined" style="font-size:15px; vertical-align:-2px;">check</span> ${i18next.t('admin.users.markDone')}
+                        </button>
+                    </div>
                     <div class="chat-thread" id="chat-thread">
                         <div class="chat-empty">${i18next.t('admin.users.chatLoading')}</div>
                     </div>
@@ -574,6 +631,8 @@
             // BAN/解除ボタン
             document.getElementById('ban-btn')?.addEventListener('click', () => doBan(uid, true));
             document.getElementById('unban-btn')?.addEventListener('click', () => doBan(uid, false));
+            // 6/14 #145: 「対応済にする」（返信せず片付け）
+            document.getElementById('mark-done-btn')?.addEventListener('click', () => markResolved(uid));
             // 5/27 #96: GAqP 認証バッジ付与/解除
             document.getElementById('gaqp-btn')?.addEventListener('click', () => toggleGaqp(uid, !u.gaqpCertified));
 
@@ -599,8 +658,10 @@
                         createdAt: serverTimestamp(),
                     });
                     input.value = '';
-                    // ユーザーからの未読メッセージを既読化
+                    // 6/14 #145: 運営が返信 → 未対応を外す（functions も冪等に設定するが即時反映のため client でも）
+                    await updateDoc(doc(db, 'adminChats', uid), { supportStatus: 'done', hasUnreadFromUser: false });
                     await markUserMessagesRead(uid);
+                    setChatStatusUi(false);
                 } catch (err) {
                     alert(err.message || 'Failed to send');
                 } finally {
@@ -687,28 +748,33 @@
                 if (selectedUid !== uid) return;
                 const thread = document.getElementById('chat-thread');
                 if (!thread) return;
-                if (snap.empty) {
+                const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const hasReal = docs.some(m => m.type !== 'separator');
+                if (!hasReal) {
                     thread.innerHTML = `<div class="chat-empty">${i18next.t('admin.users.chatEmpty')}</div>`;
                     return;
                 }
-                thread.innerHTML = snap.docs.map(d => {
-                    const m = d.data();
-                    const cls = m.senderRole === 'admin' ? 'admin' : 'user';
-                    const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString() : '';
-                    // 5/25 #90: ユーザー側カテゴリのバッジを表示（運営側分類の手がかり）
-                    let catBadge = '';
-                    if (cls === 'user' && m.category) {
-                        const key = `adminChat.category${m.category.charAt(0).toUpperCase()}${m.category.slice(1)}`;
-                        const label = i18next.exists(key) ? i18next.t(key) : m.category;
-                        catBadge = `<div class="chat-msg__category">${escapeHtml(label)}</div>`;
+                // 6/14 #145: 青の往復（運営=自分=青(右)/ユーザー=白(左)）＋ 件の区切り ＋ 日付区切り ＋ 画像
+                let html = '<div class="sup-thread">';
+                let lastDateKey = null;
+                for (const m of docs) {
+                    const t = m.createdAt?.toDate ? m.createdAt.toDate() : null;
+                    if (t) {
+                        const dk = `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}`;
+                        if (dk !== lastDateKey) { html += `<div class="sup-datesep">${escapeHtml(fmtDateSep(t))}</div>`; lastDateKey = dk; }
                     }
-                    return `
-                        <div class="chat-msg ${cls}">
-                            ${catBadge}${escapeHtml(m.text || '')}
-                            <div class="chat-msg__time">${time}</div>
-                        </div>
-                    `;
-                }).join('');
+                    if (m.type === 'separator') {
+                        html += `<div class="sup-catsep"><span>— ${escapeHtml(catLabelAdmin(m.category || 'other'))} —</span></div>`;
+                        continue;
+                    }
+                    const isMe = m.senderRole === 'admin';
+                    const imgs = m.imageUrls || (m.imageUrl ? [m.imageUrl] : []);
+                    const imgHtml = imgs.length ? `<div class="sup-bub__imgs">${imgs.map(u => `<a class="sup-bub__img" href="${escapeHtml(u)}" target="_blank" rel="noopener"><img ${asCachedImgAttrs(u)} alt=""></a>`).join('')}</div>` : '';
+                    const text = (m.text || '').trim();
+                    html += `<div class="sup-bub ${isMe ? 'me' : 'them'}">${text ? escapeHtml(text).replace(/\n/g, '<br>') : ''}${imgHtml}<div class="sup-bub__time">${t ? escapeHtml(fmtHm(t)) : ''}</div></div>`;
+                }
+                html += '</div>';
+                thread.innerHTML = html;
                 thread.scrollTop = thread.scrollHeight;
             });
         }
@@ -770,19 +836,40 @@
                     where('isRead', '==', false)
                 ));
                 await Promise.all(snap.docs.map(d => updateDoc(d.ref, { isRead: true })));
-                // 5/1: 親ドキュメントの未読フラグも下ろす（一覧の未読バッジを即時消す）
-                if (chatSummaries[uid]?.hasUnreadFromUser) {
-                    await updateDoc(doc(db, 'adminChats', uid), { hasUnreadFromUser: false });
-                }
+                // 6/14 #145: 未対応/対応済は supportStatus が正本。開いただけ（閲覧）では未対応を外さない
+                //   （旧来は親 hasUnreadFromUser を開封時に下ろしていたが、返信せず閲覧しただけで
+                //    未対応が消える挙動になるため撤去。外すのは返信 or「対応済にする」のみ）。
             } catch (e) { /* ignore */ }
+        }
+
+        // 6/14 #145: 未対応/対応済 のUI反映 ＋「対応済にする」（返信せず片付け）
+        function setChatStatusUi(todo) {
+            const s = document.getElementById('chat-status');
+            const b = document.getElementById('mark-done-btn');
+            if (s) { s.className = `sup-status ${todo ? 'todo' : 'done'}`; s.textContent = todo ? i18next.t('admin.users.statusTodo') : i18next.t('admin.users.statusDone'); }
+            if (b) b.disabled = !todo;
+        }
+        async function markResolved(uid) {
+            try {
+                await updateDoc(doc(db, 'adminChats', uid), { supportStatus: 'done', hasUnreadFromUser: false });
+                await markUserMessagesRead(uid);
+                setChatStatusUi(false);
+            } catch (e) { console.error('markResolved failed:', e); }
         }
 
         // フィルタ
         document.getElementById('role-filters').addEventListener('click', (e) => {
             const btn = e.target.closest('.filter-chip');
             if (!btn) return;
-            currentRoleFilter = btn.dataset.role;
-            document.querySelectorAll('#role-filters .filter-chip').forEach(c => c.classList.toggle('active', c === btn));
+            // 6/14 #145: 「未対応」は別軸トグル（ロールフィルタと AND）
+            if (btn.id === 'todo-filter') {
+                todoOnly = !todoOnly;
+                btn.classList.toggle('active', todoOnly);
+                renderUserList();
+                return;
+            }
+            currentRoleFilter = btn.dataset.role || '';
+            document.querySelectorAll('#role-filters .filter-chip[data-role]').forEach(c => c.classList.toggle('active', c === btn));
             renderUserList();
         });
         document.getElementById('search-input').addEventListener('input', (e) => {

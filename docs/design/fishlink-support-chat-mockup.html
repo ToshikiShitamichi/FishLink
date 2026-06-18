@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>運営チャット 再設計 — モック</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:1100px; margin-bottom:24px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro b { color:#0B5FB0; }
+  .stage { display:flex; flex-wrap:wrap; gap:26px; justify-content:center; align-items:flex-start; }
+  .col { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .lab { font-size:13px; font-weight:800; background:#FFF; padding:8px 14px; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:center; max-width:380px; }
+  .lab .t { color:#5A6470; font-weight:500; display:block; margin-top:3px; font-size:11.5px; }
+
+  .phone { width:390px; height:800px; background:#F7F9FB; border-radius:34px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+  .hd { background:#FFF; padding:12px 16px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:10px; }
+  .hd .bk { font-size:18px; }
+  .hd .ti { font-weight:800; font-size:15px; }
+  .hd .sp { margin-left:auto; font-size:12px; border:1px solid #DDE3E9; border-radius:14px; padding:3px 10px; color:#5A6470; }
+  .bd { flex:1; overflow-y:auto; padding:14px; }
+
+  .q { font-size:14px; font-weight:800; margin:2px 0 14px; }
+  /* カテゴリタイル */
+  .cat { display:flex; align-items:center; gap:12px; background:#FFF; border:1px solid #EAEEF2; border-radius:12px; padding:14px; margin-bottom:10px; }
+  .cat .ic { font-size:20px; }
+  .cat .nm { flex:1; font-size:14px; font-weight:700; }
+  .cat .nm small { display:block; font-size:10.5px; color:#9AA3B0; font-weight:500; margin-top:2px; }
+  .cat .ar { color:#C2CCD6; font-weight:800; }
+
+  /* セクション見出し */
+  .sh { font-size:13px; font-weight:800; color:#5A6470; margin:18px 0 9px; }
+  /* FAQアコーディオン */
+  .faq { background:#FFF; border:1px solid #EAEEF2; border-radius:12px; overflow:hidden; }
+  .faq .item { border-bottom:1px solid #F1F4F7; }
+  .faq .item:last-child { border-bottom:none; }
+  .faq .qrow { display:flex; align-items:center; gap:8px; padding:13px 14px; font-size:13.5px; font-weight:700; }
+  .faq .qrow .tw { color:#0B5FB0; font-weight:800; }
+  .faq .ans { padding:0 14px 14px; font-size:12.5px; color:#48515C; line-height:1.6; }
+  .faq .ans .img { height:90px; border-radius:8px; background:linear-gradient(135deg,#dfe7ef,#cdd9e6); margin-top:9px; display:flex; align-items:center; justify-content:center; color:#9AAFC2; font-size:20px; }
+
+  /* 窓口ボタン */
+  .chrow { display:flex; gap:9px; margin-top:4px; }
+  .chbtn { flex:1; text-align:center; font-size:12.5px; font-weight:800; padding:11px; border-radius:10px; border:1.5px solid #0B5FB0; color:#0B5FB0; background:#FFF; }
+  .chbtn.rep { border-color:#E5453F; color:#E5453F; }
+  .escn { font-size:11.5px; color:#9AA3B0; text-align:center; margin:16px 0 8px; }
+  .hint { font-size:11px; color:#9AA3B0; margin:-2px 0 8px; line-height:1.5; }
+  .seldd { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .seldd .l { font-size:11px; color:#9AA3B0; }
+  .seldd .dd { font-size:13px; font-weight:700; padding:8px 14px; border-radius:9px; border:1px solid #CDD8E3; background:#FFF; color:#33414E; display:inline-flex; align-items:center; gap:10px; }
+  .seldd .dd .ar { color:#9AA3B0; font-size:11px; }
+  .dhd .glob { float:right; font-size:11px; border:1px solid #DDE3E9; border-radius:14px; padding:3px 10px; color:#5A6470; font-weight:600; }
+  .btn-pri { display:block; text-align:center; font-size:13.5px; font-weight:800; padding:12px; border-radius:11px; background:#0B5FB0; color:#FFF; }
+
+  /* チャット */
+  .note { background:#FFF7E6; border:1px solid #F3D998; border-radius:10px; padding:10px 12px; font-size:11.5px; color:#8A6A2A; line-height:1.6; margin-bottom:12px; }
+  .note b { color:#7A5A1A; }
+  .datesep { text-align:center; font-size:11px; color:#9AA3B0; font-weight:600; margin:6px 0 12px; }
+  .catsep { text-align:center; margin:4px 0 12px; }
+  .catsep span { background:#EAF2FB; color:#0B5FB0; font-size:11px; font-weight:800; padding:4px 12px; border-radius:12px; }
+  .bub { max-width:80%; border-radius:14px; padding:9px 12px; font-size:13px; margin-bottom:10px; line-height:1.5; }
+  .bub.me { background:#DCE9F8; margin-left:auto; border-bottom-right-radius:4px; }
+  .bub.them { background:#FFF; border:1px solid #EAEEF2; margin-right:auto; border-bottom-left-radius:4px; }
+  .bub .tm { font-size:10px; color:#9AA3B0; text-align:right; margin-top:3px; }
+  .bub .imgbub { height:80px; width:120px; border-radius:8px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); }
+  .chatfoot { border-top:1px solid #EEF1F4; padding:10px 12px; display:flex; align-items:center; gap:9px; background:#FFF; }
+  .chatfoot .cam { font-size:18px; }
+  .chatfoot .box { flex:1; border:1px solid #DDE3E9; border-radius:18px; padding:9px 13px; font-size:12.5px; color:#9AA3B0; }
+  .chatfoot .send { background:#0B5FB0; color:#FFF; font-size:12.5px; font-weight:800; padding:9px 15px; border-radius:16px; }
+
+  /* デスクトップ（管理画面） */
+  .desk { width:560px; max-width:100%; background:#FFF; border-radius:18px; box-shadow:0 12px 36px rgba(0,0,0,0.14); overflow:hidden; }
+  .desk .dhd { background:#F7F9FB; border-bottom:1px solid #EEF1F4; padding:16px 18px; }
+  .desk .dhd .t1 { font-size:11px; color:#9AA3B0; }
+  .desk .dhd .t2 { font-size:18px; font-weight:800; margin-top:2px; }
+  .desk .dnav { display:flex; flex-wrap:wrap; gap:7px; padding:12px 18px 0; }
+  .desk .dnav .n { font-size:11.5px; font-weight:700; padding:6px 12px; border-radius:16px; border:1px solid #DCE3EA; color:#5A6470; }
+  .desk .dnav .n.on { background:#0B5FB0; color:#FFF; border-color:#0B5FB0; }
+  .desk .dbody { padding:16px 18px 22px; }
+  .chips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:8px; }
+  .chip { font-size:12px; font-weight:700; padding:6px 12px; border-radius:16px; border:1px solid #DCE3EA; background:#FFF; color:#33414E; }
+  .chip.on { background:#0B5FB0; color:#FFF; border-color:#0B5FB0; }
+  .langrow { display:flex; gap:7px; align-items:center; margin:6px 0 14px; }
+  .langrow .l { font-size:11px; color:#9AA3B0; }
+  .langrow .lt { font-size:11.5px; font-weight:700; padding:5px 11px; border-radius:14px; border:1px solid #DCE3EA; color:#5A6470; }
+  .langrow .lt.on { background:#1A2A3A; color:#FFF; border-color:#1A2A3A; }
+  .addbtn { display:inline-block; font-size:12.5px; font-weight:800; color:#0B5FB0; border:1.5px dashed #9CC0E5; border-radius:9px; padding:9px 13px; margin-bottom:12px; }
+  .qa { display:flex; align-items:center; gap:11px; border:1px solid #EAEEF2; border-radius:10px; padding:12px 13px; margin-bottom:9px; }
+  .qa .gr { color:#C2CCD6; font-size:16px; cursor:grab; }
+  .qa .qt { flex:1; font-size:13px; font-weight:700; }
+  .qa .pub { font-size:10.5px; font-weight:800; padding:2px 9px; border-radius:9px; }
+  .qa .pub.on { background:#EAF6EE; color:#2E7D32; }
+  .qa .pub.off { background:#EEF1F4; color:#8A93A0; }
+  .qa .act { font-size:11.5px; font-weight:700; color:#0B5FB0; }
+  .qa .act.del { color:#E5453F; }
+  .editbox { background:#F7F9FB; border:1px solid #E6EBF0; border-radius:11px; padding:14px; margin-top:6px; }
+  .editbox .fl { font-size:11px; color:#5A6470; font-weight:700; margin:8px 0 4px; }
+  .editbox .inp { background:#FFF; border:1px solid #DDE3E9; border-radius:8px; padding:9px 11px; font-size:12.5px; color:#33414E; }
+  .editbox .inp.ta { min-height:54px; }
+  .editbox .imgsel { height:70px; border-radius:8px; background:linear-gradient(135deg,#dfe7ef,#cdd9e6); display:flex; align-items:center; justify-content:center; color:#9AAFC2; margin-top:4px; }
+  .editbox .erow { display:flex; align-items:center; justify-content:space-between; margin-top:12px; }
+  .editbox .save { background:#0B5FB0; color:#FFF; font-size:12.5px; font-weight:800; padding:9px 18px; border-radius:9px; }
+  .imgmulti { display:flex; gap:8px; margin-top:4px; }
+  .imgmulti .th2 { width:64px; height:54px; border-radius:8px; background:linear-gradient(135deg,#dfe7ef,#cdd9e6); }
+  .imgmulti .add2 { width:64px; height:54px; border-radius:8px; border:1.5px dashed #9CC0E5; color:#0B5FB0; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; }
+
+  /* ⑤ 運営側 運営チャット */
+  .ahd { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .ahd .au { font-size:12px; color:#5A6470; }
+  .ahd .st { margin-left:auto; font-size:10.5px; font-weight:800; padding:3px 10px; border-radius:10px; }
+  .ahd .st.todo { background:#FDECEA; color:#D14343; }
+  .achat { background:#F7F9FB; border:1px solid #EEF1F4; border-radius:12px; padding:14px; margin-bottom:12px; }
+  .achat .atop { display:flex; align-items:center; margin-bottom:12px; }
+  .achat .atop .lbl { font-size:13px; font-weight:800; }
+  .achat .atop .done { margin-left:auto; font-size:11.5px; font-weight:800; color:#0B5FB0; border:1.5px solid #0B5FB0; border-radius:8px; padding:5px 11px; }
+  .afoot { display:flex; gap:9px; align-items:flex-end; }
+  .afoot .box { flex:1; border:1px solid #DDE3E9; border-radius:9px; padding:11px 12px; font-size:12.5px; color:#9AA3B0; background:#FFF; min-height:44px; }
+  .afoot .send { background:#0B5FB0; color:#FFF; font-size:12.5px; font-weight:800; padding:12px 18px; border-radius:9px; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>運営チャット 再設計 — モック</h1>
+  <p>狙い＝<b>運営チャットを「何でも来る窓口」にしない</b>。カテゴリ選択を<b>振り分けの関所</b>にして、<b>既存窓口＋FAQ で自己解決</b>→それでもダメな時だけ運営チャット（量を抑える）。FAQは<b>管理画面で運営が育てる</b>（自己改善ループ）。会話は<b>青の往復</b>（自分=青/運営=白）。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① カテゴリ選択 -->
+  <div class="col">
+    <div class="lab">① お問い合わせ（カテゴリ選択）<span class="t">どんなことで困ってる？</span></div>
+    <div class="phone">
+      <div class="hd"><span class="bk">←</span><span class="ti">お問い合わせ</span><span class="sp">🌐 日本語</span></div>
+      <div class="bd">
+        <div class="q">どんなことでお困りですか？</div>
+        <div class="cat"><span class="ic">📦</span><span class="nm">注文について</span><span class="ar">›</span></div>
+        <div class="cat"><span class="ic">💳</span><span class="nm">支払い・送金について</span><span class="ar">›</span></div>
+        <div class="cat"><span class="ic">🚚</span><span class="nm">配送について</span><span class="ar">›</span></div>
+        <div class="cat"><span class="ic">🎁</span><span class="nm">紹介・クーポンについて</span><span class="ar">›</span></div>
+        <div class="cat"><span class="ic">👤</span><span class="nm">アカウントについて</span><span class="ar">›</span></div>
+        <div class="cat"><span class="ic">🐟</span><span class="nm">出品について<small>農家のみ表示</small></span><span class="ar">›</span></div>
+        <div class="cat"><span class="ic">💬</span><span class="nm">その他</span><span class="ar">›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 振り分け（配送について） -->
+  <div class="col">
+    <div class="lab">② 振り分け（配送について）<span class="t">FAQ＋既存窓口→それでも運営</span></div>
+    <div class="phone">
+      <div class="hd"><span class="bk">←</span><span class="ti">配送について</span><span class="sp">🌐 日本語</span></div>
+      <div class="bd">
+        <div class="sh">よくある質問</div>
+        <div class="faq">
+          <div class="item">
+            <div class="qrow"><span class="tw">▾</span>配達が遅れそうな時は？</div>
+            <div class="ans">配送チャットで農家に状況を聞けます。届かない・品質の問題は「問題を報告」から運営へ連絡してください。
+              <div class="img">🖼 画像（任意）</div>
+            </div>
+          </div>
+          <div class="item"><div class="qrow"><span class="tw">▸</span>注文した魚が届かない</div></div>
+          <div class="item"><div class="qrow"><span class="tw">▸</span>配達時間は選べる？</div></div>
+        </div>
+
+        <div class="sh">関連する窓口</div>
+        <div class="hint">該当の注文を選ぶと、配送状況の確認（チャット）・問題の報告ができます</div>
+        <div class="chrow">
+          <span class="chbtn">📦 注文状況を開く</span>
+          <span class="chbtn rep">⚑ 注文から問題を報告</span>
+        </div>
+
+        <div class="escn">解決しない場合は ↓</div>
+        <span class="btn-pri">運営にメッセージを送る</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 運営チャット（青の往復） -->
+  <div class="col">
+    <div class="lab">③ 運営チャット（青の往復）<span class="t">自分=青／運営=白・件の区切り</span></div>
+    <div class="phone">
+      <div class="hd"><span class="bk">←</span><span class="ti">運営チャット</span><span class="sp">🌐 日本語</span></div>
+      <div class="bd">
+        <div class="note">⚠️ <b>ご利用にあたって</b><br>・返信に1〜2日かかる場合があります ・要点を簡潔に ・緊急の問題は「問題を報告」から</div>
+        <div class="datesep">6/14（土）</div>
+        <div class="catsep"><span>— 配送について —</span></div>
+        <div class="bub them">こんにちは。どの注文でしょうか？ FL番号を教えてください。<div class="tm">10:20</div></div>
+        <div class="bub me">FL-260612-001 が届いてないです<div class="tm">10:22</div></div>
+        <div class="bub me"><div class="imgbub"></div><div class="tm">10:22</div></div>
+        <div class="bub them">確認します。少々お待ちください。<div class="tm">10:25</div></div>
+      </div>
+      <div class="chatfoot"><span class="cam">📷</span><span class="box">メッセージを入力…</span><span class="send">送信</span></div>
+    </div>
+  </div>
+
+  <!-- ④ 管理画面 FAQ管理 -->
+  <div class="col">
+    <div class="lab">④ 管理画面：FAQ管理<span class="t">カテゴリ別Q&A・公開非公開・並べ替え・言語・画像</span></div>
+    <div class="desk">
+      <div class="dhd"><span class="glob">🌐 日本語（画面の言語）</span><div class="t1">FISHLINK 管理画面</div><div class="t2">FAQ（よくある質問）</div></div>
+      <div class="dnav">
+        <span class="n">取引一覧</span><span class="n">ユーザー</span><span class="n">料金設定</span><span class="n">紹介クーポン</span><span class="n">CAA参考価格</span><span class="n">トラブル報告</span><span class="n on">FAQ</span>
+      </div>
+      <div class="dbody">
+        <div class="seldd"><span class="l">カテゴリ</span><span class="dd">配送 <span class="ar">▾</span></span></div>
+        <div class="langrow"><span class="l">編集する言語</span><span class="lt on">クメール語</span><span class="lt">英語</span><span class="lt">日本語</span></div>
+        <span class="addbtn">＋ 質問を追加</span>
+
+        <div class="qa"><span class="gr">≡</span><span class="qt">配達が遅れそうな時は？</span><span class="pub on">公開</span><span class="act">✏ 編集</span><span class="act del">🗑</span></div>
+        <div class="qa"><span class="gr">≡</span><span class="qt">注文した魚が届かない</span><span class="pub on">公開</span><span class="act">✏ 編集</span><span class="act del">🗑</span></div>
+        <div class="qa"><span class="gr">≡</span><span class="qt">配達時間は選べる？</span><span class="pub off">非公開</span><span class="act">✏ 編集</span><span class="act del">🗑</span></div>
+
+        <div class="editbox">
+          <div style="font-size:12.5px;font-weight:800;color:#0B5FB0">編集：配達が遅れそうな時は？</div>
+          <div class="fl">質問</div><div class="inp">配達が遅れそうな時は？</div>
+          <div class="fl">回答</div><div class="inp ta">配送チャットで農家に状況を聞けます。届かない・品質の問題は「問題を報告」から運営へ。</div>
+          <div class="fl">画像（任意・複数可）</div>
+          <div class="imgmulti"><div class="th2"></div><div class="th2"></div><div class="add2">＋</div></div>
+          <div class="erow"><span class="pub on" style="font-size:11px">☑ 公開する</span><span class="save">保存</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 運営側 運営チャット（返信） -->
+  <div class="col">
+    <div class="lab">⑤ 運営側：運営チャット（返信）<span class="t">往復・件区切り・未対応/対応済</span></div>
+    <div class="desk">
+      <div class="dhd"><span class="glob">🌐 日本語（画面の言語）</span><div class="t1">FISHLINK 管理画面 — ユーザー管理</div><div class="t2">farmer5</div></div>
+      <div class="dbody">
+        <div class="ahd"><span class="au">@test_farmer5 ・ 農家 ・ ★79%（19）</span><span class="st todo">未対応</span></div>
+        <div class="achat">
+          <div class="atop"><span class="lbl">運営チャット</span><span class="done">✓ 対応済にする</span></div>
+          <div class="catsep"><span>— 配送について —</span></div>
+          <div class="bub them">FL-260612-001 が届いてないです<div class="tm">10:22</div></div>
+          <div class="bub them"><div class="imgbub"></div><div class="tm">10:22</div></div>
+          <div class="bub me">確認します。少々お待ちください。<div class="tm">10:25</div></div>
+        </div>
+        <div class="afoot"><span class="box">メッセージを入力（Enter送信／Shift+Enter改行）</span><span class="send">送信</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

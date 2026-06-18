@@ -2565,20 +2565,48 @@ exports.onAdminChatMessage = onDocumentCreated(
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
+    // 6/14 #145: 件の区切り（システム行）は通知・サマリ更新の対象外
+    //   （senderRole==='system' / type==='separator'。これを処理すると lastMessage を空で
+    //    上書き＋未対応フラグを誤って下ろす＋無用な通知になるため早期 return）。
+    if (data.type === "separator" || data.senderRole === "system") return;
+
     const { uid } = event.params;
     const senderRole = data.senderRole;
-    const text = data.text || "";
+    let text = data.text || "";
+    const hasImage = Array.isArray(data.imageUrls) && data.imageUrls.length > 0;
+
+    // 6/14 #145 / #120: サーバ側で連絡先を再検知（バイパス防止）。ユーザー発言のみ。
+    //   client は admin-chat.html 送信時に maskContacts 済みだが、API 直叩きを防ぐため再マスクし、
+    //   発動時は本文をマスク後で上書き＋contactMasked フラグを立てる（Q&A onCommentCreated と同方式）。
+    if (senderRole === "user" && text) {
+      const serverDetect = maskContactsServer(text);
+      if (serverDetect.hit && serverDetect.masked !== text) {
+        text = serverDetect.masked;
+        try {
+          await event.data.ref.update({ text, contactMasked: true });
+        } catch (e) {
+          console.error("onAdminChatMessage mask update failed:", uid, e);
+        }
+      }
+    }
+
+    // 画像のみ（本文空）のプレビュー文言（言語別）
+    const imageLabel = (lang) => ({ ja: "画像が送信されました", en: "Image sent", km: "បានផ្ញើរូបភាព" }[lang] || "Image");
+    const preview = text ? text.slice(0, 200) : (hasImage ? "[image]" : "");
 
     // 親ドキュメントに最新メッセージのサマリを保存
     // 5/1: 管理者ユーザー一覧で未読バッジ・最終メッセージを表示するため
     const admin = require("firebase-admin/firestore");
     try {
       await db.doc(`adminChats/${uid}`).set({
-        lastMessage: text.slice(0, 200),
+        lastMessage: preview,
         lastMessageAt: admin.FieldValue.serverTimestamp(),
         lastSenderRole: senderRole,
         // ユーザー発言時のみ未読フラグを立てる。管理者が返信した時点で false に
         hasUnreadFromUser: senderRole === "user",
+        // 6/14 #145: 未対応/対応済（ユーザー発言→未対応／管理者返信→対応済）。
+        //   一覧の未対応バッジ・「未対応」フィルタの正本。
+        supportStatus: senderRole === "user" ? "todo" : "done",
         updatedAt: admin.FieldValue.serverTimestamp(),
       }, { merge: true });
     } catch (e) {
@@ -2588,12 +2616,13 @@ exports.onAdminChatMessage = onDocumentCreated(
     if (senderRole === "admin") {
       const userSnap = await db.doc(`users/${uid}`).get();
       const lang = userSnap.data()?.lang || "km";
-      const vars = { text: text.slice(0, 80) };
+      const vars = { text: text ? text.slice(0, 80) : (hasImage ? imageLabel(lang) : "") };
       const msg = getMessage("adminChat", lang, vars);
       await notifyUser(uid, {
         type: "admin_chat",
         title: msg.title, body: msg.body,
-        url: "/pages/admin-chat.html",
+        // 6/14 #145: タップで会話を直接開く
+        url: "/pages/admin-chat.html?view=chat",
         msgKey: "adminChat",
         vars,
       });
@@ -2602,10 +2631,10 @@ exports.onAdminChatMessage = onDocumentCreated(
       console.log("onAdminChatMessage: notifying admins", { fromUid: uid, adminCount: adminUids.length });
       const senderSnap = await db.doc(`users/${uid}`).get();
       const senderName = senderSnap.data()?.displayName || senderSnap.data()?.loginId || "user";
-      const vars = { name: senderName, text: text.slice(0, 80) };
       await Promise.all(adminUids.map(async adminUid => {
         const adminSnap = await db.doc(`users/${adminUid}`).get();
         const lang = adminSnap.data()?.lang || "ja";
+        const vars = { name: senderName, text: text ? text.slice(0, 80) : (hasImage ? imageLabel(lang) : "") };
         const msg = getMessage("adminChatFromUser", lang, vars);
         await notifyUser(adminUid, {
           type: "admin_chat",

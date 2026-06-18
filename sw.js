@@ -315,7 +315,28 @@ self.addEventListener('notificationclick', (event) => {
 //     「レストラン写真」→「お店の様子」に統一。locales に profile.shopIcon / shopIntroPlaceholder 追加。
 //   ⚠️ functions 変更あり（onOrderUpdated 完了遷移で users.tradeCount を +1／callable backfillTradeCount 追加）＝バックエンドデプロイ要。
 //      既存完了注文は admin/settings.html「取引数を集計」ボタン（callable）で一度だけバックフィル。Firestore Rules / インデックス変更なし。
-const CACHE_NAME = 'fishlink-v125';
+// 6/14 #144/#145 運営チャット（サポート）再設計＋FAQ管理（v126）:
+//   - #144 FAQ基盤：新コレクション faq（{category,i18n{km,en,ja}{question,answer},images[],published,order,createdAt}）。
+//     新規 admin/faq.html（カテゴリDD・編集言語タブ・追加/編集/削除・公開非公開トグル・ドラッグ並べ替え・画像複数）。
+//     新規 js/faq-display.js（ユーザー側 公開FAQ ロード＋アコーディオン描画＝振り分け②に埋め込む）を PRECACHE 追加。
+//     firestore.rules に faq ルール追加（published==true は public read／admin write）→ Console 手動公開が必要。
+//     ユーザー側クエリは where(category==X, published==true)（equality×2・orderByなし）＝複合インデックス不要。
+//     併せて adminChats ルールを厳格化（レビュー反映）：親doc write を admin 限定（user が自分の
+//     supportStatus を書いて未対応を隠せないように）／messages create は本人=senderRole'user' or
+//     'system'&&type'separator' のみ（管理者なりすまし・任意system行偽装を封鎖）／本人 update は isRead のみ。
+//   - #145 運営チャット再設計：pages/admin-chat.html を ①カテゴリ選択→②振り分け（FAQ＋ロール別窓口＋エスカレ）→
+//     ③青の往復チャット（自分=青右/運営=白左・件の区切り「— カテゴリ —」system行・画像複数添付・日付/時刻）に全面再設計。
+//     pages/admin/users.html 管理側＝青の往復・件区切り・画像表示／未対応/対応済（supportStatus）＋未対応フィルタ/バッジ＋
+//     「対応済にする」／評価 79.00→★79%(件数)・0件=新規／毎メッセージのカテゴリバッジ廃止。
+//     全 admin 7ページのナビに「FAQ」追加。
+//   ⚠️ functions 変更あり（onAdminChatMessage：separator/system は通知・サマリ対象外／supportStatus 設定／
+//      返信 push url を ?view=chat に／画像のみメッセージのプレビュー／ユーザー発言のサーバ側連絡先
+//      マスク再検知＝#120 バイパス防止）＝バックエンドデプロイ要。
+//   - css/style.css に .sup-*（青往復バブル/件区切り/日付区切り）＋ .faqd-*（FAQアコーディオン）を追加。
+//   - locales 3言語に adminChat.*（catSelectTitle/faqSectionTitle/deskSectionTitle/escalate*/desk*/existing*/categoryReferral 等）／
+//     admin.faq.*／admin.navFaq／admin.users.*（statusTodo/statusDone/markDone/filterTodo/ratingNew）を追加。
+//     categoryPayment を「支払い・送金について」に変更。Storage は既定 auth ルール（faq/{id}/・adminChats/{uid}/ ＝専用ルール不要）。
+const CACHE_NAME = 'fishlink-v126';
 
 const PRECACHE_URLS = [
     '/',
@@ -340,6 +361,7 @@ const PRECACHE_URLS = [
     '/js/render-cache.js',
     '/js/chat-timeline.js',
     '/js/review-card.js',
+    '/js/faq-display.js',
     '/locales/ja.json',
     '/locales/en.json',
     '/locales/km.json',

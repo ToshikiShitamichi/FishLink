@@ -8,7 +8,8 @@
       "Bash(node -e ' *)",
       "Bash(node --check index.js)",
       "Bash(echo \"exit: $?\")",
-      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); const o=j.orders||{}; ['fishTotal','commission','deliveryFee','deliveryNote','receiveAmount','quantity','gutProcessing','gutYes','gutNo','deliveryDate','deliveryTime','farmerCampaignDiscount','farmerCampaignDiscountValue','unitPrice','viewReviews','openMaps','reviewCount'].forEach\\(k=>console.log\\(k, '=>', JSON.stringify\\(o[k]\\)\\)\\); console.log\\('--- has 注文内容/金額/レストラン keys? ---'\\); console.log\\('sectionAmount', o.sectionAmount, 'sectionOrderContent', o.sectionOrderContent\\);\")"
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); const o=j.orders||{}; ['fishTotal','commission','deliveryFee','deliveryNote','receiveAmount','quantity','gutProcessing','gutYes','gutNo','deliveryDate','deliveryTime','farmerCampaignDiscount','farmerCampaignDiscountValue','unitPrice','viewReviews','openMaps','reviewCount'].forEach\\(k=>console.log\\(k, '=>', JSON.stringify\\(o[k]\\)\\)\\); console.log\\('--- has 注文内容/金額/レストラン keys? ---'\\); console.log\\('sectionAmount', o.sectionAmount, 'sectionOrderContent', o.sectionOrderContent\\);\")",
+      "Bash(node tmp_check2.cjs)"
     ]
   }
 }

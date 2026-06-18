@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
+    <title>FishLink Admin - FAQ</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        body { background: #f8fafc; }
+        .admin-shell { max-width: 1000px; margin: 0 auto; padding: 24px; }
+        .admin-header {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
+        }
+        .admin-header__right { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        .admin-brand { font-size: 13px; color: #64748b; margin-bottom: 2px; }
+        .admin-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: #0f172a; }
+        .admin-subtitle { font-size: 13px; color: #475569; margin-top: 4px; }
+        .admin-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+        .admin-nav a {
+            text-decoration: none; color: #475569; padding: 8px 14px;
+            border-radius: 999px; background: #fff; border: 1px solid #e2e8f0;
+            font-size: 13px; font-weight: 600; white-space: nowrap;
+        }
+        .admin-nav a.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+        .admin-nav a:hover:not(.active) { background: #f1f5f9; }
+
+        .panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; }
+
+        .faq-toolbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+        .faq-toolbar label.l { font-size: 12px; color: #64748b; font-weight: 700; }
+        .faq-cat-select {
+            font-size: 14px; font-weight: 600; padding: 8px 12px;
+            border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: #0f172a;
+        }
+        .lang-tabs { display: flex; gap: 6px; align-items: center; }
+        .lang-tab {
+            font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 14px;
+            border: 1px solid #cbd5e1; color: #475569; background: #fff; cursor: pointer;
+        }
+        .lang-tab.on { background: #1e293b; color: #fff; border-color: #1e293b; }
+        .lang-note { font-size: 11px; color: #94a3b8; }
+
+        .add-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 13px; font-weight: 800; color: var(--color-cta);
+            border: 1.5px dashed #9cc0e5; border-radius: 9px; padding: 9px 14px;
+            background: #fff; cursor: pointer; margin-bottom: 14px;
+        }
+        .add-btn:hover { background: var(--color-cta-lt); }
+
+        .faq-row {
+            display: flex; align-items: center; gap: 12px;
+            border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 9px;
+            background: #fff;
+        }
+        .faq-row.dragging { opacity: 0.45; }
+        .faq-row.drag-over { border-color: var(--color-cta); box-shadow: 0 0 0 2px var(--color-cta-lt); }
+        .faq-row__grip { color: #cbd5e1; font-size: 20px; cursor: grab; flex-shrink: 0; }
+        .faq-row__grip:active { cursor: grabbing; }
+        .faq-row__q { flex: 1; font-size: 14px; font-weight: 600; color: #0f172a; min-width: 0; }
+        .faq-row__q.empty { color: #cbd5e1; font-weight: 500; font-style: italic; }
+        .faq-row__pub {
+            font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 10px;
+            cursor: pointer; flex-shrink: 0; border: none;
+        }
+        .faq-row__pub.on { background: var(--color-cta-lt); color: var(--color-cta); }
+        .faq-row__pub.off { background: #eef1f4; color: #8a93a0; }
+        .faq-row__act { font-size: 12.5px; font-weight: 700; color: var(--color-cta); cursor: pointer; background: none; border: none; flex-shrink: 0; display: inline-flex; align-items: center; gap: 3px; }
+        .faq-row__act.del { color: #dc2626; }
+
+        .faq-empty { text-align: center; color: #94a3b8; padding: 28px 0; font-size: 13px; }
+
+        .editbox { background: #f7f9fb; border: 1px solid #e2e8f0; border-radius: 11px; padding: 16px; margin-top: 10px; }
+        .editbox__title { font-size: 13px; font-weight: 800; color: var(--color-cta); margin-bottom: 6px; }
+        .editbox__lang { font-size: 11px; color: #64748b; font-weight: 700; margin-bottom: 10px; }
+        .editbox .fl { font-size: 12px; color: #475569; font-weight: 700; margin: 12px 0 5px; }
+        .editbox .inp {
+            width: 100%; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px;
+            padding: 10px 12px; font-size: 14px; color: #0f172a; font-family: inherit;
+        }
+        .editbox textarea.inp { min-height: 90px; resize: vertical; }
+        .img-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+        .img-thumb { position: relative; width: 92px; height: 72px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+        .img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .img-thumb__del {
+            position: absolute; top: 3px; right: 3px; width: 22px; height: 22px;
+            border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .img-thumb__del .material-symbols-outlined { font-size: 15px; }
+        .img-add {
+            width: 92px; height: 72px; border-radius: 8px; border: 1.5px dashed #9cc0e5;
+            color: var(--color-cta); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; background: #fff;
+        }
+        .img-add .material-symbols-outlined { font-size: 26px; }
+        .editbox__foot { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; gap: 12px; flex-wrap: wrap; }
+        .pub-check { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: #0f172a; cursor: pointer; }
+        .pub-check input { width: 16px; height: 16px; accent-color: var(--color-cta); }
+        .editbox__btns { display: flex; gap: 8px; }
+        .btn-save { background: var(--color-cta); color: #fff; font-size: 13px; font-weight: 800; padding: 10px 20px; border: none; border-radius: 9px; cursor: pointer; }
+        .btn-save:disabled { background: #94a3b8; cursor: not-allowed; }
+        .btn-cancel { background: #eef1f4; color: #475569; font-size: 13px; font-weight: 700; padding: 10px 18px; border: none; border-radius: 9px; cursor: pointer; }
+        .edit-err { color: #dc2626; font-size: 12px; font-weight: 600; margin-top: 8px; display: none; }
+
+        @media (max-width: 480px) {
+            .admin-shell { padding: 14px; }
+            .admin-title { font-size: 22px; }
+            .panel { padding: 12px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="admin-shell">
+        <div class="admin-header">
+            <div>
+                <div class="admin-brand" data-i18n="admin.brand"></div>
+                <div class="admin-title" data-i18n="admin.faq.title"></div>
+                <div class="admin-subtitle" data-i18n="admin.faq.subtitle"></div>
+            </div>
+            <div class="admin-header__right">
+                <nav class="admin-nav">
+                    <a href="/pages/admin/index.html" data-i18n="admin.navTransactions"></a>
+                    <a href="/pages/admin/users.html" data-i18n="admin.navUsers"></a>
+                    <a href="/pages/admin/settings.html" data-i18n="admin.navSettings"></a>
+                    <a href="/pages/admin/referral.html" data-i18n="admin.navReferral"></a>
+                    <a href="/pages/admin/caa.html" data-i18n="admin.navCaa"></a>
+                    <a href="/pages/admin/reports.html" data-i18n="admin.navReports"></a>
+                    <a href="/pages/admin/faq.html" class="active" data-i18n="admin.navFaq"></a>
+                    <a href="#" id="logout-btn" data-i18n="admin.navLogout"></a>
+                </nav>
+                <select id="lang-selector">
+                    <option value="km">ខ្មែរ</option>
+                    <option value="en">ENGLISH</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="faq-toolbar">
+                <label class="l" data-i18n="admin.faq.categoryLabel" for="cat-select"></label>
+                <select class="faq-cat-select" id="cat-select"></select>
+                <div style="width:1px; height:22px; background:#e2e8f0;"></div>
+                <label class="l" data-i18n="admin.faq.contentLangLabel"></label>
+                <div class="lang-tabs" id="lang-tabs">
+                    <button type="button" class="lang-tab on" data-lang="km" data-i18n="admin.faq.langKm"></button>
+                    <button type="button" class="lang-tab" data-lang="en" data-i18n="admin.faq.langEn"></button>
+                    <button type="button" class="lang-tab" data-lang="ja" data-i18n="admin.faq.langJa"></button>
+                </div>
+                <span class="lang-note" data-i18n="admin.faq.contentLangNote"></span>
+            </div>
+
+            <button class="add-btn" id="add-btn">
+                <span class="material-symbols-outlined" style="font-size:18px;">add</span>
+                <span data-i18n="admin.faq.addQuestion"></span>
+            </button>
+
+            <div id="faq-list"></div>
+            <div id="edit-host"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState, logout } from '/js/auth.js';
+        import { db, storage } from '/js/firebase-config.js';
+        import { initAdminReportBadge } from '/js/admin-report-badge.js';
+        import { uploadImageResized } from '/js/image-resize.js';
+        import { ref } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+        import {
+            collection, query, where, getDocs, addDoc, updateDoc, deleteDoc,
+            doc, serverTimestamp, writeBatch
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        const loading = document.getElementById('loading');
+
+        // §3 カテゴリ（コード固定）。FAQ 管理は全カテゴリを編集可（posting はユーザー側=農家のみだが管理は共通）。
+        const CATEGORIES = ['order', 'payment', 'delivery', 'referral', 'account', 'posting', 'other'];
+        const CONTENT_LANGS = ['km', 'en', 'ja'];
+
+        let currentCategory = 'order';
+        let editLang = 'km';      // 編集/一覧表示する“中身”の言語
+        let faqs = [];            // 現在カテゴリの doc 配列（order 昇順）
+        let editState = null;     // 編集中の状態（null=非表示）
+
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+        initAdminReportBadge();
+
+        document.getElementById('logout-btn').addEventListener('click', (e) => { e.preventDefault(); logout(); });
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+        function catLabel(cat) {
+            const key = `adminChat.category${cap(cat)}`;
+            return i18next.exists(key) ? i18next.t(key) : cat;
+        }
+        function langText(faq, lang) {
+            const e = (faq.i18n || {})[lang] || {};
+            return { question: e.question || '', answer: e.answer || '' };
+        }
+
+        function waitAdmin(cb) {
+            if (window.currentUserData) {
+                if (window.currentUserData.role !== 'admin') { location.href = '/index.html'; return; }
+                cb();
+            } else { setTimeout(() => waitAdmin(cb), 200); }
+        }
+
+        function renderCatSelect() {
+            const sel = document.getElementById('cat-select');
+            sel.innerHTML = CATEGORIES.map(c =>
+                `<option value="${c}"${c === currentCategory ? ' selected' : ''}>${escapeHtml(catLabel(c))}</option>`
+            ).join('');
+        }
+
+        async function loadFaqs() {
+            loading.classList.add('show');
+            try {
+                const snap = await getDocs(query(collection(db, 'faq'), where('category', '==', currentCategory)));
+                faqs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+                renderList();
+            } catch (e) {
+                console.error('loadFaqs failed:', e);
+                faqs = [];
+                renderList();
+            } finally {
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
+            }
+        }
+
+        function renderList() {
+            const list = document.getElementById('faq-list');
+            if (faqs.length === 0) {
+                list.innerHTML = `<div class="faq-empty">${escapeHtml(i18next.t('admin.faq.empty'))}</div>`;
+                return;
+            }
+            list.innerHTML = faqs.map(f => {
+                const q = langText(f, editLang).question;
+                const qHtml = q
+                    ? `<div class="faq-row__q">${escapeHtml(q)}</div>`
+                    : `<div class="faq-row__q empty">${escapeHtml(i18next.t('admin.faq.noQuestionYet'))}</div>`;
+                return `
+                    <div class="faq-row" draggable="true" data-id="${f.id}">
+                        <span class="material-symbols-outlined faq-row__grip">drag_indicator</span>
+                        ${qHtml}
+                        <button class="faq-row__pub ${f.published ? 'on' : 'off'}" data-id="${f.id}">
+                            ${escapeHtml(i18next.t(f.published ? 'admin.faq.published' : 'admin.faq.unpublished'))}
+                        </button>
+                        <button class="faq-row__act" data-edit="${f.id}">
+                            <span class="material-symbols-outlined" style="font-size:16px;">edit</span>${escapeHtml(i18next.t('admin.faq.edit'))}
+                        </button>
+                        <button class="faq-row__act del" data-del="${f.id}" aria-label="${escapeHtml(i18next.t('admin.faq.delete'))}">
+                            <span class="material-symbols-outlined" style="font-size:18px;">delete</span>
+                        </button>
+                    </div>`;
+            }).join('');
+
+            list.querySelectorAll('.faq-row__pub').forEach(b => b.addEventListener('click', () => togglePublish(b.dataset.id)));
+            list.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEdit(b.dataset.edit)));
+            list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => removeFaq(b.dataset.del)));
+            bindDrag(list);
+        }
+
+        // ── ドラッグ並べ替え（HTML5 DnD・desktop admin） ──────────────
+        let dragId = null;
+        function bindDrag(list) {
+            list.querySelectorAll('.faq-row').forEach(row => {
+                row.addEventListener('dragstart', (e) => {
+                    dragId = row.dataset.id; row.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                row.addEventListener('dragend', () => { row.classList.remove('dragging'); dragId = null; list.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over')); });
+                row.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (row.dataset.id !== dragId) row.classList.add('drag-over'); });
+                row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+                row.addEventListener('drop', (e) => {
+                    e.preventDefault(); row.classList.remove('drag-over');
+                    const targetId = row.dataset.id;
+                    if (!dragId || dragId === targetId) return;
+                    reorder(dragId, targetId);
+                });
+            });
+        }
+        async function reorder(fromId, toId) {
+            const fromIdx = faqs.findIndex(f => f.id === fromId);
+            const toIdx = faqs.findIndex(f => f.id === toId);
+            if (fromIdx < 0 || toIdx < 0) return;
+            const [moved] = faqs.splice(fromIdx, 1);
+            faqs.splice(toIdx, 0, moved);
+            // order を 0..n-1 で振り直し
+            faqs.forEach((f, i) => { f.order = i; });
+            renderList();
+            try {
+                const batch = writeBatch(db);
+                faqs.forEach((f, i) => batch.update(doc(db, 'faq', f.id), { order: i }));
+                await batch.commit();
+            } catch (e) { console.error('reorder save failed:', e); }
+        }
+
+        async function togglePublish(id) {
+            const f = faqs.find(x => x.id === id);
+            if (!f) return;
+            const next = !f.published;
+            f.published = next;
+            renderList();
+            try { await updateDoc(doc(db, 'faq', id), { published: next }); }
+            catch (e) { console.error(e); f.published = !next; renderList(); }
+        }
+
+        async function removeFaq(id) {
+            if (!confirm(i18next.t('admin.faq.confirmDelete'))) return;
+            loading.classList.add('show');
+            try {
+                await deleteDoc(doc(db, 'faq', id));
+                faqs = faqs.filter(f => f.id !== id);
+                if (editState && editState.id === id) { editState = null; renderEdit(); }
+                renderList();
+            } catch (e) { console.error(e); alert(i18next.t('admin.faq.saveFailed')); }
+            finally { loading.classList.remove('show'); }
+        }
+
+        // ── 編集ボックス ──────────────────────────────────────────────
+        function blankI18n() {
+            const o = {};
+            CONTENT_LANGS.forEach(l => { o[l] = { question: '', answer: '' }; });
+            return o;
+        }
+        function openEdit(id) {
+            const f = id ? faqs.find(x => x.id === id) : null;
+            const i18n = blankI18n();
+            if (f && f.i18n) CONTENT_LANGS.forEach(l => { i18n[l] = { question: f.i18n[l]?.question || '', answer: f.i18n[l]?.answer || '' }; });
+            editState = {
+                id: f ? f.id : null,
+                i18n,
+                images: f && Array.isArray(f.images) ? [...f.images] : [],  // 既存URL
+                newFiles: [],                                               // 追加ファイル
+                published: f ? !!f.published : false,
+            };
+            renderEdit();
+            document.getElementById('edit-host').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // 表示中の入力欄の値を editState に取り込む（言語切替・保存の前に呼ぶ）
+        function captureEditInputs() {
+            if (!editState) return;
+            const q = document.getElementById('e-question');
+            const a = document.getElementById('e-answer');
+            if (q) editState.i18n[editLang].question = q.value;
+            if (a) editState.i18n[editLang].answer = a.value;
+            const pub = document.getElementById('e-publish');
+            if (pub) editState.published = pub.checked;
+        }
+
+        function renderEdit() {
+            const host = document.getElementById('edit-host');
+            if (!editState) { host.innerHTML = ''; return; }
+            const cur = editState.i18n[editLang] || { question: '', answer: '' };
+            const titleNew = i18next.t('admin.faq.editTitleNew');
+            const titleText = editState.id ? (editState.i18n[editLang].question || titleNew) : titleNew;
+            const langLabel = i18next.t('admin.faq.lang' + cap(editLang));
+
+            const existImgs = editState.images.map((url, i) =>
+                `<div class="img-thumb"><img src="${escapeHtml(url)}" alt=""><button class="img-thumb__del" data-rm-url="${i}" type="button"><span class="material-symbols-outlined">close</span></button></div>`
+            ).join('');
+            const newImgs = editState.newFiles.map((nf, i) =>
+                `<div class="img-thumb"><img src="${escapeHtml(nf.preview)}" alt=""><button class="img-thumb__del" data-rm-new="${i}" type="button"><span class="material-symbols-outlined">close</span></button></div>`
+            ).join('');
+
+            host.innerHTML = `
+                <div class="editbox">
+                    <div class="editbox__title">${escapeHtml(titleText)}</div>
+                    <div class="editbox__lang">${escapeHtml(i18next.t('admin.faq.contentLangLabel'))}: <b>${escapeHtml(langLabel)}</b></div>
+                    <div class="fl">${escapeHtml(i18next.t('admin.faq.fieldQuestion'))}</div>
+                    <input class="inp" id="e-question" value="${escapeHtml(cur.question)}" placeholder="${escapeHtml(i18next.t('admin.faq.questionPlaceholder'))}">
+                    <div class="fl">${escapeHtml(i18next.t('admin.faq.fieldAnswer'))}</div>
+                    <textarea class="inp" id="e-answer" placeholder="${escapeHtml(i18next.t('admin.faq.answerPlaceholder'))}">${escapeHtml(cur.answer)}</textarea>
+                    <div class="fl">${escapeHtml(i18next.t('admin.faq.fieldImages'))}</div>
+                    <div class="img-grid">
+                        ${existImgs}${newImgs}
+                        <label class="img-add" title="${escapeHtml(i18next.t('admin.faq.addImage'))}">
+                            <span class="material-symbols-outlined">add_photo_alternate</span>
+                            <input type="file" id="e-images" accept="image/*" multiple hidden>
+                        </label>
+                    </div>
+                    <div class="edit-err" id="edit-err">${escapeHtml(i18next.t('admin.faq.needContent'))}</div>
+                    <div class="editbox__foot">
+                        <label class="pub-check"><input type="checkbox" id="e-publish" ${editState.published ? 'checked' : ''}>${escapeHtml(i18next.t('admin.faq.publishCheck'))}</label>
+                        <div class="editbox__btns">
+                            <button class="btn-cancel" id="e-cancel">${escapeHtml(i18next.t('admin.faq.cancel'))}</button>
+                            <button class="btn-save" id="e-save">${escapeHtml(i18next.t('admin.faq.save'))}</button>
+                        </div>
+                    </div>
+                </div>`;
+
+            document.getElementById('e-images').addEventListener('change', (ev) => {
+                captureEditInputs();
+                const files = Array.from(ev.target.files || []);
+                files.forEach(file => {
+                    if (!file.type.startsWith('image/')) return;
+                    editState.newFiles.push({ file, preview: URL.createObjectURL(file) });
+                });
+                renderEdit();
+            });
+            host.querySelectorAll('[data-rm-url]').forEach(b => b.addEventListener('click', () => {
+                captureEditInputs();
+                editState.images.splice(Number(b.dataset.rmUrl), 1); renderEdit();
+            }));
+            host.querySelectorAll('[data-rm-new]').forEach(b => b.addEventListener('click', () => {
+                captureEditInputs();
+                const i = Number(b.dataset.rmNew);
+                URL.revokeObjectURL(editState.newFiles[i]?.preview);
+                editState.newFiles.splice(i, 1); renderEdit();
+            }));
+            document.getElementById('e-cancel').addEventListener('click', () => { editState = null; renderEdit(); });
+            document.getElementById('e-save').addEventListener('click', saveEdit);
+        }
+
+        async function saveEdit() {
+            captureEditInputs();
+            // バリデーション：いずれかの言語で question と answer の両方が入っている
+            const hasContent = CONTENT_LANGS.some(l => {
+                const e = editState.i18n[l];
+                return e && e.question.trim() && e.answer.trim();
+            });
+            const err = document.getElementById('edit-err');
+            if (!hasContent) { if (err) err.style.display = 'block'; return; }
+            if (err) err.style.display = 'none';
+
+            const saveBtn = document.getElementById('e-save');
+            saveBtn.disabled = true;
+            loading.classList.add('show');
+            try {
+                // i18n を trim 整形
+                const i18nClean = {};
+                CONTENT_LANGS.forEach(l => {
+                    i18nClean[l] = {
+                        question: (editState.i18n[l]?.question || '').trim(),
+                        answer: (editState.i18n[l]?.answer || '').trim(),
+                    };
+                });
+
+                let id = editState.id;
+                if (!id) {
+                    // 新規：先に doc を作って id を得る（画像は faq/{id}/ に置くため）
+                    const maxOrder = faqs.reduce((m, f) => Math.max(m, f.order ?? 0), -1);
+                    const docRef = await addDoc(collection(db, 'faq'), {
+                        category: currentCategory,
+                        i18n: i18nClean,
+                        images: [],
+                        published: !!editState.published,
+                        order: maxOrder + 1,
+                        createdAt: serverTimestamp(),
+                    });
+                    id = docRef.id;
+                }
+
+                // 画像アップロード（追加ファイル）→ 既存URL + 新規URL
+                const imageUrls = [...editState.images];
+                for (const nf of editState.newFiles) {
+                    const baseName = (nf.file.name || 'faq').replace(/\.[^.]+$/, '').replace(/[^\w-]/g, '');
+                    const storageRef = ref(storage, `faq/${id}/${Date.now()}_${baseName}.jpg`);
+                    const url = await uploadImageResized(storageRef, nf.file);
+                    imageUrls.push(url);
+                }
+
+                await updateDoc(doc(db, 'faq', id), {
+                    category: currentCategory,
+                    i18n: i18nClean,
+                    images: imageUrls,
+                    published: !!editState.published,
+                });
+
+                editState.newFiles.forEach(nf => URL.revokeObjectURL(nf.preview));
+                editState = null;
+                await loadFaqs();
+            } catch (e) {
+                console.error('saveEdit failed:', e);
+                alert(i18next.t('admin.faq.saveFailed'));
+            } finally {
+                loading.classList.remove('show');
+                if (saveBtn) saveBtn.disabled = false;
+            }
+        }
+
+        // ── イベント配線 ──────────────────────────────────────────────
+        document.getElementById('cat-select').addEventListener('change', (e) => {
+            currentCategory = e.target.value;
+            editState = null; renderEdit();
+            loadFaqs();
+        });
+        document.getElementById('lang-tabs').addEventListener('click', (e) => {
+            const btn = e.target.closest('.lang-tab');
+            if (!btn) return;
+            captureEditInputs();
+            editLang = btn.dataset.lang;
+            document.querySelectorAll('#lang-tabs .lang-tab').forEach(t => t.classList.toggle('on', t === btn));
+            renderList();
+            if (editState) renderEdit();
+        });
+        document.getElementById('add-btn').addEventListener('click', () => openEdit(null));
+
+        onLanguageChange(() => {
+            captureEditInputs();
+            renderCatSelect();
+            renderList();
+            if (editState) renderEdit();
+        });
+
+        waitAdmin(() => {
+            renderCatSelect();
+            loadFaqs();
+        });
+    </script>
+</body>
+
+</html>

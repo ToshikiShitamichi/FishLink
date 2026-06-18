@@ -90,7 +90,14 @@
       "Read(//tmp/**)",
       "Bash(git blame *)",
       "Bash(cat > *)",
-      "Bash(grep -v \"//\")"
+      "Bash(grep -v \"//\")",
+      "Bash(node -c js/faq-display.js)",
+      "Bash(node --input-type=module -e \"import\\('./js/faq-display.js'\\).catch\\(e=>{console.log\\('import-time error \\(expected: browser deps\\):', e.message\\)}\\)\")",
+      "Bash(node --check sw.js)",
+      "Bash(grep -n \"const items = faqs.map\\\\|return \\\\`<div\" \"C:\\\\work\\\\FishLink\\\\js\\\\faq-display.js\")",
+      "Bash(node tmp_i18n_check.cjs)",
+      "Bash(xargs grep -l \"adminChats\")",
+      "Bash(grep -v \"comment\\\\|//\\\\|/\\\\*\")"
     ],
     "additionalDirectories": [
       "\\tmp"
