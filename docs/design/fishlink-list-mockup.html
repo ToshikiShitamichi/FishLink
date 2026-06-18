@@ -160,6 +160,56 @@
     color: #5A6470;
   }
 
+  /* ===== アクティブ絞り込みチップ行（A案） ===== */
+  .active-filters {
+    padding: 0 16px 10px;
+    display: flex;
+    flex-wrap: wrap;     /* 多い時は2行に折り返し（B案） */
+    gap: 8px;
+  }
+  .af-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #E8F1FA;
+    color: #0B5FB0;
+    border: 1px solid #B7D5F1;
+    border-radius: 16px;
+    padding: 5px 8px 5px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .af-chip .x {
+    cursor: pointer;
+    font-weight: 700;
+    opacity: 0.7;
+    font-size: 13px;
+    line-height: 1;
+  }
+  .af-chip .x:hover { opacity: 1; }
+
+  /* ===== 0件の空状態 ===== */
+  .empty-state {
+    display: none;
+    padding: 52px 28px;
+    text-align: center;
+  }
+  .empty-state .ic { font-size: 38px; color: #C2C9D2; margin-bottom: 14px; }
+  .empty-state .et { font-size: 15px; font-weight: 700; color: #3A4250; margin-bottom: 6px; }
+  .empty-state .es { font-size: 13px; color: #8A93A0; margin-bottom: 20px; }
+  .empty-state .eb {
+    background: #0B5FB0;
+    color: #FFF;
+    border: none;
+    border-radius: 22px;
+    padding: 11px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .empty-state .eb:active { transform: scale(0.97); }
+
   /* ===== カード一覧（1列横長カード） ===== */
   .list {
     flex: 1 1 auto;
@@ -544,11 +594,12 @@
 <body>
 
 <div class="intro">
-  <h1>FISHLINK 魚一覧 V2 — ボトムシート デモ</h1>
-  <p><b>① 右上の「絞り込み」ボタン</b>をタップしてください</p>
-  <p>② 下からシートがスーッとせり上がります</p>
-  <p>③ チップで条件を選択 → 「この条件で表示」をタップ</p>
-  <p>④ ボタンに「⚙3」のように <b>適用数バッジ</b> が表示されます</p>
+  <h1>FISHLINK 魚一覧 V2 — 絞り込みチップ＋空状態</h1>
+  <p><b>初期表示＝「ヒレナマズ」で絞り込み中</b>（Homeの「魚から探す」で魚種タイルをタップして来た状態）</p>
+  <p><b>① アクティブ絞り込みチップ（A案）</b>：バーの下に <b>ヒレナマズ ✕</b> のように適用中フィルタを表示。<b>✕で即解除</b>（シートは開かない）。多い時は2行に折り返し。</p>
+  <p><b>② 絞り込みシート</b>：右上「絞り込み」をタップ → 魚種/地域/価格帯/お気に入り/過去注文を選択。価格帯は単一ハンドル（〜N／最上端＝上限なし）。</p>
+  <p><b>③ 0件の空状態</b>：魚種フィルタ1つだけで0件＝「<b>本日◯◯の出品はありません</b>」＋「すべての魚を見る」。複数条件で0件＝「条件に合う魚がありません」。<i>例：シートで「カエル」だけ選ぶと空状態が出ます。</i></p>
+  <p><b>④「すべての魚を見る」</b>＝全フィルタ解除（ソートは維持＝距離が近い順）。</p>
 </div>
 
 <div class="phone">
@@ -586,13 +637,24 @@
     <div class="opt" onclick="setSort('新着順')">新着順</div>
   </div>
 
+  <!-- アクティブ絞り込みチップ行（A案・絞り込みが1件以上の時だけ表示） -->
+  <div class="active-filters" id="active-filters"></div>
+
   <div class="count" id="count">12件の魚</div>
 
   <!-- リスト -->
   <div class="list">
-    <div class="grid cols-2">
+    <!-- 0件の空状態 -->
+    <div class="empty-state" id="empty-state">
+      <div class="ic">🐟</div>
+      <div class="et" id="empty-title">条件に合う魚がありません</div>
+      <div class="es" id="empty-sub" style="display:none">別の魚なら出品があります</div>
+      <button class="eb" onclick="clearAllFilters()">すべての魚を見る</button>
+    </div>
+
+    <div class="grid cols-2" id="grid">
       <!-- カード1 -->
-      <div class="card">
+      <div class="card" data-species="ヒレナマズ">
         <div class="heart">♡</div>
         <div class="card-top">
           <div class="card-img img-1 img-fish"><div class="gaqp-img-badge">✓ GAqP</div></div>
@@ -615,7 +677,7 @@
       </div>
 
       <!-- カード2 -->
-      <div class="card">
+      <div class="card" data-species="ライギョ">
         <div class="heart">♡</div>
         <div class="card-top">
           <div class="card-img img-2 img-fish"><div class="gaqp-img-badge">✓ GAqP</div></div>
@@ -638,7 +700,7 @@
       </div>
 
       <!-- カード3 -->
-      <div class="card">
+      <div class="card" data-species="ヒレナマズ">
         <div class="heart">♡</div>
         <div class="card-top">
           <div class="card-img img-3 img-fish"></div>
@@ -661,7 +723,7 @@
       </div>
 
       <!-- カード4 -->
-      <div class="card">
+      <div class="card" data-species="その他">
         <div class="heart">♡</div>
         <div class="card-top">
           <div class="card-img img-4 img-fish"><div class="gaqp-img-badge">✓ GAqP</div></div>
@@ -684,7 +746,7 @@
       </div>
 
       <!-- カード5 -->
-      <div class="card">
+      <div class="card" data-species="パンガシウス">
         <div class="heart">♡</div>
         <div class="card-top">
           <div class="card-img img-5 img-fish"><div class="gaqp-img-badge">✓ GAqP</div></div>
@@ -707,7 +769,7 @@
       </div>
 
       <!-- カード6 -->
-      <div class="card">
+      <div class="card" data-species="ヒレナマズ">
         <div class="heart">♡</div>
         <div class="card-top">
           <div class="card-img img-6 img-fish"><div class="gaqp-img-badge">✓ GAqP</div></div>
@@ -833,27 +895,79 @@
     document.querySelectorAll('input[type="range"]').forEach(r => r.value = r.max);
     document.getElementById('price-val').textContent = '〜 上限なし';
   }
-  function applyFilters() {
-    const selected = document.querySelectorAll('.chip.selected').length;
-    const priceRange = document.querySelector('input[type="range"]').value;
-    const sliders = document.querySelectorAll('input[type="range"]');
-    let extra = 0;
-    sliders.forEach(s => { if (s.value < s.max) extra++; });
-    const count = selected + extra;
+  // 空状態の青ボタン＝全フィルタ解除（ソートは触らない）
+  function clearAllFilters() {
+    resetFilters();
+    applyFilters({ keepSheetClosed: true });
+  }
+  function getActiveFilters() {
+    const pick = g => [...document.querySelectorAll(`.chip-group[data-group="${g}"] .chip.selected`)].map(c => c.textContent.trim());
+    const slider = document.querySelector('input[type="range"]');
+    const price = (slider && +slider.value < +slider.max) ? +slider.value : null;
+    return { species: pick('species'), region: pick('region'), other: pick('other'), price };
+  }
+  function renderActiveFilters(f) {
+    const wrap = document.getElementById('active-filters');
+    const chips = [];
+    f.species.forEach(s => chips.push({ label: s, type: 'species' }));
+    f.region.forEach(s => chips.push({ label: s, type: 'region' }));
+    f.other.forEach(s => chips.push({ label: s, type: 'other' }));
+    if (f.price !== null) chips.push({ label: '〜' + f.price.toLocaleString(), type: 'price' });
+    wrap.innerHTML = chips.map(c =>
+      `<span class="af-chip">${c.label} <span class="x" data-label="${c.label}" onclick="removeFilter('${c.type}', this)">✕</span></span>`
+    ).join('');
+    wrap.style.display = chips.length ? 'flex' : 'none';
+    return chips.length;
+  }
+  // チップの✕＝そのフィルタだけ即時解除（シートは開かない）
+  function removeFilter(type, el) {
+    const label = el.getAttribute('data-label');
+    if (type === 'price') {
+      const s = document.querySelector('input[type="range"]');
+      s.value = s.max;
+      document.getElementById('price-val').textContent = '〜 上限なし';
+    } else {
+      const group = document.querySelector(`.chip-group[data-group="${type}"]`);
+      [...group.querySelectorAll('.chip.selected')].forEach(c => {
+        if (c.textContent.trim() === label) c.classList.remove('selected');
+      });
+    }
+    applyFilters({ keepSheetClosed: true });
+  }
+  function applyFilters(opts) {
+    opts = opts || {};
+    const f = getActiveFilters();
+    const count = renderActiveFilters(f);
     const badge = document.getElementById('filter-badge');
     const btn = document.getElementById('filter-btn');
     if (count > 0) {
-      badge.textContent = count;
-      badge.style.display = 'inline-block';
-      btn.classList.add('active');
+      badge.textContent = count; badge.style.display = 'inline-block'; btn.classList.add('active');
     } else {
-      badge.style.display = 'none';
-      btn.classList.remove('active');
+      badge.style.display = 'none'; btn.classList.remove('active');
     }
-    // 件数ダミー更新
-    const newCount = Math.max(1, 12 - count * 2);
-    document.getElementById('count').textContent = `${newCount}件の魚`;
-    closeSheet();
+    // カードを魚種でフィルタ（地域/価格/その他は静的モックでは件数に効かせない）
+    const cards = [...document.querySelectorAll('#grid .card')];
+    let visible = 0;
+    cards.forEach(card => {
+      const show = f.species.length === 0 || f.species.includes(card.getAttribute('data-species'));
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    document.getElementById('count').textContent = `${visible}件の魚`;
+    // 0件の空状態（見出し出し分け＝魚種単独の時だけ魚種名）
+    const grid = document.getElementById('grid');
+    const empty = document.getElementById('empty-state');
+    if (visible === 0) {
+      grid.style.display = 'none';
+      empty.style.display = 'block';
+      const onlySpecies = f.species.length === 1 && f.region.length === 0 && f.other.length === 0 && f.price === null;
+      document.getElementById('empty-title').textContent = onlySpecies ? `本日${f.species[0]}の出品はありません` : '条件に合う魚がありません';
+      document.getElementById('empty-sub').style.display = onlySpecies ? 'block' : 'none';
+    } else {
+      grid.style.display = '';
+      empty.style.display = 'none';
+    }
+    if (!opts.keepSheetClosed) closeSheet();
   }
   function updatePrice(val) {
     const el = document.getElementById('price-val');
@@ -880,6 +994,14 @@
       document.getElementById('sort-popup').classList.remove('show');
     }
   });
+
+  // 初期表示＝ヒレナマズで絞り込み中（A案チップ行のデモ／ユーザーの実画面と一致＝3件）
+  (function init() {
+    const sp = [...document.querySelectorAll('.chip-group[data-group="species"] .chip')]
+      .find(c => c.textContent.trim() === 'ヒレナマズ');
+    if (sp) sp.classList.add('selected');
+    applyFilters({ keepSheetClosed: true });
+  })();
 </script>
 
 </body>

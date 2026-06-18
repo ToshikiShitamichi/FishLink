@@ -336,7 +336,18 @@ self.addEventListener('notificationclick', (event) => {
 //   - locales 3言語に adminChat.*（catSelectTitle/faqSectionTitle/deskSectionTitle/escalate*/desk*/existing*/categoryReferral 等）／
 //     admin.faq.*／admin.navFaq／admin.users.*（statusTodo/statusDone/markDone/filterTodo/ratingNew）を追加。
 //     categoryPayment を「支払い・送金について」に変更。Storage は既定 auth ルール（faq/{id}/・adminChats/{uid}/ ＝専用ルール不要）。
-const CACHE_NAME = 'fishlink-v126';
+// 6/16 #146/#147 魚一覧アクティブ絞り込みチップ＋0件出し分け／農家一覧 新設（v127・hosting のみ）:
+//   - #146 fish-list.html: アクティブ絞り込みチップ行（適用中のみ・ソート/絞り込みバーの下・✕で個別解除・2行折り返し・
+//     チップ数＝適用数バッジと一致）／0件の見出し出し分け（魚種フィルタ単独→「本日◯◯の出品はありません」＋サブ／
+//     他条件混在→「条件に合う魚がありません」）＋青「すべての魚を見る」（全フィルタ＋検索を外す・ソート維持）／
+//     0件では「もっと見る」を非表示。locales fishlist.emptyTitleSpecies/emptySubSpecies/emptyViewAll/removeFilter 追加。
+//   - #147 farmer-list.html 新設（おすすめ農家「もっと見る」の着地）: Home農家カード流用・縦1列・評価/距離ソート・
+//     魚種チップ単一選択（fishKinds で絞り込み・該当タグ青強調）・配達範囲外は非表示・新規は末尾だが隠さない。
+//     dashboard.html のおすすめ農家「もっと見る」を fish-list.html?sort=rating → farmer-list.html に張り替え。
+//     データは既存（fishListings active + users public read）をクライアント集計＝hosting-only。locales farmerlist.* 追加。
+//   - ⚠️ functions / Firestore Rules / インデックス変更なし。新規HTML（pages/restaurant/farmer-list.html）は
+//     他の pages/ 同様 PRECACHE には入れず stale-while-revalidate でランタイムキャッシュ＝版番号バンプで反映。
+const CACHE_NAME = 'fishlink-v127';
 
 const PRECACHE_URLS = [
     '/',

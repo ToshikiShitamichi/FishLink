@@ -48,7 +48,16 @@
         "emptyReset": "絞り込みをリセット",
         "searchClear": "クリア",
         "newFarmer": "新規",
-        "freeDelivery": "送料無料"
+        "freeDelivery": "送料無料",
+        "emptyTitleSpecies": "本日{{species}}の出品はありません",
+        "emptySubSpecies": "別の魚なら出品があります",
+        "emptyViewAll": "すべての魚を見る",
+        "removeFilter": "{{label}}を解除"
+    },
+    "farmerlist": {
+        "count": "{{count}}件の農家",
+        "emptyTitle": "{{species}}を扱う農家はいません",
+        "emptyViewAll": "すべての農家を見る"
     },
     "lang": {
         "ja": "日本語",

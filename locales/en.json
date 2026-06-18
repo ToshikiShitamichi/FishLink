@@ -48,7 +48,16 @@
         "emptyReset": "Reset filters",
         "searchClear": "Clear",
         "newFarmer": "New",
-        "freeDelivery": "Free delivery"
+        "freeDelivery": "Free delivery",
+        "emptyTitleSpecies": "No {{species}} listed today",
+        "emptySubSpecies": "Other fish are available",
+        "emptyViewAll": "See all fish",
+        "removeFilter": "Remove {{label}}"
+    },
+    "farmerlist": {
+        "count": "{{count}} farmers",
+        "emptyTitle": "No farmers handle {{species}}",
+        "emptyViewAll": "See all farmers"
     },
     "lang": {
         "ja": "日本語",

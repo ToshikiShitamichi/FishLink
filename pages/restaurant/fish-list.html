@@ -86,6 +86,26 @@
 
         .fl-count { font-size: 12px; color: var(--color-text-sub); padding-bottom: 8px; }
 
+        /* ── 6/16 #146: アクティブ絞り込みチップ行（§4.1） ──
+           ソート/絞り込みバーの下・件数の上。絞り込み1件以上の時だけ表示（=適用数バッジと一致）。
+           ✕で個別解除（シートは開かない）。あふれ時は2行折り返し（横スクロールにしない）。色＝青・背景薄青。 */
+        .fl-active-filters { display: none; flex-wrap: wrap; gap: 8px; padding-bottom: 8px; }
+        .fl-active-filters.show { display: flex; }
+        .fl-af-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: var(--color-cta-lt); color: var(--color-cta);
+            border: 1px solid var(--color-cta); border-radius: 16px;
+            padding: 5px 8px 5px 11px; font-size: 12px; font-weight: 600; white-space: nowrap;
+        }
+        .fl-af-chip > .material-symbols-outlined { font-size: 14px; }
+        .fl-af-chip__x {
+            border: none; background: transparent; padding: 0; margin: 0; cursor: pointer;
+            color: var(--color-cta); opacity: .65; font-family: inherit;
+            display: inline-flex; align-items: center;
+        }
+        .fl-af-chip__x:hover { opacity: 1; }
+        .fl-af-chip__x .material-symbols-outlined { font-size: 15px; }
+
         /* ── 2列グリッド（縦型カード・Homeとカード言語統一） ── */
         .fl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .fl-card-wrap { position: relative; min-width: 0; }
@@ -174,9 +194,12 @@
 
         .fl-empty { grid-column: 1 / -1; text-align: center; padding: 56px 20px; color: var(--color-text-sub); }
         .fl-empty .material-symbols-outlined { font-size: 48px; }
-        .fl-empty__text { font-size: 15px; margin: 12px 0 16px; }
+        /* 6/16 #146: 0件＝見出し出し分け（魚種単独→「本日◯◯の出品はありません」＋サブ／それ以外→「条件に合う魚がありません」） */
+        .fl-empty__text { font-size: 15px; font-weight: 700; color: var(--color-text); margin: 12px 0 0; }
+        .fl-empty__sub { font-size: 13px; color: var(--color-text-sub); margin: 6px 0 0; }
         .fl-empty__reset {
-            display: inline-block; border: 1.5px solid var(--color-cta); color: var(--color-cta);
+            display: inline-block; margin-top: 18px;
+            border: 1.5px solid var(--color-cta); color: var(--color-cta);
             background: transparent; border-radius: 999px; padding: 9px 20px;
             font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
         }
@@ -309,6 +332,9 @@
                     <div class="fl-sort-pop__opt" data-value="newest" data-i18n="restaurant.sortNewest"></div>
                 </div>
             </div>
+
+            <!-- 6/16 #146: アクティブ絞り込みチップ行（絞り込み1件以上の時だけ表示・✕で個別解除） -->
+            <div class="fl-active-filters" id="active-filters"></div>
 
             <!-- 件数 -->
             <div class="fl-count" id="count"></div>
@@ -803,6 +829,44 @@
                 </div>`;
         }
 
+        // ── 6/16 #146: アクティブ絞り込みチップ行（§4.1） ──
+        // チップ1個 = 効いているフィルタ1つ（魚種は魚種ごと・価格は上限のみ）。✕で即時個別解除。
+        function activeFilterChip(type, key, label, withFavIcon) {
+            return `<span class="fl-af-chip">${withFavIcon ? `<span class="material-symbols-outlined">favorite</span>` : ''}${escapeHtml(label)}`
+                + `<button type="button" class="fl-af-chip__x" data-af-type="${escapeHtml(type)}" data-af-key="${escapeHtml(key)}"`
+                + ` aria-label="${escapeHtml(i18next.t('fishlist.removeFilter', { label }))}"><span class="material-symbols-outlined">close</span></button></span>`;
+        }
+        function renderActiveFilters() {
+            const wrap = document.getElementById('active-filters');
+            const chips = [];
+            for (const key of state.species) {
+                const label = key === 'other' ? i18next.t('fish.otherShort') : fishLabelShort(key);
+                chips.push(activeFilterChip('species', key, label, false));
+            }
+            for (const key of state.provinces) {
+                chips.push(activeFilterChip('region', key, formatProvince(key), false));
+            }
+            // 価格帯＝上限のみ可動の単一ハンドル。最上端（上限なし）はフィルタ扱いせずチップ無し。
+            if (state.priceMax < PRICE_MAX) {
+                chips.push(activeFilterChip('price', 'price', '〜' + Number(state.priceMax).toLocaleString(), false));
+            }
+            if (state.favOnly) chips.push(activeFilterChip('fav', 'fav', i18next.t('fishlist.favorite'), true));
+            if (state.historyOnly) chips.push(activeFilterChip('history', 'history', i18next.t('fishlist.pastOrders'), false));
+            wrap.innerHTML = chips.join('');
+            wrap.classList.toggle('show', chips.length > 0);
+        }
+        // 空状態の青ボタン「すべての魚を見る」＝全フィルタ＋検索を外す（ソートは触らない＝初期/ユーザー選択を維持）
+        function clearAllFiltersAndSearch() {
+            resetFilters();              // species/provinces/price/fav/history をクリア＋シート同期
+            state.q = '';
+            searchInput.value = '';
+            searchClear.classList.remove('show');
+            searchSuggest.classList.remove('show');
+            closeSheet();
+            renderList();
+            saveState();
+        }
+
         function renderList() {
             const grid = document.getElementById('fish-grid');
             const items = filteredItems();
@@ -814,21 +878,52 @@
             const fbtn = document.getElementById('filter-btn');
             if (n > 0) { badge.textContent = n; badge.classList.add('show'); fbtn.classList.add('active'); }
             else { badge.classList.remove('show'); fbtn.classList.remove('active'); }
+            // 6/16 #146: アクティブ絞り込みチップ行（適用中のみ表示・チップ数＝バッジ数 n と一致）
+            renderActiveFilters();
 
-            document.getElementById('load-more-wrap').style.display = hasMoreListings ? 'block' : 'none';
+            // 6/16 #146: 「もっと見る」は表示件数>0 のときだけ（0件teaserを出さない）
+            document.getElementById('load-more-wrap').style.display = (hasMoreListings && items.length > 0) ? 'block' : 'none';
 
             if (items.length === 0) {
+                // 6/16 #146: 見出し出し分け＝魚種フィルタ単独（他の絞り込み・検索なし）の時だけ魚種名。
+                // 価格帯等が混在する時に魚種名を出すと不正確になるため安全側で汎用文言。
+                const onlySpecies = state.species.size === 1 && state.provinces.size === 0
+                    && state.priceMax >= PRICE_MAX && !state.favOnly && !state.historyOnly && !state.q.trim();
+                let title, sub = '';
+                if (onlySpecies) {
+                    const key = [...state.species][0];
+                    const spName = key === 'other' ? i18next.t('fish.otherShort') : fishLabelShort(key);
+                    title = i18next.t('fishlist.emptyTitleSpecies', { species: spName });
+                    sub = i18next.t('fishlist.emptySubSpecies');
+                } else {
+                    title = i18next.t('fishlist.emptyTitle');
+                }
                 grid.innerHTML = `
                     <div class="fl-empty">
                         <span class="material-symbols-outlined">set_meal</span>
-                        <div class="fl-empty__text">${i18next.t('fishlist.emptyTitle')}</div>
-                        <button type="button" class="fl-empty__reset" id="empty-reset">${i18next.t('fishlist.emptyReset')}</button>
+                        <div class="fl-empty__text">${escapeHtml(title)}</div>
+                        ${sub ? `<div class="fl-empty__sub">${escapeHtml(sub)}</div>` : ''}
+                        <button type="button" class="fl-empty__reset" id="empty-view-all">${i18next.t('fishlist.emptyViewAll')}</button>
                     </div>`;
-                document.getElementById('empty-reset')?.addEventListener('click', () => { resetFilters(); applyAndClose(); });
+                document.getElementById('empty-view-all')?.addEventListener('click', clearAllFiltersAndSearch);
                 return;
             }
             grid.innerHTML = items.map(cardHtml).join('');
         }
+
+        // 6/16 #146: アクティブ絞り込みチップの✕＝そのフィルタだけ即時解除（絞り込みシートは開かない）
+        document.getElementById('active-filters').addEventListener('click', (e) => {
+            const x = e.target.closest('.fl-af-chip__x');
+            if (!x) return;
+            const type = x.dataset.afType, key = x.dataset.afKey;
+            if (type === 'species') state.species.delete(key);
+            else if (type === 'region') state.provinces.delete(key);
+            else if (type === 'price') state.priceMax = PRICE_MAX;
+            else if (type === 'fav') state.favOnly = false;
+            else if (type === 'history') state.historyOnly = false;
+            renderList();
+            saveState();
+        });
 
         // ── ボトムシート UI ──
         function buildSheetSpecies() {

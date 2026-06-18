@@ -48,7 +48,16 @@
         "emptyReset": "កំណត់ការត្រងឡើងវិញ",
         "searchClear": "សម្អាត",
         "newFarmer": "ថ្មី",
-        "freeDelivery": "ដឹកឥតគិតថ្លៃ"
+        "freeDelivery": "ដឹកឥតគិតថ្លៃ",
+        "emptyTitleSpecies": "ថ្ងៃនេះគ្មាន{{species}}ដាក់លក់ទេ",
+        "emptySubSpecies": "ត្រីប្រភេទផ្សេងមានដាក់លក់",
+        "emptyViewAll": "មើលត្រីទាំងអស់",
+        "removeFilter": "ដក {{label}}"
+    },
+    "farmerlist": {
+        "count": "កសិករ {{count}} នាក់",
+        "emptyTitle": "គ្មានកសិករផ្គត់ផ្គង់{{species}}ទេ",
+        "emptyViewAll": "មើលកសិករទាំងអស់"
     },
     "lang": {
         "ja": "日本語",
