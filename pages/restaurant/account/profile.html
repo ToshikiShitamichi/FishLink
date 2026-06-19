@@ -21,9 +21,13 @@
         .img-actions button.danger { color: #b91c1c; border-color: #fecaca; }
         .save-row { display: flex; gap: 8px; margin-top: 14px; }
         .save-row button { flex: 1; border: none; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        /* 6/17 #148 ⑦: 保存は青（CTA）＝既に青 */
         .save-row .save { background: var(--color-cta); color: #fff; }
         .edit-toggle { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-        .edit-btn { background: #eef2ff; color: #3730a3; border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+        /* 6/17 #148 ⑥: 編集ボタン indigo→青 */
+        .edit-btn { background: var(--color-cta-lt); color: var(--color-cta); border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+        /* 6/17 #148 ⑥: キャンセルはグレー維持（編集と同じ .edit-btn を流用しているので上書き） */
+        #btn-cancel { background: #eceef0; color: var(--color-text-sub); }
         .label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 8px; }
         /* 6/11 #137 §6: 店のアイコン（円形アバター）。農家プロフィール編集と同じ要領。 */
         .avatar-box { display: flex; justify-content: center; }

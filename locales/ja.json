@@ -88,6 +88,10 @@
         "phone": "電話番号",
         "phonePlaceholder": "例：012345678",
         "phoneHint": "FishLinkからの連絡や、送金時の確認に使用します",
+        "otpTitle": "電話番号の確認",
+        "otpSub": "{{phone}} 宛に確認コードを送りました",
+        "otpCancel": "キャンセル",
+        "otpSendFailed": "確認コードの送信に失敗しました。電話番号をご確認ください。",
         "errorPhone": "電話番号を入力してください",
         "password": "パスワード（6文字以上）",
         "role": "ロールを選択",
@@ -335,7 +339,8 @@
         "newPwConfirm": "確認のため再入力",
         "pwMismatch": "パスワードが一致しません",
         "setPassword": "設定する",
-        "setPwNote": "設定するとそのままログインします"
+        "setPwNote": "設定するとそのままログインします",
+        "resetFailed": "パスワードの再設定に失敗しました。もう一度お試しください。"
     },
     "legal": {
         "back": "戻る",
@@ -878,6 +883,9 @@
         "shopIntro": "お店の紹介",
         "shopIntroFrom": "お店から",
         "shopScene": "お店の様子",
+        "yearMonth": "{{year}}年{{month}}月",
+        "mapTypeMap": "地図",
+        "mapTypeSatellite": "航空写真",
         "selfPreviewNote": "これは農家から見えるあなたのページです（編集はプロフィールから）",
         "selfPreviewNoteProducer": "これは買い手から見えるあなたのページです（編集はプロフィールから）",
         "previewPublicPage": "公開ページをプレビュー",
@@ -1101,7 +1109,17 @@
         "type_delay": "配送遅延",
         "type_reception": "受取対応の問題",
         "type_communication": "やり取りの問題",
-        "type_other": "その他"
+        "type_other": "その他",
+        "type_not_arrived": "届かない",
+        "type_wrong": "注文と違う",
+        "reportedInProgress": "報告済み・対応中",
+        "consultViaChat": "配送チャットで相談する",
+        "backToOrderStatus": "注文状況へ戻る",
+        "backToOrderCheck": "注文確認へ戻る",
+        "entryDeadlineToday": "本日 {{time}} まで報告できます",
+        "entryDeadlineTomorrow": "明日 {{time}} まで報告できます",
+        "entryDeadlineDate": "{{date}} {{time}} まで報告できます",
+        "entryDeadlineRemitSuffix": "（その後 農家へ送金されます）"
     },
     "account": {
         "title": "アカウント",
@@ -1491,6 +1509,9 @@
             "leadTimeSection": "配達リードタイム",
             "leadTimeHoursLabel": "最短リードタイム（時間）",
             "leadTimeHoursHint": "注文から納品までの最短時間。これ未満の開始時刻の時間帯は選べません（初期値8時間）",
+            "reportWindowSection": "問題報告の受付",
+            "reportWindowHoursLabel": "報告受付時間（時間）",
+            "reportWindowHoursHint": "配送完了からこの時間内のみ、買い手・農家が問題を報告できます。この時間を過ぎると入口が消え、農家への送金に進みます（初期値4時間）",
             "save": "保存する",
             "saved": "保存しました",
             "errorSave": "保存に失敗しました。再度お試しください。"

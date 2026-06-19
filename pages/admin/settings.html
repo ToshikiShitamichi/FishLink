@@ -294,6 +294,22 @@
                 </div>
             </div>
 
+            <!-- 6/17 #150: 問題報告の受付時間（運営パラメータ・配送完了からN時間・初期4h） -->
+            <div class="card">
+                <div class="section-heading" data-i18n="admin.settings.reportWindowSection"></div>
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" data-i18n="admin.settings.reportWindowHoursLabel"></div>
+                            <div class="form-row__hint" data-i18n="admin.settings.reportWindowHoursHint"></div>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <input type="number" id="report-window-hours" class="num-input" step="1" min="1" max="72">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- レストラン画面のバナー表示 -->
             <div class="card">
                 <div class="section-heading" data-i18n="admin.settings.bannerSection"></div>
@@ -402,6 +418,7 @@
                 if (cached.campaignEndDate != null) document.getElementById('campaign-end-date').value = cached.campaignEndDate;
                 if (cached.farmerCampaignEndDate != null) document.getElementById('farmer-campaign-end-date').value = cached.farmerCampaignEndDate;
                 if (cached.leadTimeHours != null) document.getElementById('lead-time-hours').value = cached.leadTimeHours;
+                if (cached.reportWindowHours != null) document.getElementById('report-window-hours').value = cached.reportWindowHours;
                 if (cached.bannerActive != null) bannerToggle.classList.toggle('on', cached.bannerActive);
                 loading.classList.remove('show');
                 document.body.classList.add('app-ready');
@@ -444,6 +461,9 @@
                 // 6/1 #111: 配達リードタイム（時間・未設定時は初期値8）
                 const leadTimeHours = data.leadTimeHours != null ? data.leadTimeHours : 8;
                 document.getElementById('lead-time-hours').value = leadTimeHours;
+                // 6/17 #150: 問題報告の受付時間（時間・未設定時は初期値4）
+                const reportWindowHours = data.reportWindowHours != null ? data.reportWindowHours : 4;
+                document.getElementById('report-window-hours').value = reportWindowHours;
 
                 // バナー表示（独立フラグ・未設定時は OFF）
                 bannerToggle.classList.toggle('on', data.bannerActive === true);
@@ -459,6 +479,7 @@
                         campaignEndDate,
                         farmerCampaignEndDate,
                         leadTimeHours,
+                        reportWindowHours,
                         bannerActive: data.bannerActive === true,
                     });
                 } catch (e) { /* ignore */ }
@@ -493,6 +514,9 @@
             // 6/1 #111: 配達リードタイム（時間・空なら初期値8）
             const leadTimeHours = parseInt(document.getElementById('lead-time-hours').value, 10);
             const leadTimeHoursVal = Number.isFinite(leadTimeHours) ? leadTimeHours : 8;
+            // 6/17 #150: 問題報告の受付時間（時間・空/不正なら初期値4）
+            const reportWindowHours = parseInt(document.getElementById('report-window-hours').value, 10);
+            const reportWindowHoursVal = (Number.isFinite(reportWindowHours) && reportWindowHours > 0) ? reportWindowHours : 4;
 
             try {
                 await setDoc(doc(db, 'settings', 'campaign'), {
@@ -500,6 +524,7 @@
                     farmerRate, farmerCampaignDiscount, farmerCampaignActive,
                     campaignEndDate, farmerCampaignEndDate,
                     leadTimeHours: leadTimeHoursVal,
+                    reportWindowHours: reportWindowHoursVal,
                     bannerActive,
                 }, { merge: true });
                 note.classList.add('show');

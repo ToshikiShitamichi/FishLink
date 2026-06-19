@@ -164,7 +164,15 @@
             border: 1px solid #fecaca;
         }
         .order-card__quick-action--report:hover { background: #fee2e2; }
+        /* 6/17 #150 §5: 報告済み・対応中（再送信不可・グレー無効化表示） */
+        .order-card__quick-action--reported {
+            background: #f1f5f9; color: #64748b;
+            border: 1px solid #e2e8f0;
+            cursor: default; pointer-events: none;
+        }
         .order-card__quick-action .material-symbols-outlined { font-size: 14px; }
+        /* 6/17 #150 §4: 報告期限の注記（本日◯時まで…） */
+        .order-card__report-note { font-size: 11.5px; color: var(--color-text-sub); margin-top: 7px; line-height: 1.5; }
 
         /* 5/5 #2: 承認画面の縦長写真がスクロールを邪魔していたため小型サムネイルに変更
            ヘッダー行の76pxサムネイルで主役は十分、ここは複数商品時の枚数バッジ用 */
@@ -565,6 +573,13 @@
         .fo-btn { display: block; width: 100%; box-sizing: border-box; text-align: center; font-size: 13px; font-weight: 800; padding: 11px; border-radius: 10px; margin-top: 11px; border: none; cursor: pointer; font-family: inherit; text-decoration: none; }
         .fo-btn--pri { background: var(--color-cta); color: #fff; }
         .fo-btn--sec { background: #fff; color: var(--color-cta); border: 1.5px solid var(--color-cta); }
+        /* 6/17 #150 §4/§5: 進行中カード下の「問題を報告」入口（赤枠アウトライン維持）／報告済み／締切注記 */
+        .fo-report-block { margin: -3px 2px 12px; }
+        .fo-report-btn { display: inline-flex; align-items: center; gap: 5px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 10px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; text-decoration: none; }
+        .fo-report-btn .material-symbols-outlined { font-size: 15px; }
+        .fo-report-done { display: inline-flex; align-items: center; gap: 5px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; }
+        .fo-report-done .material-symbols-outlined { font-size: 15px; }
+        .fo-report-note { font-size: 11.5px; color: var(--color-text-sub); margin-top: 6px; line-height: 1.5; }
         .fo-histrow { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #eef1f4; border-radius: 12px; padding: 13px 14px; text-decoration: none; color: inherit; margin-bottom: 11px; }
         .fo-histrow > .material-symbols-outlined { font-size: 22px; color: var(--color-text-sub); }
         .fo-histrow__t { flex: 1; }
@@ -663,6 +678,8 @@
             collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc, onSnapshot, addDoc, serverTimestamp, runTransaction
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { getOrderNumber } from '/js/order-utils.js';
+        // 6/17 #150: 問題報告の入口出し分け（報告期限＝配送完了＋N時間／1注文1オープン）
+        import { getReportWindowHours, computeReportEntry, reportDeadlineText } from '/js/report-window.js';
         // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ（stale-while-revalidate）
         import { saveRenderState, loadRenderState, serializeTimestamps, reviveTimestamps } from '/js/render-cache.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
@@ -706,6 +723,8 @@
         let ordersLoadingMore = false;
         let allOrders = [];
 
+        // 6/17 #150: 報告受付時間（時間）。renderOrderCard の報告入口の締切判定に使う。
+        let reportHours = 4;
         // 6/7 #135 ③: 紹介ボーナス設定（有効化＋金額）。承認画面で保留ボーナスのプレビューに使う。
         let referralBonusSettings = { enabled: false, amountKhr: 0 };
         async function loadReferralBonusSettings() {
@@ -907,8 +926,11 @@
         // ── データ取得 & 描画 ──
         waitForUserData(async () => {
             localStorage.setItem('fishlink_orders_seen', String(Date.now()));
-            // 6/7 #135 ③: ボーナス設定を先読みしてから描画（プレビューの判定に使う）
-            await loadReferralBonusSettings();
+            // 6/7 #135 ③ / 6/17 #150: ボーナス設定・報告受付時間を先読みしてから描画
+            await Promise.all([
+                loadReferralBonusSettings(),
+                getReportWindowHours().then(h => { reportHours = h; }),
+            ]);
             await loadOrdersPage({ silent: cachedRendered });
         });
 
@@ -1205,14 +1227,31 @@
                                 <span class="material-symbols-outlined">star</span>
                                 ${i18next.t('review.submit')}
                             </a>`);
-                actionsHtml += `
-                    <div class="order-card__quick-action-row">
-                        ${reviewBtn}
-                        <a class="order-card__quick-action order-card__quick-action--report" href="/pages/farmer/report.html?id=${order.id}">
+                // 6/17 #150 §4/§5: 問題報告の入口出し分け（報告期限＝配送完了＋N時間／報告中は「報告済み・対応中」）。
+                const re = computeReportEntry(order, 'farmer', reportHours);
+                let reportEl = '';
+                if (re.phase === 'reported') {
+                    reportEl = `<span class="order-card__quick-action order-card__quick-action--reported">
+                            <span class="material-symbols-outlined">flag</span>
+                            ${i18next.t('report.reportedInProgress')}
+                        </span>`;
+                } else if (re.show) {
+                    reportEl = `<a class="order-card__quick-action order-card__quick-action--report" href="/pages/farmer/report.html?id=${order.id}">
                             <span class="material-symbols-outlined">flag</span>
                             ${i18next.t('review.reportIssue')}
-                        </a>
-                    </div>`;
+                        </a>`;
+                }
+                const reportNote = (re.phase === 'window')
+                    ? `<div class="order-card__report-note">${reportDeadlineText(re.deadlineMs, 'farmer')}</div>`
+                    : '';
+                // レビュー・報告のどちらかでも出る時だけ行を出す
+                if (reviewBtn || reportEl) {
+                    actionsHtml += `
+                    <div class="order-card__quick-action-row">
+                        ${reviewBtn}
+                        ${reportEl}
+                    </div>${reportNote}`;
+                }
                 actionsHtml += '</div>';
                 html += actionsHtml;
             }
@@ -1318,7 +1357,25 @@
                     </div>
                     ${arriveNote}
                     <div class="fo-btn fo-btn--sec">${i18next.t('delivery.goDelivery')}</div>
-                </a>`;
+                </a>
+                ${farmerReportEntryHtml(order)}`;
+        }
+
+        // 6/17 #150 §4/§5: 進行中カード下の問題報告入口（配送管理チャットで解決できない問題用）。
+        //   配送中は締切前（注記なし）／報告中は「報告済み・対応中」／期限切れ・対象外は非表示。
+        function farmerReportEntryHtml(order) {
+            const re = computeReportEntry(order, 'farmer', reportHours);
+            if (re.phase === 'reported') {
+                return `<div class="fo-report-block"><span class="fo-report-done"><span class="material-symbols-outlined">flag</span>${i18next.t('report.reportedInProgress')}</span></div>`;
+            }
+            if (!re.show) return '';
+            const note = (re.phase === 'window')
+                ? `<div class="fo-report-note">${reportDeadlineText(re.deadlineMs, 'farmer')}</div>`
+                : '';
+            return `<div class="fo-report-block">
+                <a class="fo-report-btn" href="/pages/farmer/report.html?id=${order.id}"><span class="material-symbols-outlined">flag</span>${i18next.t('review.reportIssue')}</a>
+                ${note}
+            </div>`;
         }
 
         // 承認待ち詳細②（既存 renderOrderCard を流用・1件フル展開）

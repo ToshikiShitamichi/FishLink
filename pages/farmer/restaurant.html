@@ -78,6 +78,17 @@
             box-shadow: 0 2px 6px rgba(0,0,0,.1);
         }
         .map-footer a { color: var(--color-cta); text-decoration: none; }
+        /* 6/17 #152: 地図/航空写真（衛星）切替トグル（埋め込み地図の maptype を切替） */
+        .map-type-toggle {
+            position: absolute; top: 8px; right: 8px; z-index: 2;
+            display: flex; background: rgba(255,255,255,.95);
+            border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.18);
+        }
+        .map-type-btn {
+            border: none; background: transparent; color: var(--color-text-sub);
+            font-size: 11px; font-weight: 700; padding: 5px 11px; cursor: pointer; font-family: inherit;
+        }
+        .map-type-btn.active { background: var(--color-cta); color: #fff; }
 
         .section { margin-bottom: 20px; }
         .section__title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
@@ -90,6 +101,15 @@
         /* 6/10 #137 §6: お店の様子（風景写真・任意・未登録なら非表示） */
         .scene-photo { width: 100%; border-radius: 14px; overflow: hidden; background: #e2e8f0; margin-bottom: 10px; }
         .scene-photo img { width: 100%; height: 100%; object-fit: cover; display: block; max-height: 220px; }
+        /* 6/17 #148 ①: お店の様子＝横スワイプカルーセル＋ドット（生産者ページ養殖環境・商品詳細と統一） */
+        .scene-carousel { position: relative; overflow: hidden; border-radius: 14px; background: #e2e8f0; }
+        .scene-slides { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .scene-slides::-webkit-scrollbar { display: none; }
+        .scene-slide { flex: 0 0 100%; scroll-snap-align: start; height: 200px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; }
+        .scene-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .scene-dots { display: flex; justify-content: center; gap: 6px; padding: 8px 0 2px; }
+        .scene-dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; cursor: pointer; }
+        .scene-dot.active { background: #1a1a1a; }
 
         /* 6/10 #137 §4: レビュー（3軸メトリクス）＝ニュートラル統一（薄グレーカード＋濃色数字・意味色を使わない） */
         .subrating-wrap {
@@ -179,6 +199,11 @@
         <!-- 地図（農家向け＝配達先・常に表示・新規でも） -->
         <div class="map-block" id="map-block">
             <iframe class="map-iframe" id="map-iframe" style="display:none;"></iframe>
+            <!-- 6/17 #152: 地図/航空写真（衛星）切替 -->
+            <div class="map-type-toggle" id="map-type-toggle" style="display:none;">
+                <button type="button" class="map-type-btn active" data-maptype="m" data-i18n="profile.mapTypeMap"></button>
+                <button type="button" class="map-type-btn" data-maptype="k" data-i18n="profile.mapTypeSatellite"></button>
+            </div>
             <div class="map-footer">
                 <a id="map-link-footer" href="#" target="_blank" data-i18n="profile.openMap"></a>
             </div>
@@ -278,7 +303,8 @@
             }[c]));
         }
 
-        // 6/10 #137 §5: 登録時期の「YYYY/M」表示。Timestamp / millis 数値 / {seconds}（cache 復元）に対応。
+        // 6/10 #137 §5 / 6/17 #148 ③: 登録時期の「YYYY年M月」表示（i18n で言語別フォーマット）。
+        //   Timestamp / millis 数値 / {seconds}（cache 復元）に対応。
         function fmtYearMonth(ts) {
             if (!ts) return '';
             let d;
@@ -287,7 +313,32 @@
             else if (ts.seconds != null) d = new Date(ts.seconds * 1000);
             else d = new Date(ts);
             if (isNaN(d.getTime())) return '';
-            return `${d.getFullYear()}/${d.getMonth() + 1}`;
+            return i18next.t('profile.yearMonth', { year: d.getFullYear(), month: d.getMonth() + 1 });
+        }
+
+        // 6/17 #148 ①: お店の様子の横スワイプカルーセル（生産者ページ #149・商品詳細と統一）。1枚なら単純表示。
+        function buildSceneCarousel(photos) {
+            if (photos.length === 1) {
+                return `<div class="scene-carousel"><div class="scene-slides"><div class="scene-slide"><img ${asCachedImgAttrs(photos[0])} alt="" loading="lazy"></div></div></div>`;
+            }
+            const slides = photos.map(u => `<div class="scene-slide"><img ${asCachedImgAttrs(u)} alt="" loading="lazy"></div>`).join('');
+            const dots = photos.map((_, i) => `<div class="scene-dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`).join('');
+            return `<div class="scene-carousel"><div class="scene-slides" id="scene-slides">${slides}</div></div><div class="scene-dots" id="scene-dots">${dots}</div>`;
+        }
+        function bindSceneCarousel() {
+            const slidesEl = document.getElementById('scene-slides');
+            const dotsEl = document.getElementById('scene-dots');
+            if (!slidesEl || !dotsEl) return;
+            slidesEl.addEventListener('scroll', () => {
+                const idx = Math.round(slidesEl.scrollLeft / slidesEl.offsetWidth);
+                dotsEl.querySelectorAll('.scene-dot').forEach((dot, i) => dot.classList.toggle('active', i === idx));
+            });
+            dotsEl.querySelectorAll('.scene-dot').forEach(dot => {
+                dot.addEventListener('click', () => {
+                    const i = parseInt(dot.dataset.index, 10);
+                    slidesEl.scrollTo({ left: i * slidesEl.offsetWidth, behavior: 'smooth' });
+                });
+            });
         }
 
         // 5/7 #56: 「レビューを見る」でレビューコメント欄へスムーズスクロール（同ページ内アンカー）
@@ -335,11 +386,31 @@
 
             // 地図（常に表示・新規でも・場所は登録済み）
             if (user.location?.lat && user.location?.lng) {
-                const mapsUrl = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}`;
-                document.getElementById('map-link-footer').href = mapsUrl;
+                const lat = user.location.lat, lng = user.location.lng;
+                document.getElementById('map-link-footer').href = `https://www.google.com/maps?q=${lat},${lng}`;
                 const iframe = document.getElementById('map-iframe');
-                iframe.src = `https://www.google.com/maps?q=${user.location.lat},${user.location.lng}&z=15&output=embed`;
+                const toggle = document.getElementById('map-type-toggle');
+                // 6/17 #152: 地図(t=m)/航空写真(t=k) を切替（埋め込み地図の maptype）。
+                //   農家が配達先の池/建物を上空写真で特定しやすくするための共通仕様。
+                let mapType = 'm';
+                const applyMapType = () => {
+                    iframe.src = `https://www.google.com/maps?q=${lat},${lng}&z=15&t=${mapType}&output=embed`;
+                };
+                applyMapType();
                 iframe.style.display = 'block';
+                if (toggle) {
+                    toggle.style.display = 'flex';
+                    // 再描画（cached→fresh）でも状態を初期化（地図=active）
+                    toggle.querySelectorAll('.map-type-btn').forEach(b => b.classList.toggle('active', b.dataset.maptype === 'm'));
+                    // onclick は addEventListener と違い置換されるので再描画で多重登録しない
+                    toggle.onclick = (e) => {
+                        const btn = e.target.closest('.map-type-btn');
+                        if (!btn) return;
+                        mapType = btn.dataset.maptype;
+                        toggle.querySelectorAll('.map-type-btn').forEach(b => b.classList.toggle('active', b === btn));
+                        applyMapType();
+                    };
+                }
             }
 
             // 6/10 #137 §2: お店の紹介（未記入ならセクションごと非表示）。編集UIはプロフィール画面側（別途）。
@@ -352,24 +423,31 @@
                 introSection.style.display = 'none';
             }
 
-            // 6/10 #137 §6: お店の様子（風景写真・未登録ならセクションごと非表示）
+            // 6/10 #137 §6 / 6/17 #148 ①: お店の様子（風景写真・未登録ならセクションごと非表示）。
+            //   複数枚は横スワイプカルーセル＋ドット（生産者ページ養殖環境と統一）・1枚は単純表示。
             const scenePhotos = getRestaurantPhotos(user);
             const sceneSection = document.getElementById('scene-section');
             if (scenePhotos.length > 0) {
                 sceneSection.style.display = 'block';
-                document.getElementById('scene-photos').innerHTML = scenePhotos
-                    .map(u => `<div class="scene-photo"><img ${asCachedImgAttrs(u)} alt="" loading="lazy"></div>`)
-                    .join('');
+                document.getElementById('scene-photos').innerHTML = buildSceneCarousel(scenePhotos);
+                bindSceneCarousel();
             } else {
                 sceneSection.style.display = 'none';
             }
 
             // レビュー（N件）＝総レビュー件数／コメント欄＝コメント付き件数
             const commentCount = Array.isArray(reviewsWithComment) ? reviewsWithComment.length : 0;
+            // 6/17 #148 ⑤: 新規レストラン（レビュー0件）＝3軸メトリクス＋「レビューを見る」を出さず
+            //   「まだレビューはありません」一本化（中身ゼロで枠だけ出さない・0件方針統一）。
+            const isZeroReviews = (count === 0);
+            const subWrap = document.querySelector('.subrating-wrap');
+            if (subWrap) subWrap.style.display = isZeroReviews ? 'none' : '';
             const subTitleEl = document.getElementById('subrating-title');
             if (subTitleEl) subTitleEl.textContent = i18next.t('profile.reviewsTitleWithCount', { count });
             const reviewsTitleEl = document.getElementById('reviews-section-title');
-            if (reviewsTitleEl) reviewsTitleEl.textContent = i18next.t('profile.reviewCommentsTitleWithCount', { count: commentCount });
+            if (reviewsTitleEl) reviewsTitleEl.textContent = isZeroReviews
+                ? i18next.t('profile.reviewComments')
+                : i18next.t('profile.reviewCommentsTitleWithCount', { count: commentCount });
 
             // 6/10 #137 §4: 3軸メトリクス（総合評価／やり取り／受取対応）の良かった率%
             const sub = user.subRatings || {};

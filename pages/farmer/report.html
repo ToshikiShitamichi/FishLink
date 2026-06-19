@@ -51,15 +51,16 @@
             border: 1.5px solid #cbd5e1;
             flex-shrink: 0;
         }
+        /* 6/17 #150 ⑤: 選択中の色 オレンジ→青 */
         .type-option.active {
-            background: #fff7ed;
-            border-color: #fdba74;
-            color: #9a3412;
+            background: var(--color-cta-lt);
+            border-color: var(--color-cta);
+            color: var(--color-cta);
         }
         .type-option.active::before {
-            background: #f97316;
-            border-color: #f97316;
-            box-shadow: inset 0 0 0 3px #fff7ed;
+            background: var(--color-cta);
+            border-color: var(--color-cta);
+            box-shadow: inset 0 0 0 3px var(--color-cta-lt);
         }
 
         .photo-upload {
@@ -88,15 +89,38 @@
         }
         textarea.detail-input:focus { outline: none; background: #fff; border-color: var(--color-primary); }
 
+        /* 6/17 #150 ⑧: 運営確認ノート（中立グレー・レストランフォームと統一） */
+        .note-box {
+            background: #f8fafc;
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: var(--color-text-sub);
+            margin-bottom: 10px;
+        }
+        /* 6/17 #150 §6: 配送チャットで相談（注文進行中＝配送管理チャットが開いている時だけ表示） */
+        .chat-consult {
+            display: none; align-items: center; justify-content: center; gap: 6px;
+            width: 100%; box-sizing: border-box;
+            background: var(--color-cta-lt); color: var(--color-cta);
+            border: 1px solid var(--color-cta); border-radius: 14px;
+            padding: 11px; font-size: 14px; font-weight: 700;
+            text-decoration: none; margin-bottom: 12px; font-family: inherit;
+        }
+        .chat-consult.show { display: flex; }
+        .chat-consult .material-symbols-outlined { font-size: 18px; }
+
         .footer-actions {
             position: fixed; bottom: 0; left: 0; right: 0;
             max-width: 480px; margin: 0 auto;
             background: var(--color-surface); border-top: 1px solid var(--color-border);
             padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
         }
+        /* 6/17 #150 ⑦: 送信ボタン 赤→青塗り（入口の赤枠アウトラインは維持） */
         .btn-submit-report {
             width: 100%;
-            background: #ef4444;
+            background: var(--color-cta);
             color: #fff;
             border: none;
             border-radius: 14px;
@@ -138,8 +162,8 @@
     <div class="report-page">
 
         <div id="main-view">
+            <!-- 6/17 #150 ②: 大H1は削除（上部 sub-page__title が見出し） -->
             <div class="report-head">
-                <div class="report-head__title" data-i18n="report.title"></div>
                 <div class="report-head__sub" data-i18n="report.subtitle"></div>
             </div>
 
@@ -158,8 +182,9 @@
                 </div>
             </div>
 
+            <!-- 6/17 #150 ⑨: 写真は複数添付可・「写真を追加（任意）」で統一 -->
             <div class="sec">
-                <div class="sec__label" data-i18n="report.photoLabel"></div>
+                <div class="sec__label" data-i18n="report.photoOptional"></div>
                 <div class="photo-upload" id="photo-area">
                     <span class="material-symbols-outlined photo-upload__icon">add_photo_alternate</span>
                     <div class="photo-upload__text" data-i18n="report.photoUpload"></div>
@@ -173,6 +198,9 @@
                 <textarea class="detail-input" id="detail-input" data-i18n="[placeholder]report.farmerPlaceholder"></textarea>
             </div>
 
+            <!-- 6/17 #150 ⑧: 運営確認ノート（中立グレー・レストランフォームと統一） -->
+            <div class="note-box" data-i18n="report.processNote"></div>
+
             <div class="error-msg" id="error-msg" style="display:none;"></div>
         </div>
 
@@ -180,12 +208,20 @@
             <div class="submitted-state">
                 <span class="material-symbols-outlined submitted-state__icon">check_circle</span>
                 <div class="submitted-state__text" data-i18n="report.submitted"></div>
-                <a href="/pages/farmer/orders.html" style="display:inline-block; margin-top:18px; background:#0f172a; color:#fff; padding:10px 20px; border-radius:12px; text-decoration:none; font-weight:700; font-size:14px;" data-i18n="review.backToOrders"></a>
+                <!-- 6/17 #150 ⑪: 送信後文言の一行 -->
+                <div style="font-size:13px; color:var(--color-text-sub); margin-top:8px; line-height:1.6;" data-i18n="report.processNote"></div>
+                <!-- 6/17 #150 ⑩: 戻るボタン 紺→青・農家は「注文確認へ戻る」 -->
+                <a href="/pages/farmer/orders.html" style="display:inline-block; margin-top:18px; background:var(--color-cta); color:#fff; padding:10px 20px; border-radius:12px; text-decoration:none; font-weight:700; font-size:14px;" data-i18n="report.backToOrderCheck"></a>
             </div>
         </div>
     </div>
 
     <div class="footer-actions" id="footer-actions">
+        <!-- 6/17 #150 §6: 配送チャットで相談（注文進行中＝配送管理チャットが開いている時だけ .show で表示） -->
+        <a class="chat-consult" id="chat-consult" href="#">
+            <span class="material-symbols-outlined">forum</span>
+            <span data-i18n="report.consultViaChat"></span>
+        </a>
         <button class="btn-submit-report" id="submit-btn" data-i18n="report.submit"></button>
     </div>
 
@@ -194,7 +230,7 @@
         import { watchAuthState } from '/js/auth.js';
         import { db, storage } from '/js/firebase-config.js';
         import {
-            doc, getDoc, addDoc, collection, serverTimestamp
+            doc, getDoc, addDoc, updateDoc, collection, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import {
             ref, uploadBytes, getDownloadURL
@@ -277,6 +313,12 @@
                 document.getElementById('target-fish').textContent = `${shortName} ${orderData.quantity || 0}kg`;
                 document.getElementById('target-date').textContent =
                     `${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}`;
+                // 6/17 #150 §6: 配送チャットで相談（注文進行中＝配送管理チャットが開いている時だけ表示・完了後は非表示）
+                const chatConsult = document.getElementById('chat-consult');
+                if (chatConsult && ['approved', 'preparing', 'delivering'].includes(orderData.status)) {
+                    chatConsult.href = `/pages/farmer/delivery.html?id=${orderId}`;
+                    chatConsult.classList.add('show');
+                }
                 // 5/25 #91/#92 拡張: 次回訪問用に表示部をキャッシュ
                 try {
                     saveRenderState(`farmer_report:${orderId}`, {
@@ -325,6 +367,12 @@
                     status: 'open',
                     createdAt: serverTimestamp(),
                 });
+
+                // 6/17 #150 §5: 報告済みマーカー（入口を「報告済み・対応中」に＝1注文1オープン・再送信不可）。
+                //   ※農家報告（受取対応/やり取り）は送金保留しない（paymentProblemHold は立てない）。
+                try {
+                    await updateDoc(doc(db, 'orders', orderId), { farmerReportOpen: true });
+                } catch (e) { console.warn('set farmerReportOpen failed:', e); }
 
                 document.getElementById('main-view').style.display = 'none';
                 document.getElementById('footer-actions').style.display = 'none';

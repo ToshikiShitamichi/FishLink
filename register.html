@@ -57,7 +57,8 @@
             const map = new google.maps.Map(document.getElementById('map'), {
                 center: { lat: 11.5564, lng: 104.9282 },
                 zoom: 7,
-                mapTypeControl: false,
+                // 6/17 #152: 航空写真（衛星）への切替を付ける（地図/衛星トグル＝池/建物を特定しやすく）
+                mapTypeControl: true,
                 streetViewControl: false,
                 fullscreenControl: false,
             });
@@ -214,6 +215,9 @@
         <div class="spinner"></div>
     </div>
 
+    <!-- 6/17 #151: Firebase Phone Auth の invisible reCAPTCHA コンテナ（登録時の番号確認） -->
+    <div id="recaptcha-container"></div>
+
     <div class="page-center" style="padding-top:60px; padding-bottom:40px;">
         <div style="width:100%; max-width:440px;">
 
@@ -354,11 +358,32 @@
         </div>
     </div>
 
+    <!-- 6/17 #151: 登録時の電話番号確認（OTP）モーダル（REGISTER_OTP_ENABLED 時のみ表示） -->
+    <div id="reg-otp-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:80; align-items:center; justify-content:center; padding:24px;">
+        <div style="width:100%; max-width:360px; background:#fff; border-radius:16px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,.25);">
+            <div style="font-size:17px; font-weight:800; margin-bottom:6px; color:var(--color-cta);" data-i18n="register.otpTitle"></div>
+            <div style="font-size:13px; color:var(--color-text-sub); margin-bottom:14px; line-height:1.5;" id="reg-otp-sub"></div>
+            <div style="display:flex; gap:8px; justify-content:center; margin-bottom:6px;">
+                <input type="tel" inputmode="numeric" maxlength="1" class="reg-otp-d" style="width:42px; height:52px; text-align:center; font-size:22px; font-weight:800; border:1.5px solid var(--color-border); border-radius:10px; font-family:inherit;">
+                <input type="tel" inputmode="numeric" maxlength="1" class="reg-otp-d" style="width:42px; height:52px; text-align:center; font-size:22px; font-weight:800; border:1.5px solid var(--color-border); border-radius:10px; font-family:inherit;">
+                <input type="tel" inputmode="numeric" maxlength="1" class="reg-otp-d" style="width:42px; height:52px; text-align:center; font-size:22px; font-weight:800; border:1.5px solid var(--color-border); border-radius:10px; font-family:inherit;">
+                <input type="tel" inputmode="numeric" maxlength="1" class="reg-otp-d" style="width:42px; height:52px; text-align:center; font-size:22px; font-weight:800; border:1.5px solid var(--color-border); border-radius:10px; font-family:inherit;">
+                <input type="tel" inputmode="numeric" maxlength="1" class="reg-otp-d" style="width:42px; height:52px; text-align:center; font-size:22px; font-weight:800; border:1.5px solid var(--color-border); border-radius:10px; font-family:inherit;">
+                <input type="tel" inputmode="numeric" maxlength="1" class="reg-otp-d" style="width:42px; height:52px; text-align:center; font-size:22px; font-weight:800; border:1.5px solid var(--color-border); border-radius:10px; font-family:inherit;">
+            </div>
+            <div class="field-error" id="reg-otp-err" data-i18n="recover.codeError" style="text-align:center;"></div>
+            <button class="btn btn-primary btn-cta" id="reg-otp-verify" style="margin-top:14px;" data-i18n="recover.verify"></button>
+            <button type="button" id="reg-otp-cancel" style="display:block; width:100%; text-align:center; margin-top:10px; background:none; border:none; color:var(--color-text-sub); font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;" data-i18n="register.otpCancel"></button>
+        </div>
+    </div>
+
     <script type="module">
         import { initI18n, initLangSelector, saveLang } from '/js/i18n.js';
         import { register, watchAuthState } from '/js/auth.js';
         import { validateReferralCode, isValidReferralCode } from '/js/referral.js';
-        import { normalizePhone, isValidCambodiaPhone } from '/js/firebase-config.js';
+        import { auth, normalizePhone, isValidCambodiaPhone } from '/js/firebase-config.js';
+        // 6/17 #151: 登録時の電話番号確認（Firebase Phone Auth）
+        import { RecaptchaVerifier, signInWithPhoneNumber, signOut } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js';
 
         // PWA Service Worker 登録
         // 5/11: 新バージョンの SW を検出したら自動リロード（未ログインユーザー向け）
@@ -484,6 +509,120 @@
             } catch (e) { /* ignore */ }
         })();
 
+        // ── 6/17 #151: 登録時の電話番号確認（Firebase Phone Auth）──────────────────
+        //   true : 登録時に OTP（番号確認）→検証後に本登録。
+        //   false: 番号確認なしで即登録（従来挙動）。
+        // ⚠️ true で稼働するには Firebase Console で Phone Auth 有効化が必要。
+        //    ⚠️⚠️ 本番で true ＝ 全ての新規登録に OTP が必須になる。+855 へ実SMSが届かない状態で本番ONにすると
+        //         新規登録が誰もできなくなるため、本番デプロイは「+855 実SMS到達OK」を確認してから。
+        //         日本での動作確認は Console の「テスト用電話番号」（実SMSなし）で。
+        const REGISTER_OTP_ENABLED = true;
+        let regConfirmation = null;
+        let regRecaptcha = null;
+        let regPayload = null;
+        function ensureRegRecaptcha() {
+            if (regRecaptcha) return regRecaptcha;
+            regRecaptcha = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+            return regRecaptcha;
+        }
+
+        // 本登録（createUserWithEmailAndPassword）。OTP OFF時は直接、ON時はOTP検証後に呼ぶ。
+        async function finishRegister(payload) {
+            const { displayName, phone, password, role, langPref, pendingReferralCode } = payload;
+            registerBtn.disabled = true;
+            loading.classList.add('show');
+            window.isRegistering = true;
+            try {
+                // 逆ジオコーディングの完了を待つ（最大3秒でタイムアウト）
+                if (window.provincePromise) {
+                    await Promise.race([
+                        window.provincePromise,
+                        new Promise(resolve => setTimeout(resolve, 3000))
+                    ]);
+                }
+                await register({ displayName, phone, password, role, location: window.selectedLocation, province: window.selectedProvince, district: window.selectedDistrict, districtKm: window.selectedDistrictKm, lang: langPref, pendingReferralCode });
+                saveLang(langPref);
+                // 6/6 #131: 登録成功 → 登録後オンボーディングへ（role を渡して農家のみ送金先ステップ表示）
+                window.location.href = `/onboarding.html?role=${encodeURIComponent(role)}`;
+            } catch (err) {
+                if (err?.message === 'error.phoneTaken' || err?.message === 'error.phoneInvalid') {
+                    setFieldError('err-phone', document.getElementById('phone'));
+                    document.getElementById('err-phone').textContent = i18next.t(err.message);
+                }
+                showError(i18next.t(err.message) || i18next.t('error.registerFailed'));
+                registerBtn.disabled = false;
+                loading.classList.remove('show');
+                window.isRegistering = false;
+            }
+        }
+
+        // OTP送信 → モーダル表示。番号確認OKで finishRegister（本登録）へ。
+        async function startOtpThenRegister(payload) {
+            regPayload = payload;
+            registerBtn.disabled = true;
+            loading.classList.add('show');
+            window.isRegistering = true;   // phone provider のサインインで watchAuthState がリダイレクトしないように
+            try {
+                const verifier = ensureRegRecaptcha();
+                regConfirmation = await signInWithPhoneNumber(auth, '+' + payload.normPhone, verifier);
+                loading.classList.remove('show');
+                document.getElementById('reg-otp-sub').textContent = i18next.t('register.otpSub', { phone: payload.phone });
+                document.querySelectorAll('.reg-otp-d').forEach(d => { d.value = ''; });
+                document.getElementById('reg-otp-err').classList.remove('show');
+                document.getElementById('reg-otp-overlay').style.display = 'flex';
+                document.querySelector('.reg-otp-d')?.focus();
+            } catch (err) {
+                console.error('register OTP send failed:', err);
+                loading.classList.remove('show');
+                registerBtn.disabled = false;
+                window.isRegistering = false;
+                showError(i18next.t('register.otpSendFailed'));
+                try { if (regRecaptcha) { await regRecaptcha.clear(); regRecaptcha = null; } } catch (e) { /* ignore */ }
+            }
+        }
+
+        // OTP モーダルの入力補助・確認・キャンセル
+        (function setupRegOtp() {
+            const digits = Array.from(document.querySelectorAll('.reg-otp-d'));
+            digits.forEach((inp, i) => {
+                inp.addEventListener('input', () => {
+                    inp.value = inp.value.replace(/\D/g, '').slice(0, 1);
+                    if (inp.value && i < digits.length - 1) digits[i + 1].focus();
+                    document.getElementById('reg-otp-err').classList.remove('show');
+                });
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !inp.value && i > 0) digits[i - 1].focus();
+                });
+            });
+            document.getElementById('reg-otp-cancel').addEventListener('click', () => {
+                document.getElementById('reg-otp-overlay').style.display = 'none';
+                registerBtn.disabled = false;
+                window.isRegistering = false;
+                regConfirmation = null;
+            });
+            document.getElementById('reg-otp-verify').addEventListener('click', async () => {
+                const code = digits.map(d => d.value).join('');
+                if (code.length !== 6 || !regConfirmation) {
+                    document.getElementById('reg-otp-err').classList.add('show');
+                    return;
+                }
+                const vbtn = document.getElementById('reg-otp-verify');
+                vbtn.disabled = true;
+                loading.classList.add('show');
+                try {
+                    await regConfirmation.confirm(code);            // 番号検証OK（phone provider でサインイン）
+                    try { await signOut(auth); } catch (e) { /* ignore */ }  // 本登録は合成メールで作成
+                    document.getElementById('reg-otp-overlay').style.display = 'none';
+                    await finishRegister(regPayload);
+                } catch (err) {
+                    console.error('register OTP confirm failed:', err);
+                    loading.classList.remove('show');
+                    document.getElementById('reg-otp-err').classList.add('show');
+                    vbtn.disabled = false;
+                }
+            });
+        })();
+
         registerBtn.addEventListener('click', async () => {
             clearFieldErrors();
 
@@ -541,32 +680,12 @@
                 }
             }
 
-            registerBtn.disabled = true;
-            loading.classList.add('show');
-            window.isRegistering = true;
-
-            try {
-                // 逆ジオコーディングの完了を待つ（最大3秒でタイムアウト）
-                if (window.provincePromise) {
-                    await Promise.race([
-                        window.provincePromise,
-                        new Promise(resolve => setTimeout(resolve, 3000))
-                    ]);
-                }
-
-                await register({ displayName, phone, password, role, location: window.selectedLocation, province: window.selectedProvince, district: window.selectedDistrict, districtKm: window.selectedDistrictKm, lang: langPref, pendingReferralCode });
-                saveLang(langPref);
-                // 6/6 #131: 登録成功 → 登録後オンボーディングへ（role を渡して農家のみ送金先ステップ表示）
-                window.location.href = `/onboarding.html?role=${encodeURIComponent(role)}`;
-            } catch (err) {
-                // 電話重複/形式などは該当フィールドにも反映
-                if (err?.message === 'error.phoneTaken' || err?.message === 'error.phoneInvalid') {
-                    setFieldError('err-phone', document.getElementById('phone'));
-                    document.getElementById('err-phone').textContent = i18next.t(err.message);
-                }
-                showError(i18next.t(err.message) || i18next.t('error.registerFailed'));
-                registerBtn.disabled = false;
-                loading.classList.remove('show');
+            // 6/17 #151: ON時はOTP（番号確認）→検証後に本登録、OFF時は即本登録（本番デフォルト）。
+            const payload = { displayName, phone, password, role, langPref, pendingReferralCode, normPhone };
+            if (REGISTER_OTP_ENABLED) {
+                startOtpThenRegister(payload);
+            } else {
+                finishRegister(payload);
             }
         });
     </script>

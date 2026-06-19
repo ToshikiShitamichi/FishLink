@@ -193,6 +193,13 @@
         .os-histrow__g { color:#c2ccd6; font-weight:800; font-size:18px; }
         .os-allclear { display:flex; align-items:center; justify-content:center; gap:6px; color:#5a6470; font-size:13px; font-weight:700; padding:22px 12px; }
         .os-allclear .material-symbols-outlined { color:var(--color-primary); font-size:20px; }
+        /* 6/17 #150 §4/§5: お支払い待ちカード下の「問題を報告」入口（赤枠アウトライン維持）＋締切注記／報告済み */
+        .os-report-block { margin:-3px 2px 12px; }
+        .os-report-btn { display:inline-flex; align-items:center; gap:5px; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:10px; padding:8px 14px; font-size:12.5px; font-weight:700; text-decoration:none; }
+        .os-report-btn .material-symbols-outlined { font-size:15px; }
+        .os-report-done { display:inline-flex; align-items:center; gap:5px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; border-radius:10px; padding:8px 14px; font-size:12.5px; font-weight:700; }
+        .os-report-done .material-symbols-outlined { font-size:15px; }
+        .os-report-note { font-size:11.5px; color:var(--color-text-sub); margin-top:6px; line-height:1.5; }
         /* キャンセル確認モーダル（自前・標準ダイアログ置換） */
         .os-modal-ov { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:60; display:none; align-items:center; justify-content:center; padding:24px; }
         .os-modal-ov.show { display:flex; }
@@ -295,6 +302,8 @@
         import { subscribeNotifications } from '/js/notifications.js';
         import { subscribeCart } from '/js/cart.js';
         import { getOrderNumber } from '/js/order-utils.js';
+        // 6/17 #150: 問題報告の入口出し分け（報告期限＝配送完了＋N時間／1注文1オープン）
+        import { getReportWindowHours, computeReportEntry, reportDeadlineText } from '/js/report-window.js';
         // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
         import { saveRenderState, loadRenderState, serializeTimestamps, reviveTimestamps } from '/js/render-cache.js';
         import {
@@ -394,7 +403,24 @@
                     </div>
                     ${warn}
                     <div class="os-btn os-btn--pri">${i18next.t('payment.goToPayment')}</div>
-                </a>`;
+                </a>
+                ${renderReportEntry(order, d.id)}`;
+        }
+
+        // 6/17 #150 §4/§5: お支払い待ちカード下の問題報告入口（配送完了＋N時間の期限内のみ表示・報告中は「報告済み・対応中」）。
+        function renderReportEntry(order, orderId) {
+            const re = computeReportEntry(order, 'restaurant', reportHours);
+            if (re.phase === 'reported') {
+                return `<div class="os-report-block"><span class="os-report-done"><span class="material-symbols-outlined">flag</span>${i18next.t('report.reportedInProgress')}</span></div>`;
+            }
+            if (!re.show) return '';
+            const note = (re.phase === 'window')
+                ? `<div class="os-report-note">${reportDeadlineText(re.deadlineMs, 'restaurant')}</div>`
+                : '';
+            return `<div class="os-report-block">
+                <a class="os-report-btn" href="/pages/restaurant/report.html?id=${orderId}"><span class="material-symbols-outlined">flag</span>${i18next.t('review.reportIssue')}</a>
+                ${note}
+            </div>`;
         }
 
         // 辞退された注文（同じ魚を再注文／× 閉じる）
@@ -460,6 +486,8 @@
         let ordersHasMore = false;
         let ordersLoadingMore = false;
         let allOrdersCache = [];
+        // 6/17 #150: 報告受付時間（時間）。お支払い待ちカードの報告入口の締切判定に使う。
+        let reportHours = 4;
         const farmerNameCache = new Map();   // #143: farmerId -> 農家表示名（カード「🏬 農家名」用）
 
         // 5/25 #91/#92 拡張: 描画ロジックを fetch から分離。cached / fresh 両方から呼ぶ。
@@ -585,6 +613,8 @@
             try {
                 const uid = window.currentUser?.uid;
                 if (!uid) return;
+                // 6/17 #150: 報告受付時間を先読み（helper 内でキャッシュ・renderAllOrders 前に確定）
+                if (!append) reportHours = await getReportWindowHours();
 
                 const baseConds = [
                     collection(db, 'orders'),

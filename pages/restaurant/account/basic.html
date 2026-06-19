@@ -245,7 +245,8 @@
             const center = current?.lat ? { lat: current.lat, lng: current.lng } : { lat: 11.5564, lng: 104.9282 };
             editMap = new google.maps.Map(document.getElementById('loc-map'), {
                 center, zoom: current?.lat ? 14 : 7,
-                mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
+                // 6/17 #152: 航空写真（衛星）への切替を付ける（地図/衛星トグル）
+                mapTypeControl: true, streetViewControl: false, fullscreenControl: false,
             });
             if (current?.lat) {
                 editMarker = new google.maps.Marker({ position: center, map: editMap });

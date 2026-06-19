@@ -990,6 +990,9 @@ exports.onOrderUpdated = onDocumentUpdated(
           const now = new Date();
           const deadline = new Date(now.getTime() + 10 * 60 * 1000);
           await event.data.after.ref.update({
+            // 6/17 #150: 配送完了時刻（問題報告の期限 = completedAt + N時間 の基点）。
+            //   既存注文（completedAt 未設定）は report-window.js が paymentDeadline から逆算（= 完了時刻+10分）。
+            completedAt: now,
             paymentDeadline: deadline,
             paymentReminderSent: false,
           });
@@ -1990,6 +1993,56 @@ exports.backfillTradeCount = onCall(
       }
     }
     return { total: snap.size, counted, skipped, failed };
+  }
+);
+
+// ── 6/17 #151: SMS-OTP パスワードリセット（合成メール口座のパスワード更新） ──
+// 電話番号 → 正規化（+855XXXXXXXX / 855... / 0XX... → 855XXXXXXXX）。js/firebase-config.js と同ロジック。
+function normalizePhoneServer(raw) {
+  if (!raw) return "";
+  let s = String(raw).replace(/[^\d+]/g, "");
+  if (!s) return "";
+  if (s.startsWith("+855")) s = s.slice(1);
+  else if (s.startsWith("855")) { /* keep */ }
+  else if (s.startsWith("0")) s = "855" + s.slice(1);
+  else s = "855" + s;
+  s = s.replace(/\D/g, "");
+  return s;
+}
+
+// クライアントは Firebase Phone Auth（電話番号OTP）で番号所有を検証し、ログイン状態（phone provider）で
+// 本callableを呼ぶ。本callableは request.auth.token.phone_number（検証済みの+855番号）を信頼し、
+// その番号で登録された {phone}@fishlink.local 口座を Firestore users.phone で引いてパスワードを更新する。
+//   ＝自分の検証済み番号で登録した口座のパスワードしか変えられない（なりすまし・総当たり不可）。
+//   番号の有無は呼び出し側に漏らさない（未登録でも ok を返す＝総当たり防止）。
+exports.resetPasswordWithPhone = onCall(
+  { region: "asia-southeast1", invoker: "public", cors: true },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required");
+    }
+    // Phone Auth で検証された電話番号（E.164・例 +85512345678）。なければ拒否。
+    const tokenPhone = request.auth.token && request.auth.token.phone_number;
+    if (!tokenPhone) {
+      throw new HttpsError("permission-denied", "Phone verification required");
+    }
+    const newPassword = request.data && request.data.newPassword;
+    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+      throw new HttpsError("invalid-argument", "Password must be at least 6 characters");
+    }
+    const normalized = normalizePhoneServer(tokenPhone);
+    if (!/^855\d{8,9}$/.test(normalized)) {
+      throw new HttpsError("invalid-argument", "Invalid phone number");
+    }
+    const userSnap = await db.collection("users")
+      .where("phone", "==", normalized).limit(1).get();
+    // 番号の有無は漏らさない（未登録でも成功扱いで返す＝総当たり防止）。
+    if (userSnap.empty) {
+      return { ok: true };
+    }
+    const uid = userSnap.docs[0].id;
+    await getAuth().updateUser(uid, { password: newPassword });
+    return { ok: true };
   }
 );
 

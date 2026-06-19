@@ -43,9 +43,13 @@
         .img-actions button.danger { color: #b91c1c; border-color: #fecaca; }
         .save-row { display: flex; gap: 8px; margin-top: 14px; }
         .save-row button { flex: 1; border: none; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
-        .save-row .save { background: var(--color-primary); color: #fff; }
+        /* 6/17 #149 ⑦: 保存 緑→青（CTA） */
+        .save-row .save { background: var(--color-cta); color: #fff; }
         .edit-toggle { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-        .edit-btn { background: #eef2ff; color: #3730a3; border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+        /* 6/17 #149 ⑥: 編集ボタン indigo→青 */
+        .edit-btn { background: var(--color-cta-lt); color: var(--color-cta); border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+        /* 6/17 #149 ⑥: キャンセルはグレー維持（編集と同じ .edit-btn を流用しているので上書き） */
+        #btn-cancel { background: #eceef0; color: var(--color-text-sub); }
     </style>
 </head>
 <body>

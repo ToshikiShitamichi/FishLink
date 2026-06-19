@@ -11,7 +11,14 @@
       "Bash(node -e \"const j=require\\('./locales/ja.json'\\); const o=j.orders||{}; ['fishTotal','commission','deliveryFee','deliveryNote','receiveAmount','quantity','gutProcessing','gutYes','gutNo','deliveryDate','deliveryTime','farmerCampaignDiscount','farmerCampaignDiscountValue','unitPrice','viewReviews','openMaps','reviewCount'].forEach\\(k=>console.log\\(k, '=>', JSON.stringify\\(o[k]\\)\\)\\); console.log\\('--- has 注文内容/金額/レストラン keys? ---'\\); console.log\\('sectionAmount', o.sectionAmount, 'sectionOrderContent', o.sectionOrderContent\\);\")",
       "Bash(node tmp_check2.cjs)",
       "Bash(grep -v \"import\\\\|firestore.js\\\\|orderBy\\('createdAt'\\\\|//\\\\|where\\('\")",
-      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(s\\);console.log\\(JSON.stringify\\(j,null,2\\)\\);}catch\\(e\\){console.log\\(s.slice\\(0,4000\\)\\);}}\\)\")"
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(s\\);console.log\\(JSON.stringify\\(j,null,2\\)\\);}catch\\(e\\){console.log\\(s.slice\\(0,4000\\)\\);}}\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(PYTHONIOENCODING=utf-8 python -c ' *)",
+      "Bash(PYTHONIOENCODING=utf-8 grep -n \"getRestaurantPhotos\\\\|getPondPhotos\\\\|getReviewerAvatarUrl\\\\|gaqpBadgeHtml\" c:/work/FishLink/js/profile-utils.js)",
+      "Bash(PYTHONIOENCODING=utf-8 grep -rn \"toJSON\\\\|Timestamp\" c:/work/FishLink/js/render-cache.js)",
+      "Bash(cp js/report-window.js /tmp/rw_check.mjs)",
+      "Bash(node --check /tmp/rw_check.mjs)",
+      "Bash(rm -f /tmp/rw_check.mjs)"
     ]
   }
 }

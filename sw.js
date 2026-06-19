@@ -347,7 +347,28 @@ self.addEventListener('notificationclick', (event) => {
 //     データは既存（fishListings active + users public read）をクライアント集計＝hosting-only。locales farmerlist.* 追加。
 //   - ⚠️ functions / Firestore Rules / インデックス変更なし。新規HTML（pages/restaurant/farmer-list.html）は
 //     他の pages/ 同様 PRECACHE には入れず stale-while-revalidate でランタイムキャッシュ＝版番号バンプで反映。
-const CACHE_NAME = 'fishlink-v127';
+// 6/17 #148〜#152 レストラン/生産者ページ追加修正・問題を報告・SMS-OTP・地図衛星（v128）:
+//   - #148/#149 公開ページ（farmer/restaurant.html・restaurant/farmer.html）＝お店の様子/養殖環境を横スワイプ
+//     カルーセル＋ドット化／在庫を価格下メタ行へ／一言ボックス中立グレー／GAqP薄緑ボックス／登録時期 YYYY年M月／
+//     0件レビュー一本化（レストラン）。編集ページ（profile.html×2）の編集/保存ボタンを青・キャンセルをグレー。
+//   - #150 問題を報告（report.html×2 再設計＝タイトル統一/カテゴリ青/送信青/ノート灰/写真複数/送信後青）＋
+//     入口出し分け（report-window.js 新規＝配送完了＋N時間の期限内のみ表示・「報告済み・対応中」・締切注記）を
+//     restaurant orders/payment・farmer orders に追加。admin/settings.html に「報告受付時間」追加（settings/campaign）。
+//     js/report-window.js を新規 PRECACHE 対象に追加。
+//   - #151 SMS-OTP（Firebase Phone Auth）= recover.html / register.html に flag-gated で実装（既定OFF）。
+//     functions に resetPasswordWithPhone callable 追加。Firebase Console（Phone Auth有効化等）は手動・要デプロイ後+855実機テスト。
+//   - #152 地図 航空写真（衛星）切替＝register / basic×2 は mapTypeControl:true、farmer/restaurant.html（埋め込み iframe）は
+//     地図/航空写真トグル（&t=k）。生産者ページは地図なし＝対象外。
+//   - ⚠️ functions（callable）＋ Firebase Console 設定あり。Firestore Rules 変更なし（settings/reports とも既存ルールで足りる）。
+// 6/17 追補（v129）: 敵対的レビュー確定3件の修正＋SMS-OTP フラグON。
+//   - blocker: order.completedAt が未書き込み＝#150 報告期限が全死 → functions の completed 分岐で completedAt 追記
+//     ＋ report-window.js に paymentDeadline(-10分) フォールバック（既存注文も hosting だけで機能）。
+//   - low: 生産者ページ 一言ボックスの else 欠落（再描画で消し漏れ）修正／recover「再送する」ハンドラ追加。
+//   - #151 SMS-OTP を ON（recover SMS_OTP_ENABLED / register REGISTER_OTP_ENABLED ＝ true）。
+//     ⚠️ 本番hostingに出す前に Firebase Console（Phone Auth 有効化等）＋ +855 実SMS到達テストが必須。
+//        REGISTER_OTP_ENABLED=true は全新規登録に OTP 必須＝+855 不達のまま本番ONにすると登録不能になる。
+//        日本の動作確認は Console「テスト用電話番号」（実SMSなし・固定コード）で。
+const CACHE_NAME = 'fishlink-v129';
 
 const PRECACHE_URLS = [
     '/',
@@ -373,6 +394,7 @@ const PRECACHE_URLS = [
     '/js/chat-timeline.js',
     '/js/review-card.js',
     '/js/faq-display.js',
+    '/js/report-window.js',
     '/locales/ja.json',
     '/locales/en.json',
     '/locales/km.json',

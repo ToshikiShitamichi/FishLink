@@ -295,6 +295,9 @@
                 </a>
             </div>
         </div>
+
+        <!-- 6/17 #150 §4/§5: 問題を報告（配送完了＋N時間の期限内のみ表示・報告中は「報告済み・対応中」） -->
+        <div id="report-section" style="display:none; margin:0 16px 16px;"></div>
     </div>
 
     <div class="payment-footer">
@@ -332,7 +335,10 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // 6/17 #150: 問題報告の入口出し分け（配送完了＋N時間／1注文1オープン）
+        import { getReportWindowHours, computeReportEntry, reportDeadlineText } from '/js/report-window.js';
 
+        let reportHours = 4;
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
         await initI18n();
@@ -417,9 +423,12 @@
                 })(),
             };
 
+            // 6/17 #150: 報告受付時間を先読みしてから報告窓口を描画
+            reportHours = await getReportWindowHours();
             renderDeadlineBanner();
             renderOrderInfo();
             renderBreakdown();
+            renderReportSection();
             saveCurrentPaymentRender();   // 5/25 #91/#92 拡張: fresh 描画後に最新状態をキャッシュ
 
             // 支払い済みの場合
@@ -594,10 +603,31 @@
         }
 
         // 言語切替時：data-i18n は applyTranslations 自動更新、innerHTML 部分は手動再描画
+        // 6/17 #150 §4/§5: 支払い画面の問題報告窓口。配送完了＋N時間の期限内のみ表示／報告中は「報告済み・対応中」。
+        function renderReportSection() {
+            const el = document.getElementById('report-section');
+            if (!el || !orderData) return;
+            const re = computeReportEntry(orderData, 'restaurant', reportHours);
+            if (re.phase === 'reported') {
+                el.style.display = 'block';
+                el.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; gap:6px; box-sizing:border-box; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; border-radius:14px; padding:12px; font-size:14px; font-weight:700;"><span class="material-symbols-outlined" style="font-size:18px;">flag</span>${i18next.t('report.reportedInProgress')}</div>`;
+                return;
+            }
+            if (!re.show) { el.style.display = 'none'; el.innerHTML = ''; return; }
+            const note = (re.phase === 'window')
+                ? `<div style="font-size:12px; color:var(--color-text-sub); margin-top:7px; line-height:1.5; text-align:center;">${reportDeadlineText(re.deadlineMs, 'restaurant')}</div>`
+                : '';
+            el.style.display = 'block';
+            el.innerHTML = `
+                <a href="/pages/restaurant/report.html?id=${orderId}" style="display:flex; align-items:center; justify-content:center; gap:6px; box-sizing:border-box; background:#fff; color:#b91c1c; border:1px solid #fecaca; border-radius:14px; padding:12px; font-size:14px; font-weight:700; text-decoration:none;"><span class="material-symbols-outlined" style="font-size:18px;">flag</span>${i18next.t('review.reportIssue')}</a>
+                ${note}`;
+        }
+
         onLanguageChange(() => {
             renderDeadlineBanner();
             renderOrderInfo();
             renderBreakdown();
+            renderReportSection();
             if (orderData) updatePaidState(orderData.paymentStatus);
         });
 

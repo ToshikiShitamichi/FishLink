@@ -55,6 +55,9 @@
 
     <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
+    <!-- 6/17 #151: Firebase Phone Auth の invisible reCAPTCHA コンテナ -->
+    <div id="recaptcha-container"></div>
+
     <div class="page-center" style="padding-top:40px; padding-bottom:40px;">
         <div style="width:100%; max-width:400px;">
 
@@ -149,7 +152,11 @@
 
     <script type="module">
         import { initI18n, initLangSelector } from '/js/i18n.js';
-        import { normalizePhone, isValidCambodiaPhone } from '/js/firebase-config.js';
+        import { auth, normalizePhone, isValidCambodiaPhone } from '/js/firebase-config.js';
+        import { login } from '/js/auth.js';
+        // 6/17 #151: Firebase Phone Auth（OTP）でパスワードリセット
+        import { RecaptchaVerifier, signInWithPhoneNumber, signOut } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js';
+        import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-functions.js';
 
         // SW 登録
         if ('serviceWorker' in navigator) {
@@ -175,10 +182,22 @@
         document.getElementById('loading').classList.remove('show');
 
         // ── SMS-OTP 機能フラグ ─────────────────────────────────────
-        // #133（カンボジアでのSMS送信可否・コスト）確定までは false。
+        //   true : ⑤→⑥（6桁コード）→⑦（新パスワード）の SMS-OTP フローを稼働。
         //   false: ⑤で「コードを送信」を押すと運営手動リセットの案内（フォールバック）を表示。
-        //   true : ⑤→⑥（6桁コード）→⑦（新パスワード）の SMS-OTP フローを稼働（要 functions 実装）。
-        const SMS_OTP_ENABLED = false;
+        // ⚠️ true で稼働するには Firebase Console で Phone Auth 有効化が必要（未設定だと送信失敗→フォールバックに落ちる）。
+        //    日本での動作確認は Console の「テスト用電話番号」（固定番号＋固定コード）で実SMSなしに通せる。
+        //    実SMS（+855 到達）テストは別途現地寄りの実番号で。
+        const SMS_OTP_ENABLED = true;
+
+        // 6/17 #151: Phone Auth の状態
+        let confirmationResult = null;   // signInWithPhoneNumber の結果（OTP検証に使う）
+        let recaptchaVerifier = null;
+        let recoveryPhone = '';          // 正規化済み電話番号（リセット後のログインに使う）
+        function ensureRecaptcha() {
+            if (recaptchaVerifier) return recaptchaVerifier;
+            recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+            return recaptchaVerifier;
+        }
 
         const phoneInput = document.getElementById('rec-phone');
         const sendBtn = document.getElementById('send-code-btn');
@@ -209,12 +228,26 @@
                 return;
             }
 
-            // ── 以下、SMS-OTP 有効時の本フロー（#133 確定後に functions と接続）──
-            // 未登録番号でも「コードを送りました」と曖昧表示し、⑥へ進める。
-            document.getElementById('code-sub').textContent =
-                i18next.t('recover.codeSub', { phone: raw });
-            document.getElementById('step-phone').style.display = 'none';
-            document.getElementById('step-code').style.display = 'block';
+            // ── SMS-OTP 有効時の本フロー（#151: Firebase Phone Auth）──
+            // 未登録番号でも「コードを送りました」と曖昧表示する（Phone Auth は SMS を送る・
+            //   口座の有無は最後の callable 側で曖昧化＝総当たり防止）。
+            sendBtn.disabled = true;
+            try {
+                recoveryPhone = norm;
+                const verifier = ensureRecaptcha();
+                confirmationResult = await signInWithPhoneNumber(auth, '+' + norm, verifier);
+                document.getElementById('code-sub').textContent = i18next.t('recover.codeSub', { phone: raw });
+                document.getElementById('step-phone').style.display = 'none';
+                document.getElementById('step-code').style.display = 'block';
+            } catch (err) {
+                console.error('signInWithPhoneNumber failed:', err);
+                // 失敗時（+855 未到達・reCAPTCHA 失敗等）は運営手動リセットのフォールバックへ誘導
+                fallback.classList.add('show');
+                fallback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                try { if (recaptchaVerifier) { await recaptchaVerifier.clear(); recaptchaVerifier = null; } } catch (e) { /* ignore */ }
+            } finally {
+                sendBtn.disabled = false;
+            }
         });
 
         // ── ⑥ OTP 入力補助（次の桁へ自動移動）──────────────────────
@@ -228,6 +261,21 @@
             inp.addEventListener('keydown', (e) => {
                 if (e.key === 'Backspace' && !inp.value && i > 0) otpInputs[i - 1].focus();
             });
+        });
+
+        // 6/17 #151: 「再送する」＝reCAPTCHA を作り直して signInWithPhoneNumber を再実行（OTP 再送信）。
+        document.getElementById('resend-link')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!recoveryPhone) return;
+            try {
+                try { if (recaptchaVerifier) { await recaptchaVerifier.clear(); recaptchaVerifier = null; } } catch (er) { /* ignore */ }
+                const verifier = ensureRecaptcha();
+                confirmationResult = await signInWithPhoneNumber(auth, '+' + recoveryPhone, verifier);
+                document.getElementById('err-otp').classList.remove('show');
+            } catch (err) {
+                console.error('resend OTP failed:', err);
+                document.getElementById('err-otp').classList.add('show');
+            }
         });
 
         // パスワード表示トグル
@@ -244,27 +292,60 @@
         bindToggle('pw-toggle1', 'new-pw');
         bindToggle('pw-toggle2', 'new-pw2');
 
-        // ⑥確認 → ⑦（SMS-OTP有効時のみ。実検証は functions 実装で差し込む）
-        document.getElementById('verify-code-btn').addEventListener('click', () => {
+        // ⑥確認 → ⑦（Phone Auth で OTP を検証）
+        document.getElementById('verify-code-btn').addEventListener('click', async () => {
             const code = otpInputs.map(i => i.value).join('');
             if (code.length !== 6) {
                 document.getElementById('err-otp').classList.add('show');
                 return;
             }
-            // TODO(#133): functions で OTP 検証。成功時のみ ⑦ へ。
-            document.getElementById('step-code').style.display = 'none';
-            document.getElementById('step-newpw').style.display = 'block';
+            if (!confirmationResult) {
+                // 本来 step-code には来ない（SMS未送信）。保守的にコードへ戻す。
+                document.getElementById('err-otp').classList.add('show');
+                return;
+            }
+            const btn = document.getElementById('verify-code-btn');
+            btn.disabled = true;
+            try {
+                // Phone Auth で OTP を検証（成功すると phone provider でサインイン状態になる）。
+                await confirmationResult.confirm(code);
+                document.getElementById('step-code').style.display = 'none';
+                document.getElementById('step-newpw').style.display = 'block';
+            } catch (err) {
+                console.error('OTP confirm failed:', err);
+                document.getElementById('err-otp').classList.add('show');
+            } finally {
+                btn.disabled = false;
+            }
         });
 
-        // ⑦新パスワード設定（SMS-OTP有効時のみ。実更新は functions 実装で差し込む）
-        document.getElementById('set-pw-btn').addEventListener('click', () => {
+        // ⑦新パスワード設定 → callable で合成メール口座のパスワード更新 → そのままログイン
+        document.getElementById('set-pw-btn').addEventListener('click', async () => {
             const pw = document.getElementById('new-pw').value;
             const pw2 = document.getElementById('new-pw2').value;
+            document.getElementById('err-new-pw').classList.remove('show');
+            document.getElementById('err-new-pw2').classList.remove('show');
             let ok = true;
             if (!pw || pw.length < 6) { document.getElementById('err-new-pw').classList.add('show'); ok = false; }
             if (pw !== pw2) { document.getElementById('err-new-pw2').classList.add('show'); ok = false; }
             if (!ok) return;
-            // TODO(#133): functions でパスワード更新→そのままログイン。
+            const btn = document.getElementById('set-pw-btn');
+            btn.disabled = true;
+            document.getElementById('loading').classList.add('show');
+            try {
+                // #151: Phone Auth で番号検証済み → callable が token.phone_number で口座を引き当ててパスワード更新。
+                const functions = getFunctions(undefined, 'asia-southeast1');
+                const resetFn = httpsCallable(functions, 'resetPasswordWithPhone');
+                await resetFn({ newPassword: pw });
+                // phone provider のサインインを解除し、新パスワードで本来の口座にログイン（redirectByRole で遷移）。
+                try { await signOut(auth); } catch (e) { /* ignore */ }
+                await login(recoveryPhone, pw);
+            } catch (err) {
+                console.error('password reset failed:', err);
+                document.getElementById('loading').classList.remove('show');
+                alert(i18next.t('recover.resetFailed'));
+                btn.disabled = false;
+            }
         });
     </script>
 </body>

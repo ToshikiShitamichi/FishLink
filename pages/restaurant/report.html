@@ -51,12 +51,13 @@
             background: #e5e7eb;
             flex-shrink: 0;
         }
+        /* 6/17 #150 ⑤: 選択中の色 オレンジ→青 */
         .type-option.active {
-            background: #fff7ed;
-            border-color: #fdba74;
-            color: #9a3412;
+            background: var(--color-cta-lt);
+            border-color: var(--color-cta);
+            color: var(--color-cta);
         }
-        .type-option.active::before { background: #f97316; }
+        .type-option.active::before { background: var(--color-cta); }
 
         .photo-upload {
             border: 1px dashed var(--color-border);
@@ -85,15 +86,27 @@
         }
         textarea.detail-input:focus { outline: none; background: #fff; border-color: var(--color-primary); }
 
+        /* 6/17 #150 ⑧: 運営確認ノート amber→中立グレー */
         .note-box {
-            background: #fef3c7;
-            border: 1px solid #fde68a;
+            background: #f8fafc;
+            border: 1px solid var(--color-border);
             border-radius: 14px;
             padding: 10px 12px;
             font-size: 12px;
-            color: #854d0e;
+            color: var(--color-text-sub);
             margin-bottom: 10px;
         }
+        /* 6/17 #150 §6: 配送チャットで相談（注文進行中＝配送管理チャットが開いている時だけ表示） */
+        .chat-consult {
+            display: none; align-items: center; justify-content: center; gap: 6px;
+            width: 100%; box-sizing: border-box;
+            background: var(--color-cta-lt); color: var(--color-cta);
+            border: 1px solid var(--color-cta); border-radius: 14px;
+            padding: 11px; font-size: 14px; font-weight: 700;
+            text-decoration: none; margin-bottom: 12px; font-family: inherit;
+        }
+        .chat-consult.show { display: flex; }
+        .chat-consult .material-symbols-outlined { font-size: 18px; }
 
         .footer-actions {
             position: fixed; bottom: 0; left: 0; right: 0;
@@ -101,9 +114,10 @@
             background: var(--color-surface); border-top: 1px solid var(--color-border);
             padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
         }
+        /* 6/17 #150 ⑦: 送信ボタン 赤→青塗り（入口の赤枠アウトラインは維持） */
         .btn-submit-report {
             width: 100%;
-            background: #ef4444;
+            background: var(--color-cta);
             color: #fff;
             border: none;
             border-radius: 14px;
@@ -139,14 +153,14 @@
             </select>
         </div>
 
-        <div class="sub-page__title" data-i18n="report.troubleTitle"></div>
+        <div class="sub-page__title" data-i18n="report.title"></div>
     </div>
 
     <div class="report-page">
 
         <div id="main-view">
+            <!-- 6/17 #150 ①②: タイトルは「問題を報告」に統一・大H1は削除（上部 sub-page__title が見出し） -->
             <div class="report-head">
-                <div class="report-head__title" data-i18n="report.troubleTitle"></div>
                 <div class="report-head__sub" data-i18n="report.subtitle"></div>
             </div>
 
@@ -158,20 +172,23 @@
 
             <div class="sec">
                 <div class="sec__label" data-i18n="report.typeLabel"></div>
+                <!-- 6/17 #150 ③: レストランのカテゴリ 4→6（届かない・数量不足・注文と違う・品質問題・配送遅延・その他） -->
                 <div class="type-grid" id="type-grid">
+                    <button type="button" class="type-option" data-value="not_arrived" data-i18n="report.type_not_arrived"></button>
                     <button type="button" class="type-option" data-value="shortage" data-i18n="report.type_shortage"></button>
+                    <button type="button" class="type-option" data-value="wrong" data-i18n="report.type_wrong"></button>
                     <button type="button" class="type-option" data-value="quality" data-i18n="report.type_quality"></button>
                     <button type="button" class="type-option" data-value="delay" data-i18n="report.type_delay"></button>
                     <button type="button" class="type-option" data-value="other" data-i18n="report.type_other"></button>
                 </div>
             </div>
 
+            <!-- 6/17 #150 ⑨: 写真は複数添付可・「写真を追加（任意）」で統一 -->
             <div class="sec">
                 <div class="sec__label" data-i18n="report.photoOptional"></div>
                 <div class="photo-upload" id="photo-area">
-                    <span class="material-symbols-outlined photo-upload__icon">photo_camera</span>
+                    <span class="material-symbols-outlined photo-upload__icon">add_photo_alternate</span>
                     <div class="photo-upload__text" data-i18n="report.photoUpload"></div>
-                    <div class="photo-upload__hint" data-i18n="report.photoHint"></div>
                 </div>
                 <input type="file" id="photo-input" accept="image/*" multiple style="display:none;">
                 <div class="photo-preview" id="photo-preview"></div>
@@ -191,12 +208,20 @@
             <div class="submitted-state">
                 <span class="material-symbols-outlined submitted-state__icon">check_circle</span>
                 <div class="submitted-state__text" data-i18n="report.submitted"></div>
-                <a href="/pages/restaurant/orders.html" style="display:inline-block; margin-top:18px; background:#0f172a; color:#fff; padding:10px 20px; border-radius:12px; text-decoration:none; font-weight:700; font-size:14px;" data-i18n="review.backToOrders"></a>
+                <!-- 6/17 #150 ⑪: 送信後文言の一行 -->
+                <div style="font-size:13px; color:var(--color-text-sub); margin-top:8px; line-height:1.6;" data-i18n="report.processNote"></div>
+                <!-- 6/17 #150 ⑩: 戻るボタン 紺→青・レストランは「注文状況へ戻る」 -->
+                <a href="/pages/restaurant/orders.html" style="display:inline-block; margin-top:18px; background:var(--color-cta); color:#fff; padding:10px 20px; border-radius:12px; text-decoration:none; font-weight:700; font-size:14px;" data-i18n="report.backToOrderStatus"></a>
             </div>
         </div>
     </div>
 
     <div class="footer-actions" id="footer-actions">
+        <!-- 6/17 #150 §6: 配送チャットで相談（注文進行中＝配送管理チャットが開いている時だけ .show で表示） -->
+        <a class="chat-consult" id="chat-consult" href="#">
+            <span class="material-symbols-outlined">forum</span>
+            <span data-i18n="report.consultViaChat"></span>
+        </a>
         <button class="btn-submit-report" id="submit-btn" data-i18n="report.submit"></button>
     </div>
 
@@ -290,6 +315,12 @@
                 document.getElementById('target-fish').textContent = `${shortName} ${orderData.quantity || 0}kg`;
                 document.getElementById('target-date').textContent =
                     `${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}`;
+                // 6/17 #150 §6: 配送チャットで相談（注文進行中＝配送管理チャットが開いている時だけ表示・完了後は非表示）
+                const chatConsult = document.getElementById('chat-consult');
+                if (chatConsult && ['approved', 'preparing', 'delivering'].includes(orderData.status)) {
+                    chatConsult.href = `/pages/restaurant/delivery.html?id=${orderId}`;
+                    chatConsult.classList.add('show');
+                }
                 // 5/25 #91/#92 拡張: 次回訪問用に表示部をキャッシュ
                 try {
                     saveRenderState(`restaurant_report:${orderId}`, {
@@ -340,13 +371,16 @@
                     createdAt: serverTimestamp(),
                 });
 
+                // 6/17 #150 §5: 報告済みマーカー（入口を「報告済み・対応中」に＝1注文1オープン・再送信不可）。
                 // 6/5 #129 ④/§8: レストランの問題報告→該当注文の農家送金を保留（運営が調査して送金/返金/一部返金）。
                 //   既に送金済(remitted)・完了(done)の場合は保留しない。
+                const orderUpdate = { restaurantReportOpen: true };
                 if (!['remitted', 'done'].includes(orderData.adminStatus)) {
-                    try {
-                        await updateDoc(doc(db, 'orders', orderId), { paymentProblemHold: true });
-                    } catch (e) { console.warn('set paymentProblemHold failed:', e); }
+                    orderUpdate.paymentProblemHold = true;
                 }
+                try {
+                    await updateDoc(doc(db, 'orders', orderId), orderUpdate);
+                } catch (e) { console.warn('set order report markers failed:', e); }
 
                 document.getElementById('main-view').style.display = 'none';
                 document.getElementById('footer-actions').style.display = 'none';

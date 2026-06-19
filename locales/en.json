@@ -88,6 +88,10 @@
         "phone": "Phone Number",
         "phonePlaceholder": "e.g. 012345678",
         "phoneHint": "Used for contact from FishLink and remittance verification",
+        "otpTitle": "Verify phone number",
+        "otpSub": "We sent a verification code to {{phone}}",
+        "otpCancel": "Cancel",
+        "otpSendFailed": "Failed to send the verification code. Please check the phone number.",
         "errorPhone": "Please enter your phone number",
         "password": "Password (min. 6 characters)",
         "role": "Select your role",
@@ -335,7 +339,8 @@
         "newPwConfirm": "Re-enter to confirm",
         "pwMismatch": "Passwords do not match",
         "setPassword": "Set password",
-        "setPwNote": "You'll be logged in automatically after setting it"
+        "setPwNote": "You'll be logged in automatically after setting it",
+        "resetFailed": "Failed to reset password. Please try again."
     },
     "legal": {
         "back": "Back",
@@ -878,6 +883,9 @@
         "shopIntro": "About the shop",
         "shopIntroFrom": "From the shop",
         "shopScene": "Shop photos",
+        "yearMonth": "{{year}}/{{month}}",
+        "mapTypeMap": "Map",
+        "mapTypeSatellite": "Satellite",
         "selfPreviewNote": "This is your page as farmers see it (edit from your profile)",
         "selfPreviewNoteProducer": "This is your page as buyers see it (edit from your profile)",
         "previewPublicPage": "Preview public page",
@@ -1101,7 +1109,17 @@
         "type_delay": "Late delivery",
         "type_reception": "Reception issue",
         "type_communication": "Communication issue",
-        "type_other": "Other"
+        "type_other": "Other",
+        "type_not_arrived": "Didn't arrive",
+        "type_wrong": "Different from order",
+        "reportedInProgress": "Reported · under review",
+        "consultViaChat": "Discuss in delivery chat",
+        "backToOrderStatus": "Back to order status",
+        "backToOrderCheck": "Back to orders",
+        "entryDeadlineToday": "You can report until {{time}} today",
+        "entryDeadlineTomorrow": "You can report until {{time}} tomorrow",
+        "entryDeadlineDate": "You can report until {{date}} {{time}}",
+        "entryDeadlineRemitSuffix": " (after which payment is sent to the farmer)"
     },
     "account": {
         "title": "Account",
@@ -1491,6 +1509,9 @@
             "leadTimeSection": "Delivery lead time",
             "leadTimeHoursLabel": "Minimum lead time (hours)",
             "leadTimeHoursHint": "Minimum time from order to delivery. Time slots starting sooner than this can't be selected (default 8 hours).",
+            "reportWindowSection": "Problem report window",
+            "reportWindowHoursLabel": "Report window (hours)",
+            "reportWindowHoursHint": "Buyers and farmers can report problems only within this many hours after delivery is completed. After that the entry disappears and payment proceeds to the farmer (default 4 hours).",
             "save": "Save",
             "saved": "Saved",
             "errorSave": "Save failed. Please try again."

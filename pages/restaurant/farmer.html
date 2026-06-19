@@ -62,15 +62,35 @@
         /* 6/10 #138: 信頼ブロックの「取引N件」（取引完了の累計・レストランページと対称） */
         .farmer-hero__trades { font-size: 12.5px; color: var(--color-text-sub); margin-top: 6px; }
 
+        /* 6/17 #149 ②: 生産者の一言ボックスは中立グレー（緑=GAqP/成功 専用のため意味色を外す） */
         .message-box {
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
+            background: #f8fafc;
+            border: 1px solid var(--color-border);
             border-radius: 14px;
             padding: 12px 14px;
             margin-bottom: 14px;
         }
-        .message-box__label { font-size: 12px; font-weight: 700; color: #065f46; margin-bottom: 4px; }
-        .message-box__text { font-size: 13px; color: #065f46; line-height: 1.6; white-space: pre-wrap; }
+        .message-box__label { font-size: 12px; font-weight: 700; color: var(--color-text-sub); margin-bottom: 4px; }
+        .message-box__text { font-size: 13px; color: var(--color-text); line-height: 1.6; white-space: pre-wrap; }
+
+        /* 6/17 #149 ⑤: 認証情報（GAqP）は薄緑ボックスで1認証カードに囲む（緑=GAqP はOK・商品詳細の gaqp-detail-box と統一感） */
+        .gaqp-cert-box {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 14px;
+            padding: 12px 14px;
+        }
+        .gaqp-cert-box__desc { font-size: 13px; color: #065f46; line-height: 1.5; margin-top: 6px; }
+
+        /* 6/17 #149 ④: 養殖環境＝横スワイプカルーセル＋ドット（商品詳細のカルーセルと統一） */
+        .env-carousel { position: relative; overflow: hidden; border-radius: 14px; background: #e2e8f0; }
+        .env-slides { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .env-slides::-webkit-scrollbar { display: none; }
+        .env-slide { flex: 0 0 100%; scroll-snap-align: start; height: 200px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; }
+        .env-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .env-dots { display: flex; justify-content: center; gap: 6px; padding: 8px 0 2px; }
+        .env-dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; cursor: pointer; }
+        .env-dot.active { background: #1a1a1a; }
 
         .section { margin-bottom: 20px; }
         .section__title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
@@ -178,6 +198,8 @@
         /* 6/3 #118: 価格は画像下・青（買い手向け単一の正＝手数料込み・内臓処理込み） */
         .listing-mini__price { font-size: 17px; font-weight: 800; color: var(--color-cta); margin-top: 6px; }
         .listing-mini__price .u { font-size: 10px; color: var(--color-text-sub); font-weight: 600; }
+        /* 6/17 #149 ①: 在庫は価格下のメタ行へ（画像オーバーレイ廃止）。売切れバッジは画像上に維持。 */
+        .listing-mini__stockline { font-size: 11px; color: var(--color-text-sub); margin-top: 4px; }
         /* 6/3 #118: レビューコメント「もっと見る」 */
         .reviews-more { display: block; text-align: center; font-size: 13px; font-weight: 700; color: var(--color-cta); cursor: pointer; padding: 8px; background: none; border: none; width: 100%; font-family: inherit; }
 
@@ -238,10 +260,13 @@
         </div>
 
         <!-- 5/27 #96: GAqP 認証情報セクション（認証済み時のみ表示） -->
+        <!-- 6/17 #149 ⑤: 薄緑ボックスで囲んで1認証カードに（緑=GAqP はOK） -->
         <div class="section" id="gaqp-section" style="display:none;">
             <div class="section__title" data-i18n="gaqp.certificationInfo"></div>
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;" id="gaqp-section-badge"></div>
-            <div style="font-size:13px; color:var(--color-text-sub); line-height:1.5;" data-i18n="gaqp.description"></div>
+            <div class="gaqp-cert-box">
+                <div style="display:flex; align-items:center; gap:10px;" id="gaqp-section-badge"></div>
+                <div class="gaqp-cert-box__desc" data-i18n="gaqp.description"></div>
+            </div>
         </div>
 
         <!-- 6/3 #118: 養殖環境（写真未登録ならセクションごと非表示・#4） -->
@@ -341,6 +366,44 @@
             }[c]));
         }
 
+        // 6/17 #149 ③: 登録時期の「YYYY年M月」表示（i18n で言語別フォーマット・レストランページ #148 と同フォーマット）。
+        //   Timestamp / millis 数値 / {seconds}（cache 復元）に対応。
+        function fmtYearMonth(ts) {
+            if (!ts) return '';
+            let d;
+            if (ts.toDate) d = ts.toDate();
+            else if (typeof ts === 'number') d = new Date(ts);
+            else if (ts.seconds != null) d = new Date(ts.seconds * 1000);
+            else d = new Date(ts);
+            if (isNaN(d.getTime())) return '';
+            return i18next.t('profile.yearMonth', { year: d.getFullYear(), month: d.getMonth() + 1 });
+        }
+
+        // 6/17 #149 ④: 養殖環境の横スワイプカルーセル（商品詳細と統一）。1枚なら単純表示。
+        function buildEnvCarousel(photos) {
+            if (photos.length === 1) {
+                return `<div class="env-carousel"><div class="env-slides"><div class="env-slide"><img ${asCachedImgAttrs(photos[0])} alt="pond" loading="lazy"></div></div></div>`;
+            }
+            const slides = photos.map(u => `<div class="env-slide"><img ${asCachedImgAttrs(u)} alt="pond" loading="lazy"></div>`).join('');
+            const dots = photos.map((_, i) => `<div class="env-dot ${i === 0 ? 'active' : ''}" data-index="${i}"></div>`).join('');
+            return `<div class="env-carousel"><div class="env-slides" id="env-slides">${slides}</div></div><div class="env-dots" id="env-dots">${dots}</div>`;
+        }
+        function bindEnvCarousel() {
+            const slidesEl = document.getElementById('env-slides');
+            const dotsEl = document.getElementById('env-dots');
+            if (!slidesEl || !dotsEl) return;
+            slidesEl.addEventListener('scroll', () => {
+                const idx = Math.round(slidesEl.scrollLeft / slidesEl.offsetWidth);
+                dotsEl.querySelectorAll('.env-dot').forEach((dot, i) => dot.classList.toggle('active', i === idx));
+            });
+            dotsEl.querySelectorAll('.env-dot').forEach(dot => {
+                dot.addEventListener('click', () => {
+                    const i = parseInt(dot.dataset.index, 10);
+                    slidesEl.scrollTo({ left: i * slidesEl.offsetWidth, behavior: 'smooth' });
+                });
+            });
+        }
+
         // 5/7 #56: 「レビューを見る」をタップしたらレビューコメント欄までスムーズスクロール
         document.addEventListener('click', (e) => {
             const link = e.target.closest('#reviews-link');
@@ -355,9 +418,15 @@
             const loc = formatLocation(user) || '-';
             document.getElementById('location').textContent = loc;
 
-            // 6/10 #138: 取引完了の累計（信頼ブロック・取引N件）。レストランページと対称。
+            // 6/10 #138 / 6/17 #149 ③: 信頼ブロック＝「取引N件 ・ YYYY年M月〜」（登録時期を追加・レストランページと対称）。
             const tradeEl = document.getElementById('trade-line');
-            if (tradeEl) tradeEl.textContent = i18next.t('profile.tradeCount', { count: Number(user.tradeCount || 0) });
+            if (tradeEl) {
+                const ym = fmtYearMonth(user.createdAt);
+                tradeEl.textContent = [
+                    i18next.t('profile.tradeCount', { count: Number(user.tradeCount || 0) }),
+                    ym ? `${ym}〜` : null,
+                ].filter(Boolean).join(' ・ ');
+            }
 
             if (user.avatarUrl) {
                 document.getElementById('avatar').innerHTML = `<img ${asCachedImgAttrs(user.avatarUrl)} alt="avatar">`;
@@ -403,20 +472,22 @@
             document.getElementById('sub-quality').textContent = fmtSubRate(sub.quality);
             document.getElementById('sub-time').textContent = fmtSubRate(sub.time);
 
-            // 農家の一言
+            // 農家の一言（未記入ならセクション非表示・cached→fresh 再描画でクリア済みが残らないよう else を持たせる）
             if (user.farmerMessage) {
                 document.getElementById('message-box').style.display = 'block';
                 document.getElementById('message-text').textContent = user.farmerMessage;
+            } else {
+                document.getElementById('message-box').style.display = 'none';
             }
 
-            // 6/3 #118: 養殖環境の写真（未登録ならセクションごと非表示・#4。プレースホルダ枠は出さない）
+            // 6/3 #118 / 6/17 #149 ④: 養殖環境の写真（未登録ならセクションごと非表示）。
+            //   複数枚は横スワイプカルーセル＋ドット（商品詳細と統一）・1枚は単純表示。
             const pondPhotos = getPondPhotos(user);
             const pondSection = document.getElementById('pond-section');
             if (pondPhotos.length > 0) {
                 if (pondSection) pondSection.style.display = 'block';
-                document.getElementById('pond-photos').innerHTML = pondPhotos
-                    .map(u => `<div class="pond-photo" style="margin-bottom:10px;"><img ${asCachedImgAttrs(u)} alt="pond" loading="lazy"></div>`)
-                    .join('');
+                document.getElementById('pond-photos').innerHTML = buildEnvCarousel(pondPhotos);
+                bindEnvCarousel();
             } else {
                 if (pondSection) pondSection.style.display = 'none';
             }
@@ -448,12 +519,13 @@
                                 ${img}
                                 ${isSold
                                     ? `<div class="listing-mini__soldbadge">${i18next.t('fishlist.soldOut')}</div>`
-                                    : `<div class="listing-mini__stock">${i18next.t('restaurant.stock', { kg: data.stock })}</div>`}
+                                    : ''}
                             </div>
                             <div class="listing-mini__body">
                                 <div class="listing-mini__name">${shortName}</div>
                                 <div class="listing-mini__meta">${data.size || ''} head/kg</div>
                                 <div class="listing-mini__price">${unit.toLocaleString()}<span class="u"> KHR/kg</span></div>
+                                ${isSold ? '' : `<div class="listing-mini__stockline">${i18next.t('restaurant.stock', { kg: data.stock })}</div>`}
                             </div>
                         </a>
                     `;
@@ -519,7 +591,9 @@
                         createdAt: r.createdAt?.toMillis?.() || r.createdAt || null,
                     }));
                     saveRenderState(`farmer:${targetUid}`, {
-                        user, listings,
+                        // 6/17 #149 ③: createdAt（登録時期）は Timestamp を millis 化して保存（JSON 化対応）
+                        user: { ...user, createdAt: user.createdAt?.toMillis?.() ?? user.createdAt ?? null },
+                        listings,
                         reviewsWithComment: reviewsForCache,
                         reviewerMap,
                     });
