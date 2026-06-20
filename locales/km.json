@@ -455,7 +455,11 @@
         "completeModalBody": "ភោជនីយដ្ឋាននឹងទទួលដំណឹងឱ្យបង់ប្រាក់ (បង់ប្រាក់ពេលទទួល)។",
         "completeModalCancel": "បោះបង់",
         "completeModalOk": "បញ្ជាក់បានបញ្ចប់",
-        "statusApprovedMsg": "បញ្ជាទិញត្រូវបានយល់ព្រម"
+        "statusApprovedMsg": "បញ្ជាទិញត្រូវបានយល់ព្រម",
+        "statusSendConfirmTitle": "ផ្ញើ «{{label}}»?",
+        "statusSendConfirmBody": "ភោជនីយដ្ឋាននឹងទទួលដំណឹង។",
+        "statusSendConfirmOk": "ផ្ញើ",
+        "statusSendConfirmCancel": "បោះបង់"
     },
     "voice": {
         "recording": "កំពុងថត...",
@@ -608,6 +612,8 @@
         "submit": "ផ្ញើ",
         "confirmApproveTitle": "យល់ព្រមការបញ្ជាទិញនេះ?",
         "confirmApproveAsk": "ភោជនីយដ្ឋាននឹងទទួលការជូនដំណឹងបន្ទាប់ពីយល់ព្រម។",
+        "confirmDeclineTitle": "បដិសេធការបញ្ជាទិញនេះ?",
+        "confirmDeclineAsk": "ភោជនីយដ្ឋាននឹងទទួលការជូនដំណឹងបន្ទាប់ពីបដិសេធ (ការបញ្ជាទិញនេះនឹងត្រូវបញ្ជូនទៅកសិករផ្សេង)។",
         "fishLabel": "ត្រី",
         "restaurantLabel": "ភោជនីយដ្ឋាន",
         "otherItemsAddon": "+{{n}} ផ្សេងទៀត",
@@ -696,6 +702,7 @@
         "deadlineBy": "សូមបង់ប្រាក់មុន {{time}}",
         "deadlinePassed": "ហួសកំណត់ពេលបង់ប្រាក់ហើយ។ សូមបង់ប្រាក់ឲ្យលឿន។",
         "payOnReceipt": "បង់ប្រាក់នៅពេលទទួល",
+        "payAfterReceipt": "បានទទួលរួចហើយ។ សូមបង់ប្រាក់ឲ្យបានឆាប់។",
         "qrTitle": "បង់ប្រាក់តាម QR (KHQR)",
         "qrHint": "※ បើមិនអាចស្កេនលើទូរស័ព្ទនេះ សូមចុច «បើកតំណ» ដើម្បីបង់ប្រាក់ ឬរក្សាទុករូប QR",
         "openLink": "បើកតំណ",
@@ -709,7 +716,7 @@
         "confirmModalTitle": "តើអ្នកបានបង់ប្រាក់រួចរាល់ហើយមែនទេ?",
         "confirmModalBody": "FishLink នឹងផ្ទៀងផ្ទាត់ការបង់ប្រាក់។ បន្ទាប់ពីបញ្ជាក់ ស្ថានភាពនឹងក្លាយជា «រង់ចាំបញ្ជាក់ការបង់ប្រាក់»។",
         "confirmModalOk": "បាទ/ចាស",
-        "alreadyPaid": "បានបញ្ជាក់ការបង់ប្រាក់",
+        "alreadyPaid": "កំពុងរង់ចាំបញ្ជាក់ការបង់ប្រាក់",
         "paidBanner": "បានបញ្ជាក់ការបង់ប្រាក់។",
         "partnerLabel": "ដៃគូ",
         "statusLabel": "ស្ថានភាពបង់ប្រាក់",
@@ -1042,7 +1049,7 @@
         "noReply": "មិនទាន់ឆ្លើយតប",
         "replyPlaceholder": "សរសេរចម្លើយ",
         "replySend": "ឆ្លើយតប",
-        "replyConfirmDelete": "ដកចេញចម្លើយនេះ?",
+        "replyConfirmDelete": "ដកចេញចម្លើយនេះ? (វានឹងបាត់ពីសំណួរសាធារណៈ)",
         "replyDeleted": "ចម្លើយនេះត្រូវបានដកចេញ",
         "previewTitle": "សំណួរ និងចម្លើយ",
         "previewEmpty": "មិនទាន់មានសំណួរ",
@@ -1054,7 +1061,8 @@
         "viewOnlyNote": "មើលតែប៉ុណ្ណោះ (មិនអាចឆ្លើយតបបានទេ ព្រោះមិនមែនជាសំណួររបស់អ្នក)",
         "confirmDeleteThread": "ការលុបសំណួរនេះ នឹងលុបការសន្ទនាទាំងមូល រួមទាំងការឆ្លើយតប។ បន្តឬ?",
         "maskWarning": "លេខទូរស័ព្ទ គណនីបណ្តាញសង្គម និង URL មិនអាចបង្ហោះបានទេ។ សូមទំនាក់ទំនងក្នុងកម្មវិធី។",
-        "maskedContact": "[ព័ត៌មានទំនាក់ទំនងត្រូវបានលាក់]"
+        "maskedContact": "[ព័ត៌មានទំនាក់ទំនងត្រូវបានលាក់]",
+        "cancel": "បោះបង់"
     },
     "review": {
         "title": "ការវាយតម្លៃ",
@@ -1214,7 +1222,7 @@
         "receiveAmountSum": "ទទួលបាន",
         "remitWaitBadge": "រង់ចាំផ្ទេរប្រាក់",
         "pendingRemit": "រង់ចាំផ្ទេរប្រាក់ {{amount}}",
-        "remitTodayNote": "គ្រោងផ្ទេរនៅល្ងាចនេះ"
+        "remitTodayNote": "គ្រោងផ្ទេរនៅថ្ងៃនេះ"
     },
     "adminChat": {
         "title": "ជជែកជាមួយរដ្ឋបាល",

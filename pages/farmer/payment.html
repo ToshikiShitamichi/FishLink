@@ -122,21 +122,22 @@
         .amount-line__value.campaign { color: #b36a00; }
         .amount-line__label .material-symbols-outlined { font-size: 15px; vertical-align: middle; margin-right: 2px; }
 
+        /* 6/18 #154 C⑪: 「送金について」ボックスは全状態で中立グレー（緑＝GAqP/成功専用なので使わない・キャッシュ復元でも緑がフラッシュしないようベースをグレー化） */
         .info-box {
-            background: #ecfdf5;
-            border: 1px solid #86efac;
+            background: #f4f6f8;
+            border: 1px solid #e3e8ed;
             border-radius: 14px;
             padding: 12px 14px;
             margin: 0 16px 14px;
             font-size: 13px;
-            color: #166534;
+            color: var(--color-text-sub);
             line-height: 1.6;
         }
 
         .info-box__title {
             font-size: 13px;
             font-weight: 700;
-            color: #166534;
+            color: var(--color-text-sub);
             margin-bottom: 4px;
         }
 
@@ -177,7 +178,7 @@
 
     <div class="payment-page">
         <div class="page-header" style="align-items:center; padding:16px;">
-            <a href="/pages/farmer/orders.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub);"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/farmer/account/sales.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub);"><span class="material-symbols-outlined">arrow_back</span></a>
             <a href="/pages/farmer/orders.html" class="page-header__title" style="text-decoration:none; color:inherit; flex:1;" data-i18n="payment.farmerTitle"></a>
             <select id="lang-selector" style="width:auto; flex:0 0 auto; font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option><option value="en">ENGLISH</option><option value="ja">日本語</option>
@@ -206,8 +207,11 @@
             <div id="info-box-desc"></div>
         </div>
 
-        <!-- レビュー遷移ボタン（6/5 #129: 支払い確認後のみ表示・色は青(CTA)） -->
-        <a id="review-btn" href="#" style="display:none; margin:14px 16px 0; padding:12px; background:var(--color-cta); color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:14px; align-items:center; justify-content:center; gap:6px; line-height:1;">
+        <!-- 6/18 #154 C⑭: 問題を報告（配送完了＋N時間の期限内のみ表示・報告中は「報告済み・対応中」・農家報告は送金保留しない） -->
+        <div id="report-section" style="display:none; margin:0 16px 14px;"></div>
+
+        <!-- レビュー遷移ボタン（6/5 #129: 支払い確認後のみ表示。6/18 #154 C⑩: 副CTA＝白地・青文字・青枠） -->
+        <a id="review-btn" href="#" style="display:none; margin:14px 16px 0; padding:12px; background:#fff; color:var(--color-cta); border:1.5px solid var(--color-cta); border-radius:12px; font-weight:700; text-decoration:none; font-size:14px; align-items:center; justify-content:center; gap:6px; line-height:1;">
             <span class="material-symbols-outlined" style="font-size:18px; line-height:1;">star</span>
             <span data-i18n="review.submit" style="line-height:1;"></span>
         </a>
@@ -226,7 +230,10 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 6/5 #129: FL番号表示
         import { getOrderNumber } from '/js/order-utils.js';
+        // 6/18 #154 C⑭: 問題報告の入口出し分け（配送完了＋N時間／1注文1オープン）
+        import { getReportWindowHours, computeReportEntry, reportDeadlineText } from '/js/report-window.js';
 
+        let reportHours = 4;
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
         await initI18n();
@@ -242,6 +249,21 @@
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
             else setTimeout(() => waitForUserData(cb), 300);
+        }
+
+        // 6/18 #154 C⑫: 納品日に曜日（売上・取引 sales.html と同じ helper を流用）
+        const WEEKDAY_SHORT = {
+            ja: ['日', '月', '火', '水', '木', '金', '土'],
+            en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            km: ['អា', 'ច', 'អ', 'ពុ', 'ព្រ', 'សុ', 'ស'],
+        };
+        function fmtDeliveryDate(iso) {
+            const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!m) return iso || '';
+            const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            const lang = (typeof i18next !== 'undefined' && i18next.language) || 'km';
+            const wd = (WEEKDAY_SHORT[lang] || WEEKDAY_SHORT.en)[d.getDay()];
+            return `${Number(m[2])}/${Number(m[3])}（${wd}）`;
         }
 
         // 5/3: 言語切替時に再描画できるよう必要な情報を保持
@@ -304,9 +326,13 @@
                 place: (rest.province || '') + (rest.district ? ', ' + rest.district : ''),
             };
 
+            // 6/18 #154 C⑭: 報告受付時間を先読みしてから報告窓口を描画
+            reportHours = await getReportWindowHours();
+
             renderOrderInfo();
             renderBreakdown();
             renderStatus(orderData.adminStatus ?? null, orderData.paymentStatus || 'pending');
+            renderReportSection();
 
             // ステータスをリアルタイム購読
             onSnapshot(doc(db, 'orders', orderId), (snap) => {
@@ -314,6 +340,7 @@
                 const d = snap.data();
                 orderData = d;
                 renderStatus(d.adminStatus ?? null, d.paymentStatus || 'pending');
+                renderReportSection();
                 saveCurrentPaymentRender();
             });
 
@@ -368,7 +395,7 @@
                 ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey)
                 : '';
             document.getElementById('order-info').innerHTML = `
-                <div style="font-size:13px; color:var(--color-text-sub); margin-bottom:4px;">${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}</div>
+                <div style="font-size:13px; color:var(--color-text-sub); margin-bottom:4px;">${i18next.t('orders.deliveryDate')} ${fmtDeliveryDate(orderData.deliveryDateIso || orderData.deliveryDate)} ${orderData.deliveryTime || ''}</div>
                 <div style="font-size:16px; font-weight:700;">${fishName}${size ? `（${size} head/kg）` : ''}</div>
                 <div style="font-size:14px; margin-top:4px;">${i18next.t('orders.quantity')} ${orderData.quantity} kg</div>
                 <div style="font-size:13px; color:var(--color-text-sub); margin-top:6px;">
@@ -419,10 +446,32 @@
             `;
         }
 
+        // 6/18 #154 C⑭: 送金状況の問題報告窓口（農家）。配送完了＋N時間の期限内のみ表示／報告中は「報告済み・対応中」。
+        //   農家報告は送金保留しない（role=farmer で reportDeadlineText の送金サフィックスも付かない・farmer/report.html は farmerReportOpen のみ立てる）。
+        function renderReportSection() {
+            const el = document.getElementById('report-section');
+            if (!el || !orderData) return;
+            const re = computeReportEntry(orderData, 'farmer', reportHours);
+            if (re.phase === 'reported') {
+                el.style.display = 'block';
+                el.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; gap:6px; box-sizing:border-box; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; border-radius:14px; padding:12px; font-size:14px; font-weight:700;"><span class="material-symbols-outlined" style="font-size:18px;">flag</span>${i18next.t('report.reportedInProgress')}</div>`;
+                return;
+            }
+            if (!re.show) { el.style.display = 'none'; el.innerHTML = ''; return; }
+            const note = (re.phase === 'window')
+                ? `<div style="font-size:12px; color:var(--color-text-sub); margin-top:7px; line-height:1.5; text-align:center;">${reportDeadlineText(re.deadlineMs, 'farmer')}</div>`
+                : '';
+            el.style.display = 'block';
+            el.innerHTML = `
+                <a href="/pages/farmer/report.html?id=${orderId}" style="display:flex; align-items:center; justify-content:center; gap:6px; box-sizing:border-box; background:#fff; color:#b91c1c; border:1px solid #fecaca; border-radius:14px; padding:12px; font-size:14px; font-weight:700; text-decoration:none;"><span class="material-symbols-outlined" style="font-size:18px;">flag</span>${i18next.t('review.reportIssue')}</a>
+                ${note}`;
+        }
+
         // 言語切替時：data-i18n 要素は applyTranslations 自動更新、innerHTML 部分は手動再描画
         onLanguageChange(() => {
             renderOrderInfo();
             renderBreakdown();
+            renderReportSection();
             if (orderData) renderStatus(orderData.adminStatus ?? null, orderData.paymentStatus || 'pending');
         });
 

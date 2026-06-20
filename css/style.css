@@ -732,6 +732,20 @@ body.app-ready .loading-overlay.show {
 .tl-chat__img { max-width: 200px; width: 100%; border-radius: 10px; margin-top: 4px; display: block; }
 .tl-chat__time { font-size: 10px; color: #9aa3b0; text-align: right; margin-top: 3px; }
 
+/* 6/18 #156 ④b: 音声メッセージ（▶＋簡易波形＋秒数）。native <audio> 廃止のカスタム表示。 */
+.tl-chat .voice { display: flex; align-items: center; gap: 9px; }
+.tl-chat .voice .vp {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--color-cta); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; border: none; padding: 0; cursor: pointer;
+}
+.tl-chat .voice .vp .material-symbols-outlined { font-size: 18px; }
+.tl-chat .voice .wave { display: flex; align-items: center; gap: 2px; height: 20px; }
+.tl-chat .voice .wave i { width: 2.5px; background: #7fa8d4; border-radius: 2px; display: block; }
+.tl-chat:not(.self) .voice .wave i { background: #9ab4d0; }
+.tl-chat .voice .vdur { font-size: 11px; color: #5a6470; font-weight: 600; white-space: nowrap; }
+
 /* 日付区切り（中央の区切り線・曜日付き） */
 .tl-datesep {
     display: flex; align-items: center; gap: 10px;

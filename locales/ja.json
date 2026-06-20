@@ -451,11 +451,15 @@
         "goTracking": "配送状況を確認",
         "myOrders": "注文状況",
         "statusSendHint": "押すとレストランに伝わります。順番が前後しても大丈夫です。",
-        "completeModalTitle": "配達完了にしますか？",
+        "completeModalTitle": "配送完了にしますか？",
         "completeModalBody": "レストランにお支払い（受け取り時のお支払い）のお知らせが届きます。",
         "completeModalCancel": "キャンセル",
-        "completeModalOk": "配達完了にする",
-        "statusApprovedMsg": "注文が承認されました"
+        "completeModalOk": "配送完了にする",
+        "statusApprovedMsg": "注文が承認されました",
+        "statusSendConfirmTitle": "「{{label}}」を送信しますか？",
+        "statusSendConfirmBody": "レストランに伝わり、通知が届きます。",
+        "statusSendConfirmOk": "送信",
+        "statusSendConfirmCancel": "やめる"
     },
     "voice": {
         "recording": "録音中...",
@@ -608,6 +612,8 @@
         "submit": "送信する",
         "confirmApproveTitle": "以下の内容で承認します。よろしいですか？",
         "confirmApproveAsk": "承認すると、レストランに通知が届きます。",
+        "confirmDeclineTitle": "以下の内容で辞退します",
+        "confirmDeclineAsk": "辞退すると、レストランに通知が届きます（この注文は他の農家に回されます）。",
         "fishLabel": "魚",
         "restaurantLabel": "レストラン",
         "otherItemsAddon": "他{{n}}点",
@@ -696,6 +702,7 @@
         "deadlineBy": "{{time}} までにお支払いください",
         "deadlinePassed": "支払期限を過ぎています。お早めにお支払いください",
         "payOnReceipt": "受け取り時にお支払いください",
+        "payAfterReceipt": "受け取り済みです。お早めにお支払いください",
         "qrTitle": "QRコードでお支払い（KHQR）",
         "qrHint": "※ スマホでスキャンできない場合は「リンクを開く」から支払い、またはQR画像を保存してください",
         "openLink": "リンクを開く",
@@ -709,7 +716,7 @@
         "confirmModalTitle": "支払いを完了しましたか？",
         "confirmModalBody": "運営が入金を確認します。確認後に「支払い確認待ち」になります。",
         "confirmModalOk": "はい",
-        "alreadyPaid": "支払い確認済み",
+        "alreadyPaid": "支払い確認待ち",
         "paidBanner": "お支払いを確認しました。",
         "partnerLabel": "取引相手",
         "statusLabel": "支払いステータス",
@@ -1042,7 +1049,7 @@
         "noReply": "未返信",
         "replyPlaceholder": "返信を入力",
         "replySend": "返信する",
-        "replyConfirmDelete": "この返信を取り消しますか？",
+        "replyConfirmDelete": "この返信を取り消しますか？（公開質問から消えます）",
         "replyDeleted": "この返信は取り消されました",
         "previewTitle": "質問・返信",
         "previewEmpty": "まだ質問はありません",
@@ -1054,7 +1061,8 @@
         "viewOnlyNote": "閲覧のみ（自分の質問ではないため返信できません）",
         "confirmDeleteThread": "この質問を取り消すと、返信を含むスレッド全体が削除されます。よろしいですか？",
         "maskWarning": "電話番号・SNS・URLなどの連絡先は投稿できません。やり取りはアプリ内でお願いします。",
-        "maskedContact": "［連絡先は非表示］"
+        "maskedContact": "［連絡先は非表示］",
+        "cancel": "キャンセル"
     },
     "review": {
         "title": "レビュー",
@@ -1214,7 +1222,7 @@
         "receiveAmountSum": "受取額",
         "remitWaitBadge": "送金待ち",
         "pendingRemit": "うち送金待ち {{amount}}",
-        "remitTodayNote": "本日夕方に送金予定"
+        "remitTodayNote": "本日中に送金予定"
     },
     "adminChat": {
         "title": "運営チャット",

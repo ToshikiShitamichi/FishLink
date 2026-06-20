@@ -150,7 +150,7 @@ export function initVoiceRecorder({ chatInputContainer, getOrderId, getSenderUid
             if (e.data && e.data.size > 0) chunks.push(e.data);
         };
 
-        recorder.onstop = () => {
+        recorder.onstop = async () => {
             if (autoStopTimer) { clearTimeout(autoStopTimer); autoStopTimer = null; }
             const durationMs = Date.now() - startTs;
             const seconds = Math.min(MAX_DURATION_SEC, Math.max(1, Math.round(durationMs / 1000)));
@@ -159,7 +159,13 @@ export function initVoiceRecorder({ chatInputContainer, getOrderId, getSenderUid
             hideRecordingOverlay();
             isRecording = false;
             if (stopReason === 'cancel') return;
-            showPreviewModal(blob, seconds, ext, mimeType);
+            // 6/18 #156 ④a: 録音→送信を1タップに簡略化（プレビューモーダル廃止）。停止＝即送信。
+            try {
+                await sendVoice(blob, seconds, ext, mimeType);
+            } catch (e) {
+                console.error('voice send failed:', e);
+                alert(i18next.t('voice.errorSend') + '\n' + (e?.message || e?.code || ''));
+            }
         };
 
         showRecordingOverlay({
@@ -200,14 +206,15 @@ export function initVoiceRecorder({ chatInputContainer, getOrderId, getSenderUid
             display: 'flex', alignItems: 'center', gap: '12px',
             zIndex: '1000',
         });
+        // 6/18 #156 ④a/④c: 破棄（discard・グレー）／送信（send＝停止+送信を1タップ・青 var(--color-cta)）。
         overlayEl.innerHTML = `
             <span class="material-symbols-outlined" style="color:#dc2626;">fiber_manual_record</span>
             <div style="flex:1;">
                 <div id="voice-rec-timer" style="font-weight:700; font-size:18px; color:#92400e;">0:00 / ${formatMmss(MAX_DURATION_SEC)}</div>
                 <div style="font-size:11px; color:#92400e;">${escapeHtml(i18next.t('voice.recording'))}</div>
             </div>
-            <button type="button" id="voice-rec-cancel" style="border:none; background:#fff; color:#dc2626; border-radius:999px; padding:8px 14px; font-weight:700; cursor:pointer; font-family:inherit;">${escapeHtml(i18next.t('voice.cancel'))}</button>
-            <button type="button" id="voice-rec-stop" style="border:none; background:#0d6e4c; color:#fff; border-radius:999px; padding:8px 14px; font-weight:700; cursor:pointer; font-family:inherit;">${escapeHtml(i18next.t('voice.stop'))}</button>
+            <button type="button" id="voice-rec-cancel" style="border:1px solid #dde3e9; background:#fff; color:#5a6470; border-radius:999px; padding:8px 14px; font-weight:700; cursor:pointer; font-family:inherit;">${escapeHtml(i18next.t('voice.discard'))}</button>
+            <button type="button" id="voice-rec-stop" style="border:none; background:var(--color-cta); color:#fff; border-radius:999px; padding:8px 14px; font-weight:700; cursor:pointer; font-family:inherit;">${escapeHtml(i18next.t('voice.send'))}</button>
         `;
         document.body.appendChild(overlayEl);
         overlayEl.querySelector('#voice-rec-cancel').addEventListener('click', onCancel);
@@ -223,58 +230,6 @@ export function initVoiceRecorder({ chatInputContainer, getOrderId, getSenderUid
     function hideRecordingOverlay() {
         if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
         if (overlayEl) { overlayEl.remove(); overlayEl = null; }
-    }
-
-    // ── プレビュー → 送信/破棄 ──
-    function showPreviewModal(blob, durationSec, ext, mimeType) {
-        const modal = document.createElement('div');
-        modal.id = 'voice-preview-modal';
-        Object.assign(modal.style, {
-            position: 'fixed', inset: '0',
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-            zIndex: '1001',
-        });
-        const audioUrl = URL.createObjectURL(blob);
-        const sheet = document.createElement('div');
-        Object.assign(sheet.style, {
-            maxWidth: '480px', width: '100%',
-            background: '#fff',
-            borderRadius: '14px 14px 0 0',
-            padding: '20px 16px calc(20px + env(safe-area-inset-bottom))',
-            boxSizing: 'border-box',
-        });
-        sheet.innerHTML = `
-            <div style="font-size:14px; font-weight:700; margin-bottom:12px; text-align:center;">${escapeHtml(i18next.t('voice.previewTitle'))}</div>
-            <audio src="${audioUrl}" controls style="width:100%; margin-bottom:8px;"></audio>
-            <div style="text-align:center; font-size:12px; color:#64748b; margin-bottom:14px;">${escapeHtml(i18next.t('voice.duration', { sec: durationSec }))}</div>
-            <div style="display:flex; gap:10px;">
-                <button type="button" id="voice-preview-discard" style="flex:1; border:1px solid var(--color-border); background:#fff; color:#dc2626; border-radius:14px; padding:12px; font-weight:700; cursor:pointer; font-family:inherit;">${escapeHtml(i18next.t('voice.discard'))}</button>
-                <button type="button" id="voice-preview-send" style="flex:2; border:none; background:#0d6e4c; color:#fff; border-radius:14px; padding:12px; font-weight:700; cursor:pointer; font-family:inherit;">${escapeHtml(i18next.t('voice.send'))}</button>
-            </div>
-        `;
-        modal.appendChild(sheet);
-        document.body.appendChild(modal);
-
-        const cleanup = () => {
-            URL.revokeObjectURL(audioUrl);
-            modal.remove();
-        };
-        modal.querySelector('#voice-preview-discard').addEventListener('click', cleanup);
-        modal.querySelector('#voice-preview-send').addEventListener('click', async () => {
-            const sendBtn = modal.querySelector('#voice-preview-send');
-            sendBtn.disabled = true;
-            try {
-                await sendVoice(blob, durationSec, ext, mimeType);
-                cleanup();
-            } catch (e) {
-                console.error('voice send failed:', e);
-                alert(i18next.t('voice.errorSend') + '\n' + (e?.message || e?.code || ''));
-                sendBtn.disabled = false;
-            }
-        });
-        // 背景タップでキャンセル
-        modal.addEventListener('click', (e) => { if (e.target === modal) cleanup(); });
     }
 
     // ── Storage upload + Firestore message doc 作成 ──
@@ -384,14 +339,54 @@ export function renderVoiceBubble(msg, isSelf, timeStr) {
             </div>
         `;
     }
+    // 6/18 #156 ④b: native <audio controls> 廃止→カスタム表示（▶＋簡易波形＋秒数）。
+    //   再生はバブルごとの非表示 <audio> を .vp クリックで toggle（chat-timeline.js の委譲ハンドラ）。
+    //   波形は静的8本（高さは固定パターン）。受信側は薄い色（CSSの .tl-chat:not(.self) で分岐）。
+    const waveBars = [6, 12, 18, 9, 15, 7, 13, 5]
+        .map(h => `<i style="height:${h}px"></i>`).join('');
     return `
         <div class="tl-chat ${isSelf ? 'self' : ''}">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span class="material-symbols-outlined" style="color:#0d6e4c;">graphic_eq</span>
-                <audio src="${escapeHtml(msg.voiceUrl)}" controls preload="metadata" style="flex:1; max-width:220px; height:36px;"></audio>
-                <span style="font-size:11px; color:#64748b; white-space:nowrap;">${escapeHtml(durLabel)}</span>
+            <div class="voice">
+                <button type="button" class="vp" aria-label="play"><span class="material-symbols-outlined">play_arrow</span></button>
+                <span class="wave">${waveBars}</span>
+                <span class="vdur">${escapeHtml(durLabel)}</span>
+                <audio src="${escapeHtml(msg.voiceUrl)}" preload="none" style="display:none;"></audio>
             </div>
             <div class="tl-chat__time">${escapeHtml(timeStr)}</div>
         </div>
     `;
+}
+
+/**
+ * 音声バブルの ▶/⏸ 再生トグル（イベント委譲）。document に1回だけ束ねる＝
+ * delivery 両ページとも chat-timeline.js を import するため共通で効く。
+ * 再描画（onSnapshot）後も委譲なので有効。同時に1つだけ再生（他は停止）。
+ */
+let __voicePlaybackBound = false;
+export function bindVoicePlayback() {
+    if (__voicePlaybackBound || typeof document === 'undefined') return;
+    __voicePlaybackBound = true;
+    document.addEventListener('click', (e) => {
+        const vp = e.target.closest && e.target.closest('.voice .vp');
+        if (!vp) return;
+        const audio = vp.parentElement && vp.parentElement.querySelector('audio');
+        if (!audio) return;
+        const icon = vp.querySelector('.material-symbols-outlined');
+        if (audio.paused) {
+            // 他の再生中音声を止める
+            document.querySelectorAll('.voice audio').forEach(a => {
+                if (a !== audio && !a.paused) {
+                    a.pause();
+                    const ic = a.parentElement && a.parentElement.querySelector('.vp .material-symbols-outlined');
+                    if (ic) ic.textContent = 'play_arrow';
+                }
+            });
+            audio.play().then(() => { if (icon) icon.textContent = 'pause'; }).catch(() => {});
+            audio.onended = () => { if (icon) icon.textContent = 'play_arrow'; };
+            audio.onpause = () => { if (icon) icon.textContent = 'play_arrow'; };
+        } else {
+            audio.pause();
+            if (icon) icon.textContent = 'play_arrow';
+        }
+    });
 }

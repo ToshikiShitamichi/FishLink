@@ -1007,16 +1007,17 @@
                 );
                 const snap = await getDocs(q);
                 const all = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(d => d.isDeleted !== true);
-                const count = all.length;
+                // 6/3 #117: teaser はスレッドの「元の質問（root）」を主に表示する。
+                //   root＝parentReplyId を持たない最上位の質問。all は createdAt desc なので roots[0] が最新スレッドの起点。
+                //   途中のフォローアップ発言（parentReplyId 付き）を主表示にしない（文脈が欠けるため）。
+                // 6/18 #153-①: teaser 件数＝取り消し済みを除いた「スレッド（root）数」（1スレッド=1件）。
+                //   旧 all.length は質問＋全返信を数えており質問ページの実スレッド数と食い違っていた。
+                const roots = all.filter(d => !d.parentReplyId);
+                const count = roots.length;
                 if (count === 0) {
                     // 0件＝空状態の質問導線（既に描画済み・#8）
                     return;
                 }
-                // 6/3 #117: teaser はスレッドの「元の質問（root）」を主に表示する。
-                //   root＝parentReplyId を持たない最上位の質問。all は createdAt desc なので roots[0] が最新スレッドの起点。
-                //   途中のフォローアップ発言（parentReplyId 付き）を主表示にしない（文脈が欠けるため）。
-                const roots = all.filter(d => !d.parentReplyId);
-                if (roots.length === 0) return;
                 const c = roots[0];
                 // 質問者の名前（5/23 #69 Phase B: data-cache 経由）
                 const sender = (await getCachedUser(c.senderId)) || {};

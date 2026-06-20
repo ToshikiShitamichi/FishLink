@@ -201,19 +201,19 @@
             margin-top: 8px;
         }
 
-        /* 6/5 #129: 自前モーダル（ブラウザ標準ダイアログを置換） */
+        /* 6/5 #129: 自前モーダル（ブラウザ標準ダイアログを置換）／6/18 #155 ⑯: ボトムシート化 */
         .pay-modal-overlay {
             position: fixed; inset: 0; z-index: 50;
             background: rgba(0,0,0,0.42);
-            display: none; align-items: center; justify-content: center;
-            padding: 24px;
+            display: none; align-items: flex-end; justify-content: center;
+            padding: 0;
         }
         .pay-modal-overlay.show { display: flex; }
         .pay-modal {
-            width: 100%; max-width: 360px;
+            width: 100%; max-width: 480px;
             background: var(--color-surface);
-            border-radius: 18px;
-            padding: 20px 18px;
+            border-radius: 20px 20px 0 0;
+            padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
             box-shadow: 0 12px 40px rgba(0,0,0,0.25);
         }
         .pay-modal__title { font-size: 17px; font-weight: 800; color: var(--color-text); }
@@ -257,7 +257,7 @@
                 <span class="material-symbols-outlined" style="font-size:20px; flex-shrink:0;">schedule</span>
                 <div>
                     <div id="deadline-line" style="font-size:14px; font-weight:700;"></div>
-                    <div style="font-size:12px; margin-top:2px;" data-i18n="payment.payOnReceipt"></div>
+                    <div style="font-size:12px; margin-top:2px;" data-i18n="payment.payAfterReceipt"></div>
                 </div>
             </div>
         </div>
@@ -303,7 +303,7 @@
     <div class="payment-footer">
         <button id="paid-btn" data-i18n="payment.confirmPaid"></button>
         <!-- 6/5 #129: レビューは支払い前は出さない。「支払い完了」押下後（=paid 以降）のみ表示。色は青(CTA) -->
-        <a id="review-btn" href="#" style="display:none; margin-top:8px; padding:12px; background:var(--color-cta); color:#fff; border-radius:12px; font-weight:700; text-decoration:none; font-size:14px; align-items:center; justify-content:center; gap:6px; line-height:1;">
+        <a id="review-btn" href="#" style="display:none; margin-top:8px; padding:12px; background:#fff; color:var(--color-cta); border:1.5px solid var(--color-cta); border-radius:12px; font-weight:700; text-decoration:none; font-size:14px; align-items:center; justify-content:center; gap:6px; line-height:1;">
             <span class="material-symbols-outlined" style="font-size:18px; line-height:1;">star</span>
             <span data-i18n="review.submit" style="line-height:1;"></span>
         </a>
@@ -339,6 +339,20 @@
         import { getReportWindowHours, computeReportEntry, reportDeadlineText } from '/js/report-window.js';
 
         let reportHours = 4;
+        // #155 ②: 納品日に曜日（注文状況 orders.html と同じヘルパーを踏襲）
+        const WEEKDAY_SHORT = {
+            ja: ['日', '月', '火', '水', '木', '金', '土'],
+            en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            km: ['អា', 'ច', 'អ', 'ពុ', 'ព្រ', 'សុ', 'ស'],
+        };
+        function fmtDeliveryDate(iso) {
+            const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!m) return iso || '';
+            const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            const lang = (typeof i18next !== 'undefined' && i18next.language) || 'km';
+            const wd = (WEEKDAY_SHORT[lang] || WEEKDAY_SHORT.en)[d.getDay()];
+            return `${Number(m[2])}/${Number(m[3])}（${wd}）`;
+        }
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
         await initI18n();
@@ -542,7 +556,7 @@
             const payStatusInfo = computePaymentStatusInfo();
 
             document.getElementById('order-info').innerHTML = `
-                <div style="font-size:14px; color:var(--color-text-sub); margin-bottom:6px;">${i18next.t('orders.deliveryDate')} ${orderData.deliveryDate || ''} ${orderData.deliveryTime || ''}</div>
+                <div style="font-size:14px; color:var(--color-text-sub); margin-bottom:6px;">${i18next.t('orders.deliveryDate')} ${fmtDeliveryDate(orderData.deliveryDateIso || orderData.deliveryDate)} ${orderData.deliveryTime || ''}</div>
                 <div style="font-size:13px; color:var(--color-text-sub); margin-bottom:8px;">
                     <span class="material-symbols-outlined" style="font-size:14px;">storefront</span>
                     ${i18next.t('payment.partnerLabel')}: ${farmerName}${place ? ` · ${place}` : ''}

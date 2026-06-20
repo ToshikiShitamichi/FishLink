@@ -13,8 +13,12 @@
 //   - 旧データ互換: type==='status'→completed / statusChange==='preparing'→prepare_start /
 //     statusChange==='delivering'→ship_start。旧 delay/arrived（chat扱い）は通常バブルにフォールバック。
 
-import { renderVoiceBubble } from '/js/voice-message.js';
+import { renderVoiceBubble, bindVoicePlayback } from '/js/voice-message.js';
 import { asCachedImgAttrs } from '/js/image-cache.js';
+
+// 6/18 #156 ④b: 音声バブルの再生トグル（▶/⏸）を document に委譲で1回束ねる。
+//   delivery 両ページが本モジュールを import するため共通で効く（再描画後も有効）。
+bindVoicePlayback();
 
 const WEEKDAY = {
     ja: ['日', '月', '火', '水', '木', '金', '土'],

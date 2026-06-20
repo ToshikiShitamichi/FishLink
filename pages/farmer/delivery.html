@@ -129,12 +129,22 @@
             border-bottom: 1px solid var(--color-border);
         }
         .photo-preview-area.show { display: flex; }
-        .photo-preview-area img {
-            width: 50px; height: 50px; object-fit: cover; border-radius: 8px;
+        /* 6/18 #156 ⑤: 写真は1枚ごとに小さな✕で個別削除（一括✕廃止） */
+        .photo-preview-area .pp {
+            position: relative;
+            width: 50px; height: 50px;
         }
-        .photo-preview-area .remove-all {
-            font-size: 11px; color: #ef4444; cursor: pointer; margin-left: auto;
+        .photo-preview-area .pp img {
+            width: 50px; height: 50px; object-fit: cover; border-radius: 8px; display: block;
         }
+        .photo-preview-area .pp__x {
+            position: absolute; top: -6px; right: -6px;
+            width: 19px; height: 19px; border-radius: 50%;
+            background: #1a2733; color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: none; padding: 0;
+        }
+        .photo-preview-area .pp__x .material-symbols-outlined { font-size: 14px; }
 
         .delivery-footer {
             padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
@@ -153,6 +163,33 @@
             cursor: pointer;
         }
         .delivery-footer button:disabled { opacity: 0.5; }
+
+        /* 6/18 #156 ②③: 確認はボトムシートに統一（中央モーダル廃止）。
+           .chat-modal を全画面で再スタイルせず、このページ専用のボトムシートclassを使う。 */
+        .bsheet {
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            display: none; align-items: flex-end; justify-content: center;
+            z-index: 1200;
+        }
+        .bsheet.show { display: flex; }
+        .bsheet__sheet {
+            width: 100%; max-width: 480px;
+            background: #fff; border-radius: 20px 20px 0 0;
+            padding: 20px 18px calc(18px + env(safe-area-inset-bottom));
+            box-sizing: border-box;
+        }
+        .bsheet__title { font-size: 15px; font-weight: 800; margin-bottom: 8px; text-align: center; }
+        .bsheet__title .material-symbols-outlined { font-size: 19px; vertical-align: -4px; margin-right: 4px; color: var(--color-cta); }
+        .bsheet__body { font-size: 13px; line-height: 1.6; color: #5a6470; margin-bottom: 16px; text-align: center; }
+        .bsheet__actions { display: flex; gap: 10px; }
+        .bsheet__btn {
+            flex: 1; border: none; border-radius: 12px;
+            padding: 13px; font-size: 14px; font-weight: 800;
+            cursor: pointer; font-family: inherit;
+        }
+        .bsheet__btn--cancel { background: #f1f3f5; color: #5a6470; }
+        .bsheet__btn--ok { background: var(--color-cta); color: #fff; }
     </style>
 </head>
 
@@ -212,14 +249,26 @@
         </div>
     </div>
 
-    <!-- 6/4 #126 (diff8): 配送完了の自前確認モーダル（ブラウザ標準ダイアログ置換） -->
-    <div class="chat-modal" id="complete-modal">
-        <div class="chat-modal__box">
-            <div class="chat-modal__title" data-i18n="delivery.completeModalTitle"></div>
-            <div class="chat-modal__body" data-i18n="delivery.completeModalBody"></div>
-            <div class="chat-modal__actions">
-                <button class="chat-modal__btn chat-modal__btn--cancel" id="complete-modal-cancel" data-i18n="delivery.completeModalCancel"></button>
-                <button class="chat-modal__btn chat-modal__btn--ok" id="complete-modal-ok" data-i18n="delivery.completeModalOk"></button>
+    <!-- 6/4 #126 (diff8) → 6/18 #156 ②: 配送完了の確認はボトムシート（中央モーダル廃止） -->
+    <div class="bsheet" id="complete-modal">
+        <div class="bsheet__sheet">
+            <div class="bsheet__title" data-i18n="delivery.completeModalTitle"></div>
+            <div class="bsheet__body" data-i18n="delivery.completeModalBody"></div>
+            <div class="bsheet__actions">
+                <button class="bsheet__btn bsheet__btn--cancel" id="complete-modal-cancel" data-i18n="delivery.completeModalCancel"></button>
+                <button class="bsheet__btn bsheet__btn--ok" id="complete-modal-ok" data-i18n="delivery.completeModalOk"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6/18 #156 ①: 配送ステータス送信の確認ボトムシート（即時投稿しない・送信ゲート） -->
+    <div class="bsheet" id="status-modal">
+        <div class="bsheet__sheet">
+            <div class="bsheet__title"><span class="material-symbols-outlined">inventory_2</span><span id="status-modal-title"></span></div>
+            <div class="bsheet__body" data-i18n="delivery.statusSendConfirmBody"></div>
+            <div class="bsheet__actions">
+                <button class="bsheet__btn bsheet__btn--cancel" id="status-modal-cancel" data-i18n="delivery.statusSendConfirmCancel"></button>
+                <button class="bsheet__btn bsheet__btn--ok" id="status-modal-ok" data-i18n="delivery.statusSendConfirmOk"></button>
             </div>
         </div>
     </div>
@@ -325,7 +374,7 @@
 
             const orderNo = orderData.orderNumber || `FL-${orderId.slice(0, 8).toUpperCase()}`;
             // 6/5 #126: ヘッダーをモック chat-head に統一（相手名＝レストラン＋右肩ステータスバッジ／魚種・数量・納品・FL／📍地区・地図を見る）
-            const delivStr = [orderData.deliveryDate ? fmtDeliveryDateShort(orderData.deliveryDate) : '', orderData.deliveryTime || ''].filter(Boolean).join(' ');
+            const delivStr = [(orderData.deliveryDateIso || orderData.deliveryDate) ? fmtDeliveryDateShort(orderData.deliveryDateIso || orderData.deliveryDate) : '', orderData.deliveryTime || ''].filter(Boolean).join(' ');
             document.getElementById('order-summary').innerHTML = `
                 <div class="ch-top">
                     <span class="ch-name">${restName}</span>
@@ -371,44 +420,68 @@
             loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
 
-        // 6/4 #126 (diff1,2,6): 配送ステータス送信＝押すと中央のシステム行として即送信。
+        // 6/4 #126 (diff1,2,6) → 6/18 #156 ①: 配送ステータス送信＝押すと確認ボトムシート→「送信」で投稿。
+        //   ⚠️ 送信データは type:'chat' + statusKind を維持（type:'status' にすると #125/#126 の FCM が相手へ届かない）。
         //   ロックしない・重複押し許容（鮮魚配達は段取りが前後する）。緩い誘導は updateStatusButtons で表現。
         let statusSending = false;
+
+        // 送信本体（ロジックは従来どおり・確認BSの「送信」から呼ぶ）
+        async function doStatusSend(statusKind, orderStatus, msgKey) {
+            if (statusSending) return;
+            statusSending = true;
+            const text = i18next.t(`delivery.${msgKey}`);
+            try {
+                // 6/4 #126: 通知は既存経路を維持するため type:'chat'（onMessageCreated が相手へFCM）。
+                //   描画は statusKind で中央システム行に振り分け（statusChange は注文ステータス連動・到着/遅延は null）。
+                await addDoc(collection(db, 'orders', orderId, 'messages'), {
+                    senderId: myUid,
+                    text,
+                    type: 'chat',
+                    statusKind,
+                    statusChange: orderStatus || null,
+                    isRead: false,
+                    createdAt: serverTimestamp(),
+                });
+                if (orderStatus) {
+                    await updateDoc(doc(db, 'orders', orderId), { status: orderStatus });
+                    if (orderData) orderData.status = orderStatus;
+                } else if (statusKind === 'arrived') {
+                    // #142: 到着＝注文ステータスは「配達中」のまま（spec §5）。
+                    //   農家の注文確認リストで「📍到着」バッジ＋受け取り待ち注記を出すため arrivedAt を記録。
+                    await updateDoc(doc(db, 'orders', orderId), { arrivedAt: serverTimestamp() });
+                    if (orderData) orderData.arrivedAt = true;
+                }
+            } catch (e) {
+                console.error('status send failed:', e);
+            } finally {
+                statusSending = false;
+            }
+        }
+
+        // 確認ボトムシート（送信前のゲート）
+        const statusModal = document.getElementById('status-modal');
+        let pendingStatus = null; // { statusKind, orderStatus, msgKey }
+        function closeStatusModal() { statusModal.classList.remove('show'); pendingStatus = null; }
         document.querySelectorAll('.quick-status__btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
+            btn.addEventListener('click', () => {
                 if (statusSending) return;
-                statusSending = true;
                 const statusKind = btn.dataset.statusKind;
                 const orderStatus = btn.dataset.orderStatus || null;
                 const msgKey = btn.dataset.msgKey;
-                const text = i18next.t(`delivery.${msgKey}`);
-                try {
-                    // 6/4 #126: 通知は既存経路を維持するため type:'chat'（onMessageCreated が相手へFCM）。
-                    //   描画は statusKind で中央システム行に振り分け（statusChange は注文ステータス連動・到着/遅延は null）。
-                    await addDoc(collection(db, 'orders', orderId, 'messages'), {
-                        senderId: myUid,
-                        text,
-                        type: 'chat',
-                        statusKind,
-                        statusChange: orderStatus || null,
-                        isRead: false,
-                        createdAt: serverTimestamp(),
-                    });
-                    if (orderStatus) {
-                        await updateDoc(doc(db, 'orders', orderId), { status: orderStatus });
-                        if (orderData) orderData.status = orderStatus;
-                    } else if (statusKind === 'arrived') {
-                        // #142: 到着＝注文ステータスは「配達中」のまま（spec §5）。
-                        //   農家の注文確認リストで「📍到着」バッジ＋受け取り待ち注記を出すため arrivedAt を記録。
-                        await updateDoc(doc(db, 'orders', orderId), { arrivedAt: serverTimestamp() });
-                        if (orderData) orderData.arrivedAt = true;
-                    }
-                } catch (e) {
-                    console.error('status send failed:', e);
-                } finally {
-                    statusSending = false;
-                }
+                // タイトル＝「{{label}}」を送信しますか？（label＝ボタンの短いステータス名）
+                const label = (btn.textContent || '').trim();
+                pendingStatus = { statusKind, orderStatus, msgKey };
+                document.getElementById('status-modal-title').textContent = i18next.t('delivery.statusSendConfirmTitle', { label });
+                statusModal.classList.add('show');
             });
+        });
+        document.getElementById('status-modal-cancel').addEventListener('click', closeStatusModal);
+        statusModal.addEventListener('click', (e) => { if (e.target === statusModal) closeStatusModal(); });
+        document.getElementById('status-modal-ok').addEventListener('click', async () => {
+            if (!pendingStatus) return;
+            const { statusKind, orderStatus, msgKey } = pendingStatus;
+            closeStatusModal();
+            await doStatusSend(statusKind, orderStatus, msgKey);
         });
 
         // 6/4 #126 (diff6): 緩い誘導B案 — 次に押すべきを青強調／送信済みは淡色＋取り消し線／遅延はamber。
@@ -435,22 +508,31 @@
         // ── 写真プレビュー管理 ──
         let pendingFiles = [];
 
+        const photoPreviewEl = document.getElementById('photo-preview');
+
         function updatePhotoPreview() {
-            const preview = document.getElementById('photo-preview');
             if (pendingFiles.length === 0) {
-                preview.classList.remove('show');
-                preview.innerHTML = '';
+                photoPreviewEl.classList.remove('show');
+                photoPreviewEl.innerHTML = '';
                 return;
             }
-            preview.classList.add('show');
-            preview.innerHTML = pendingFiles.map((f, i) =>
-                `<img src="${URL.createObjectURL(f)}">`
-            ).join('') + `<span class="remove-all" id="clear-photos">✕</span>`;
-            document.getElementById('clear-photos').addEventListener('click', () => {
-                pendingFiles = [];
-                updatePhotoPreview();
-            });
+            photoPreviewEl.classList.add('show');
+            // 6/18 #156 ⑤: 各サムネに個別✕（Material Symbols）。削除はイベント委譲で対象1枚だけ splice。
+            photoPreviewEl.innerHTML = pendingFiles.map((f, i) =>
+                `<div class="pp"><img src="${URL.createObjectURL(f)}"><button type="button" class="pp__x" data-idx="${i}" aria-label="remove"><span class="material-symbols-outlined">close</span></button></div>`
+            ).join('');
         }
+
+        // 個別✕（イベント委譲＝再描画後も有効）
+        photoPreviewEl.addEventListener('click', (e) => {
+            const x = e.target.closest('.pp__x');
+            if (!x) return;
+            const idx = Number(x.dataset.idx);
+            if (Number.isInteger(idx)) {
+                pendingFiles.splice(idx, 1);
+                updatePhotoPreview();
+            }
+        });
 
         document.getElementById('photo-btn').addEventListener('click', () => {
             document.getElementById('photo-input').click();

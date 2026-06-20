@@ -200,16 +200,16 @@
         .os-report-done { display:inline-flex; align-items:center; gap:5px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; border-radius:10px; padding:8px 14px; font-size:12.5px; font-weight:700; }
         .os-report-done .material-symbols-outlined { font-size:15px; }
         .os-report-note { font-size:11.5px; color:var(--color-text-sub); margin-top:6px; line-height:1.5; }
-        /* キャンセル確認モーダル（自前・標準ダイアログ置換） */
-        .os-modal-ov { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:60; display:none; align-items:center; justify-content:center; padding:24px; }
+        /* キャンセル確認モーダル（自前・標準ダイアログ置換）＝ボトムシート（#155 A⑮） */
+        .os-modal-ov { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1200; display:none; align-items:flex-end; justify-content:center; }
         .os-modal-ov.show { display:flex; }
-        .os-modal { width:100%; max-width:360px; background:#fff; border-radius:16px; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,.25); }
+        .os-modal { width:100%; max-width:480px; background:#fff; border-radius:20px 20px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); box-shadow:0 -8px 40px rgba(0,0,0,.25); }
         .os-modal__t { font-size:16px; font-weight:800; margin-bottom:8px; }
         .os-modal__b { font-size:13px; color:var(--color-text-sub); line-height:1.6; margin-bottom:14px; }
         .os-modal__act { display:flex; gap:10px; }
         .os-modal__btn { flex:1; border-radius:10px; padding:12px; font-size:14px; font-weight:800; border:none; cursor:pointer; font-family:inherit; }
         .os-modal__btn--keep { background:#eceef0; color:#5a6470; }
-        .os-modal__btn--ok { background:var(--color-danger); color:#fff; }
+        .os-modal__btn--ok { background:var(--color-cta); color:#fff; }
     </style>
 </head>
 
@@ -252,12 +252,6 @@
         <div style="text-align:center; font-size:20px; font-weight:700; margin-bottom:16px;" data-i18n="delivery.myOrders"></div>
 
         <div id="orders-list" style="padding:0 16px;"></div>
-
-        <div id="load-more-wrap" style="display:none; padding:12px 16px 24px; text-align:center;">
-            <button type="button" id="load-more-btn"
-                style="padding:10px 24px; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); border-radius:999px; font-size:13px; font-weight:600; cursor:pointer;"
-                data-i18n="restaurant.loadMore"></button>
-        </div>
     </div>
 
     <!-- 5/12 #74: 4タブ構成（ホーム / 魚一覧 / カート / 配送中）に変更 -->
@@ -444,7 +438,7 @@
                     </div>
                     <div class="os-note">${i18next.t('orders.declinedNotice')}</div>
                     <a class="os-btn os-btn--pri" data-reorder-id="${d.id}" href="${reorderHref}">${i18next.t('orders.reorderSameFish')}</a>
-                    <button type="button" class="os-close" data-act="dismiss-declined" data-id="${d.id}">${i18next.t('orders.closeLabel')}</button>
+                    <button type="button" class="os-close" data-act="dismiss-declined" data-id="${d.id}"><span class="material-symbols-outlined" style="font-size:15px; vertical-align:-3px; margin-right:2px;">close</span>${i18next.t('orders.closeLabel')}</button>
                 </div>`;
         }
 
@@ -587,6 +581,8 @@
             const keepBtn = document.getElementById('cancel-modal-keep');
             ov.classList.add('show');
             keepBtn.onclick = () => ov.classList.remove('show');
+            // 背景タップで閉じる（シート本体のタップは閉じない）
+            ov.onclick = (e) => { if (e.target === ov) ov.classList.remove('show'); };
             okBtn.onclick = async () => {
                 okBtn.disabled = true;
                 try {
@@ -633,7 +629,6 @@
                 if (!append && snap.empty) {
                     allOrdersCache = [];
                     renderAllOrders();   // #143: 完全新規＝「まだ注文がありません」＋魚を探す導線
-                    document.getElementById('load-more-wrap').style.display = 'none';
                     return;
                 }
 
@@ -691,7 +686,6 @@
                 newOrders.forEach(o => { if (!seen.has(o.d.id)) allOrdersCache.push(o); });
 
                 renderAllOrders();
-                document.getElementById('load-more-wrap').style.display = ordersHasMore ? 'block' : 'none';
 
                 // 5/25 #91/#92 拡張: 初回ページのみ render-cache に保存（次回訪問用）
                 if (!append) {
@@ -715,20 +709,6 @@
             }
         }
 
-        document.getElementById('load-more-btn').addEventListener('click', async () => {
-            if (ordersLoadingMore || !ordersHasMore) return;
-            ordersLoadingMore = true;
-            const btn = document.getElementById('load-more-btn');
-            btn.disabled = true;
-            btn.textContent = '...';
-            try {
-                await loadOrders({ append: true });
-            } finally {
-                btn.disabled = false;
-                btn.textContent = i18next.t('restaurant.loadMore');
-            }
-        });
-
         onLanguageChange(() => loadOrders());
 
         // 5/25 #91/#92 拡張: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
@@ -745,8 +725,6 @@
                 }));
                 ordersHasMore = !!cached.hasMore;
                 renderAllOrders();
-                const lm = document.getElementById('load-more-wrap');
-                if (lm) lm.style.display = ordersHasMore ? 'block' : 'none';
                 loading.classList.remove('show');
                 document.body.classList.add('app-ready');
                 cachedRendered = true;

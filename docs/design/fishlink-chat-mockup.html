@@ -90,6 +90,31 @@
   /* 配送完了（農家側のみ） */
   .btn-complete { width:100%; background:#0B5FB0; color:#FFF; border:none; border-radius:10px; padding:12px; font-size:14px; font-weight:800; margin-top:9px; cursor:pointer; }
 
+  /* ③ ステータス確認ボトムシート */
+  .bs-overlay { position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:flex-end; border-radius:inherit; }
+  .bs { width:100%; background:#FFF; border-radius:18px 18px 0 0; padding:18px 16px 16px; }
+  .bs .bs-t { font-size:14px; font-weight:800; text-align:center; margin-bottom:6px; }
+  .bs .bs-s { font-size:12px; color:#5A6470; text-align:center; margin-bottom:16px; }
+  .bs .bs-act { display:flex; gap:10px; }
+  .bs .bs-btn { flex:1; border-radius:12px; padding:12px; font-size:14px; font-weight:800; text-align:center; }
+  .bs .bs-btn.cancel { background:#F1F3F5; color:#5A6470; }
+  .bs .bs-btn.ok { background:#0B5FB0; color:#FFF; }
+
+  /* ④ ボイス録音バー（破棄／送信） */
+  .rec-bar { display:flex; align-items:center; gap:9px; background:#FFF7E6; border-top:2px solid #F0A500; padding:11px 14px; }
+  .rec-bar .dot { width:10px; height:10px; border-radius:50%; background:#E5484D; flex-shrink:0; }
+  .rec-bar .rt { font-size:14px; font-weight:800; }
+  .rec-bar .rs { font-size:11px; color:#B36A00; }
+  .rec-bar .sp { flex:1; }
+  .rec-bar .rb { border-radius:18px; padding:8px 15px; font-size:13px; font-weight:800; }
+  .rec-bar .rb.discard { background:#FFF; border:1px solid #DDE3E9; color:#5A6470; }
+  .rec-bar .rb.send { background:#0B5FB0; color:#FFF; }
+
+  /* ⑤ 写真添付プレビュー（個別✕） */
+  .photo-prev { display:flex; gap:9px; padding:10px 14px 4px; flex-wrap:wrap; }
+  .photo-prev .pp { width:56px; height:56px; border-radius:9px; position:relative; }
+  .photo-prev .pp .x { position:absolute; top:-6px; right:-6px; width:19px; height:19px; border-radius:50%; background:#1A2733; color:#FFF; font-size:11px; display:flex; align-items:center; justify-content:center; }
+
   .note { max-width:1000px; margin-top:24px; background:#FFF; padding:14px 18px; border-radius:12px; font-size:13px; line-height:1.8; color:#4A4A4A; }
   .note h2 { font-size:14px; color:#0B5FB0; margin:0 0 8px; }
   .note b { color:#0B5FB0; }
@@ -209,6 +234,70 @@
           <span class="mi-send">送信</span>
         </div>
         <button class="btn-complete">配送完了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ ステータス確認ボトムシート（農家側・新挙動） -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ ステータス確認BS <span class="tag">押す→確認BS→送信（即時投稿しない）</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">📞 🌐</span></div>
+      <div class="f-body" style="filter:blur(1px); min-height:120px;"></div>
+      <div class="f-footer" style="filter:blur(1px);">
+        <div class="status-send">
+          <div class="ss-t">配送ステータスを送信</div>
+          <div class="ss-btns"><span class="ss-b done">準備開始</span><span class="ss-b done">配送開始</span><span class="ss-b warn">少し遅れそうです</span><span class="ss-b next">到着</span></div>
+        </div>
+        <div class="msg-input"><span class="mi-ic">📷</span><span class="mi-ic">🎤</span><div class="mi-box">メッセージを入力…</div><span class="mi-send">送信</span></div>
+      </div>
+      <div class="bs-overlay">
+        <div class="bs">
+          <div class="bs-t">📍 「到着しました。お受け取りください」を送信しますか？</div>
+          <div class="bs-s">レストランに伝わり、通知が届きます。</div>
+          <div class="bs-act"><span class="bs-btn cancel">やめる</span><span class="bs-btn ok">送信</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ ボイス録音バー（農家側・録音→送信に簡略化） -->
+  <div class="phone-wrap">
+    <div class="phone-label">④ ボイス録音バー <span class="tag">録音→送信（破棄/送信・プレビュー廃止）</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">📞 🌐</span></div>
+      <div class="f-body" style="min-height:120px;"></div>
+      <div class="f-footer" style="padding:0;">
+        <div class="status-send" style="padding:12px 14px 0;">
+          <div class="ss-t">配送ステータスを送信</div>
+          <div class="ss-btns"><span class="ss-b done">準備開始</span><span class="ss-b next">配送開始</span><span class="ss-b warn">少し遅れそうです</span><span class="ss-b">到着</span></div>
+        </div>
+        <div class="rec-bar">
+          <span class="dot"></span><span class="rt">0:03</span><span class="rs">録音中…</span>
+          <span class="sp"></span>
+          <span class="rb discard">破棄</span><span class="rb send">送信</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 写真添付プレビュー（個別✕） -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑤ 写真添付プレビュー <span class="tag">1枚ごとに✕で消せる（送信は縦並び）</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">📞 🌐</span></div>
+      <div class="f-body" style="min-height:120px;"></div>
+      <div class="f-footer" style="padding:0 0 12px;">
+        <div class="status-send" style="padding:12px 14px 0;">
+          <div class="ss-t">配送ステータスを送信</div>
+          <div class="ss-btns"><span class="ss-b done">準備開始</span><span class="ss-b next">配送開始</span><span class="ss-b warn">少し遅れそうです</span><span class="ss-b">到着</span></div>
+        </div>
+        <div class="photo-prev">
+          <div class="pp" style="background:linear-gradient(135deg,#3a4a6a,#22304a)"><span class="x">✕</span></div>
+          <div class="pp" style="background:linear-gradient(135deg,#4a3e22,#6a5a3a)"><span class="x">✕</span></div>
+          <div class="pp" style="background:linear-gradient(135deg,#2a4a2d,#3e6a42)"><span class="x">✕</span></div>
+        </div>
+        <div class="msg-input" style="padding:0 14px;"><span class="mi-ic">📷</span><span class="mi-ic">🎤</span><div class="mi-box">メッセージを入力…</div><span class="mi-send">送信</span></div>
       </div>
     </div>
   </div>

@@ -25,8 +25,9 @@
         .pt-pop.show { display: block; }
         .pt-pop__opt { padding: 9px 12px; font-size: 13px; border-radius: 8px; cursor: pointer; color: var(--color-text); }
         .pt-pop__opt.active { background: var(--color-cta-lt); color: var(--color-cta); font-weight: 700; }
-        .pt-chip { font-size: 12.5px; font-weight: 700; padding: 8px 14px; border-radius: 18px; border: 1px solid #f0c9b0; background: #fff; color: #c2410c; cursor: pointer; font-family: inherit; }
-        .pt-chip.on { background: #c2410c; color: #fff; border-color: #c2410c; }
+        /* 6/18 #154 B⑧: 辞退・キャンセルチップ＝amber（赤はdanger専用・過去記録フィルタには強すぎ） */
+        .pt-chip { font-size: 12.5px; font-weight: 700; padding: 8px 14px; border-radius: 18px; border: 1px solid #e8c98a; background: #fff; color: #b36a00; cursor: pointer; font-family: inherit; }
+        .pt-chip.on { background: #fbefd9; color: #b36a00; border-color: #e8c98a; }
 
         .custom-range { display: none; gap: 8px; flex-wrap: wrap; background: #f8fafc; border-radius: 14px; padding: 10px; margin-bottom: 12px; align-items: flex-end; }
         .custom-range.show { display: flex; }
@@ -48,7 +49,8 @@
 
         /* 成立しなかった注文サマリ */
         .dechead { background: #fff; border: 1px solid var(--color-border); border-radius: 12px; padding: 14px; margin-bottom: 13px; text-align: center; }
-        .dechead__v { font-size: 18px; font-weight: 800; color: #c2410c; }
+        /* 6/18 #154 B⑧: 成立しなかった注文の見出し件数＝amber（赤はdanger専用） */
+        .dechead__v { font-size: 18px; font-weight: 800; color: #b36a00; }
         .dechead__l { font-size: 11px; color: var(--color-text-sub); margin-top: 3px; }
 
         /* 軽いカード */

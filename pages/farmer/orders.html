@@ -291,6 +291,24 @@
         .od-rest { font-size: 13px; padding: 4px 0 0; }
         .od-rest__name { font-weight: 800; }
 
+        /* 6/18 #154 A④: レストランブロックをカード化＋階層（注文内容/金額ブロックと統一） */
+        .od-rest-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+        .rest-top { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 8px; }
+        .rest-name { font-size: 15px; font-weight: 800; color: var(--color-text); }
+        .rest-rate { font-size: 12.5px; font-weight: 700; color: #b36a00; display: inline-flex; align-items: center; gap: 3px; }
+        .rest-rate .material-symbols-outlined { font-size: 15px; color: #f59e0b; }
+        .rest-rate--new { color: var(--color-text-sub); }
+        .rest-loc { font-size: 12px; color: var(--color-text-sub); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+        .rest-loc .material-symbols-outlined { font-size: 15px; }
+        .rest-links { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; }
+        .rest-links a { color: var(--color-cta); font-size: 12.5px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
+        .rest-links a .material-symbols-outlined { font-size: 15px; }
+
         /* 承認/辞退 */
         .response-section {
             border-radius: 16px;
@@ -412,11 +430,12 @@
             margin-top: 6px;
         }
 
+        /* 6/18 #154 A⑤: 辞退の送信する＝青に統一（承認と同じ。辞退は破壊操作でなく青） */
         .decline-submit {
             width: 100%;
             border: none;
             border-radius: 16px;
-            background: #1a1a1a;
+            background: var(--color-cta);
             color: #fff;
             font-size: 18px;
             font-weight: 700;
@@ -424,6 +443,8 @@
             cursor: pointer;
             margin-top: 14px;
         }
+
+        .decline-submit:hover { background: var(--color-cta-dk); }
 
         .decline-submit:disabled {
             opacity: 0.5;
@@ -637,17 +658,11 @@
             </div>
         </div>
 
-        <div style="text-align:center; font-size:20px; font-weight:700; margin-bottom:16px;" data-i18n="orders.title">
+        <div id="page-title" style="text-align:center; font-size:20px; font-weight:700; margin-bottom:16px;">
         </div>
 
         <!-- 注文一覧 -->
         <div id="orders-list"></div>
-
-        <div id="load-more-wrap" style="display:none; padding:12px 16px 24px; text-align:center;">
-            <button type="button" id="load-more-btn"
-                style="padding:10px 24px; border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); border-radius:999px; font-size:13px; font-weight:600; cursor:pointer;"
-                data-i18n="restaurant.loadMore"></button>
-        </div>
 
     </div>
 
@@ -817,13 +832,15 @@
                 ordersHasMore = snap.docs.length === ORDERS_PAGE_SIZE;
 
                 if (!append && snap.empty) {
+                    // 6/18 #154 A①: 注文ゼロでもタイトルは「注文確認」を表示（renderOrders を経由しないため明示）。
+                    const titleEl = document.getElementById('page-title');
+                    if (titleEl) titleEl.textContent = i18next.t('orders.navOrders');
                     document.getElementById('orders-list').innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:48px;">inbox</span></div>
                             <div class="empty-state__text">${i18next.t('orders.empty')}</div>
                         </div>
                     `;
-                    document.getElementById('load-more-wrap').style.display = 'none';
                     return;
                 }
 
@@ -886,7 +903,6 @@
                 });
 
                 renderOrders();
-                document.getElementById('load-more-wrap').style.display = ordersHasMore ? 'block' : 'none';
 
                 // 5/25 #91/#92 拡張: 初回ページのみ render-cache に保存（追記分は保存しない）
                 if (!append) {
@@ -913,8 +929,6 @@
                 allOrders = reviveTimestamps(cached.items);
                 ordersHasMore = !!cached.hasMore;
                 renderOrders();
-                const lm = document.getElementById('load-more-wrap');
-                if (lm) lm.style.display = ordersHasMore ? 'block' : 'none';
                 loading.classList.remove('show');
                 document.body.classList.add('app-ready');
                 cachedRendered = true;
@@ -934,19 +948,8 @@
             await loadOrdersPage({ silent: cachedRendered });
         });
 
-        document.getElementById('load-more-btn').addEventListener('click', async () => {
-            if (ordersLoadingMore || !ordersHasMore) return;
-            ordersLoadingMore = true;
-            const btn = document.getElementById('load-more-btn');
-            btn.disabled = true;
-            btn.textContent = '...';
-            try {
-                await loadOrdersPage({ append: true });
-            } finally {
-                btn.disabled = false;
-                btn.textContent = i18next.t('restaurant.loadMore');
-            }
-        });
+        // 6/18 #154 A③: 注文確認リストの「もっと見る」は廃止（A案フィードは対応が必要／進行中を全件表示・履歴は1行リンクへ）。
+        //   内部ページング（ORDERS_PAGE_SIZE/ordersHasMore）は無害なまま保持するが、ボタンは出さない。
 
         // 6/4 #124③: 納品日を曜日付き「6/5（金）」に（カート/注文確認/Homeと統一）
         const WEEKDAY_SHORT = {
@@ -1099,7 +1102,7 @@
                         <div class="order-row__body">
                             <div class="order-row__deliv">
                                 <span class="material-symbols-outlined">event</span>
-                                ${[order.deliveryDate ? fmtDeliveryDate(order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}
+                                ${[(order.deliveryDateIso || order.deliveryDate) ? fmtDeliveryDate(order.deliveryDateIso || order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}
                             </div>
                             <div class="order-row__fish">${fishName}${size ? `（${size} head/kg）` : ''} ${order.quantity || 0}kg${multiItemBadge}</div>
                             ${multiItemsInline ? `<div style="margin-top:4px;">${multiItemsInline}</div>` : ''}
@@ -1133,16 +1136,23 @@
                                 <div class="od-irow"><span class="od-irow__l">${i18next.t('orders.quantity')}</span><span class="od-irow__v">${order.quantity} kg</span></div>
                                 <div class="od-irow"><span class="od-irow__l">${i18next.t('orders.gutProcessing')}</span><span class="od-irow__v">${order.gutProcessing ? i18next.t('orders.gutYes') : i18next.t('orders.gutNo')}</span></div>
                             `}
-                            <div class="od-irow"><span class="od-irow__l">${i18next.t('orders.deliveryLabel')}</span><span class="od-irow__v">${[order.deliveryDate ? fmtDeliveryDate(order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}</span></div>
+                            <div class="od-irow"><span class="od-irow__l">${i18next.t('orders.deliveryLabel')}</span><span class="od-irow__v">${[(order.deliveryDateIso || order.deliveryDate) ? fmtDeliveryDate(order.deliveryDateIso || order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}</span></div>
                         </div>
 
-                        <!-- レストラン（評価%／位置／Maps） -->
+                        <!-- 6/18 #154 A④: レストラン＝カード化＋階層（店名太字＋評価1行／📍場所薄グレー1行／レビュー・Maps青リンク1行） -->
                         <div class="od-sec-label">${i18next.t('orders.sectionRestaurant')}</div>
-                        <div class="od-rest">
-                            <div class="order-card__row"><span class="od-rest__name">${restName}</span>　${restReviews > 0 ? `<span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span> ${Math.round(restRating)}%（${i18next.t('orders.reviewCount', { count: restReviews })}）` : i18next.t('fishlist.newFarmer')}</div>
-                            <div class="order-card__row"><a class="order-card__link" href="/pages/farmer/restaurant.html?id=${order.restaurantId}">${i18next.t('orders.viewReviews')}</a></div>
-                            <div class="order-card__row"><span class="material-symbols-outlined" style="font-size:16px;">location_on</span> ${restPlace}　${dist} km</div>
-                            <div class="order-card__row"><a class="order-card__link" href="${mapsUrl}" target="_blank">${i18next.t('orders.openMaps')}</a></div>
+                        <div class="od-rest-card">
+                            <div class="rest-top">
+                                <span class="rest-name">${restName}</span>
+                                ${restReviews > 0
+                                    ? `<span class="rest-rate"><span class="material-symbols-outlined">star</span>${Math.round(restRating)}%（${i18next.t('orders.reviewCount', { count: restReviews })}）</span>`
+                                    : `<span class="rest-rate rest-rate--new">${i18next.t('fishlist.newFarmer')}</span>`}
+                            </div>
+                            <div class="rest-loc"><span class="material-symbols-outlined">location_on</span>${restPlace}${restPlace ? '　' : ''}${dist} km</div>
+                            <div class="rest-links">
+                                <a href="/pages/farmer/restaurant.html?id=${order.restaurantId}"><span class="material-symbols-outlined">reviews</span>${i18next.t('orders.viewReviews')}</a>
+                                <a href="${mapsUrl}" target="_blank"><span class="material-symbols-outlined">map</span>${i18next.t('orders.openMaps')}</a>
+                            </div>
                         </div>
 
                         <!-- 6/4 #124: 金額ブロック（魚代の内訳ラベル／手数料／割引amber／送料／受取予定額=青） -->
@@ -1302,7 +1312,7 @@
             return `${name}${size ? `（${size} head/kg）` : ''} ${order.quantity || 0}kg${add}`;
         }
         function foMeta(order) {
-            return [order.deliveryDate ? fmtDeliveryDate(order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ');
+            return [(order.deliveryDateIso || order.deliveryDate) ? fmtDeliveryDate(order.deliveryDateIso || order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ');
         }
         function foRest(order) {
             const name = order.restData?.displayName || '';
@@ -1382,7 +1392,6 @@
         function renderDetailView(id) {
             const order = allOrders.find(o => o.id === id);
             const listEl = document.getElementById('orders-list');
-            document.getElementById('load-more-wrap').style.display = 'none';
             if (!order) { location.href = '/pages/farmer/orders.html'; return; }
             listEl.innerHTML = `<a class="fo-back" href="/pages/farmer/orders.html"><span class="material-symbols-outlined">arrow_back</span>${i18next.t('orders.backToList')}</a>` + renderOrderCard(order);
             const card = document.getElementById('order-' + id);
@@ -1393,6 +1402,9 @@
         function renderOrders() {
             const detailId = new URLSearchParams(location.search).get('detail');
             const listEl = document.getElementById('orders-list');
+            // 6/18 #154 A①: リスト＝「注文確認」(orders.navOrders)／承認待ち詳細②＝「注文内容を確認」(orders.title)。
+            const titleEl = document.getElementById('page-title');
+            if (titleEl) titleEl.textContent = detailId ? i18next.t('orders.title') : i18next.t('orders.navOrders');
             if (detailId) { renderDetailView(detailId); return; }
 
             const isRemitted = (o) => ['remitted', 'done'].includes(o.adminStatus);
@@ -1541,32 +1553,13 @@
                 });
             });
 
-            // 辞退送信ボタン
+            // 6/18 #154 A⑦: 辞退送信ボタン → 自前ボトムシートで確認（承認と対称・即時 updateDoc しない）。
             document.querySelectorAll('.decline-submit').forEach(btn => {
-                btn.addEventListener('click', async () => {
+                btn.addEventListener('click', () => {
                     const orderId = btn.dataset.order;
-                    const restaurantId = btn.dataset.restaurant;
                     const reason = declineReasons[orderId] || '';
-                    const detail = document.getElementById(`decline-text-${orderId}`)?.value?.trim() || '';
-                    const fullReason = detail ? `${reason}: ${detail}` : reason;
-
-                    btn.disabled = true;
-                    loading.classList.add('show');
-
-                    try {
-                        await updateDoc(doc(db, 'orders', orderId), {
-                            status: 'declined',
-                            declineReason: fullReason
-                        });
-
-                        // 在庫復元・FCM通知はCloud Functionsが自動処理。一覧（A案フィード）へ戻す
-                        location.href = '/pages/farmer/orders.html';
-                    } catch (err) {
-                        console.error(err);
-                    } finally {
-                        btn.disabled = false;
-                        loading.classList.remove('show'); document.body.classList.add('app-ready');
-                    }
+                    if (!reason) return; // 辞退理由が未選択なら確認シートを出さない（理由は必須）
+                    openDeclineModal(orderId, btn);
                 });
             });
         }
@@ -1605,7 +1598,7 @@
                 }
                 const lines = [
                     ...fishLines,
-                    `${i18next.t('orders.deliveryLabel')} ${[order.deliveryDate ? fmtDeliveryDate(order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}`,
+                    `${i18next.t('orders.deliveryLabel')} ${[(order.deliveryDateIso || order.deliveryDate) ? fmtDeliveryDate(order.deliveryDateIso || order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}`,
                     `${i18next.t('orders.restaurantLabel')}: ${restName}`,
                     ...(modalPreviewBonus > 0 ? [`${i18next.t('order.referralBonus')} +${modalPreviewBonus.toLocaleString()} KHR ${i18next.t('orders.bonusOnComplete')}`] : []),
                     `${i18next.t('orders.receiveAmount')} ${receiveAmount.toLocaleString()} KHR`,
@@ -1668,6 +1661,75 @@
             }
         });
 
+        // 6/18 #154 A⑦: 辞退確認モーダル制御（承認と対称）
+        let pendingDecline = null;   // { orderId, btn }
+        function openDeclineModal(orderId, btn) {
+            const order = allOrders.find(o => o.id === orderId);
+            const summaryEl = document.getElementById('decline-modal-summary');
+            if (order && summaryEl) {
+                const restName = order.restData?.displayName || '';
+                const reason = declineReasons[orderId] || '';
+                const isMulti = Array.isArray(order.items) && order.items.length > 1;
+                const fishLines = [];
+                if (isMulti) {
+                    fishLines.push(`${i18next.t('orders.itemsList', { count: order.items.length })}:`);
+                    order.items.forEach(it => {
+                        const itType = it.snapFishType || '';
+                        const itName = itType ? (i18next.exists(`fish.${itType}`) ? i18next.t(`fish.${itType}`) : itType).trim() : '';
+                        const sizePart = it.snapSize ? ` (${it.snapSize} head/kg)` : '';
+                        fishLines.push(`・${itName}${sizePart} ${it.quantity}kg`);
+                    });
+                } else {
+                    const fishTypeKey = order.snapFishType || order.listingData?.fishType || '';
+                    const fishName = fishTypeKey ? (i18next.exists(`fish.${fishTypeKey}`) ? i18next.t(`fish.${fishTypeKey}`) : fishTypeKey).trim() : '';
+                    fishLines.push(`${i18next.t('orders.fishLabel')}: ${fishName}`);
+                    fishLines.push(`${i18next.t('orders.quantity')} ${order.quantity || 0} kg`);
+                }
+                const lines = [
+                    ...fishLines,
+                    `${i18next.t('orders.deliveryLabel')} ${[(order.deliveryDateIso || order.deliveryDate) ? fmtDeliveryDate(order.deliveryDateIso || order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}`,
+                    `${i18next.t('orders.restaurantLabel')}: ${restName}`,
+                    `${i18next.t('orders.declineTitle')}: ${reason}`,
+                ];
+                summaryEl.textContent = lines.join('\n');
+            }
+            pendingDecline = { orderId, btn };
+            document.getElementById('decline-modal').classList.add('show');
+        }
+        function closeDeclineModal() {
+            document.getElementById('decline-modal').classList.remove('show');
+            pendingDecline = null;
+        }
+        document.getElementById('decline-modal-cancel').addEventListener('click', closeDeclineModal);
+        document.getElementById('decline-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'decline-modal') closeDeclineModal();
+        });
+        document.getElementById('decline-modal-ok').addEventListener('click', async () => {
+            if (!pendingDecline) return;
+            const { orderId, btn } = pendingDecline;
+            const reason = declineReasons[orderId] || '';
+            const detail = document.getElementById(`decline-text-${orderId}`)?.value?.trim() || '';
+            const fullReason = detail ? `${reason}: ${detail}` : reason;
+            const okBtn = document.getElementById('decline-modal-ok');
+            okBtn.disabled = true;
+            if (btn) btn.disabled = true;
+            loading.classList.add('show');
+            try {
+                // 在庫復元・FCM通知（status:'declined'）は Cloud Functions が自動処理。クライアントは status+declineReason のみ書く。
+                await updateDoc(doc(db, 'orders', orderId), {
+                    status: 'declined',
+                    declineReason: fullReason
+                });
+                location.href = '/pages/farmer/orders.html';
+            } catch (err) {
+                console.error(err);
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
+                closeDeclineModal();
+                if (btn) btn.disabled = false;
+                okBtn.disabled = false;
+            }
+        });
+
         // 言語変更時
         onLanguageChange(() => location.reload());
     </script>
@@ -1681,6 +1743,19 @@
             <div class="approve-modal__actions">
                 <button type="button" class="approve-modal__btn approve-modal__btn--cancel" id="approve-modal-cancel" data-i18n="orders.cancel"></button>
                 <button type="button" class="approve-modal__btn approve-modal__btn--ok" id="approve-modal-ok" data-i18n="orders.approve"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6/18 #154 A⑦: 辞退確認モーダル（承認と対称・自前ボトムシート。辞退するは青） -->
+    <div class="approve-modal" id="decline-modal" role="dialog" aria-modal="true">
+        <div class="approve-modal__sheet">
+            <div class="approve-modal__title" data-i18n="orders.confirmDeclineTitle"></div>
+            <div class="approve-modal__summary" id="decline-modal-summary"></div>
+            <div class="approve-modal__ask" data-i18n="orders.confirmDeclineAsk"></div>
+            <div class="approve-modal__actions">
+                <button type="button" class="approve-modal__btn approve-modal__btn--cancel" id="decline-modal-cancel" data-i18n="orders.cancel"></button>
+                <button type="button" class="approve-modal__btn approve-modal__btn--ok" id="decline-modal-ok" data-i18n="orders.decline"></button>
             </div>
         </div>
     </div>

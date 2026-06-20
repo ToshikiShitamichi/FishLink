@@ -77,8 +77,8 @@
   .period { font-size:13px; font-weight:800; padding:8px 14px; border-radius:18px; border:1px solid #CDD8E3; background:#FFF; color:#0B5FB0; display:flex; align-items:center; gap:7px; }
   .period .ar { color:#9AA3B0; font-size:11px; }
   .chip { font-size:12.5px; font-weight:700; padding:8px 14px; border-radius:18px; border:1px solid #DCE3EA; background:#FFF; color:#33414E; }
-  .chip.dec { color:#C2410C; border-color:#F0C9B0; }
-  .chip.dec.on { background:#C2410C; color:#FFF; border-color:#C2410C; }
+  .chip.dec { color:#B36A00; border-color:#E8C98A; }
+  .chip.dec.on { background:#FBEFD9; color:#B36A00; border-color:#E8C98A; }
   .dechead { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:14px; margin-bottom:13px; text-align:center; }
   .dechead .v { font-size:18px; font-weight:800; color:#C2410C; }
   .dechead .l { font-size:11px; color:#5A6470; margin-top:3px; }
@@ -121,11 +121,13 @@
   .drow.sub { font-size:12px; padding:3px 0 3px 14px; }
   .drow.sub .dl { color:#9AA3B0; }
   .divider { border-top:1px solid #EEF1F4; margin:10px 0; }
-  .rest-row { font-size:13px; }
-  .rest-row .rname { font-weight:800; }
-  .rest-row .rate { color:#B36A00; font-weight:700; }
-  .rest-row .link { color:#0B5FB0; font-weight:700; margin-top:4px; }
-  .rest-row .loc { color:#5A6470; margin-top:6px; }
+  .rest-card { padding:12px 14px; }
+  .rest-card .rest-top { display:flex; align-items:center; justify-content:space-between; }
+  .rest-card .rname { font-size:15px; font-weight:800; }
+  .rest-card .rate { color:#B36A00; font-weight:700; font-size:13px; }
+  .rest-card .loc { color:#5A6470; font-size:12.5px; margin-top:5px; }
+  .rest-card .rest-links { display:flex; gap:16px; margin-top:8px; }
+  .rest-card .link { color:#0B5FB0; font-weight:700; font-size:13px; cursor:pointer; }
 
   /* セクションラベル＋情報カード（注文内容/金額） */
   .sec-label { font-size:12px; font-weight:800; color:#5A6470; margin:14px 0 6px; }
@@ -349,13 +351,12 @@
           <div class="irow"><span class="il">納品</span><span class="iv">6/1（月）7:00–8:00</span></div>
         </div>
 
-        <!-- レストラン -->
+        <!-- レストラン（カード化＋階層） -->
         <div class="sec-label">レストラン</div>
-        <div class="rest-row">
-          <span class="rname">test_restaurant5</span> &nbsp; <span class="rate">★93%（42件）</span>
-          <div class="link">レビューを見る</div>
+        <div class="info-card rest-card">
+          <div class="rest-top"><span class="rname">test_restaurant5</span><span class="rate">★93%（42件）</span></div>
           <div class="loc">📍 takeo, Samraong ・ 15.4 km</div>
-          <div class="link">Google Mapsで開く</div>
+          <div class="rest-links"><span class="link">レビューを見る</span><span class="link">Google Mapsで開く</span></div>
         </div>
 
         <!-- 金額（魚単価+内臓処理は魚代の内訳に折り込む） -->
@@ -395,7 +396,7 @@
           <div class="msum">
             魚：<b>レッドティラピア</b>（3 head/kg）<br>
             注文数量：<b>5 kg（内臓処理あり）</b><br>
-            納品：<b>6/1 7:00–8:00</b><br>
+            納品：<b>6/1（月）7:00–8:00</b><br>
             レストラン：test_restaurant5<br>
             受取予定額：<b>48,963 KHR</b>
           </div>
@@ -431,6 +432,38 @@
         </div>
       </div>
       <div class="f-footer"><button class="btn pri full">送信する</button></div>
+    </div>
+  </div>
+
+  <!-- ④' 辞退確認モーダル（自前・ボトムシート・承認と対称） -->
+  <div class="phone-wrap">
+    <div class="phone-label">④' 辞退確認モーダル <span class="tag">承認と対称・自前ボトムシート</span></div>
+    <div class="phone">
+      <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 👤</span></div>
+      <div class="f-title">注文内容を確認</div>
+      <div class="f-body" style="filter:blur(1px);">
+        <div class="respond">
+          <div class="rt">注文への対応</div>
+          <div class="radio"><span class="rc"></span>承認する</div>
+          <div class="radio on"><span class="rc"></span>辞退する</div>
+        </div>
+        <div class="sec-label" style="margin-top:10px;">辞退理由</div>
+        <div class="info-card"><div class="amt"><span class="al">理由</span><span class="av">在庫が足りない</span></div></div>
+      </div>
+      <div class="overlay">
+        <div class="modal">
+          <div class="mt">以下の内容で辞退します</div>
+          <div class="msum">
+            魚：<b>レッドティラピア</b>（3 head/kg）<br>
+            注文数量：<b>5 kg</b><br>
+            納品：<b>6/1（月）7:00–8:00</b><br>
+            レストラン：test_restaurant5<br>
+            辞退理由：<b>在庫が足りない</b>
+          </div>
+          <div class="mnote">辞退すると、レストランに通知が届きます（この注文は他の農家に回されます）。</div>
+          <div class="mact"><button class="mbtn cancel">キャンセル</button><button class="mbtn ok">辞退する</button></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -498,7 +531,7 @@
             <div class="smc"><div class="v">13<span class="u"> 件</span></div><div class="l">取引数</div></div>
             <div class="smc"><div class="v">47,975<span class="u"> KHR</span></div><div class="l">平均単価</div></div>
           </div>
-          <div class="pend">うち送金待ち 58,838 KHR <span class="note">・ 本日夕方に送金予定</span></div>
+          <div class="pend">うち送金待ち 58,838 KHR <span class="note">・ 本日中に送金予定</span></div>
         </div>
 
         <div class="lcard"><div class="lth"></div><div class="lci">

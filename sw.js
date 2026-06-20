@@ -368,7 +368,10 @@ self.addEventListener('notificationclick', (event) => {
 //     ⚠️ 本番hostingに出す前に Firebase Console（Phone Auth 有効化等）＋ +855 実SMS到達テストが必須。
 //        REGISTER_OTP_ENABLED=true は全新規登録に OTP 必須＝+855 不達のまま本番ONにすると登録不能になる。
 //        日本の動作確認は Console「テスト用電話番号」（実SMSなし・固定コード）で。
-const CACHE_NAME = 'fishlink-v129';
+// 6/20 (v131): #153-156 の実機QA修正＝買い手キャンセル確認BSの z-index（ボトムナビに隠れていた）／
+//   農家 問題報告入口を SPEC準拠（配送完了＋Nh の窓内のみ・進行中カードでは出さない）／
+//   納品日の曜日表示（6/19（金））を全画面で統一（deliveryDateIso 優先）。
+const CACHE_NAME = 'fishlink-v131';
 
 const PRECACHE_URLS = [
     '/',

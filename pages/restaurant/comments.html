@@ -23,15 +23,21 @@
     <style>
         .comments-page { max-width: 480px; margin: 0 auto; padding: 0 16px 140px; }
 
+        /* 6/18 #153-②: 商品コンテキスト箱をタップ→該当商品の商品詳細へ遷移（cursor:pointer・右端に chevron） */
         .fish-head {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: 14px;
             padding: 12px 14px;
             margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
         }
         .fish-head__name { font-size: 15px; font-weight: 700; }
         .fish-head__meta { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
+        .fish-head__chevron { color: var(--color-text-sub); flex-shrink: 0; margin-left: 8px; }
 
         .info-banner {
             background: #eff6ff;
@@ -203,6 +209,36 @@
 
         .empty-small { text-align: center; padding: 40px 20px; color: var(--color-text-sub); font-size: 13px; }
         .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
+
+        /* 6/18 #153-③: 取り消し確認 ボトムシート（farmer/orders.html .approve-modal を参照） */
+        .remove-sheet {
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            display: none; align-items: flex-end; justify-content: center;
+            z-index: 300; /* footer-input(固定) より上 */
+        }
+        .remove-sheet.show { display: flex; }
+        .remove-sheet__sheet {
+            width: 100%; max-width: 480px;
+            background: #fff; border-radius: 20px 20px 0 0;
+            padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+            animation: removeSheetUp .22s ease;
+        }
+        @keyframes removeSheetUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .remove-sheet__body {
+            font-size: 14px; color: var(--color-text); line-height: 1.65; margin-bottom: 18px;
+            word-break: break-word;
+        }
+        .remove-sheet__actions { display: flex; gap: 8px; }
+        .remove-sheet__btn {
+            flex: 1; padding: 13px; font-size: 15px; font-weight: 700;
+            border-radius: 14px; cursor: pointer; font-family: inherit; border: none;
+        }
+        .remove-sheet__btn--cancel { background: #eceef0; color: var(--color-text-sub); }
+        .remove-sheet__btn--ok { background: var(--color-danger, #b91c1c); color: #fff; }
     </style>
 </head>
 
@@ -227,8 +263,11 @@
     <div class="comments-page">
 
         <div class="fish-head" id="fish-head">
-            <div class="fish-head__name" id="fish-name">-</div>
-            <div class="fish-head__meta" id="fish-meta">-</div>
+            <div>
+                <div class="fish-head__name" id="fish-name">-</div>
+                <div class="fish-head__meta" id="fish-meta">-</div>
+            </div>
+            <span class="material-symbols-outlined fish-head__chevron">chevron_right</span>
         </div>
 
         <div class="info-banner" id="info-banner" data-i18n="comments.publicNote"></div>
@@ -249,6 +288,18 @@
             <button class="send-btn" id="send-btn" data-i18n="comments.send"></button>
         </div>
         <div class="footer-input__note" data-i18n="comments.publicFooter"></div>
+    </div>
+
+    <!-- 6/18 #153-③: 取り消し確認＝自前ボトムシート（ブラウザ confirm 廃止・横断ルール）。
+         キャンセル=グレー／取り消す=赤(danger)。z-index は固定フッター入力(footer-input)より上。 -->
+    <div class="remove-sheet" id="remove-sheet">
+        <div class="remove-sheet__sheet">
+            <div class="remove-sheet__body" id="remove-sheet-body"></div>
+            <div class="remove-sheet__actions">
+                <button type="button" class="remove-sheet__btn remove-sheet__btn--cancel" id="remove-sheet-cancel" data-i18n="comments.cancel"></button>
+                <button type="button" class="remove-sheet__btn remove-sheet__btn--ok" id="remove-sheet-ok" data-i18n="comments.delete"></button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -285,17 +336,18 @@
             return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
 
+        // 6/18 #153-⑤: 相対表記（22日前/たった今）→ 絶対表記 YYYY/MM/DD（ゼロ埋め）。
+        //   js/review-card.js fmtDate と同型。Timestamp.toMillis()/数値/{seconds} を許容。
         function relative(ts) {
-            const ms = ts?.toMillis?.() || 0;
-            if (!ms) return i18next.t('comments.justNow');
-            const diff = Date.now() - ms;
-            const mins = Math.floor(diff / 60000);
-            if (mins < 1) return i18next.t('comments.justNow');
-            if (mins < 60) return i18next.t('comments.minutesAgo', { n: mins });
-            const hours = Math.floor(mins / 60);
-            if (hours < 24) return i18next.t('comments.hoursAgo', { n: hours });
-            const days = Math.floor(hours / 24);
-            return i18next.t('comments.daysAgo', { n: days });
+            let d;
+            if (ts?.toMillis) d = new Date(ts.toMillis());
+            else if (typeof ts === 'number') d = new Date(ts);
+            else if (ts && ts.seconds != null) d = new Date(ts.seconds * 1000);
+            else d = new Date(ts || 0);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const da = String(d.getDate()).padStart(2, '0');
+            return `${y}/${m}/${da}`;
         }
 
         function renderAvatar(user) {
@@ -304,6 +356,26 @@
                 return `<img ${asCachedImgAttrs(url)} alt="" loading="lazy">`;
             }
             return `<span class="material-symbols-outlined">person</span>`;
+        }
+
+        // 6/18 #153-③: 取り消し確認＝自前ボトムシート（ブラウザ confirm 廃止）。
+        //   true=取り消す（赤）/ false=キャンセル（グレー）を resolve する Promise を返す。
+        const removeSheetEl = document.getElementById('remove-sheet');
+        const removeSheetBodyEl = document.getElementById('remove-sheet-body');
+        const removeSheetOkEl = document.getElementById('remove-sheet-ok');
+        const removeSheetCancelEl = document.getElementById('remove-sheet-cancel');
+        let removeSheetResolve = null;
+        function closeRemoveSheet(result) {
+            removeSheetEl.classList.remove('show');
+            if (removeSheetResolve) { removeSheetResolve(result); removeSheetResolve = null; }
+        }
+        removeSheetOkEl.addEventListener('click', () => closeRemoveSheet(true));
+        removeSheetCancelEl.addEventListener('click', () => closeRemoveSheet(false));
+        removeSheetEl.addEventListener('click', (e) => { if (e.target === removeSheetEl) closeRemoveSheet(false); });
+        function showRemoveSheet(bodyText) {
+            removeSheetBodyEl.textContent = bodyText;
+            removeSheetEl.classList.add('show');
+            return new Promise((resolve) => { removeSheetResolve = resolve; });
         }
 
         // 5/25 #91/#92 拡張: 画面 HTML を即時復元（onSnapshot 初回到達で qa-list は上書きされる）
@@ -326,6 +398,15 @@
                 // 5/23 #69 Phase B: data-cache 経由
                 const listing = await getCachedListing(listingId);
                 if (!listing) { history.back(); return; }
+
+                // 6/18 #153-②: 商品コンテキスト箱タップ→該当商品の商品詳細へ遷移。
+                //   listingId は URLSearchParams から既読（~L276）。live init（listing 取得後）でバインド。
+                const fishHeadEl = document.getElementById('fish-head');
+                if (fishHeadEl) {
+                    fishHeadEl.addEventListener('click', () => {
+                        location.href = `/pages/restaurant/order.html?id=${encodeURIComponent(listingId)}`;
+                    });
+                }
 
                 const fishKey = listing.fishType || '';
                 const fishName = i18next.exists(`fish.${fishKey}`) ? i18next.t(`fish.${fishKey}`) : fishKey;
@@ -451,7 +532,8 @@
 
                     function renderReplyBubble(child, parentId, depth = 0) {
                         if (child.isDeleted) {
-                            return `<div class="qa-reply-section"><div class="qa-deleted-placeholder">${escapeHtml(i18next.t('comments.deleted'))}</div></div>`;
+                            // 6/18 #153-④: 返信の跡地は「この返信は取り消されました」（質問の跡地 comments.deleted とは別文言）。
+                            return `<div class="qa-reply-section"><div class="qa-deleted-placeholder">${escapeHtml(i18next.t('comments.replyDeleted'))}</div></div>`;
                         }
                         const user = userMap[child.senderId] || (child.legacyReply ? farmerData : {});
                         const avatar = renderAvatar(user);
@@ -590,7 +672,8 @@
                     //   サーバ（onCommentUpdated）が admin 権限で実行（Firestore Rules 制約の回避）。
                     listEl.querySelectorAll('[data-action="del-q"]').forEach(btn => {
                         btn.addEventListener('click', async () => {
-                            if (!confirm(i18next.t('comments.confirmDeleteThread'))) return;
+                            // 6/18 #153-③: ブラウザ confirm → 自前ボトムシート
+                            if (!(await showRemoveSheet(i18next.t('comments.confirmDeleteThread')))) return;
                             try {
                                 await updateDoc(doc(db, 'fishListings', listingId, 'comments', btn.dataset.id), {
                                     isDeleted: true,
@@ -607,7 +690,8 @@
                     // 返信取り消し（reply フィールドを null に戻す）
                     listEl.querySelectorAll('[data-action="del-r"]').forEach(btn => {
                         btn.addEventListener('click', async () => {
-                            if (!confirm(i18next.t('comments.replyConfirmDelete'))) return;
+                            // 6/18 #153-③: ブラウザ confirm → 自前ボトムシート
+                            if (!(await showRemoveSheet(i18next.t('comments.replyConfirmDelete')))) return;
                             try {
                                 await updateDoc(doc(db, 'fishListings', listingId, 'comments', btn.dataset.id), {
                                     replyText: null,
@@ -674,7 +758,8 @@
                     // 5/27 #99: child reply の削除
                     listEl.querySelectorAll('[data-action="del-child"]').forEach(btn => {
                         btn.addEventListener('click', async () => {
-                            if (!confirm(i18next.t('comments.replyConfirmDelete'))) return;
+                            // 6/18 #153-③: ブラウザ confirm → 自前ボトムシート
+                            if (!(await showRemoveSheet(i18next.t('comments.replyConfirmDelete')))) return;
                             try {
                                 await updateDoc(doc(db, 'fishListings', listingId, 'comments', btn.dataset.id), {
                                     isDeleted: true,

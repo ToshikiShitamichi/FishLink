@@ -455,7 +455,11 @@
         "completeModalBody": "The restaurant will be notified to pay (payment on receipt).",
         "completeModalCancel": "Cancel",
         "completeModalOk": "Mark complete",
-        "statusApprovedMsg": "Order approved"
+        "statusApprovedMsg": "Order approved",
+        "statusSendConfirmTitle": "Send \"{{label}}\"?",
+        "statusSendConfirmBody": "The restaurant will be notified.",
+        "statusSendConfirmOk": "Send",
+        "statusSendConfirmCancel": "Cancel"
     },
     "voice": {
         "recording": "Recording...",
@@ -608,6 +612,8 @@
         "submit": "Submit",
         "confirmApproveTitle": "Approve this order?",
         "confirmApproveAsk": "The restaurant will be notified once you approve.",
+        "confirmDeclineTitle": "Decline this order?",
+        "confirmDeclineAsk": "The restaurant will be notified once you decline (this order will be routed to other farmers).",
         "fishLabel": "Fish",
         "restaurantLabel": "Restaurant",
         "otherItemsAddon": "+{{n}} more",
@@ -696,6 +702,7 @@
         "deadlineBy": "Please pay by {{time}}",
         "deadlinePassed": "Payment deadline has passed. Please pay as soon as possible.",
         "payOnReceipt": "Pay upon receipt",
+        "payAfterReceipt": "Order received — please complete payment soon",
         "qrTitle": "Pay by QR Code (KHQR)",
         "qrHint": "※ If you can't scan on this phone, tap \"Open Link\" to pay, or save the QR image",
         "openLink": "Open Link",
@@ -709,7 +716,7 @@
         "confirmModalTitle": "Have you completed the payment?",
         "confirmModalBody": "FishLink will verify your payment. After confirmation, the status becomes \"Awaiting payment confirmation\".",
         "confirmModalOk": "Yes",
-        "alreadyPaid": "Payment Confirmed",
+        "alreadyPaid": "Awaiting payment confirmation",
         "paidBanner": "Payment confirmed.",
         "partnerLabel": "Partner",
         "statusLabel": "Payment Status",
@@ -1042,7 +1049,7 @@
         "noReply": "No reply yet",
         "replyPlaceholder": "Write a reply",
         "replySend": "Reply",
-        "replyConfirmDelete": "Remove this reply?",
+        "replyConfirmDelete": "Remove this reply? (It will disappear from the public Q&A)",
         "replyDeleted": "This reply has been removed",
         "previewTitle": "Questions & Replies",
         "previewEmpty": "No questions yet",
@@ -1054,7 +1061,8 @@
         "viewOnlyNote": "View only (you can't reply because this isn't your question)",
         "confirmDeleteThread": "Removing this question will delete the entire thread, including replies. Continue?",
         "maskWarning": "Phone numbers, social accounts and URLs can't be posted. Please keep all communication within the app.",
-        "maskedContact": "[contact hidden]"
+        "maskedContact": "[contact hidden]",
+        "cancel": "Cancel"
     },
     "review": {
         "title": "Review",
@@ -1214,7 +1222,7 @@
         "receiveAmountSum": "Received",
         "remitWaitBadge": "Awaiting remittance",
         "pendingRemit": "Awaiting remittance: {{amount}}",
-        "remitTodayNote": "Remittance scheduled this evening"
+        "remitTodayNote": "Remittance scheduled today"
     },
     "adminChat": {
         "title": "Admin Chat",

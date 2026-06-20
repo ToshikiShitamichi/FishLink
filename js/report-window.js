@@ -48,9 +48,10 @@ function completedMillis(order) {
  * @param {object} order  注文データ（status / completedAt / {role}ReportOpen を含む）
  * @param {'restaurant'|'farmer'} role  報告者の役割
  * @param {number} hours  報告受付時間（getReportWindowHours の値）
- * @returns {{show:boolean, phase:'active'|'window'|'reported'|'hidden', deadlineMs:(number|null)}}
- *   phase: 'reported'＝既にオープンな報告あり（報告済み・対応中）／'window'＝配送完了後の期限内（締切表示）／
- *          'active'＝配送中（締切前・農家のみ・締切表示なし）／'hidden'＝入口を出さない。
+ * @returns {{show:boolean, phase:'window'|'reported'|'hidden', deadlineMs:(number|null)}}
+ *   phase: 'reported'＝既にオープンな報告あり（報告済み・対応中）／'window'＝配送完了＋N時間の窓内（締切表示）／
+ *          'hidden'＝入口を出さない（配送前/配送中・期限切れ・対象外）。
+ *   ※6/18 SPEC準拠: 報告入口は配送完了後の窓内だけ＝配送中（active）には出さない。
  */
 export function computeReportEntry(order, role, hours) {
     const status = order?.status;
@@ -67,8 +68,9 @@ export function computeReportEntry(order, role, hours) {
         if (Date.now() > deadlineMs) return { show: false, phase: 'hidden', deadlineMs };
         return { show: true, phase: 'window', deadlineMs };
     }
-    // 配送中（締切前）または completed だが completedAt 未設定（functions 遅延の一瞬）
-    return { show: true, phase: 'active', deadlineMs: null };
+    // 6/18 SPEC準拠: 報告入口は「配送完了＋N時間の窓内」だけ。配送前/配送中（active）、
+    //   および completed だが completedAt/paymentDeadline 未設定の一瞬は出さない（窓が確定してから表示）。
+    return { show: false, phase: 'hidden', deadlineMs: null };
 }
 
 // 締切メッセージ（カンボジア時間 UTC+7・本日/明日/日付）。i18next（グローバル）を使用。

@@ -816,7 +816,7 @@
             } else if (status === 'pending') {
                 footerHtml = `<div class="order-eta"><span class="material-symbols-outlined">hourglass_top</span>${i18next.t('home.confirmingEta')}</div>`;
             } else {
-                const when = [order.deliveryDate ? fmtDeliveryDate(order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ');
+                const when = [(order.deliveryDateIso || order.deliveryDate) ? fmtDeliveryDate(order.deliveryDateIso || order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ');
                 footerHtml = `<div class="order-eta"><span class="material-symbols-outlined">local_shipping</span>${when ? i18next.t('home.etaArrive', { when }) : i18next.t('delivery.' + status)}</div>`;
             }
 

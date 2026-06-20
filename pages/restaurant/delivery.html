@@ -289,7 +289,7 @@
                 distKm = calcDistanceKm(myLoc.lat, myLoc.lng, farmerLoc.lat, farmerLoc.lng);
             }
             const distLabel = Number.isFinite(distKm) ? `${(Math.floor(distKm * 10) / 10)}km` : '';
-            const delivStr = [orderData.deliveryDate ? fmtDeliveryDateShort(orderData.deliveryDate) : '', orderData.deliveryTime || ''].filter(Boolean).join(' ');
+            const delivStr = [(orderData.deliveryDateIso || orderData.deliveryDate) ? fmtDeliveryDateShort(orderData.deliveryDateIso || orderData.deliveryDate) : '', orderData.deliveryTime || ''].filter(Boolean).join(' ');
             document.getElementById('order-summary').innerHTML = `
                 <div class="ch-top">
                     <span class="ch-name">${farmerName}</span>
