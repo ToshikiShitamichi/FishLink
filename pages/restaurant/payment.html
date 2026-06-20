@@ -201,19 +201,19 @@
             margin-top: 8px;
         }
 
-        /* 6/5 #129: 自前モーダル（ブラウザ標準ダイアログを置換）／6/18 #155 ⑯: ボトムシート化 */
+        /* 6/5 #129: 自前モーダル（ブラウザ標準ダイアログを置換）。6/19 #160: 確認系は中央モーダル（ボトムシート→中央に戻す） */
         .pay-modal-overlay {
             position: fixed; inset: 0; z-index: 50;
             background: rgba(0,0,0,0.42);
-            display: none; align-items: flex-end; justify-content: center;
-            padding: 0;
+            display: none; align-items: center; justify-content: center;
+            padding: 20px;
         }
         .pay-modal-overlay.show { display: flex; }
         .pay-modal {
-            width: 100%; max-width: 480px;
+            width: 100%; max-width: 400px;
             background: var(--color-surface);
-            border-radius: 20px 20px 0 0;
-            padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+            border-radius: 20px;
+            padding: 20px;
             box-shadow: 0 12px 40px rgba(0,0,0,0.25);
         }
         .pay-modal__title { font-size: 17px; font-weight: 800; color: var(--color-text); }

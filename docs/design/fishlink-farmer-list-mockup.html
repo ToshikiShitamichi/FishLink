@@ -78,6 +78,11 @@
   .fcard .fbtn{margin-top:13px; text-align:center; border:1.5px solid var(--blue); color:var(--blue);
     border-radius:10px; padding:10px; font-size:13px; font-weight:700; cursor:pointer;}
 
+  /* もっと見る */
+  .more-wrap{padding:6px 0 4px; text-align:center;}
+  .more-btn{border:1.5px solid var(--blue); color:var(--blue); background:#fff;
+    border-radius:22px; padding:11px 28px; font-size:14px; font-weight:700; cursor:pointer;}
+
   /* 空状態 */
   .empty-state{display:none; padding:54px 28px; text-align:center;}
   .empty-state .ic{font-size:36px; color:#C2C9D2; margin-bottom:14px;}
@@ -98,8 +103,9 @@
 <div class="intro">
   <h1>FISHLINK 農家一覧（おすすめ農家「もっと見る」の着地）</h1>
   <p><b>Homeの「☆ おすすめ農家 → もっと見る」</b>から開く子画面（戻る矢印＋ホーム点灯）。農家カードを評価順に並べた発見リスト。</p>
-  <p><b>① ソート</b>＝評価が高い順（デフォルト）／距離が近い順 の2択。<b>② 魚種チップ</b>＝タップでその魚を扱う農家に絞り込み（もう一度で解除）。例：ヒレナマズ＝3農家。</p>
+  <p><b>① ソート</b>＝評価が高い順（デフォルト）／距離が近い順 の2択。<b>② 魚種チップ</b>＝タップでその魚を扱う農家に絞り込み（もう一度で解除）。<b>12固定種＋「その他」</b>（魚一覧と統一・その他出品の農家も拾える）。例：ヒレナマズ＝3農家。</p>
   <p><b>③ 新規農家</b>（レビュー0件）は評価順では末尾だが隠さず表示。<b>④ 配達できない遠方農家は非表示</b>（自分に届く農家だけ）。<b>⑤ 0件</b>＝「◯◯を扱う農家はいません」。</p>
+  <p><b>⑥ 読み込み＝もっと見る方式</b>（低速回線対策）。本番は<b>初期8件・+8件ずつ</b>（spec §6）。ソート/絞り込み変更で展開数リセット。※モックは農家5件なので例示用に初期4件でボタンを表示。</p>
 </div>
 
 <div class="phone">
@@ -124,12 +130,14 @@
       <div class="sp-chip" onclick="toggleSpecies(this)">レッドティラピア</div>
       <div class="sp-chip" onclick="toggleSpecies(this)">ナイルティラピア</div>
       <div class="sp-chip" onclick="toggleSpecies(this)">シルバーバーブ</div>
+      <div class="sp-chip" onclick="toggleSpecies(this)">スポットパンガシウス</div>
       <div class="sp-chip" onclick="toggleSpecies(this)">パンガシウス</div>
       <div class="sp-chip" onclick="toggleSpecies(this)">ジャイアントスネークヘッド</div>
       <div class="sp-chip" onclick="toggleSpecies(this)">キノボリウオ</div>
       <div class="sp-chip" onclick="toggleSpecies(this)">カエル</div>
       <div class="sp-chip" onclick="toggleSpecies(this)">バラマンディ</div>
       <div class="sp-chip" onclick="toggleSpecies(this)">オニテナガエビ</div>
+      <div class="sp-chip" onclick="toggleSpecies(this)">その他</div>
     </div>
   </div>
 
@@ -179,14 +187,14 @@
         </div>
       </div>
 
-      <div class="fcard" data-rating="79" data-distance="19" data-species="ヒレナマズ,シルバーバーブ">
+      <div class="fcard" data-rating="79" data-distance="19" data-species="ヒレナマズ,シルバーバーブ,その他">
         <div class="cover">🏞️</div>
         <div class="fbody">
           <div class="favatar">🧑‍🌾</div>
           <div class="fname">ロカ養殖</div>
           <div class="floc">カンダル州 ・ 19km</div>
           <div class="frate"><span class="star">★79%</span> (19)</div>
-          <div class="tags"><span class="tag">ヒレナマズ</span><span class="tag">シルバーバーブ</span></div>
+          <div class="tags"><span class="tag">ヒレナマズ</span><span class="tag">シルバーバーブ</span><span class="tag">その他</span></div>
           <div class="fbtn">農家を見る →</div>
         </div>
       </div>
@@ -203,6 +211,10 @@
         </div>
       </div>
     </div>
+
+    <div class="more-wrap" id="more-wrap" style="display:none;">
+      <button class="more-btn" onclick="showMore()">もっと見る</button>
+    </div>
   </div>
 
   <div class="nav">
@@ -216,6 +228,10 @@
 <script>
   let currentSort = '評価が高い順';
   let selectedSpecies = null;
+  // 本番の初期表示は8件（spec §6）。モックは農家5件なので例示用にINITIAL=4でもっと見るを見せる。
+  const INITIAL = 4;
+  let shown = INITIAL;
+  function showMore(){ shown += INITIAL; render(); }
 
   function toggleSort(e){
     e.stopPropagation();
@@ -231,6 +247,7 @@
     document.getElementById('sort-label').textContent = label;
     document.querySelectorAll('.sort-popup .opt').forEach(o => o.classList.toggle('active', o.textContent.trim() === label));
     document.getElementById('sort-popup').classList.remove('show');
+    shown = INITIAL;            // ソート変更で展開数リセット
     render();
   }
   function toggleSpecies(el){
@@ -238,11 +255,13 @@
     if (selectedSpecies === name) { selectedSpecies = null; }
     else { selectedSpecies = name; }
     document.querySelectorAll('.sp-chip').forEach(c => c.classList.toggle('selected', c.textContent.trim() === selectedSpecies));
+    shown = INITIAL;            // 絞り込み変更で展開数リセット
     render();
   }
   function clearSpecies(){
     selectedSpecies = null;
     document.querySelectorAll('.sp-chip').forEach(c => c.classList.remove('selected'));
+    shown = INITIAL;
     render();
   }
   function render(){
@@ -257,19 +276,21 @@
       return rb - ra;
     });
     cards.forEach(c => wrap.appendChild(c));
-    // 魚種フィルタ＋タグ強調
-    let visible = 0;
+    // 魚種フィルタ＋タグ強調 → 該当農家(passing)を集める
+    const passing = [];
     cards.forEach(card => {
       const sp = card.dataset.species.split(',');
-      const show = !selectedSpecies || sp.includes(selectedSpecies);
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
+      const ok = !selectedSpecies || sp.includes(selectedSpecies);
       card.querySelectorAll('.tag').forEach(t => t.classList.toggle('hit', selectedSpecies && t.textContent.trim() === selectedSpecies));
+      if (ok) passing.push(card); else card.style.display = 'none';
     });
-    // 件数＆空状態
-    document.getElementById('count').textContent = `${visible}件の農家`;
+    // もっと見る：該当農家のうち先頭 shown 件だけ表示
+    passing.forEach((card, i) => card.style.display = (i < shown) ? '' : 'none');
+    document.getElementById('more-wrap').style.display = (passing.length > shown) ? '' : 'none';
+    // 件数（該当の総数）＆空状態
+    document.getElementById('count').textContent = `${passing.length}件の農家`;
     const empty = document.getElementById('empty-state');
-    if (visible === 0) {
+    if (passing.length === 0) {
       empty.style.display = 'block';
       document.getElementById('empty-title').textContent = `${selectedSpecies}を扱う農家はいません`;
     } else {

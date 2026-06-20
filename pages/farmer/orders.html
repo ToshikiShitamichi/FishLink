@@ -533,18 +533,18 @@
             font-size: 15px;
         }
 
-        /* 6/1 #112 (diff5): 承認確認モーダル */
+        /* 6/1 #112 (diff5): 承認/辞退 確認モーダル。6/19 #160: 確認系は中央モーダル（ボトムシート→中央） */
         .approve-modal {
             position: fixed; inset: 0;
             background: rgba(15, 23, 42, 0.55);
-            display: none; align-items: flex-end; justify-content: center;
-            z-index: 200;
+            display: none; align-items: center; justify-content: center;
+            z-index: 200; padding: 20px;
         }
         .approve-modal.show { display: flex; }
         .approve-modal__sheet {
-            width: 100%; max-width: 480px;
-            background: #fff; border-radius: 20px 20px 0 0;
-            padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+            width: 100%; max-width: 400px;
+            background: #fff; border-radius: 20px;
+            padding: 20px;
         }
         .approve-modal__title { font-size: 17px; font-weight: 700; margin-bottom: 12px; color: var(--color-text); }
         .approve-modal__summary {

@@ -130,6 +130,16 @@
         .skel { height: 200px; border-radius: var(--radius); margin-bottom: 12px;
             background: linear-gradient(90deg, #f1f5f9, #e2e8f0, #f1f5f9); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
         @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+        /* 6/19 #159②: 「もっと見る」（クライアント表示スライス・初期8件＋8ずつ） */
+        #fl-more-wrap { text-align: center; padding: 8px 0 4px; }
+        .fl-more-btn {
+            padding: 10px 24px; border-radius: 20px;
+            border: 1px solid var(--color-border); background: var(--color-surface);
+            color: var(--color-text); font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+        }
+        .fl-more-btn:active { background: #f1f5f9; }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer></script>
 </head>
@@ -243,8 +253,13 @@
             return (lang === 'en' && parts[1]) ? parts[1] : (lang === 'km' && parts[2]) ? parts[2] : parts[0];
         }
         // 出品の fishType が選択魚種キーに該当するか（fish-list の species フィルタと同じ緩い一致＝旧データ吸収）
+        // 6/19 #159③: 固定12種いずれにも一致しない出品＝「その他」（買い手 fish-list と同じ判定）。
+        function isStandardFish(ft) {
+            return FISH_CATEGORIES.some(k => fishTypeMatchesKey(ft, k));
+        }
         function fishTypeMatchesKey(ft, key) {
             if (!ft || !key) return false;
+            if (key === 'other') return !isStandardFish(ft);
             if (ft === key) return true;
             const label = i18next.t(`fish.${key}`);
             if (ft === label) return true;
@@ -330,8 +345,41 @@
         }
 
         // ── 状態 ──
-        const state = { sort: 'rating', species: null };  // rating(default) | distance ／ species=選択中の魚種キー or null
+        const PAGE = 8;  // 6/19 #159②: 初期表示件数（＋8 ずつ）
+        const state = { sort: 'rating', species: null, displayCount: PAGE };  // rating(default) | distance ／ species=選択魚種キー or null ／ displayCount=表示中件数
         let allFarmers = [];   // viewModel[]（render-cache 用に JSON 化可能なフィールドのみ）
+
+        // 6/19 #159②: 表示状態（ソート/魚種/展開数/スクロール）を back/forward で復元（魚一覧 spec §7 と同方式）。
+        //   生産者ページから戻ると展開数を保持／別タブ再入や通常遷移では初期化。
+        const SS_KEY = 'farmerlist_ui_v1';
+        function saveUiState() {
+            try {
+                sessionStorage.setItem(SS_KEY, JSON.stringify({
+                    sort: state.sort, species: state.species,
+                    displayCount: state.displayCount, scrollY: window.scrollY,
+                }));
+            } catch (e) { /* ignore */ }
+        }
+        let restoredScrollY = 0, scrollRestored = false;
+        (function maybeRestoreUi() {
+            let navType = 'navigate';
+            try { navType = performance.getEntriesByType('navigation')[0]?.type || 'navigate'; } catch (e) { }
+            if (navType !== 'back_forward') { sessionStorage.removeItem(SS_KEY); return; }
+            try {
+                const s = JSON.parse(sessionStorage.getItem(SS_KEY) || 'null');
+                if (!s) return;
+                state.sort = s.sort || state.sort;
+                state.species = s.species || null;
+                state.displayCount = Math.max(PAGE, s.displayCount || PAGE);
+                restoredScrollY = s.scrollY || 0;
+            } catch (e) { /* ignore */ }
+        })();
+        function restoreScrollOnce() {
+            if (scrollRestored || !restoredScrollY) return;
+            scrollRestored = true;
+            requestAnimationFrame(() => window.scrollTo(0, restoredScrollY));
+        }
+        window.addEventListener('pagehide', saveUiState);
 
         function gaqpBadge(on) {
             return on ? `<span class="gaqp-badge"><span class="material-symbols-outlined">verified</span>${i18next.t('gaqp.badge')}</span>` : '';
@@ -391,10 +439,15 @@
             return arr;
         }
 
+        // 6/19 #159③: チップ＝固定12種＋「その他」（13）。買い手 魚一覧フィルタ（list-spec §4）と統一。
+        const SPECIES_CHIP_KEYS = [...FISH_CATEGORIES, 'other'];
+        function speciesChipLabel(key) {
+            return key === 'other' ? i18next.t('fish.otherShort') : fishLabelShort(key);
+        }
         function renderSpeciesChips() {
             const row = document.getElementById('species-row');
-            row.innerHTML = FISH_CATEGORIES.map(key =>
-                `<button type="button" class="sp-chip ${state.species === key ? 'selected' : ''}" data-key="${key}">${escapeHtml(fishLabelShort(key))}</button>`
+            row.innerHTML = SPECIES_CHIP_KEYS.map(key =>
+                `<button type="button" class="sp-chip ${state.species === key ? 'selected' : ''}" data-key="${key}">${escapeHtml(speciesChipLabel(key))}</button>`
             ).join('');
         }
 
@@ -405,24 +458,34 @@
             renderSpeciesChips();
 
             const arr = sortedFiltered();
+            // 件数表示＝該当の総数（「もっと見る」前でも総数を出す）
             document.getElementById('count').textContent = i18next.t('farmerlist.count', { count: arr.length });
             const list = document.getElementById('farmer-list');
             if (arr.length === 0) {
                 if (state.species) {
-                    const sp = fishLabelShort(state.species);
+                    const sp = speciesChipLabel(state.species);
                     list.innerHTML = `
                         <div class="fl-empty">
                             <span class="material-symbols-outlined">star</span>
                             <div class="fl-empty__text">${escapeHtml(i18next.t('farmerlist.emptyTitle', { species: sp }))}</div>
                             <button type="button" class="fl-empty__reset" id="clear-species">${i18next.t('farmerlist.emptyViewAll')}</button>
                         </div>`;
-                    document.getElementById('clear-species')?.addEventListener('click', () => { state.species = null; render(); });
+                    document.getElementById('clear-species')?.addEventListener('click', () => { state.species = null; state.displayCount = PAGE; render(); });
                 } else {
                     list.innerHTML = `<div class="fl-empty"><span class="material-symbols-outlined">star</span><div class="fl-empty__text">${i18next.t('restaurant.noResults')}</div></div>`;
                 }
                 return;
             }
-            list.innerHTML = arr.map(farmerCardHtml).join('');
+            // 6/19 #159②: クライアント表示スライス（初期8件・「もっと見る」で+8）
+            const shown = arr.slice(0, state.displayCount);
+            let html = shown.map(farmerCardHtml).join('');
+            if (arr.length > state.displayCount) {
+                html += `<div id="fl-more-wrap"><button type="button" id="fl-more-btn" class="fl-more-btn">${escapeHtml(i18next.t('restaurant.loadMore'))}</button></div>`;
+            }
+            list.innerHTML = html;
+            const moreBtn = document.getElementById('fl-more-btn');
+            if (moreBtn) moreBtn.addEventListener('click', () => { state.displayCount += PAGE; render(); });
+            restoreScrollOnce();
         }
 
         // ── データ取得（hosting-only：active 出品＋ users public read をクライアント集計） ──
@@ -453,7 +516,9 @@
 
                 const distanceMap = await buildFarmerDistanceMap(uid, myLoc, farmerMap);
 
-                // 配達範囲外は非表示（§6・dashboard と同一の inRange／距離不明は残す）
+                // 配達範囲外は非表示（§6・dashboard と同一の inRange／距離不明は残す）。
+                // 6/19 #159①: radius 未定義の農家は表示（dashboard/買い手Home と同一挙動・本番は farmerDelivery 設定済で消える）。
+                //   SPEC厳格化（未定義も非表示）は採らず＝買い手側ベースルールと一貫（Code 判断・現状維持）。
                 const inRange = (l) => {
                     const max = resolveDelivery(farmerMap.get(l.farmerId), l).radiusKm;
                     if (!max) return true;
@@ -506,6 +571,7 @@
             const opt = e.target.closest('.fl-sort-pop__opt');
             if (!opt) return;
             state.sort = opt.dataset.value;
+            state.displayCount = PAGE;  // 6/19 #159②: ソート変更で展開数リセット（先頭8件）
             sortPop.classList.remove('show');
             render();
         });
@@ -519,6 +585,7 @@
             if (!chip) return;
             const key = chip.dataset.key;
             state.species = (state.species === key) ? null : key;
+            state.displayCount = PAGE;  // 6/19 #159②: 魚種フィルタ変更で展開数リセット（先頭8件）
             render();
         });
 
@@ -560,7 +627,7 @@
 
         // 初期ソートラベル（キャッシュ未HIT時のため）
         if (!cachedRendered) {
-            document.getElementById('sort-label').textContent = i18next.t('restaurant.sortRating');
+            document.getElementById('sort-label').textContent = i18next.t(state.sort === 'distance' ? 'restaurant.sortDistance' : 'restaurant.sortRating');
             renderSpeciesChips();
         }
 

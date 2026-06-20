@@ -164,19 +164,19 @@
         }
         .delivery-footer button:disabled { opacity: 0.5; }
 
-        /* 6/18 #156 ②③: 確認はボトムシートに統一（中央モーダル廃止）。
-           .chat-modal を全画面で再スタイルせず、このページ専用のボトムシートclassを使う。 */
+        /* 6/18 #156 ②③ → 6/19 #160: 確認系は中央モーダルに統一（ボトムシート→中央）。
+           .chat-modal を全画面で再スタイルせず、このページ専用のclassを使う。 */
         .bsheet {
             position: fixed; inset: 0;
             background: rgba(15, 23, 42, 0.5);
-            display: none; align-items: flex-end; justify-content: center;
-            z-index: 1200;
+            display: none; align-items: center; justify-content: center;
+            z-index: 1200; padding: 20px;
         }
         .bsheet.show { display: flex; }
         .bsheet__sheet {
-            width: 100%; max-width: 480px;
-            background: #fff; border-radius: 20px 20px 0 0;
-            padding: 20px 18px calc(18px + env(safe-area-inset-bottom));
+            width: 100%; max-width: 400px;
+            background: #fff; border-radius: 20px;
+            padding: 20px 18px;
             box-sizing: border-box;
         }
         .bsheet__title { font-size: 15px; font-weight: 800; margin-bottom: 8px; text-align: center; }

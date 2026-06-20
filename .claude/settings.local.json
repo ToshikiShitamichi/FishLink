@@ -64,7 +64,28 @@
       "Bash(git --no-pager diff pages/restaurant/payment.html)",
       "Bash(git --no-pager diff js/voice-message.js js/chat-timeline.js css/style.css)",
       "Bash(git --no-pager diff pages/farmer/delivery.html)",
-      "Bash(rm /tmp/rw_check.mjs)"
+      "Bash(rm /tmp/rw_check.mjs)",
+      "Bash(git --no-pager diff pages/restaurant/orders.html pages/restaurant/payment.html pages/farmer/delivery.html pages/farmer/orders.html)",
+      "Bash(git --no-pager diff HEAD~5 -- pages/farmer/dashboard.html)",
+      "Bash(git --no-pager log --oneline -10 -- pages/farmer/dashboard.html)",
+      "Bash(git --no-pager diff HEAD -- pages/restaurant/farmer-list.html)",
+      "Bash(git --no-pager diff HEAD -- pages/farmer/dashboard.html)",
+      "Bash(git --no-pager status --short)",
+      "Bash(git --no-pager diff -- pages/farmer/dashboard.html)",
+      "Bash(git --no-pager diff HEAD -- pages/restaurant/comments.html)",
+      "Bash(git --no-pager diff --name-only)",
+      "Bash(git --no-pager diff HEAD -- locales/ja.json locales/en.json locales/km.json)",
+      "Bash(git --no-pager diff -- locales/ja.json)",
+      "Bash(git --no-pager diff HEAD -- sw.js)",
+      "Bash(git --no-pager diff HEAD -- pages/restaurant/orders.html pages/restaurant/payment.html pages/farmer/orders.html pages/farmer/delivery.html)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(node --check /tmp/flc.mjs)",
+      "Bash(node --check \"C:/work/FishLink/_flc.mjs\")",
+      "Bash(rm -f \"C:/work/FishLink/_flc.mjs\")",
+      "Bash(git --no-pager diff HEAD)",
+      "Bash(git --no-pager diff HEAD --stat -- 'docs/**')",
+      "Bash(git --no-pager diff HEAD -- pages/farmer/orders.html pages/restaurant/orders.html pages/restaurant/payment.html pages/farmer/delivery.html)",
+      "Bash(grep -ivE \"modal|sheet|border-radius|padding|align-items|display:|z-index|max-width|background|box-shadow|width:|/\\\\*|6/1|inset|justify-content|^\\\\+\\\\+\\\\+\")"
     ]
   }
 }

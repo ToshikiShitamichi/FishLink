@@ -89,14 +89,10 @@
             color: #888;
         }
 
-        /* ボトムナビの「出品する」項目を強調表示 */
+        /* 6/19 #157①: 「出品する」を緑にしない（緑＝GAqP専用）。アクティブ＝青／非アクティブ＝ニュートラルグレー。
+           この画面では「出品する」は非アクティブ＝既定のグレー（.bottom-nav__item）に従う。中央の追加アフォーダンスとしてアイコンの大きさのみ残す。 */
         .bottom-nav .nav-post .material-symbols-outlined {
-            color: var(--color-primary);
-            font-size: 32px;
-        }
-        .bottom-nav .nav-post {
-            font-weight: 700;
-            color: var(--color-primary);
+            font-size: 30px;
         }
 
         .empty-state {
@@ -340,6 +336,33 @@
             cursor: pointer;
         }
         #load-more-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 6/19 #157②: 削除確認＝中央モーダル（ブラウザ confirm 置換・横断ルール）。確定=赤danger／キャンセル=ニュートラル。 */
+        .del-modal-ov {
+            position: fixed; inset: 0; background: rgba(15,23,42,.55);
+            z-index: 1200; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .del-modal-ov.show { display: flex; }
+        .del-modal {
+            width: 100%; max-width: 400px; background: #fff;
+            border-radius: 18px; padding: 22px 20px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.25);
+        }
+        .del-modal__title { font-size: 17px; font-weight: 800; color: var(--color-text); margin-bottom: 10px; }
+        .del-modal__body { font-size: 13.5px; color: var(--color-text-sub); line-height: 1.7; margin-bottom: 6px; }
+        .del-modal__note { font-size: 12px; color: #9aa3b0; line-height: 1.6; margin-bottom: 18px; }
+        .del-modal__actions { display: flex; gap: 10px; }
+        .del-modal__btn { flex: 1; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 800; cursor: pointer; font-family: inherit; }
+        .del-modal__btn--cancel { background: #eceef0; color: var(--color-text-sub); }
+        .del-modal__btn--ok { background: #E5453F; color: #fff; }
+
+        /* 6/19 #157③: 「💬質問」未回答（要返信）件数バッジ（赤丸・白数字・0は非表示） */
+        .pl-qbadge {
+            display: none; align-items: center; justify-content: center;
+            min-width: 17px; height: 17px; padding: 0 4px; margin-left: 4px;
+            background: #E5453F; color: #fff; font-size: 11px; font-weight: 700;
+            line-height: 1; border-radius: 9px;
+        }
     </style>
 </head>
 
@@ -414,6 +437,19 @@
         </a>
     </nav>
 
+    <!-- 6/19 #157②: 削除確認＝中央モーダル（ブラウザ confirm 置換）。文言維持／確定「削除する」赤・キャンセル グレー。 -->
+    <div class="del-modal-ov" id="del-modal">
+        <div class="del-modal">
+            <div class="del-modal__title" data-i18n="dashboard.deleteModalTitle"></div>
+            <div class="del-modal__body" data-i18n="dashboard.deleteModalBody"></div>
+            <div class="del-modal__note" data-i18n="dashboard.deleteModalNote"></div>
+            <div class="del-modal__actions">
+                <button type="button" class="del-modal__btn del-modal__btn--cancel" id="del-modal-cancel" data-i18n="dashboard.cancel"></button>
+                <button type="button" class="del-modal__btn del-modal__btn--ok" id="del-modal-ok" data-i18n="dashboard.deleteConfirm"></button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
@@ -449,6 +485,8 @@
         let hasMoreListings = false;
         let isLoadingMore = false;
         const renderedListings = []; // {id, data}
+        // 6/19 #157③: listingId → 未回答（要返信）件数。renderAll() 跨ぎでバッジを保持。
+        const qaCountByListing = {};
 
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({
@@ -495,7 +533,10 @@
             const editOrRefill = status === 'soldout'
                 ? `<a class="pl-act primary" href="/pages/farmer/post.html?id=${id}&focus=stock"><span class="material-symbols-outlined">inventory_2</span>${i18next.t('dashboard.refillStock')}</a>`
                 : `<a class="pl-act" href="/pages/farmer/post.html?id=${id}"><span class="material-symbols-outlined">edit</span>${i18next.t('dashboard.edit')}</a>`;
-            const questionBtn = `<a class="pl-act" href="/pages/restaurant/comments.html?id=${id}"><span class="material-symbols-outlined">chat_bubble</span>${i18next.t('dashboard.question')}</a>`;
+            // 6/19 #157③: 未回答（要返信）件数バッジ（0は非表示・件数は updateQuestionBadges が確定）
+            const qaCount = qaCountByListing[id] || 0;
+            const qBadge = `<span class="pl-qbadge" data-q-badge="${id}"${qaCount > 0 ? ` style="display:inline-flex;">${qaCount}` : '>'}</span>`;
+            const questionBtn = `<a class="pl-act" href="/pages/restaurant/comments.html?id=${id}"><span class="material-symbols-outlined">chat_bubble</span>${i18next.t('dashboard.question')}${qBadge}</a>`;
             const stopResume = status === 'stopped'
                 ? `<button type="button" class="pl-act primary" data-action="resume" data-id="${id}"><span class="material-symbols-outlined">play_arrow</span>${i18next.t('dashboard.resume')}</button>`
                 : `<button type="button" class="pl-act danger" data-action="pause" data-id="${id}"><span class="material-symbols-outlined">pause</span>${i18next.t('dashboard.pause')}</button>`;
@@ -606,6 +647,8 @@
                 });
 
                 renderAll();
+                // 6/19 #157③: 描画後に未回答（要返信）件数バッジを更新（todos で未回答 listing に絞って comments を読む）
+                updateQuestionBadges();
 
                 // 5/23 #69 Phase J: 1ページ目（!append）のみ render-cache に保存
                 //   - Timestamp 等は toMillis 化して JSON 化可能に
@@ -652,6 +695,56 @@
             }
         });
 
+        // 6/19 #157②: 削除確認＝中央モーダル（ブラウザ confirm 置換）。true=削除する / false=キャンセル を resolve。
+        const delModalEl = document.getElementById('del-modal');
+        let delModalResolve = null;
+        function closeDelModal(result) {
+            delModalEl.classList.remove('show');
+            if (delModalResolve) { delModalResolve(result); delModalResolve = null; }
+        }
+        document.getElementById('del-modal-ok').addEventListener('click', () => closeDelModal(true));
+        document.getElementById('del-modal-cancel').addEventListener('click', () => closeDelModal(false));
+        delModalEl.addEventListener('click', (e) => { if (e.target === delModalEl) closeDelModal(false); });
+        function showDeleteModal() {
+            delModalEl.classList.add('show');
+            return new Promise((resolve) => { delModalResolve = resolve; });
+        }
+
+        // 6/19 #157③: 「💬質問」未回答（要返信）件数バッジ。
+        //   要返信＝農家がまだ一度も返信していない root 質問（買い手の番）＝functions listingHasUnansweredQuestions と同定義。
+        //   未読フォロー（回答後の追加投稿）は per-thread 既読マーカーが Q&A データに無いため次フェーズ（spec の Code 判断＝要返信のみ・hosting-only）。
+        //   コスト配慮：farmer_qa todo（functions が listing 単位で立てる boolean）で「未回答あり」listing に絞ってから comments を読む。
+        function countNeedsReply(docs, farmerId) {
+            const roots = docs.filter(d => !d.parentReplyId && d.isDeleted !== true && d.senderId !== farmerId);
+            let n = 0;
+            for (const root of roots) {
+                if (root.replyText && String(root.replyText).trim()) continue;
+                const farmerReplied = docs.some(d => d.parentReplyId === root.id && d.senderId === farmerId && d.isDeleted !== true);
+                if (!farmerReplied) n++;
+            }
+            return n;
+        }
+        async function updateQuestionBadges() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            try {
+                const todoSnap = await getDocs(query(collection(db, 'todos', uid, 'items'), where('status', '==', 'open')));
+                const flagged = new Set();
+                todoSnap.forEach(d => { const t = d.data(); if (t.type === 'farmer_qa' && t.orderId) flagged.add(t.orderId); });
+                const targets = renderedListings.filter(it => flagged.has(it.id));
+                await Promise.all(targets.map(async (it) => {
+                    try {
+                        const snap = await getDocs(collection(db, 'fishListings', it.id, 'comments'));
+                        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        const n = countNeedsReply(docs, uid);
+                        qaCountByListing[it.id] = n;
+                        const badge = document.querySelector(`.pl-qbadge[data-q-badge="${CSS.escape(it.id)}"]`);
+                        if (badge) { badge.textContent = n > 0 ? String(n) : ''; badge.style.display = n > 0 ? 'inline-flex' : 'none'; }
+                    } catch (e) { /* ignore per-listing */ }
+                }));
+            } catch (e) { console.warn('updateQuestionBadges failed:', e); }
+        }
+
         // 5/7 #53: ケバブメニュー＆削除のイベント委譲
         document.addEventListener('click', async (e) => {
             // 既存メニューを閉じる（メニュー外クリック）。5/31 #104: ケバブは [data-menu-toggle]
@@ -678,8 +771,9 @@
             if (delBtn) {
                 e.stopPropagation();
                 const listingId = delBtn.dataset.id;
-                if (!confirm(i18next.t('dashboard.confirmDelete'))) return;
+                // 6/19 #157②: ブラウザ confirm → 自前 中央モーダル。先にケバブメニューを閉じてから確認。
                 document.querySelectorAll('.card-menu.show').forEach(m => m.classList.remove('show'));
+                if (!(await showDeleteModal())) return;
                 loading.classList.add('show');
                 try {
                     await updateDoc(doc(db, 'fishListings', listingId), {

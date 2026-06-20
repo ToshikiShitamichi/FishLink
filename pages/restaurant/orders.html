@@ -200,10 +200,10 @@
         .os-report-done { display:inline-flex; align-items:center; gap:5px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; border-radius:10px; padding:8px 14px; font-size:12.5px; font-weight:700; }
         .os-report-done .material-symbols-outlined { font-size:15px; }
         .os-report-note { font-size:11.5px; color:var(--color-text-sub); margin-top:6px; line-height:1.5; }
-        /* キャンセル確認モーダル（自前・標準ダイアログ置換）＝ボトムシート（#155 A⑮） */
-        .os-modal-ov { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1200; display:none; align-items:flex-end; justify-content:center; }
+        /* キャンセル確認モーダル（自前・標準ダイアログ置換）。6/19 #160: 確認系は中央モーダル（ボトムシート→中央に戻す・z-index:1200維持） */
+        .os-modal-ov { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:1200; display:none; align-items:center; justify-content:center; padding:20px; }
         .os-modal-ov.show { display:flex; }
-        .os-modal { width:100%; max-width:480px; background:#fff; border-radius:20px 20px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); box-shadow:0 -8px 40px rgba(0,0,0,.25); }
+        .os-modal { width:100%; max-width:400px; background:#fff; border-radius:20px; padding:20px; box-shadow:0 12px 40px rgba(0,0,0,.25); }
         .os-modal__t { font-size:16px; font-weight:800; margin-bottom:8px; }
         .os-modal__b { font-size:13px; color:var(--color-text-sub); line-height:1.6; margin-bottom:14px; }
         .os-modal__act { display:flex; gap:10px; }
@@ -422,9 +422,15 @@
             const { d, order, fishName, farmerName } = o;
             const orderNo = getOrderNumber({ id: d.id, ...order });
             const fishType = order.snapFishType || '';
-            const reorderHref = fishType
-                ? `/pages/restaurant/fish-list.html?fishType=${encodeURIComponent(fishType)}`
-                : '/pages/restaurant/fish-list.html';
+            // 6/20: 「同じ魚を再注文」＝以前の出品が今も購入可能（販売中・在庫あり・未削除）なら その商品詳細へ直行。
+            //        無ければ魚一覧（同魚種・別農家を探す）へフォールバック。
+            const lst = order.listingId ? reorderListingCache[order.listingId] : null;
+            const stillListed = !!lst && lst.isActive === true && Number(lst.stock || 0) > 0 && !lst.deletedAt;
+            const reorderHref = stillListed
+                ? `/pages/restaurant/order.html?id=${encodeURIComponent(order.listingId)}`
+                : (fishType
+                    ? `/pages/restaurant/fish-list.html?fishType=${encodeURIComponent(fishType)}`
+                    : '/pages/restaurant/fish-list.html');
             return `
                 <div class="os-card" id="order-${d.id}">
                     <div class="os-card__top">
@@ -483,6 +489,8 @@
         // 6/17 #150: 報告受付時間（時間）。お支払い待ちカードの報告入口の締切判定に使う。
         let reportHours = 4;
         const farmerNameCache = new Map();   // #143: farmerId -> 農家表示名（カード「🏬 農家名」用）
+        // 6/20: 辞退の「同じ魚を再注文」用＝listingId -> 出品 doc（現在の出品状況を見て、まだ買えるなら商品詳細へ直行）
+        const reorderListingCache = {};
 
         // 5/25 #91/#92 拡張: 描画ロジックを fetch から分離。cached / fresh 両方から呼ぶ。
         //   allOrdersCache の各要素は { d:{id}, order, fishName, hasReview } 形式（d は Firestore doc snap 互換）
@@ -633,19 +641,21 @@
                 }
 
                 // ── 注文データ取得（並列で高速化） ──
-                // snapFishType がない legacy 注文のみ fishListings を取得
-                const legacyListingIds = [...new Set(
+                // snapFishType がない legacy 注文に加え、辞退注文の listing も取得
+                //   （6/20: 再注文導線で「以前の出品が今も買えるか」を見て商品詳細へ直行 or 魚一覧へフォールバック）
+                const listingIdsToFetch = [...new Set(
                     snap.docs.map(d => d.data())
-                        .filter(o => !o.snapFishType && o.listingId)
+                        .filter(o => o.listingId && (!o.snapFishType || o.status === 'declined'))
                         .map(o => o.listingId)
                 )];
                 const listingCache = {};
-                await Promise.all(legacyListingIds.map(async lid => {
+                await Promise.all(listingIdsToFetch.map(async lid => {
                     try {
                         const lSnap = await getDoc(doc(db, 'fishListings', lid));
                         listingCache[lid] = lSnap.exists() ? lSnap.data() : {};
                     } catch (e) { listingCache[lid] = {}; }
                 }));
+                Object.assign(reorderListingCache, listingCache);  // renderDeclinedCard（再注文導線）が参照
 
                 const newOrders = snap.docs.map(d => {
                     const order = d.data();

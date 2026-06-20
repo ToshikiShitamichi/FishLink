@@ -210,23 +210,23 @@
         .empty-small { text-align: center; padding: 40px 20px; color: var(--color-text-sub); font-size: 13px; }
         .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
 
-        /* 6/18 #153-③: 取り消し確認 ボトムシート（farmer/orders.html .approve-modal を参照） */
+        /* 6/18 #153-③ → 6/19 #160: 取り消し確認＝中央モーダル（確認系は中央に統一・ボトムシート廃止） */
         .remove-sheet {
             position: fixed; inset: 0;
             background: rgba(15, 23, 42, 0.55);
-            display: none; align-items: flex-end; justify-content: center;
-            z-index: 300; /* footer-input(固定) より上 */
+            display: none; align-items: center; justify-content: center;
+            z-index: 300; padding: 20px; /* footer-input(固定) より上 */
         }
         .remove-sheet.show { display: flex; }
         .remove-sheet__sheet {
-            width: 100%; max-width: 480px;
-            background: #fff; border-radius: 20px 20px 0 0;
-            padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
-            animation: removeSheetUp .22s ease;
+            width: 100%; max-width: 400px;
+            background: #fff; border-radius: 20px;
+            padding: 22px 20px;
+            animation: removeSheetPop .2s ease;
         }
-        @keyframes removeSheetUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
+        @keyframes removeSheetPop {
+            from { transform: scale(.96); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
         .remove-sheet__body {
             font-size: 14px; color: var(--color-text); line-height: 1.65; margin-bottom: 18px;
@@ -290,7 +290,7 @@
         <div class="footer-input__note" data-i18n="comments.publicFooter"></div>
     </div>
 
-    <!-- 6/18 #153-③: 取り消し確認＝自前ボトムシート（ブラウザ confirm 廃止・横断ルール）。
+    <!-- 6/18 #153-③ → 6/19 #160: 取り消し確認＝自前 中央モーダル（ブラウザ confirm 廃止・確認系は中央に統一）。
          キャンセル=グレー／取り消す=赤(danger)。z-index は固定フッター入力(footer-input)より上。 -->
     <div class="remove-sheet" id="remove-sheet">
         <div class="remove-sheet__sheet">
@@ -326,6 +326,8 @@
 
         const listingId = new URLSearchParams(location.search).get('id');
         if (!listingId) { history.back(); }
+        // 6/19 #158: 農家ビュー（出品オーナー＝role:farmer）か。質問コンポーザーの出し分け・空状態文言に使う。
+        let isFarmerView = false;
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
@@ -433,11 +435,15 @@
                 const uid = window.currentUser?.uid;
                 const isOwner = uid === listing.farmerId;  // この listing の farmer
 
-                // 農家視点のときはバナー文言を差し替え
-                if (window.currentUserData?.role === 'farmer') {
+                // 農家視点のときはバナー文言を差し替え（#158⑧）＋ 質問コンポーザーを非表示（#158⑥・返信専用）
+                isFarmerView = window.currentUserData?.role === 'farmer';
+                if (isFarmerView) {
                     const banner = document.getElementById('info-banner');
                     banner.setAttribute('data-i18n', 'comments.publicNoteFarmer');
                     banner.textContent = i18next.t('comments.publicNoteFarmer');
+                    // #158⑥: 農家は新規質問しない＝下部コンポーザーは既定で非表示（返信時のみ reply-to で一時表示）
+                    const footerEl = document.querySelector('.footer-input');
+                    if (footerEl) footerEl.style.display = 'none';
                 }
 
                 // 5/27 #99: 多段スレッド化
@@ -455,7 +461,7 @@
                 const q = query(commentsRef, orderBy('createdAt', 'asc'));
                 onSnapshot(q, async (snap) => {
                     if (snap.empty) {
-                        document.getElementById('qa-list').innerHTML = `<div class="empty-small"><div>${escapeHtml(i18next.t('comments.empty'))}</div><div class="empty-sub">${escapeHtml(i18next.t('comments.emptySub'))}</div></div>`;
+                        document.getElementById('qa-list').innerHTML = `<div class="empty-small"><div>${escapeHtml(i18next.t('comments.empty'))}</div><div class="empty-sub">${escapeHtml(i18next.t(isFarmerView ? 'comments.emptySubFarmer' : 'comments.emptySub'))}</div></div>`;
                         return;
                     }
 
@@ -526,7 +532,7 @@
                     const childrenByParent = lastChildrenByParent;
                     const userMap = lastUserMap;
                     if (!parents || parents.length === 0) {
-                        listEl.innerHTML = `<div class="empty-small"><div>${escapeHtml(i18next.t('comments.empty'))}</div><div class="empty-sub">${escapeHtml(i18next.t('comments.emptySub'))}</div></div>`;
+                        listEl.innerHTML = `<div class="empty-small"><div>${escapeHtml(i18next.t('comments.empty'))}</div><div class="empty-sub">${escapeHtml(i18next.t(isFarmerView ? 'comments.emptySubFarmer' : 'comments.emptySub'))}</div></div>`;
                         return;
                     }
 
@@ -748,6 +754,8 @@
                             // 入力欄をフッターにフォーカス（既存の comment-input を流用 + 仮想 attribute で送信先を切替）
                             const input = document.getElementById('comment-input');
                             const sendBtn = document.getElementById('send-btn');
+                            // 6/19 #158⑥: 農家ビューはコンポーザーを既定で隠しているため、返信時だけ一時的に表示
+                            if (isFarmerView) { const f = document.querySelector('.footer-input'); if (f) f.style.display = ''; }
                             input.dataset.replyTo = parentReplyId;
                             input.placeholder = i18next.t('comments.replyToPlaceholder');
                             input.focus();
@@ -809,6 +817,8 @@
                 delete input.dataset.replyTo;
                 input.placeholder = i18next.t('comments.inputPlaceholder');
                 btn.textContent = i18next.t('comments.send');
+                // 6/19 #158⑥: 農家ビューは送信後コンポーザーを再び隠す（返信専用・新規質問はしない）
+                if (isFarmerView) { const f = document.querySelector('.footer-input'); if (f) f.style.display = 'none'; }
             } catch (err) {
                 console.error('comment submit failed:', err);
                 alert(i18next.t('comments.errorSubmit'));

@@ -100,6 +100,7 @@
   <h1>FISHLINK 公開質問（Q&A） — モック</h1>
   <p>反映：<b>A案＝1質問＝時系列1段スレッド</b>（往復フラット・もっと見るで折りたたみ）／<b>権限ゲート</b>＝農家は全スレ返信可・質問者は自スレのみ・他者は閲覧のみ／取り消しは自分の投稿のみ／<b>ヘッダー価格＝買い手向け単一の正</b>（手数料込み・内臓処理込み）／送信ボタン（質問する・返信する）＝<b>青</b>。</p>
   <p>中抜き対策（B案）＝質問/返信の<b>連絡先（電話番号・SNS・URL）を自動マスク＋投稿時警告</b>。モデレーション＝管理画面「トラブル報告」に<b>「公開質問（要確認）」カテゴリ</b>を足し、マスク発動投稿を自動表示→<b>「投稿を非表示にする」（ソフト削除）</b>。質問起点の取り消し＝スレッドごと消す。空状態＝「まだ質問はありません。最初の質問をどうぞ」。</p>
+  <p><b>農家ビュー（⑤）</b>＝農家は<b>返信専用</b>。下部の<b>質問コンポーザー（質問を入力／質問する）は出さない</b>（新規質問はレストランのみ）。空状態は買い手向けの「最初の質問をどうぞ」ではなく<b>農家向け「レストランからの質問がここに表示されます」</b>。質問が来たら各スレッドに「返信する」（農家は全スレ返信可）。</p>
 </div>
 
 <div class="stage">
@@ -284,6 +285,30 @@
           <span class="ra done">対応済にする</span>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 農家ビュー（返信専用・コンポーザー無し） -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑤ 農家ビュー <span class="tag">返信専用＝質問コンポーザー無し／空状態は農家向け文言</span></div>
+    <div class="phone">
+      <div class="q-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="q-title">質問</div>
+      <div class="q-body">
+        <div class="ctx">
+          <div>
+            <div class="cx-name">パンガシウス（2 head/kg）</div>
+            <div class="cx-sub">farmer5 ・ <b>6,300 KHR/kg</b></div>
+          </div>
+          <span class="chev">›</span>
+        </div>
+        <div class="note-blue">レストランからの質問・あなたの返信は他のレストランにも公開され、注文前の参考として表示されます。</div>
+        <div class="empty">
+          <div class="e-strong">まだ質問はありません</div>
+          <div class="e-sub">レストランからの質問がここに表示されます</div>
+        </div>
+      </div>
+      <!-- q-footer（質問コンポーザー）は農家には出さない。質問が来たら各スレッドに「返信する」が出る -->
     </div>
   </div>
 
