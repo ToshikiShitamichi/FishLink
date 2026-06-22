@@ -135,6 +135,10 @@
   .helper { font-size: 12px; color: #5A6470; margin-top: 6px; line-height: 1.6; }
   .helper.green { color: #2E7D32; }
 
+  /* セクションをカードで区切る */
+  .section-card { background: #FFF; border: 1px solid #E7ECF1; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .section-card .sec-head { margin-top: 0; }
+
   /* 写真アップロード */
   .photo-box {
     border: 1.5px dashed #C7D0DA;
@@ -278,6 +282,7 @@
       </div>
       <div class="form-body">
 
+        <div class="section-card">
         <div class="sec-head">基本情報</div>
         <div class="field">
           <div class="field-label">魚種 <span class="badge req">必須</span></div>
@@ -313,11 +318,14 @@
           </div>
         </div>
 
+        </div>
+
+        <div class="section-card">
         <div class="sec-head">販売価格 <span class="sub">CAA参考価格を参考に設定</span></div>
         <div class="field">
           <div class="field-label">魚単価 <span class="badge req">必須</span></div>
           <div class="input-row">
-            <input class="input short" placeholder="例：5,000">
+            <input class="input short" placeholder="例：金額を入力">
             <span class="unit">KHR /kg</span>
           </div>
         </div>
@@ -348,6 +356,9 @@
         </div>
 
         <!-- 配送：初回は入力欄。投稿すると農家の配送設定として保存される -->
+        </div>
+
+        <div class="section-card">
         <div class="sec-head">配送 <span class="sub">レストラン負担・全出品に共通</span></div>
         <div class="field">
           <div class="field-label">配送可能距離（km） <span class="badge req">必須</span></div>
@@ -368,13 +379,16 @@
         <div class="field">
           <div class="field-label">送料無料距離（km） <span class="badge opt">任意</span></div>
           <div class="input-row">
-            <input class="input short" placeholder="0（無料圏なし）">
+            <input class="input short" placeholder="例：5">
             <span class="unit">km</span>
           </div>
-          <div class="helper green">この距離内は送料無料。空欄なら全配達で送料がかかります。無料圏を作りたいときだけ入力してください。</div>
+          <div class="helper">この距離内は送料無料になります。近場は送料無料にするのがおすすめです（例：5km）。空欄なら全配達で送料がかかります。</div>
         </div>
         <div class="helper">この配送条件は<b>すべての出品に共通</b>で保存されます。次回からは入力不要です。</div>
 
+        </div>
+
+        <div class="section-card">
         <div class="sec-head">取引条件 <span class="sub">任意</span></div>
         <div class="field">
           <div class="field-label">最低注文量（kg） <span class="badge opt">任意</span></div>
@@ -385,6 +399,9 @@
           <div class="helper">これ未満の注文は受け付けません。空欄なら制限なし。</div>
         </div>
 
+        </div>
+
+        <div class="section-card">
         <div class="sec-head">商品の説明 <span class="sub">任意</span></div>
         <div class="desc-guide">
           詳しく書くほどレストランの安心・信頼につながります。以下を参考にどうぞ。
@@ -404,6 +421,7 @@
           <textarea class="textarea" placeholder="例：&#10;・薬は使っていません。餌は自家製の餌を与えています。&#10;・池の水質管理に気をつけて育てています。&#10;・朝に水揚げする新鮮な魚です。"></textarea>
         </div>
 
+        </div>
       </div>
       <div class="cta-bar">
         <button class="cta-btn">投稿する</button>
@@ -423,6 +441,7 @@
       </div>
       <div class="form-body">
 
+        <div class="section-card">
         <div class="sec-head">基本情報</div>
         <div class="field">
           <div class="field-label">魚種 <span class="badge req">必須</span></div>
@@ -457,11 +476,14 @@
           </div>
         </div>
 
+        </div>
+
+        <div class="section-card">
         <div class="sec-head">販売価格 <span class="sub">CAA参考価格を参考に設定</span></div>
         <div class="field">
           <div class="field-label">魚単価 <span class="badge req">必須</span></div>
           <div class="input-row">
-            <input class="input short" placeholder="例：5,000">
+            <input class="input short" placeholder="例：金額を入力">
             <span class="unit">KHR /kg</span>
           </div>
         </div>
@@ -492,6 +514,9 @@
         </div>
 
         <!-- 配送：設定済みなので入力欄は出さず、適用される設定をサマリー表示 -->
+        </div>
+
+        <div class="section-card">
         <div class="sec-head">配送 <span class="sub">レストラン負担・全出品に共通</span></div>
         <div class="delivery-summary">
           <div class="ds-main">
@@ -505,6 +530,9 @@
         </div>
         <div class="helper">配送条件は全出品に共通です。「変更」するとすべての出品に反映されます。</div>
 
+        </div>
+
+        <div class="section-card">
         <div class="sec-head">取引条件 <span class="sub">任意</span></div>
         <div class="field">
           <div class="field-label">最低注文量（kg） <span class="badge opt">任意</span></div>
@@ -515,6 +543,9 @@
           <div class="helper">これ未満の注文は受け付けません。空欄なら制限なし。</div>
         </div>
 
+        </div>
+
+        <div class="section-card">
         <div class="sec-head">商品の説明 <span class="sub">任意</span></div>
         <div class="desc-guide">
           詳しく書くほどレストランの安心・信頼につながります。以下を参考にどうぞ。
@@ -534,6 +565,7 @@
           <textarea class="textarea" placeholder="例：&#10;・薬は使っていません。餌は自家製の餌を与えています。&#10;・池の水質管理に気をつけて育てています。&#10;・朝に水揚げする新鮮な魚です。"></textarea>
         </div>
 
+        </div>
       </div>
       <div class="cta-bar">
         <button class="cta-btn">投稿する</button>
@@ -552,14 +584,19 @@
         <span class="ttl">魚を投稿する</span>
       </div>
       <div class="form-body">
+
+        <div class="section-card">
         <div class="sec-head">販売価格 <span class="sub">CAA参考価格を参考に設定</span></div>
         <div class="field">
           <div class="field-label">魚単価 <span class="badge req">必須</span></div>
           <div class="input-row">
-            <input class="input short" placeholder="例：5,000">
+            <input class="input short" placeholder="例：金額を入力">
             <span class="unit">KHR /kg</span>
           </div>
         </div>
+        </div>
+
+        <div class="section-card">
         <div class="sec-head">配送 <span class="sub">レストラン負担・全出品に共通</span></div>
         <div class="delivery-summary">
           <div class="ds-main">
@@ -570,6 +607,7 @@
             </div>
           </div>
           <span class="ds-change">変更</span>
+        </div>
         </div>
       </div>
       <div class="cta-bar">
@@ -608,7 +646,7 @@
               <input class="input short" value="5">
               <span class="unit">km</span>
             </div>
-            <div class="helper green">この距離内は送料無料。空欄なら全配達で送料がかかります。</div>
+            <div class="helper">この距離内は送料無料になります。近場は送料無料にするのがおすすめです（例：5km）。空欄なら全配達で送料がかかります。</div>
           </div>
 
           <div class="sheet-actions">

@@ -115,7 +115,9 @@
     display: flex; align-items: center; gap: 12px;
     cursor: pointer;
   }
-  .farmer-row .ava { width: 42px; height: 42px; border-radius: 50%; background: #D8E2EC; flex-shrink: 0; display:flex;align-items:center;justify-content:center;font-size:20px;color:#6B8299; }
+  .farmer-row .ava { width: 42px; height: 42px; border-radius: 50%; background: #D8E2EC; flex-shrink: 0; display:flex;align-items:center;justify-content:center;font-size:20px;color:#6B8299; background-size:cover; background-position:center; }
+  /* 農家がアバターを設定済み＝写真を表示（未設定は上のデフォルト） */
+  .farmer-row .ava.photo { background-image: linear-gradient(135deg,#7FA8C9,#3E6B8E); color:transparent; }
   .farmer-row .fmeta { flex: 1; }
   .farmer-row .fname { font-size: 15px; font-weight: 700; }
   .farmer-row .frate { font-size: 13px; color: #5A6470; margin-top: 2px; }   /* #1 ★96% (32) */
@@ -223,6 +225,7 @@
   <h1>FISHLINK レストラン側 — 商品詳細（モック）</h1>
   <p>商品カードのタップ先。並び順は <b>①写真 ②魚名(サイズ) ③価格(内臓処理込み) ④農家名+評価 ⑤GAqP ⑥取引条件 ⑦説明 ⑧Q&A ⑨他の出品 ⑩CTA</b>（#12）。</p>
   <p>反映：#1 評価<b>★96% (32)</b>／#2 GAqPは<b>説明ボックス</b>（写真に重ねバッジは出さない）／#3 ヘッダー=<b>魚名</b>／#9 CTA<b>カートに入れる(主青塗り)・今すぐ注文(副青枠)</b>／#10 送料は<b>性質のみ</b>・最低注文量◯kg〜／#11/#14 価格<b>内臓処理込み単一値＋グレー注記</b>／#13 在庫<b>実数</b>。</p>
+  <p><b>④農家行のアバター</b>＝農家が設定したアバター（顔/農場写真/ロゴ）を円形表示。未設定はデフォルトアイコン（①ソカ・ファーム=設定済み写真／②ダラ・ファーム=デフォルト）。汎用👤で済ませない＝農家一覧/生産者ページと同じ avatarUrl を引く。</p>
   <p>② は出し分け：<b>未認証(GAqPなし)・最低注文量なし(行ごと非表示)・説明未記入(#15 セクションごと非表示)・Q&A 0件(質問する小導線)</b>。</p>
 </div>
 
@@ -261,7 +264,7 @@
 
           <!-- ④農家名+評価（タップで生産者ページ） -->
           <div class="farmer-row">
-            <div class="ava">🧑‍🌾</div>
+            <div class="ava photo" title="農家の設定アバター"></div>
             <div class="fmeta">
               <div class="fname">ソカ・ファーム</div>
               <div class="frate">★96% (32)</div>

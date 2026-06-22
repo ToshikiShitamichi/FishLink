@@ -85,7 +85,29 @@
       "Bash(git --no-pager diff HEAD)",
       "Bash(git --no-pager diff HEAD --stat -- 'docs/**')",
       "Bash(git --no-pager diff HEAD -- pages/farmer/orders.html pages/restaurant/orders.html pages/restaurant/payment.html pages/farmer/delivery.html)",
-      "Bash(grep -ivE \"modal|sheet|border-radius|padding|align-items|display:|z-index|max-width|background|box-shadow|width:|/\\\\*|6/1|inset|justify-content|^\\\\+\\\\+\\\\+\")"
+      "Bash(grep -ivE \"modal|sheet|border-radius|padding|align-items|display:|z-index|max-width|background|box-shadow|width:|/\\\\*|6/1|inset|justify-content|^\\\\+\\\\+\\\\+\")",
+      "Bash(git --no-pager diff -- pages/farmer/post.html)",
+      "Bash(git --no-pager diff -- pages/restaurant/order.html pages/restaurant/cart.html)",
+      "Bash(git --no-pager diff -- locales/ja.json locales/en.json locales/km.json)",
+      "Bash(git --no-pager diff -- js/order-utils.js)",
+      "Bash(git --no-pager diff -- js/order-utils.js sw.js)",
+      "Bash(git --no-pager diff -- pages/restaurant/cart.html)",
+      "Bash(git --no-pager diff -- pages/restaurant/cart.html pages/restaurant/order.html)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('locales/ja.json',encoding='utf-8'\\)\\); print\\('orders.deliveryLabel =', repr\\(d.get\\('orders',{}\\).get\\('deliveryLabel'\\)\\)\\); print\\('cart.deleteConfirm =', repr\\(d.get\\('cart',{}\\).get\\('deleteConfirm'\\)\\)\\); print\\('cart.cancel =', repr\\(d.get\\('cart',{}\\).get\\('cancel'\\)\\)\\); print\\('cart.confirmRemove =', repr\\(d.get\\('cart',{}\\).get\\('confirmRemove'\\)\\)\\)\")",
+      "Bash(git --no-pager grep -n \"cart.cancel\\\\|\\\\\"cancel\\\\\"\" -- pages/restaurant/cart.html locales/ja.json)",
+      "Bash(python -)",
+      "Bash(git --no-pager grep -n \"asCachedImgAttrs\\\\|farmerData\" -- pages/restaurant/order.html)",
+      "Bash(git --no-pager diff -- sw.js)",
+      "Bash(git --no-pager grep -n \"loadQuestionPreview\\\\|roots.length\\\\|questionPreview\\\\|qa-preview\\\\|all.filter\" -- pages/restaurant/order.html)",
+      "Bash(git --no-pager grep -n \"isEditMode\" -- pages/farmer/post.html)",
+      "Bash(git --no-pager grep -n \"loadQuestionPreview\\\\|parentReplyId\\\\|\\\\.length\\\\|qaCount\\\\|teaser\\\\|viewAll\\\\|質問をすべて\" -- pages/restaurant/order.html)",
+      "Bash(git --no-pager grep -n \"order.minOrder\\\\|order.stock\" -- pages/restaurant/order.html)",
+      "Bash(git --no-pager diff -- pages/restaurant/order.html)",
+      "Bash(git --no-pager grep -no \"i18next\\\\.t\\('order\\\\.[a-zA-Z]*'\" -- pages/restaurant/order.html)",
+      "Bash(git --no-pager grep -noE \"i18next\\\\.t\\\\\\('[^']*'\" -- pages/restaurant/order.html)",
+      "Bash(git --no-pager grep -noE 'data-i18n=\"[^\"]*stock[^\"]*\"|data-i18n=\"[^\"]*minOrder[^\"]*\"' -- pages/restaurant/order.html)",
+      "Bash(git --no-pager grep -n \"locales/ja.json\\\\|locales/en.json\\\\|locales/km.json\" -- sw.js)",
+      "Bash(git --no-pager grep -n \"bottom-nav\" -- pages/restaurant/cart.html)"
     ]
   }
 }

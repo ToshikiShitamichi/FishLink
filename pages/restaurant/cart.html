@@ -75,9 +75,11 @@
         .cart-item__size { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
         .cart-item__price { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
         .cart-item__ctrl {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; justify-content: space-between; align-items: flex-start;
             margin-top: 8px; gap: 10px; flex-wrap: wrap;
         }
+        /* 6/21 #163②: 内臓処理トグル＋「外すと −525」ヒントを縦にグループ化（トグルの直下に置く） */
+        .gut-group { display: flex; flex-direction: column; align-items: flex-end; }
         .qty-box {
             display: inline-flex; align-items: center; gap: 6px;
             background: #f8fafc; border-radius: 20px; padding: 3px 6px;
@@ -464,6 +466,23 @@
         }
         .detail-link:hover { text-decoration: underline; }
         .detail-link .material-symbols-outlined { font-size: 14px; }
+
+        /* 6/21 #163④: 削除確認＝中央モーダル（ブラウザ confirm 置換・確認系は中央モーダルで統一 #160）。 */
+        .del-modal-ov {
+            position: fixed; inset: 0; background: rgba(15,23,42,.55);
+            z-index: 1200; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .del-modal-ov.show { display: flex; }
+        .del-modal {
+            width: 100%; max-width: 400px; background: #fff;
+            border-radius: 18px; padding: 22px 20px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.25);
+        }
+        .del-modal__title { font-size: 16px; font-weight: 800; color: var(--color-text); line-height: 1.6; margin-bottom: 18px; }
+        .del-modal__actions { display: flex; gap: 10px; }
+        .del-modal__btn { flex: 1; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 800; cursor: pointer; font-family: inherit; }
+        .del-modal__btn--cancel { background: #eceef0; color: var(--color-text-sub); }
+        .del-modal__btn--ok { background: #E5453F; color: #fff; }
     </style>
 </head>
 
@@ -558,6 +577,17 @@
         </div>
         <button class="checkout-btn" id="checkout-btn" data-i18n="cart.checkout"></button>
         <div class="err-msg" id="err-msg"></div>
+    </div>
+
+    <!-- 6/21 #163④: 削除確認＝中央モーダル（ブラウザ confirm 置換）。確定「削除する」赤・キャンセル グレー。 -->
+    <div class="del-modal-ov" id="del-modal">
+        <div class="del-modal">
+            <div class="del-modal__title" data-i18n="cart.confirmRemove"></div>
+            <div class="del-modal__actions">
+                <button type="button" class="del-modal__btn del-modal__btn--cancel" id="del-modal-cancel" data-i18n="cart.cancel"></button>
+                <button type="button" class="del-modal__btn del-modal__btn--ok" id="del-modal-ok" data-i18n="cart.deleteConfirm"></button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -912,12 +942,14 @@
                                     <input type="number" class="qty-box__value" data-act="qty-input" data-idx="${origIndex}" data-min="${minOrder}" value="${c.raw.quantity}" min="${minOrder}" step="1" inputmode="numeric">
                                     <button type="button" data-act="qty-plus" data-idx="${origIndex}">＋</button>
                                 </div>
-                                <button class="gut-chip ${c.raw.gutProcessing ? 'active' : ''}" type="button" data-act="toggle-gut" data-idx="${origIndex}">
-                                    <span class="material-symbols-outlined">${c.raw.gutProcessing ? 'check_circle' : 'radio_button_unchecked'}</span>
-                                    <span>${c.raw.gutProcessing ? i18next.t('cart.gutChipOn') : i18next.t('cart.gutChipOff')}</span>
-                                </button>
+                                <div class="gut-group">
+                                    <button class="gut-chip ${c.raw.gutProcessing ? 'active' : ''}" type="button" data-act="toggle-gut" data-idx="${origIndex}">
+                                        <span class="material-symbols-outlined">${c.raw.gutProcessing ? 'check_circle' : 'radio_button_unchecked'}</span>
+                                        <span>${c.raw.gutProcessing ? i18next.t('cart.gutChipOn') : i18next.t('cart.gutChipOff')}</span>
+                                    </button>
+                                    ${gutHint ? `<div class="gut-hint">${gutHint}</div>` : ''}
+                                </div>
                             </div>
-                            ${gutHint ? `<div class="gut-hint">${gutHint}</div>` : ''}
                             ${minOrder > 1 ? `<div class="min-order-note">${i18next.t('cart.minOrderLabel', { kg: minOrder })}</div>` : ''}
                             <div class="cart-item__subtotal">${fmtKhr(lineTotal)}</div>
                         </div>
@@ -969,6 +1001,21 @@
 
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        // 6/21 #163④: 削除確認＝中央モーダル（ブラウザ confirm 置換）。true=削除する / false=キャンセル を resolve。
+        const delModalEl = document.getElementById('del-modal');
+        let delModalResolve = null;
+        function closeDelModal(result) {
+            delModalEl.classList.remove('show');
+            if (delModalResolve) { delModalResolve(result); delModalResolve = null; }
+        }
+        document.getElementById('del-modal-ok').addEventListener('click', () => closeDelModal(true));
+        document.getElementById('del-modal-cancel').addEventListener('click', () => closeDelModal(false));
+        delModalEl.addEventListener('click', (e) => { if (e.target === delModalEl) closeDelModal(false); });
+        function showDeleteModal() {
+            delModalEl.classList.add('show');
+            return new Promise((resolve) => { delModalResolve = resolve; });
         }
 
         // 5/27 #94: 言語切替時にカレンダーを再初期化
@@ -1058,7 +1105,8 @@
             });
             document.querySelectorAll('[data-act="remove"]').forEach(btn => {
                 btn.addEventListener('click', async () => {
-                    if (!confirm(i18next.t('cart.confirmRemove'))) return;
+                    // 6/21 #163④: ブラウザ confirm → 自前中央モーダル
+                    if (!(await showDeleteModal())) return;
                     const idx = Number(btn.dataset.idx);
                     await removeCartItem(uid, idx);
                 });
@@ -1404,8 +1452,8 @@
                     return `<div class="confirm-group__row"><span>${escapeHtml(shortName)}${size} · ${c.item.quantity}kg ${gutAnno}</span><span class="v">${fmtKhr(c.prices.fishPrice + c.prices.serviceFee)}</span></div>`;
                 }).join('');
 
-                // 6/1 #111: 納品日時を強調表示
-                const delivPickHtml = `<div class="confirm-group__deliv"><span class="material-symbols-outlined">event</span><span>${escapeHtml(fmtDeliveryDate(pick.dateIso))} ${escapeHtml(pick.time || '-')}</span></div>`;
+                // 6/1 #111 → 6/21 #163⑤: 納品日時を強調表示。「納品」ラベル＋日付・時間を分離（🕐付き）。
+                const delivPickHtml = `<div class="confirm-group__deliv"><span class="material-symbols-outlined">event</span><span>${escapeHtml(i18next.t('orders.deliveryLabel'))}</span> <b>${escapeHtml(fmtDeliveryDate(pick.dateIso))}</b> ・ <span class="material-symbols-outlined">schedule</span> <b>${escapeHtml(pick.time || '-')}</b></div>`;
 
                 html += `
                     <div class="confirm-group">

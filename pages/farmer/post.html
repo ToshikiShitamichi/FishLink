@@ -22,8 +22,13 @@
             margin-bottom: 14px;
         }
 
+        /* 6/21 #161⑨: 各セクションを白いカード（角丸・余白・薄い影）で区切る */
         .section-block {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            background: var(--color-surface);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
         }
 
         .caa-card {
@@ -175,10 +180,10 @@
         }
         .price-formula b { color: var(--color-cta); }
 
-        /* 5/31 #105: 配送サマリー（設定済み＝2回目以降） */
+        /* 5/31 #105 → 6/21 #161①: 配送サマリー（設定済み＝2回目以降）。緑→青系（薄青）。緑はGAqP・送料無料専用。 */
         .delivery-summary {
-            background: var(--color-primary-lt);
-            border: 1px solid var(--color-primary);
+            background: var(--color-cta-lt);
+            border: 1px solid #c5dbf2;
             border-radius: var(--radius);
             padding: 14px 16px;
             display: flex;
@@ -187,11 +192,13 @@
             gap: 10px;
         }
         .delivery-summary__main { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
-        .delivery-summary__icon { color: var(--color-primary); flex-shrink: 0; }
+        .delivery-summary__icon { color: var(--color-cta); flex-shrink: 0; }
         .delivery-summary__line { font-size: 13px; font-weight: 700; color: var(--color-text); line-height: 1.5; }
+        /* 6/21 #161①: 「送料無料」の語だけ緑のまま（緑＝送料無料の用法はOK） */
+        .delivery-summary__free { color: #16a34a; }
         .delivery-summary__line2 { font-size: 12px; color: var(--color-text-sub); margin-top: 3px; }
         .delivery-summary__change {
-            font-size: 13px; font-weight: 700; color: var(--color-primary);
+            font-size: 13px; font-weight: 700; color: var(--color-cta);
             flex-shrink: 0; cursor: pointer; background: none; border: none; font-family: inherit; padding: 4px;
         }
 
@@ -296,10 +303,11 @@
         }
         .photo-preview__remove:hover { background: #b91c1c; }
 
+        /* 6/21 #161⑥: 送料無料距離のヘルプ文はニュートラルグレー（緑の使いすぎを解消） */
         .delivery-note {
             font-size: 13px;
-            color: #16a34a;
-            font-weight: 600;
+            color: var(--color-text-sub);
+            font-weight: 400;
             margin-top: 4px;
         }
 
@@ -330,6 +338,49 @@
         .field-error.show { display: block; }
         .input-error,
         .input-error:focus { border-color: var(--color-danger) !important; background: #fff5f5 !important; }
+
+        /* 6/21 #161⑤: 数値入力の上下スピナー（±1刻み）を非表示。数値キーボードで入力（inputmode=numeric）。 */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+
+        /* 6/21 #161③: 必須/任意バッジ（フィールドラベル横） */
+        .badge {
+            font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px;
+            letter-spacing: .3px; margin-left: 6px; display: inline-block; vertical-align: middle; flex-shrink: 0;
+        }
+        .badge.req { background: #FDECEA; color: #E5453F; }
+        .badge.opt { background: #ECEEF0; color: #5A6470; }
+        /* ラベル＋バッジを1行にまとめる（label が display:block のため flex で並べる） */
+        .label-row { display: flex; align-items: center; margin-bottom: 6px; }
+        .label-row label { margin-bottom: 0; }
+        .price-row__label { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .price-row .price-row__label label { flex: 0 1 auto; }
+
+        /* 6/21 #161⑩: 投稿成功の完了画面（中央モーダル・暗転＋白カード・緑✓） */
+        .success-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, .55);
+            z-index: 1300; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .success-overlay.show { display: flex; }
+        .success-card {
+            width: 100%; max-width: 340px; background: #fff;
+            border-radius: 20px; padding: 32px 24px; text-align: center;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+        }
+        .success-card__check {
+            width: 64px; height: 64px; border-radius: 50%; background: #e8f6ee;
+            display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+        }
+        .success-card__check .material-symbols-outlined { font-size: 40px; color: #19A05A; }
+        .success-card__title { font-size: 19px; font-weight: 800; color: var(--color-text); margin-bottom: 8px; }
+        .success-card__sub { font-size: 13px; color: var(--color-text-sub); margin-bottom: 22px; line-height: 1.6; }
+        .success-card__cta {
+            width: 100%; padding: 14px; font-size: 15px; font-weight: 800;
+            border: none; border-radius: 12px; background: var(--color-cta); color: #fff;
+            cursor: pointer; font-family: inherit;
+        }
+        .success-card__cta:hover, .success-card__cta:active { background: var(--color-cta-dk); }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR8k3SC1KSW7awepRV_tmujgs89_6Psl0&loading=async" async defer>
     </script>
@@ -376,7 +427,7 @@
                 <div class="section-title" data-i18n="post.sectionBasic"></div>
 
                 <div class="form-group">
-                    <label for="fish-type" data-i18n="post.fishType"></label>
+                    <div class="label-row"><label for="fish-type" data-i18n="post.fishType"></label><span class="badge req" data-i18n="post.required"></span></div>
                     <select id="fish-type">
                         <option value="" data-i18n="post.fishTypeSelect"></option>
                         <option value="striped_snakehead" data-i18n="fish.striped_snakehead"></option>
@@ -403,20 +454,20 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="fish-size" data-i18n="post.fishSize"></label>
+                    <div class="label-row"><label for="fish-size" data-i18n="post.fishSize"></label><span class="badge req" data-i18n="post.required"></span></div>
                     <input type="text" id="fish-size" data-i18n="[placeholder]post.fishSizePlaceholder">
                     <div class="field-error" id="err-fish-size" data-i18n="post.errorFishSize"></div>
                 </div>
 
                 <div class="form-group">
-                    <label for="fish-stock" data-i18n="post.fishStock"></label>
-                    <input type="number" id="fish-stock" data-i18n="[placeholder]post.fishStockPlaceholder" min="0"
+                    <div class="label-row"><label for="fish-stock" data-i18n="post.fishStock"></label><span class="badge req" data-i18n="post.required"></span></div>
+                    <input type="number" id="fish-stock" data-i18n="[placeholder]post.fishStockPlaceholder" min="0" inputmode="numeric"
                         style="width:100%; padding:12px 14px; border:1.5px solid var(--color-border); border-radius:12px; font-size:16px; font-family:inherit; background:var(--color-surface);">
                     <div class="field-error" id="err-fish-stock" data-i18n="post.errorFishStock"></div>
                 </div>
 
                 <div class="form-group">
-                    <label data-i18n="post.photo"></label>
+                    <div class="label-row"><label data-i18n="post.photo"></label><span class="badge req" data-i18n="post.required"></span></div>
                     <div class="photo-upload" id="photo-area" onclick="document.getElementById('photo-input').click()">
                         <div class="photo-upload__icon"><span class="material-symbols-outlined" style="font-size:32px;">photo_camera</span></div>
                         <div class="photo-upload__text" data-i18n="post.photoTap"></div>
@@ -432,8 +483,8 @@
                 <div class="section-title" data-i18n="post.sectionPrice"></div>
 
                 <div class="price-row">
-                    <label for="price-unit" data-i18n="post.priceUnit"></label>
-                    <input type="number" class="price-input" id="price-unit" data-i18n="[placeholder]post.priceUnitPlaceholder" min="0"
+                    <div class="price-row__label"><label for="price-unit" data-i18n="post.priceUnit"></label><span class="badge req" data-i18n="post.required"></span></div>
+                    <input type="number" class="price-input" id="price-unit" data-i18n="[placeholder]post.priceUnitPlaceholder" min="0" inputmode="numeric"
                         oninput="updateTotalPrice()">
                     <span class="price-unit">KHR/kg</span>
                 </div>
@@ -441,7 +492,7 @@
 
                 <div class="price-row">
                     <label for="gut-price" data-i18n="post.gutPrice"></label>
-                    <input type="number" class="price-input" id="gut-price" value="500" placeholder="500" min="0"
+                    <input type="number" class="price-input" id="gut-price" value="500" placeholder="500" min="0" inputmode="numeric"
                         oninput="updateTotalPrice()">
                     <span class="price-unit">KHR/kg</span>
                 </div>
@@ -483,24 +534,24 @@
                 <!-- 初回（farmerDelivery 未設定）：3入力欄。投稿時に農家の配送設定として保存 -->
                 <div id="delivery-form" style="display:none;">
                     <div class="price-row">
-                        <label for="deliverable-radius" data-i18n="post.deliverableRadius"></label>
-                        <input type="number" class="price-input" id="deliverable-radius" placeholder="30" min="0">
+                        <div class="price-row__label"><label for="deliverable-radius" data-i18n="post.deliverableRadius"></label><span class="badge req" data-i18n="post.required"></span></div>
+                        <input type="number" class="price-input" id="deliverable-radius" data-i18n="[placeholder]post.deliverableRadiusPlaceholder" min="0" inputmode="numeric">
                         <span class="price-unit">km</span>
                     </div>
                     <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliverableRadiusNote"></p>
                     <div class="field-error" id="err-radius" data-i18n="post.errorDeliverableRadius"></div>
 
                     <div class="price-row" style="margin-top:12px;">
-                        <label for="delivery-fee-per-10km" data-i18n="post.deliveryRate"></label>
-                        <input type="number" class="price-input" id="delivery-fee-per-10km" placeholder="5,000" min="0">
+                        <div class="price-row__label"><label for="delivery-fee-per-10km" data-i18n="post.deliveryRate"></label><span class="badge req" data-i18n="post.required"></span></div>
+                        <input type="number" class="price-input" id="delivery-fee-per-10km" data-i18n="[placeholder]post.deliveryRatePlaceholder" min="0" inputmode="numeric">
                         <span class="price-unit">KHR/10km</span>
                     </div>
                     <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliveryRateExample"></p>
                     <div class="field-error" id="err-fee" data-i18n="post.errorDeliveryFee"></div>
 
                     <div class="price-row" style="margin-top:12px;">
-                        <label for="free-delivery-km" data-i18n="post.freeDeliveryDistance"></label>
-                        <input type="number" class="price-input" id="free-delivery-km" placeholder="0" min="0">
+                        <div class="price-row__label"><label for="free-delivery-km" data-i18n="post.freeDeliveryDistance"></label><span class="badge opt" data-i18n="post.optional"></span></div>
+                        <input type="number" class="price-input" id="free-delivery-km" data-i18n="[placeholder]post.freeDeliveryDistancePlaceholder" min="0" inputmode="numeric">
                         <span class="price-unit">km</span>
                     </div>
                     <p class="delivery-note" data-i18n="post.freeDeliveryNote"></p>
@@ -532,7 +583,7 @@
 
                 <div class="price-row">
                     <label for="min-order" data-i18n="post.minOrder"></label>
-                    <input type="number" class="price-input" id="min-order" placeholder="5" min="0">
+                    <input type="number" class="price-input" id="min-order" data-i18n="[placeholder]post.minOrderPlaceholder" min="0" inputmode="numeric">
                     <span class="price-unit">kg</span>
                 </div>
             </div>
@@ -585,21 +636,21 @@
 
             <div class="price-row">
                 <label for="sheet-radius" data-i18n="post.deliverableRadius"></label>
-                <input type="number" class="price-input" id="sheet-radius" min="0">
+                <input type="number" class="price-input" id="sheet-radius" min="0" inputmode="numeric">
                 <span class="price-unit">km</span>
             </div>
             <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliverableRadiusNote"></p>
 
             <div class="price-row" style="margin-top:12px;">
                 <label for="sheet-fee" data-i18n="post.deliveryRate"></label>
-                <input type="number" class="price-input" id="sheet-fee" min="0">
+                <input type="number" class="price-input" id="sheet-fee" min="0" inputmode="numeric">
                 <span class="price-unit">KHR/10km</span>
             </div>
             <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliveryRateExample"></p>
 
             <div class="price-row" style="margin-top:12px;">
                 <label for="sheet-free" data-i18n="post.freeDeliveryDistance"></label>
-                <input type="number" class="price-input" id="sheet-free" min="0">
+                <input type="number" class="price-input" id="sheet-free" min="0" inputmode="numeric">
                 <span class="price-unit">km</span>
             </div>
             <p class="delivery-note" data-i18n="post.freeDeliveryNote"></p>
@@ -609,6 +660,16 @@
                 <button type="button" class="sheet-btn cancel" id="sheet-cancel" data-i18n="post.deliverySheetCancel"></button>
                 <button type="button" class="sheet-btn save" id="sheet-save" data-i18n="post.deliverySheetSave"></button>
             </div>
+        </div>
+    </div>
+
+    <!-- 6/21 #161⑩: 投稿成功の完了画面（新規投稿のみ・中央モーダル・暗転＋緑✓）。自動で閉じずタップで投稿一覧へ。 -->
+    <div class="success-overlay" id="success-overlay">
+        <div class="success-card">
+            <div class="success-card__check"><span class="material-symbols-outlined">check_circle</span></div>
+            <div class="success-card__title" data-i18n="post.successTitle"></div>
+            <div class="success-card__sub" data-i18n="post.successSub"></div>
+            <button type="button" class="success-card__cta" id="success-cta" data-i18n="post.successCta"></button>
         </div>
     </div>
 
@@ -975,9 +1036,11 @@
             const r = farmerDelivery.deliverableRadiusKm;
             const free = farmerDelivery.freeDeliveryKm;
             const fee = farmerDelivery.deliveryFeePer10km;
-            let line = i18next.t('post.deliverySummaryRadius', { km: r });
-            if (free > 0) line += ' ・ ' + i18next.t('post.deliverySummaryFree', { km: free });
-            document.getElementById('ds-line').textContent = line;
+            // 6/21 #161①: ボックスは青系だが「◯km以内は送料無料」の語は緑のまま（緑＝送料無料の用法）。
+            //   i18n 値は静的（数値補間のみ）なので innerHTML 安全。
+            let html = i18next.t('post.deliverySummaryRadius', { km: r });
+            if (free > 0) html += ' ・ <span class="delivery-summary__free">' + i18next.t('post.deliverySummaryFree', { km: free }) + '</span>';
+            document.getElementById('ds-line').innerHTML = html;
             document.getElementById('ds-line2').textContent =
                 i18next.t('post.deliverySummaryFee', { fee: Number(fee || 0).toLocaleString() });
         }
@@ -1174,6 +1237,8 @@
         const submitBtn = document.getElementById('submit-btn');
 
         submitBtn.addEventListener('click', async () => {
+            // 6/21 #161⑩-2: 押した瞬間にボタンを無効化＝二重投稿防止（早期 return では戻す／成功は完了画面まで戻さない）。
+            submitBtn.disabled = true;
             errorMsg.classList.remove('show');
 
             // 送金先情報が未登録なら中断（UIでもdisabledだが念のため）
@@ -1183,6 +1248,7 @@
             if (!hasAccountNameSafe || !hasQrSafe) {
                 errorMsg.textContent = i18next.t('post.bankRequiredDesc');
                 errorMsg.classList.add('show');
+                submitBtn.disabled = false;
                 return;
             }
 
@@ -1240,6 +1306,7 @@
                     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     if (typeof target.focus === 'function') target.focus({ preventScroll: true });
                 }
+                submitBtn.disabled = false;  // 6/21 #161⑩-2: バリデーションエラーで再入力できるよう戻す
                 return;
             }
 
@@ -1247,7 +1314,7 @@
                 pendingFarmerDelivery = { deliverableRadiusKm: deliveryRadius, deliveryFeePer10km: deliveryFee, freeDeliveryKm: deliveryFree || 0 };
             }
 
-            submitBtn.disabled = true;
+            // 6/21 #161⑩-2: ボタンは押下時点で無効化済み（二重投稿防止）。ここでは loading のみ。
             loading.classList.add('show');
 
             try {
@@ -1326,10 +1393,18 @@
                     });
                 }
 
-                // 成功 → ダッシュボードへ
-                // 5/23 #78: location.replace で履歴を置換。戻るボタンで投稿フォームに
-                //   戻れないようにし、二重投稿のリスクを防ぐ（Android で誤操作多発）。
-                window.location.replace('/pages/farmer/dashboard.html');
+                // 成功
+                if (isEditMode) {
+                    // 編集モード：完了画面は出さず軽い確認のみ＝ダッシュボードへ直行。
+                    // 5/23 #78: location.replace で履歴を置換（戻るで投稿フォームに戻らせない＝二重投稿防止）。
+                    window.location.replace('/pages/farmer/dashboard.html');
+                } else {
+                    // 6/21 #161⑩: 新規投稿は完了画面（中央モーダル）を表示。自動で閉じず、タップで投稿一覧へ。
+                    //   spinner を消して overlay を前面に。submitBtn は overlay 背面で押せないため finally の再有効化は無害。
+                    loading.classList.remove('show');
+                    document.getElementById('success-overlay').classList.add('show');
+                    return;
+                }
 
             } catch (err) {
                 console.error('post submit failed:', err);
@@ -1341,6 +1416,11 @@
                 submitBtn.disabled = false;
                 loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
+        });
+
+        // 6/21 #161⑩: 完了画面「投稿一覧を見る」→ 投稿一覧（replace で履歴を汚さない＝戻るで投稿フォームに戻らない）。
+        document.getElementById('success-cta')?.addEventListener('click', () => {
+            window.location.replace('/pages/farmer/dashboard.html');
         });
     </script>
 </body>

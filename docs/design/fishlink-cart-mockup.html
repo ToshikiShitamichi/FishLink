@@ -98,15 +98,18 @@
   .amt.promo .pv { color: #B36A00; font-weight: 800; }
   .sched-line { font-size: 11px; color: #5A6470; padding-top: 8px; border-top: 1px dashed #EEF1F4; margin-top: 8px; }
 
-  /* クーポン */
+  /* クーポン（ウォレット式1タップ・コード入力なし） */
   .coupon { background: #FFF; border: 1px solid #EEF1F4; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
   .coupon .cp-ttl { font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-  .coupon .cp-row { display: flex; gap: 8px; }
-  .coupon .cp-input { flex: 1; border: 1px solid #DDE3E9; border-radius: 9px; padding: 10px 12px; font-size: 13px; font-family: inherit; }
-  .coupon .cp-btn { border: none; border-radius: 9px; padding: 0 16px; font-size: 13px; font-weight: 800; background: #0B5FB0; color: #FFF; cursor: pointer; }
-  .coupon .cp-btn.rm { background: #ECEEF0; color: #5A6470; }
-  .coupon .cp-ok { font-size: 12px; color: #2E7D32; font-weight: 700; margin-top: 8px; }
-  .coupon .cp-help { font-size: 11px; color: #9AA3B0; margin-top: 6px; }
+  /* ウォレットのクーポン1枚（タップで適用/外す） */
+  .cou-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #F3D998; background: #FFF7E6; border-radius: 11px; padding: 11px 13px; cursor: pointer; }
+  .cou-item .ca-t { font-size: 14px; font-weight: 800; color: #8A5A00; }
+  .cou-item .ca-s { font-size: 11px; color: #B08A4A; margin-top: 2px; }
+  .cou-item .ca-right { text-align: right; }
+  .cou-item .ca-on { font-size: 12px; font-weight: 800; color: #2E7D32; }
+  .cou-item .ca-rm { font-size: 11px; color: #5A6470; margin-top: 3px; text-decoration: underline; }
+  .cou-item .ca-apply { font-size: 13px; font-weight: 800; color: #0B5FB0; }
+  .coupon .cp-help { font-size: 11px; color: #9AA3B0; margin-top: 8px; }
 
   /* クーポン併用不可の注意 */
   .warn-note { display: flex; gap: 8px; align-items: flex-start; background: #FFF7E6; border: 1px solid #F3D998; border-radius: 10px; padding: 9px 12px; font-size: 12px; color: #B36A00; font-weight: 600; line-height: 1.5; margin-bottom: 8px; }
@@ -120,6 +123,15 @@
   .cta { width: 100%; background: #0B5FB0; color: #FFF; border: none; border-radius: 12px; padding: 15px; font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit; }
   .cta:active { background: #094C8E; }
   .cta.secondary { background: #FFF; color: #0B5FB0; border: 1.5px solid #0B5FB0; }
+
+  /* 自前 削除確認モーダル（中央・confirm()標準ダイアログ廃止） */
+  .modal-overlay { position: absolute; inset: 0; background: rgba(20,28,38,0.45); display: flex; align-items: center; justify-content: center; padding: 0 24px; z-index: 10; }
+  .modal { width: 100%; max-width: 320px; background: #FFF; border-radius: 16px; padding: 22px 20px 16px; box-shadow: 0 18px 48px rgba(0,0,0,0.28); text-align: center; }
+  .modal .m-title { font-size: 16px; font-weight: 700; color: #1A1A1A; margin-bottom: 18px; line-height: 1.5; }
+  .modal .m-actions { display: flex; gap: 10px; }
+  .modal .m-btn { flex: 1; padding: 12px 0; border-radius: 10px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; font-family: inherit; }
+  .modal .m-cancel { background: #EEF1F4; color: #4A4A4A; }
+  .modal .m-delete { background: #E5453F; color: #FFF; }
 
   /* 空カート */
   .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 14px; padding: 0 30px; text-align: center; }
@@ -146,6 +158,8 @@
   <p>反映：#11 内臓処理＝<b>「あり ✓／外すと −525」</b>（"+525加算風"を廃止・トグル直下にヒント・削除は右上に分離・価格に（内臓処理あり/なし）併記）・トグルは<b>中立グレー</b>／#9 CTAは<b>青</b>（緑廃止）／配送料に<b>「配達1回分・量で変わりません」</b>注記＋無料圏は<b>「送料無料」</b>緑／明細ラベルは<b>「魚代」</b>（"サービス料込み"は伏せる）／割引は<b>「魚代から{%}」</b>。</p>
   <p>ガード：最低注文量＝ステッパー下限固定＋明示／在庫上限／数量は<b>整数kg</b>・直接入力可／クーポンは<b>キャンペーンと併用不可</b>（クーポン優先・解除可）／注文確認は<b>内臓処理あり・なしを全項目明示</b>。配送料は<b>農家ごと1回の固定額</b>（量・品数で変わらない）。</p>
   <p>配送料節約の提案は<b>いったん非表示</b>（誤誘導回避・後日ネット計算で復活）。</p>
+  <p>🗑削除の確認は<b>自前モーダル（中央）</b>＝ブラウザ標準confirm廃止。確定ボタン「<b>削除する</b>」は<b>赤/danger</b>、キャンセルはニュートラル（投稿一覧の削除・確認系と統一）。</p>
+  <p>クーポンは<b>ウォレットから1タップ適用</b>（コード手入力は撤廃・referral決定）。<b>使えるクーポンを持っている時だけ「使えるクーポン」欄が出る</b>／タップで適用・「外す」で解除／<b>キャンペーン割引とは併用不可</b>（クーポン優先・お得な方）。</p>
 </div>
 
 <div class="stage">
@@ -224,10 +238,10 @@
           </div>
 
           <div class="amt"><span>魚代</span><span>62,475 KHR</span></div>
-          <div class="amt promo"><span class="pl">🏷 キャンペーン割引（魚代から2.5%）</span><span class="pv">−1,488 KHR</span></div>
+          <div class="amt promo"><span class="pl">🏷 キャンペーン割引（魚代から2.5%）</span><span class="pv">−1,562 KHR</span></div>
           <div class="amt"><span>配送料</span><span>12,400 KHR</span></div>
           <div class="amt-note">配達1回分の固定額です。注文量を増やしても変わりません。</div>
-          <div class="amt sub"><span>この農家への小計</span><span>73,387 KHR</span></div>
+          <div class="amt sub"><span>この農家への小計</span><span>73,313 KHR</span></div>
         </div>
 
         <!-- 農家B：送料無料・1品 -->
@@ -264,16 +278,27 @@
           </div>
 
           <div class="amt"><span>魚代</span><span>31,500 KHR</span></div>
-          <div class="amt promo"><span class="pl">🏷 キャンペーン割引（魚代から2.5%）</span><span class="pv">−750 KHR</span></div>
+          <div class="amt promo"><span class="pl">🏷 キャンペーン割引（魚代から2.5%）</span><span class="pv">−788 KHR</span></div>
           <div class="amt"><span>配送料</span><span class="ship-free">送料無料</span></div>
           <div class="amt-note">3.0km は送料無料圏内です。</div>
-          <div class="amt sub"><span>この農家への小計</span><span>30,750 KHR</span></div>
+          <div class="amt sub"><span>この農家への小計</span><span>30,712 KHR</span></div>
         </div>
 
       </div>
       <div class="c-footer">
-        <div class="ft-total"><span class="lbl">合計</span><span class="val">104,137 KHR</span></div>
+        <div class="ft-total"><span class="lbl">合計</span><span class="val">104,025 KHR</span></div>
         <button class="cta">確認画面へ</button>
+      </div>
+
+      <!-- 自前 削除確認モーダル（🗑削除タップ時・中央・ブラウザ標準confirm廃止） -->
+      <div class="modal-overlay">
+        <div class="modal">
+          <div class="m-title">この商品をカートから削除しますか？</div>
+          <div class="m-actions">
+            <button class="m-btn m-cancel">キャンセル</button>
+            <button class="m-btn m-delete">削除する</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -332,15 +357,20 @@
           <div class="deliv-confirm">📅 納品 <b>6/2（火）</b> ・ 🕐 <b>7:00–8:00</b></div>
         </div>
 
-        <!-- クーポン（適用済） -->
+        <!-- クーポン（ウォレットから1タップ適用・コード入力なし） -->
         <div class="coupon">
-          <div class="cp-ttl">🎟 クーポンコード（任意）</div>
-          <div class="cp-row">
-            <input class="cp-input" value="vmYP64RH">
-            <button class="cp-btn rm">解除</button>
+          <div class="cp-ttl">🎟 使えるクーポン</div>
+          <div class="cou-item">
+            <div>
+              <div class="ca-t">2,500 KHR 割引</div>
+              <div class="ca-s">紹介クーポン ・ 〜2026/6/26</div>
+            </div>
+            <div class="ca-right">
+              <div class="ca-on">✓ 適用中</div>
+              <div class="ca-rm">外す</div>
+            </div>
           </div>
-          <div class="cp-ok">クーポンを適用しました（−2,500 KHR）</div>
-          <div class="cp-help">マイページでお持ちのクーポンコードを確認できます。</div>
+          <div class="cp-help">※ お持ちのクーポンをタップで適用（コード入力は不要）。使えるクーポンが無いときはこの欄は出ません。</div>
         </div>
 
         <div class="warn-note">

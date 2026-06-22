@@ -375,7 +375,12 @@ self.addEventListener('notificationclick', (event) => {
 //   Q&A 農家ビュー権限ゲート（質問コンポーザー非表示・空状態文言・取り消し確認 中央モーダル）／
 //   農家一覧（もっと見る[初期8件+8]・魚種チップ 12種＋その他）／確認系ダイアログを横断で中央モーダルに統一（#160）。
 // 6/20 (v133): 買い手 注文状況＝辞退の「同じ魚を再注文」を、以前の出品が今も購入可能（販売中・在庫あり・未削除）なら商品詳細へ直行／無ければ魚一覧[同魚種・別農家]へフォールバック。
-const CACHE_NAME = 'fishlink-v133';
+// 6/22 (v134): #161-163 実装再レビュー修正（hosting-only）＝
+//   #161 出品フォーム（post.html）：配送サマリー緑→青系・魚単価placeholder汎用化・必須/任意バッジ・最低注文量と初回配送3欄のプリフィル撤去＋placeholder・数値スピナー非表示＋inputmode=numeric・送料無料ヘルプ グレー＋おすすめ文言・セクション白カード化・投稿成功の完了画面（中央モーダル・緑✓）＋送信中ボタン無効化。
+//   #162 商品詳細（order.html）：農家行アバター（avatarUrl・未設定は人型）。Q&A teaser件数は #153① で roots.length 済（確認のみ）。
+//   #163 カート（cart.html / order-utils.js）：キャンペーン割引の基準を買い手「魚代」（fishPrice+serviceFee）に（農家側 farmerCampaignDiscount は不変）・内臓処理ヒントをトグル直下にグループ化・削除確認 中央モーダル・注文確認の納品日に「納品」ラベル＋🕐。トグル中立グレー/クーポンウォレットは既存（確認のみ）。
+//   locales 3言語にキー追加・変更（post.required/optional placeholders/success*・cart.deleteConfirm 等）。
+const CACHE_NAME = 'fishlink-v134';
 
 const PRECACHE_URLS = [
     '/',

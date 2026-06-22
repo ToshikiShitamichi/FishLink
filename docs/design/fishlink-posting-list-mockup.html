@@ -279,6 +279,7 @@
   /* ===== ⋮ メニュー（削除の入口） ===== */
   .kebab-menu {
     position: absolute;
+    display: none;            /* 既定で隠す（確認時は block に戻す） */
     right: 16px; bottom: 70px;
     background: #FFF;
     border-radius: 12px;
@@ -299,12 +300,23 @@
   }
   .kebab-menu button:active { background: #FDECEC; }
 
+  /* 投稿成功 完了画面（投稿成功→投稿一覧に着地時に中央表示・タップで一覧へ） */
+  .success-overlay { position: absolute; inset: 0; background: rgba(20,28,38,0.45); display: flex; align-items: center; justify-content: center; padding: 0 24px; z-index: 25; }
+  .success-card { width: 100%; max-width: 250px; background: #FFF; border-radius: 18px; padding: 28px 22px 20px; text-align: center; box-shadow: 0 18px 48px rgba(0,0,0,0.28); }
+  .success-card .s-check { width: 78px; height: 78px; border-radius: 50%; background: #19A05A; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .success-card .s-check span { color: #FFF; font-size: 42px; font-weight: 800; line-height: 1; }
+  .success-card .s-title { font-size: 19px; font-weight: 700; color: #1A1A1A; margin-bottom: 6px; }
+  .success-card .s-sub { font-size: 13px; color: #7A7A7A; margin-bottom: 20px; }
+  .success-card .s-btn { width: 100%; background: #0B5FB0; color: #FFF; border: none; border-radius: 10px; padding: 13px 0; font-size: 15px; font-weight: 700; cursor: pointer; }
+
   /* ===== 自前 削除確認モーダル ===== */
+  /* 既定は非表示（投稿一覧の着地＝トースト確認をクリーンに見せるため）。
+     表示確認時は .modal-overlay / .kebab-menu の display を flex に戻す */
   .modal-overlay {
     position: absolute;
     inset: 0;
     background: rgba(20,28,38,0.45);
-    display: flex;
+    display: none;            /* 既定で隠す（確認時は flex に戻す） */
     align-items: center;
     justify-content: center;
     padding: 0 24px;
@@ -345,6 +357,7 @@
   <p>停止中カードは<b>グレーアウト</b>。アクションは <b>⏸出品停止(赤)</b> / <b>▶再開(青)</b></p>
   <p>⋮メニュー → <b>削除</b> は<b>自前モーダル</b>（ブラウザ標準ダイアログ廃止）。確定ボタン「削除する」は<b>赤/danger</b>、キャンセルはニュートラル</p>
   <p><b>未回答バッジ</b>＝「💬質問」ボタンに<b>赤い件数</b>（例 ②）。0は非表示。<b>要返信</b>（未返信の質問）＝返信で消える（開くだけでは残す＝放置防止）／<b>未読フォロー</b>（回答後の「ありがとう」等）＝開いたら消える（幽霊バッジ防止）。スレッドの状態で消え方を分ける</p>
+  <p><b>投稿成功＝完了画面（中央）</b>：投稿成功→投稿一覧に着地時に<b>大きな✓＋「投稿しました」</b>を中央表示。<b>「投稿一覧を見る」を押して進む</b>（隅で消えるトーストでなく、能動確認で完了感／見逃しゼロ）</p>
 </div>
 
 <div class="phone">
@@ -514,6 +527,16 @@
     <div class="nav-item">
       <div class="icon">🚚</div>
       注文確認
+    </div>
+  </div>
+
+  <!-- 投稿成功 完了画面（投稿成功→投稿一覧に着地時に中央表示・タップで一覧へ） -->
+  <div class="success-overlay">
+    <div class="success-card">
+      <div class="s-check"><span>✓</span></div>
+      <div class="s-title">投稿しました</div>
+      <div class="s-sub">投稿一覧に表示されます</div>
+      <button class="s-btn">投稿一覧を見る</button>
     </div>
   </div>
 

@@ -49,7 +49,11 @@ export function calcItemPrices({
     const fishPrice = unitPrice * quantity;
 
     const serviceFee = Math.round(fishPrice * (serviceRate || 0));
-    const campaignDiscount = campaignActive ? Math.round(fishPrice * (campaignDiscountRate || 0)) : 0;
+    // 6/21 #163①: 買い手のキャンペーン割引は「魚代」（＝手数料込みの表示価格 fishPrice + serviceFee）ベース。
+    //   旧実装は fishPrice（手数料前の農家価格）ベースで、買い手画面の「魚代から2.5%」文言と検算が合わなかった
+    //   （例 魚代31,500×2.5%＝788 にすべきところ 30,000×2.5%＝750 になっていた）。
+    //   ⚠️ 農家側の farmerCampaignDiscount（手数料の実削減）は fishPrice ベースのまま＝別物なので触らない。
+    const campaignDiscount = campaignActive ? Math.round((fishPrice + serviceFee) * (campaignDiscountRate || 0)) : 0;
 
     const farmerCommissionGross = Math.round(fishPrice * (farmerRate || 0));
     const farmerCampaignDiscount = farmerCampaignActive
