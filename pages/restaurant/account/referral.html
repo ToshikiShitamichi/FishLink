@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
+    <title>FISHLINK</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        /* 6/22 #164: 紹介専用ページ（マイページ 1行メニューの遷移先）。
+           コード/コピー/シェアをここに集約。クーポンの詳細状態は別途（束B）。 */
+        .sub-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
+        .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
+        .ref-card {
+            background: var(--color-cta-lt);
+            border: 1px solid #cfe0ee;
+            border-radius: 14px;
+            padding: 16px;
+        }
+        .ref-card__desc { font-size: 12.5px; color: #3e6a98; line-height: 1.6; margin-bottom: 12px; }
+        .ref-card__label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 6px; }
+        .ref-card__code {
+            background: #fff;
+            border: 1px solid #d5e6f8;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #0b1b33;
+            margin-bottom: 12px;
+            user-select: all;
+        }
+        .ref-card__actions { display: flex; gap: 8px; }
+        .ref-card__btn {
+            flex: 1;
+            background: #fff;
+            border: 1px solid var(--color-cta);
+            color: var(--color-cta);
+            border-radius: 999px;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .ref-card__btn .material-symbols-outlined { font-size: 17px; }
+        .ref-card__btn--primary { background: var(--color-cta); color: #fff; border-color: var(--color-cta); }
+    </style>
+</head>
+
+<body>
+
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="page">
+
+        <div class="page-header" style="align-items:center;">
+            <a href="/pages/restaurant/account.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FISHLINK" class="brand-logo"></a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
+            </select>
+        </div>
+
+        <div class="sub-page__title" data-i18n="account.referralBuyer"></div>
+
+        <div class="sub-page">
+            <div class="ref-card">
+                <div class="ref-card__desc" data-i18n="referral.cardDescRestaurant"></div>
+                <div class="ref-card__label" data-i18n="referral.cardTitle"></div>
+                <div class="ref-card__code" id="referral-code">--------</div>
+                <div class="ref-card__actions">
+                    <button type="button" id="referral-copy" class="ref-card__btn">
+                        <span class="material-symbols-outlined">content_copy</span>
+                        <span data-i18n="referral.copy"></span>
+                    </button>
+                    <button type="button" id="referral-share" class="ref-card__btn ref-card__btn--primary">
+                        <span class="material-symbols-outlined">share</span>
+                        <span data-i18n="referral.share"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { ensureUserReferralCode } from '/js/referral.js';
+        import { showToast } from '/js/toast.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        let referralCode = '--------';
+
+        async function showReferralCode() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            try {
+                referralCode = await ensureUserReferralCode(uid, window.currentUserData);
+            } catch (e) {
+                console.warn('ensureUserReferralCode failed:', e);
+                return;
+            }
+            document.getElementById('referral-code').textContent = referralCode;
+        }
+
+        async function copyText(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch (e) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (_) { /* ignore */ }
+                ta.remove();
+            }
+        }
+
+        document.getElementById('referral-copy').addEventListener('click', async () => {
+            await copyText(referralCode);
+            showToast(i18next.t('referral.copied'));
+        });
+
+        document.getElementById('referral-share').addEventListener('click', async () => {
+            const shareText = i18next.t('referral.shareText', { code: referralCode });
+            if (navigator.share) {
+                try { await navigator.share({ text: shareText }); } catch (e) { /* cancel */ }
+            } else {
+                await copyText(shareText);
+                showToast(i18next.t('referral.copied'));
+            }
+        });
+
+        waitForUserData(() => {
+            showReferralCode();
+            loading.classList.remove('show');
+            document.body.classList.add('app-ready');
+        });
+    </script>
+</body>
+
+</html>

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
-    <title>FishLink</title>
+    <title>FISHLINK</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -19,7 +19,19 @@
         .acc-menu-head { padding: 16px 0; }
         .acc-menu-head__sub { font-size: 12px; color: var(--color-text-sub); }
         .acc-menu-head__name { font-size: 22px; font-weight: 700; margin-top: 4px; }
-        .acc-menu-head__id { font-size: 13px; color: var(--color-text-sub); margin-top: 2px; }
+        /* 6/22 #164: マイページ top にアバター表示（公開ページで設定した avatarUrl・表示のみ・未設定はデフォルト） */
+        .acc-profile { display: flex; align-items: center; gap: 14px; padding: 16px 0; }
+        .acc-avatar {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: #e3ecf6; border: 1px solid #d7e1ed;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; flex-shrink: 0; color: var(--color-text-sub);
+        }
+        .acc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .acc-avatar .material-symbols-outlined { font-size: 32px; }
+        /* 6/22 #164: 紹介行の動的サブ文言＝青アクセント／返金先「未登録」＝中立グレー */
+        .acc-menu-item__meta--accent { color: var(--color-cta); font-weight: 600; }
+        .acc-menu-item__meta--muted { color: var(--color-text-sub); }
         .acc-menu-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
         .acc-menu-item {
             display: flex; align-items: center; gap: 12px;
@@ -41,10 +53,11 @@
         .acc-menu-item__title { font-size: 15px; font-weight: 700; }
         .acc-menu-item__meta { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
         .acc-menu-item__chev { color: #cbd5e1; flex-shrink: 0; }
+        /* 6/22 #164: ログアウトは破壊的でない＝中立グレー（赤は削除など danger 専用） */
         .logout-btn-full {
             width: 100%;
-            background: #fef2f2; color: #b91c1c;
-            border: 1px solid #fecaca;
+            background: var(--color-surface); color: var(--color-text-sub);
+            border: 1px solid var(--color-border);
             border-radius: 14px;
             padding: 12px;
             font-size: 14px; font-weight: 700;
@@ -54,110 +67,8 @@
         }
         .nav-badge { position: absolute; top: 6px; right: 50%; transform: translateX(18px); background: #ef4444; width: 10px; height: 10px; border-radius: 50%; }
 
-        /* 5/23 #82 Phase 1 → 6/7 #134: 紹介コードカード（ソフトブルー＝GAqP緑と区別） */
-        .referral-card {
-            background: var(--color-cta-lt);
-            border: 1px solid #cfe0ee;
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 14px;
-        }
-        .referral-card__head {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 13px; font-weight: 700; color: var(--color-cta);
-            margin-bottom: 4px;
-        }
-        .referral-card__head .material-symbols-outlined { font-size: 18px; }
-        .referral-card__desc {
-            font-size: 11px; color: #3e6a98;
-            line-height: 1.4;
-            margin-bottom: 10px;
-        }
-        .referral-card__code {
-            background: #fff;
-            border: 1px solid #d5e6f8;
-            border-radius: 10px;
-            padding: 12px;
-            text-align: center;
-            font-family: monospace;
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: #0b1b33;
-            margin-bottom: 10px;
-            user-select: all;
-        }
-        .referral-card__actions { display: flex; gap: 8px; }
-        .referral-card__btn {
-            flex: 1;
-            background: #fff;
-            border: 1px solid var(--color-cta);
-            color: var(--color-cta);
-            border-radius: 999px;
-            padding: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: inherit;
-            display: flex; align-items: center; justify-content: center; gap: 4px;
-        }
-        .referral-card__btn .material-symbols-outlined { font-size: 16px; }
-        .referral-card__btn--primary {
-            background: var(--color-cta);
-            color: #fff;
-            border-color: var(--color-cta);
-        }
-        .referral-card__phase-note {
-            font-size: 10px; color: #7c97b5;
-            text-align: center;
-            margin-top: 8px;
-            font-style: italic;
-        }
-
-        /* 5/24 #82 Phase 2 Chunk 4: 使えるクーポン一覧カード */
-        .coupons-card {
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 14px;
-        }
-        .coupons-card__head {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 13px; font-weight: 700; color: var(--color-text);
-            margin-bottom: 10px;
-        }
-        .coupons-card__head .material-symbols-outlined {
-            font-size: 18px; color: #b36a00;
-        }
-        .coupons-card__empty {
-            font-size: 12px; color: var(--color-text-sub);
-            text-align: center;
-            padding: 14px 4px;
-            line-height: 1.5;
-        }
-        .coupon-item {
-            background: linear-gradient(135deg, #fff7ed, #fed7aa);
-            border: 1px solid #fdba74;
-            border-radius: 12px;
-            padding: 10px 12px;
-            margin-bottom: 8px;
-        }
-        .coupon-item:last-child { margin-bottom: 0; }
-        .coupon-item__amount {
-            font-size: 18px; font-weight: 700; color: #9a3412;
-        }
-        .coupon-item__meta {
-            font-size: 11px; color: #7c2d12; margin-top: 2px;
-        }
-        /* 6/7 #134: コード入力撤廃（カートでウォレットから1タップ適用）。コピー不要のため
-           プロフィールではコードを出さず「カートで使えます」の利用導線だけ示す。 */
-        .coupon-item__use {
-            display: flex; align-items: center; gap: 4px;
-            margin-top: 8px;
-            font-size: 11px; font-weight: 700; color: #b36a00;
-        }
-        .coupon-item__use .material-symbols-outlined { font-size: 14px; }
+        /* 6/22 #164: 紹介コードカード／使えるクーポン一覧カードは 1行メニュー化で廃止（CSS も削除）。
+           コード/コピー/シェアは紹介専用ページ（account/referral.html）へ移動。 */
     </style>
 </head>
 
@@ -201,44 +112,16 @@
 
         <div class="acc-menu-page">
 
-            <div class="acc-menu-head">
-                <div class="acc-menu-head__sub" data-i18n="role.restaurant"></div>
-                <div class="acc-menu-head__name" id="display-name">-</div>
-                <div class="acc-menu-head__id" id="login-id">-</div>
-            </div>
-
-            <!-- 5/23 #82 Phase 1: 紹介コードカード -->
-            <div class="referral-card">
-                <div class="referral-card__head">
-                    <span class="material-symbols-outlined">card_giftcard</span>
-                    <span data-i18n="referral.cardTitle"></span>
-                </div>
-                <div class="referral-card__desc" data-i18n="referral.cardDescRestaurant"></div>
-                <div class="referral-card__code" id="referral-code">--------</div>
-                <div class="referral-card__actions">
-                    <button type="button" id="referral-copy" class="referral-card__btn">
-                        <span class="material-symbols-outlined">content_copy</span>
-                        <span data-i18n="referral.copy"></span>
-                    </button>
-                    <button type="button" id="referral-share" class="referral-card__btn referral-card__btn--primary">
-                        <span class="material-symbols-outlined">share</span>
-                        <span data-i18n="referral.share"></span>
-                    </button>
-                </div>
-                <div class="referral-card__phase-note" data-i18n="referral.phase1Note"></div>
-            </div>
-
-            <!-- 5/24 #82 Phase 2 Chunk 4: 使えるクーポン一覧 -->
-            <div class="coupons-card">
-                <div class="coupons-card__head">
-                    <span class="material-symbols-outlined">redeem</span>
-                    <span data-i18n="myCoupons.title"></span>
-                </div>
-                <div id="coupons-container">
-                    <div class="coupons-card__empty" data-i18n="myCoupons.loading"></div>
+            <!-- 6/22 #164: プロフィールヘッダー（アバター＋役割＋表示名・@ハンドルは出さない） -->
+            <div class="acc-profile">
+                <div class="acc-avatar" id="avatar"><span class="material-symbols-outlined">person</span></div>
+                <div>
+                    <div class="acc-menu-head__sub" data-i18n="role.restaurant"></div>
+                    <div class="acc-menu-head__name" id="display-name">-</div>
                 </div>
             </div>
 
+            <!-- 6/22 #164: 並び順＝基本情報→レストラン情報→返金先→購入・取引→紹介→運営メッセージ -->
             <div class="acc-menu-list">
                 <a class="acc-menu-item" href="/pages/restaurant/account/basic.html">
                     <div class="acc-menu-item__icon"><span class="material-symbols-outlined">person</span></div>
@@ -249,11 +132,25 @@
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
 
-                <a class="acc-menu-item" href="/pages/restaurant/account/payment.html">
-                    <div class="acc-menu-item__icon" style="background:#fef3c7; color:#92400e;"><span class="material-symbols-outlined">account_balance_wallet</span></div>
+                <!-- 6/11 #137 §10: 「レストラン情報」はプロフィール編集画面へ。公開プレビューは
+                     編集画面内の「公開ページをプレビュー」リンクから（公開ページに編集導線は置かない）。
+                     6/22 #164: 基本情報のすぐ下＝公開ページ。サブは「農家に公開される〜」。 -->
+                <a class="acc-menu-item" href="/pages/restaurant/account/profile.html">
+                    <div class="acc-menu-item__icon" style="background:#ede9fe; color:#5b21b6;"><span class="material-symbols-outlined">storefront</span></div>
                     <div class="acc-menu-item__body">
-                        <div class="acc-menu-item__title" data-i18n="account.payment"></div>
-                        <div class="acc-menu-item__meta" data-i18n="account.menuHintPayment"></div>
+                        <div class="acc-menu-item__title" data-i18n="profile.restaurantInfoTitle"></div>
+                        <div class="acc-menu-item__meta" data-i18n="account.menuHintProfileRestaurant"></div>
+                    </div>
+                    <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
+                </a>
+
+                <!-- 6/22 #164/#167: 「支払い情報」→「返金先」（買い手は KHQR 払いなので口座は返金用）。
+                     サブは未登録＝中立グレー「未登録」／登録済＝説明文（JS で出し分け）。 -->
+                <a class="acc-menu-item" href="/pages/restaurant/account/payment.html">
+                    <div class="acc-menu-item__icon" style="background:#eef2f6; color:#475569;"><span class="material-symbols-outlined">account_balance_wallet</span></div>
+                    <div class="acc-menu-item__body">
+                        <div class="acc-menu-item__title" data-i18n="account.refund"></div>
+                        <div class="acc-menu-item__meta" id="refund-sub" data-i18n="account.menuHintRefund"></div>
                     </div>
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
@@ -267,13 +164,13 @@
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
 
-                <!-- 6/11 #137 §10: 「レストラン情報」はプロフィール編集画面へ。公開プレビューは
-                     編集画面内の「公開ページをプレビュー」リンクから（公開ページに編集導線は置かない）。 -->
-                <a class="acc-menu-item" href="/pages/restaurant/account/profile.html">
-                    <div class="acc-menu-item__icon" style="background:#ede9fe; color:#5b21b6;"><span class="material-symbols-outlined">storefront</span></div>
+                <!-- 6/22 #164: 紹介＝1行メニュー化（巨大カード廃止）。サブ文言は状態で動的（金額は運営設定）。
+                     コード/コピー/シェアは紹介専用ページ（account/referral.html）。 -->
+                <a class="acc-menu-item" href="/pages/restaurant/account/referral.html">
+                    <div class="acc-menu-item__icon" style="background:#fbf0dc; color:#b45309;"><span class="material-symbols-outlined">redeem</span></div>
                     <div class="acc-menu-item__body">
-                        <div class="acc-menu-item__title" data-i18n="profile.restaurantInfoTitle"></div>
-                        <div class="acc-menu-item__meta" data-i18n="account.menuHintProfileRestaurant"></div>
+                        <div class="acc-menu-item__title" data-i18n="account.referralBuyer"></div>
+                        <div class="acc-menu-item__meta acc-menu-item__meta--accent" id="referral-sub"></div>
                     </div>
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
@@ -329,17 +226,10 @@
         import {
             collection, query, where, onSnapshot, getDocs, getDoc, doc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
-        // 5/23 #82 Phase 1: 紹介コード
-        import { ensureUserReferralCode } from '/js/referral.js';
         // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
-
-        // 5/24 #82 Phase 2 Chunk 4: クーポン一覧描画用（他ファイル同様にローカル定義）
-        function escapeHtml(s) {
-            return String(s == null ? '' : s)
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        }
+        // 6/22 #164: アバター画像（公開ページで設定した avatarUrl・表示のみ・未設定はデフォルト）
+        import { asCachedImgAttrs } from '/js/image-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -355,29 +245,45 @@
         function renderHead() {
             const d = window.currentUserData || {};
             document.getElementById('display-name').textContent = d.displayName || '-';
-            document.getElementById('login-id').textContent = d.loginId ? `@${d.loginId}` : '';
+            // 6/22 #164: アバター（avatarUrl・未設定はデフォルトの人型アイコン）
+            const av = document.getElementById('avatar');
+            if (av) {
+                av.innerHTML = d.avatarUrl
+                    ? `<img ${asCachedImgAttrs(d.avatarUrl)} alt="">`
+                    : `<span class="material-symbols-outlined">person</span>`;
+            }
+            renderRefundStatus();
         }
 
-        // 5/25 #91/#92 拡張: 紹介コード・クーポン一覧の HTML を即時復元
+        // 6/22 #164/#167: 返金先の登録状態をマイページ行に出す（未登録＝中立グレー「未登録」／登録済＝説明文）。
+        function renderRefundStatus() {
+            const el = document.getElementById('refund-sub');
+            if (!el) return;
+            const r = window.currentUserData?.refundAccount;
+            const registered = !!(r && r.name && (r.qrLink || r.qrImage));
+            if (registered) {
+                el.textContent = i18next.t('account.menuHintRefund');
+                el.classList.remove('acc-menu-item__meta--muted');
+            } else {
+                el.textContent = i18next.t('account.notRegistered');
+                el.classList.add('acc-menu-item__meta--muted');
+            }
+        }
+
+        // 6/22 #164: 紹介行のサブ文言を即時復元（非同期算出分）
         (function applyAccountCache() {
             try {
                 const cached = loadRenderState('restaurant_account');
-                if (!cached) return;
-                if (cached.referralCode) {
-                    const el = document.getElementById('referral-code');
-                    if (el) el.textContent = cached.referralCode;
-                }
-                if (cached.couponsHtml) {
-                    const c = document.getElementById('coupons-container');
-                    if (c) c.innerHTML = cached.couponsHtml;
+                if (cached && cached.referralSub != null) {
+                    const el = document.getElementById('referral-sub');
+                    if (el) el.textContent = cached.referralSub;
                 }
             } catch (e) { /* ignore */ }
         })();
         function saveAccountRender() {
             try {
                 saveRenderState('restaurant_account', {
-                    referralCode: document.getElementById('referral-code')?.textContent || '',
-                    couponsHtml: document.getElementById('coupons-container')?.innerHTML || '',
+                    referralSub: document.getElementById('referral-sub')?.textContent || '',
                 });
             } catch (e) { /* ignore */ }
         }
@@ -415,115 +321,42 @@
             await logout();
         });
 
-        // 5/23 #82 Phase 1: 紹介コードの表示・コピー・シェア
-        async function showReferralCode() {
+        // 6/22 #164: 紹介行の動的サブ文言（使えるクーポン枚数＋運営設定のクーポン額）。
+        //   コード/コピー/シェアは紹介専用ページ（account/referral.html）に移動。
+        //   クエリは ownerUid==uid のみ（複合 index 不要）でクライアント絞り込み。
+        let referralState = null; // { enabled, amount, count }
+        async function computeReferralSub() {
             const uid = window.currentUser?.uid;
             if (!uid) return;
-            let code = '--------';
+            let count = 0, amount = 0, enabled = false;
             try {
-                code = await ensureUserReferralCode(uid, window.currentUserData);
-            } catch (e) {
-                console.warn('ensureUserReferralCode failed:', e);
-                return;
-            }
-            document.getElementById('referral-code').textContent = code;
-
-            document.getElementById('referral-copy').addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText(code);
-                    alert(i18next.t('referral.copied'));
-                } catch (e) {
-                    // 古いブラウザ向けフォールバック
-                    const ta = document.createElement('textarea');
-                    ta.value = code;
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try { document.execCommand('copy'); } catch (_) { /* ignore */ }
-                    ta.remove();
-                    alert(i18next.t('referral.copied'));
-                }
-            });
-
-            document.getElementById('referral-share').addEventListener('click', async () => {
-                const shareText = i18next.t('referral.shareText', { code });
-                if (navigator.share) {
-                    try {
-                        await navigator.share({ text: shareText });
-                    } catch (e) { /* ユーザーキャンセル */ }
-                } else {
-                    try {
-                        await navigator.clipboard.writeText(shareText);
-                        alert(i18next.t('referral.copied'));
-                    } catch (e) { /* ignore */ }
-                }
-            });
-        }
-
-        // 5/24 #82 Phase 2 Chunk 4: 使えるクーポン一覧を取得・描画
-        // ・where ownerUid==uid のみ（複合 index 不要）
-        // ・usedAt==null / expiresAt > now / 並び順は すべてクライアント側で処理
-        //   （件数は最大でも紹介人数 × 2 のオーダーなので OK）
-        async function loadCoupons() {
-            const container = document.getElementById('coupons-container');
-            const uid = window.currentUser?.uid;
-            if (!uid || !container) return;
-            try {
-                const snap = await getDocs(query(
-                    collection(db, 'coupons'),
-                    where('ownerUid', '==', uid)
-                ));
+                const snap = await getDocs(query(collection(db, 'coupons'), where('ownerUid', '==', uid)));
                 const now = Date.now();
-                const usable = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                count = snap.docs.map(d => d.data())
                     .filter(c => !c.usedAt && !c.usedOrderId)
-                    .filter(c => {
-                        const exp = c.expiresAt?.toMillis?.();
-                        return !exp || exp > now;
-                    })
-                    .sort((a, b) => (b.issuedAt?.toMillis?.() || 0) - (a.issuedAt?.toMillis?.() || 0));
-
-                if (usable.length === 0) {
-                    container.innerHTML = `<div class="coupons-card__empty">${escapeHtml(i18next.t('myCoupons.empty'))}</div>`;
-                    return;
-                }
-
-                // sourceUid のユーザー名を一括取得（N+1 抑止）
-                const sourceUids = [...new Set(usable.map(c => c.sourceUid).filter(Boolean))];
-                const sourceNames = {};
-                await Promise.all(sourceUids.map(async (suid) => {
-                    try {
-                        const us = await getDoc(doc(db, 'users', suid));
-                        sourceNames[suid] = us.data()?.displayName || '';
-                    } catch (e) { /* ignore */ }
-                }));
-
-                container.innerHTML = usable.map(c => {
-                    const expMs = c.expiresAt?.toMillis?.();
-                    const expStr = expMs
-                        ? new Date(expMs).toLocaleDateString(i18next.language || 'en', { year: 'numeric', month: 'short', day: 'numeric' })
-                        : '';
-                    const sourceName = c.sourceUid ? (sourceNames[c.sourceUid] || '') : '';
-                    let sourceText;
-                    if (!sourceName) {
-                        sourceText = i18next.t('myCoupons.sourceUnknown');
-                    } else if (c.issuedReason === 'referrer') {
-                        sourceText = i18next.t('myCoupons.sourceReferrer', { name: sourceName });
-                    } else {
-                        sourceText = i18next.t('myCoupons.sourceReferred', { name: sourceName });
-                    }
-                    return `
-                        <div class="coupon-item">
-                            <div class="coupon-item__amount">${i18next.t('myCoupons.amountUnit', { amount: Number(c.amountKhr || 0).toLocaleString() })}</div>
-                            <div class="coupon-item__meta">${escapeHtml(sourceText)}${expStr ? ' · ' + escapeHtml(i18next.t('myCoupons.expiresAt', { date: expStr })) : ''}</div>
-                            <div class="coupon-item__use">
-                                <span class="material-symbols-outlined">shopping_cart</span>
-                                <span>${escapeHtml(i18next.t('myCoupons.useInCart'))}</span>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+                    .filter(c => { const exp = c.expiresAt?.toMillis?.(); return !exp || exp > now; })
+                    .length;
+                const settingsSnap = await getDoc(doc(db, 'settings', 'referral'));
+                const settings = settingsSnap.exists() ? settingsSnap.data() : null;
+                amount = Number(settings?.restaurantCouponKhr || 0);
+                enabled = !!settings && settings.enabled === true && amount > 0;
             } catch (e) {
-                console.warn('loadCoupons failed:', e);
-                container.innerHTML = `<div class="coupons-card__empty">${escapeHtml(i18next.t('myCoupons.errorLoad'))}</div>`;
+                console.warn('computeReferralSub failed:', e);
+            }
+            referralState = { enabled, amount, count };
+            renderReferralSub();
+        }
+        function renderReferralSub() {
+            const el = document.getElementById('referral-sub');
+            if (!el) return;
+            const s = referralState || { enabled: false, amount: 0, count: 0 };
+            const amountStr = s.amount ? s.amount.toLocaleString() : '';
+            if (s.count > 0) {
+                el.textContent = i18next.t('account.referralSubBuyerActive', { count: s.count });
+            } else if (s.enabled) {
+                el.textContent = i18next.t('account.referralSubBuyerEmpty', { amount: amountStr });
+            } else {
+                el.textContent = i18next.t('account.referralSubDefault');
             }
         }
 
@@ -538,18 +371,14 @@
                     const badge = document.getElementById('cart-badge');
                     if (badge) badge.style.display = items.length > 0 ? 'block' : 'none';
                 });
-                // 6/11 #137 §10: 「レストラン情報」はプロフィール編集画面へ直リンク（静的 href）。
-                //   農家から見える公開ページは編集画面内の「公開ページをプレビュー」から開く。
-                // 5/23 #82 Phase 1: 紹介コード表示
-                showReferralCode().then(saveAccountRender);   // 5/25 #91/#92 拡張: 完了後にキャッシュ更新
-                // 5/24 #82 Phase 2 Chunk 4: クーポン一覧読み込み
-                loadCoupons().then(saveAccountRender);
+                // 6/22 #164: 紹介行の動的サブ文言を算出（完了後にキャッシュ更新）
+                computeReferralSub().then(saveAccountRender);
             }
             // 5/23 #69 Phase C: 初期スピナー解除
             document.body.classList.add('app-ready');
         });
 
-        onLanguageChange(() => renderHead());
+        onLanguageChange(() => { renderHead(); renderReferralSub(); });
     </script>
 </body>
 

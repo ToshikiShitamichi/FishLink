@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
-    <title>FishLink Admin - FAQ</title>
+    <title>FISHLINK Admin - FAQ</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -33,6 +33,15 @@
         }
         .admin-nav a.active { background: #0f172a; color: #fff; border-color: #0f172a; }
         .admin-nav a:hover:not(.active) { background: #f1f5f9; }
+        /* 6/22 #169 C9: 画面言語の切替＝右上のコンパクトなドロップダウン（全幅バーにしない）。
+           ⚠️ グローバル select{width:100%} で全幅になっていた＝width:auto が必須（他の admin 画面と同じ）。
+           緑枠＋🌐 は style.css の #lang-selector !important ルール（管理画面共通の見た目）でOK。
+           ※「編集する言語」タブ（.lang-tabs）とは別物。 */
+        #lang-selector {
+            width: auto; font-size: 13px; padding: 6px 10px;
+            border: 1px solid #e2e8f0; border-radius: 20px; background: #fff; color: #475569;
+            cursor: pointer; flex: 0 0 auto;
+        }
 
         .panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; }
 
@@ -180,6 +189,7 @@
         import { db, storage } from '/js/firebase-config.js';
         import { initAdminReportBadge } from '/js/admin-report-badge.js';
         import { uploadImageResized } from '/js/image-resize.js';
+        import { showToast } from '/js/toast.js';   // 6/22 #169 C10: 保存成功トースト
         import { ref } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import {
             collection, query, where, getDocs, addDoc, updateDoc, deleteDoc,
@@ -441,7 +451,8 @@
                 return e && e.question.trim() && e.answer.trim();
             });
             const err = document.getElementById('edit-err');
-            if (!hasContent) { if (err) err.style.display = 'block'; return; }
+            // 6/22 C10: 失敗テキストで上書きされている可能性があるので検証メッセージに戻す
+            if (!hasContent) { if (err) { err.textContent = i18next.t('admin.faq.needContent'); err.style.display = 'block'; } return; }
             if (err) err.style.display = 'none';
 
             const saveBtn = document.getElementById('e-save');
@@ -490,13 +501,26 @@
 
                 editState.newFiles.forEach(nf => URL.revokeObjectURL(nf.preview));
                 editState = null;
-                await loadFaqs();
+                renderEdit();            // 6/22 C10: フォームを閉じる（〔＋質問を追加〕に戻す・入力を残さない＝重複保存防止）
+                await loadFaqs();        // リストに反映（新規行を含む）
+                showToast(i18next.t('account.saved'));   // 6/22 C10: 保存成功トースト
             } catch (e) {
-                console.error('saveEdit failed:', e);
-                alert(i18next.t('admin.faq.saveFailed'));
+                // 6/22 C10/#170: 失敗はインライン（ブラウザ alert は使わない）。
+                //   #170 画像つき保存が失敗する件＝原因切り分けのため実エラーを admin に inline 表示＋詳細ログ。
+                //   ⚠️ uploadImageResized は QR画像(qr/{uid}/)では成功する＝faq/{id}/ への書込みが Storage ルールで
+                //   拒否されている可能性が高い（code=storage/unauthorized）。確認できたら Console で
+                //   `match /faq/{id}/{f=**}{ allow write: if request.auth != null; }` 等を追加する。
+                const detail = e?.code || e?.message || String(e);
+                console.error('saveEdit failed:', e, 'detail:', detail);
+                const err = document.getElementById('edit-err');
+                if (err) {
+                    err.textContent = i18next.t('admin.faq.saveFailed') + (detail ? ` [${String(detail).slice(0, 140)}]` : '');
+                    err.style.display = 'block';
+                }
             } finally {
                 loading.classList.remove('show');
-                if (saveBtn) saveBtn.disabled = false;
+                const sb = document.getElementById('e-save');
+                if (sb) sb.disabled = false;
             }
         }
 

@@ -107,7 +107,17 @@
       "Bash(git --no-pager grep -noE \"i18next\\\\.t\\\\\\('[^']*'\" -- pages/restaurant/order.html)",
       "Bash(git --no-pager grep -noE 'data-i18n=\"[^\"]*stock[^\"]*\"|data-i18n=\"[^\"]*minOrder[^\"]*\"' -- pages/restaurant/order.html)",
       "Bash(git --no-pager grep -n \"locales/ja.json\\\\|locales/en.json\\\\|locales/km.json\" -- sw.js)",
-      "Bash(git --no-pager grep -n \"bottom-nav\" -- pages/restaurant/cart.html)"
+      "Bash(git --no-pager grep -n \"bottom-nav\" -- pages/restaurant/cart.html)",
+      "Bash(node -e 'const j=require\\(\"./locales/ja.json\"\\); function find\\(o,p\\){for\\(const k in o\\){const np=p?p+\".\"+k:k; if\\(typeof o[k]===\"string\"\\){if\\(o[k].includes\\(\"保存しました\"\\)\\)console.log\\(np,\"=\",o[k]\\);}else if\\(o[k]&&typeof o[k]===\"object\"\\)find\\(o[k],np\\);}} find\\(j,\"\"\\)')",
+      "Bash(node --check c:/work/FishLink/functions/index.js)",
+      "Bash(node _i18n_merge.js)",
+      "Bash('\"]/g; *)",
+      "Bash(node _i18n_check.js)",
+      "Bash(node -e 'const fs=require\\(\"fs\"\\);const s=fs.readFileSync\\(\"./firestore.rules\",\"utf8\"\\);const i=s.indexOf\\(\"/users/\"\\);console.log\\(s.slice\\(i-80,i+1200\\)\\);')",
+      "Bash(grep -E \"\\\\.html$|\\\\.js$|\\\\.json$\")",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\('deliverySheetWarn:', JSON.stringify\\(j.post.deliverySheetWarn\\)\\); console.log\\('deliveryWarnEmpty:', JSON.stringify\\(j.account.deliveryWarnEmpty\\)\\); console.log\\('deliverableRadiusNote:', JSON.stringify\\(j.post.deliverableRadiusNote\\)\\); console.log\\('freeDeliveryNote:', JSON.stringify\\(j.post.freeDeliveryNote\\)\\); console.log\\('deliveryRateExample:', JSON.stringify\\(j.post.deliveryRateExample\\)\\);\")",
+      "Bash(node --check js/toast.js)",
+      "Bash(grep -rhno \"ref\\(storage, [\\\\`'\\\\\"][a-zA-Z]*\" pages/ js/)"
     ]
   }
 }

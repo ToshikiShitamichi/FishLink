@@ -380,7 +380,22 @@ self.addEventListener('notificationclick', (event) => {
 //   #162 商品詳細（order.html）：農家行アバター（avatarUrl・未設定は人型）。Q&A teaser件数は #153① で roots.length 済（確認のみ）。
 //   #163 カート（cart.html / order-utils.js）：キャンペーン割引の基準を買い手「魚代」（fishPrice+serviceFee）に（農家側 farmerCampaignDiscount は不変）・内臓処理ヒントをトグル直下にグループ化・削除確認 中央モーダル・注文確認の納品日に「納品」ラベル＋🕐。トグル中立グレー/クーポンウォレットは既存（確認のみ）。
 //   locales 3言語にキー追加・変更（post.required/optional placeholders/success*・cart.deleteConfirm 等）。
-const CACHE_NAME = 'fishlink-v134';
+// 6/22 (v135): #164-170 束A（プロフィール/アカウント）＋運営チャット再レビュー＝
+//   #E 共有トースト js/toast.js（✓保存しました・precache 追加）。
+//   #164 マイページ top 再構成（並び順・アバター・@ハンドル非表示・紹介1行メニュー＋専用ページ・公開ページサブ文言・ログアウト中立グレー・農家 配送設定 行・FishLink→FISHLINK）。
+//   #165 基本情報（表示名 公開ヘルプ・農家 保存ボタン青・位置住所 読み取り専用注記・1項目ずつ編集）。
+//   #166 電話番号 自己変更 OTP（secondary app で OTP→callable changePhoneWithOtp が updateUser(email)＋重複チェック＋Firestore 更新）。
+//   #167 送金先（必須/いずれか1つ必須バッジ＋──または──・キャンセル中立グレー・placeholder）／返金先（買い手 新規 refundAccount・任意・空状態・amber警告・説明・マイページ「未登録」）。
+//   #168 配送設定 独立画面（farmer/account/delivery.html・farmerDelivery 共有・全出品共通の警告 0件出し分け）。
+//   #169 運営チャット（運営に送る＝副次グレー枠・注文/配送窓口1ボタン統合）／FAQ（保存トースト＋フォーム閉じ・失敗インライン）。
+//   #170 FAQ画像保存 失敗の診断強化＋インラインエラー（Storage ルールは Console 手動）。
+// 6/22 (v136): #166 実機修正＝電話番号変更OTPの reCAPTCHA "already rendered" 解消（送信ごとに
+//   recaptcha-container を作り直す `freshRecaptcha()`）。＋#170 の Storage ルールを `storage.rules` に
+//   version-controlled 化（faq＋adminChats＋settlements・Console 手動公開）。
+// 6/22 (v137): 実機UI修正＝#168 配送設定のラベルと入力欄のバランス（グローバル select/input[number]{width:100%}
+//   に勝つよう `.fb-iw .fb-input` で幅を上書き＋ラベル flex:1＝CJKの1文字縦折り返しを解消）／
+//   #169 C9 FAQ 画面言語セレクタが全幅だった真因＝`#lang-selector` に `width:auto` 欠落（他 admin 画面と同じく追加）。
+const CACHE_NAME = 'fishlink-v137';
 
 const PRECACHE_URLS = [
     '/',
@@ -407,6 +422,7 @@ const PRECACHE_URLS = [
     '/js/review-card.js',
     '/js/faq-display.js',
     '/js/report-window.js',
+    '/js/toast.js',
     '/locales/ja.json',
     '/locales/en.json',
     '/locales/km.json',

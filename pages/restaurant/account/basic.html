@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
-    <title>FishLink</title>
+    <title>FISHLINK</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -53,7 +53,8 @@
 
         #loc-map { width: 100%; height: 280px; border-radius: 12px; background: #f1f5f9; margin-top: 8px; }
         .loc-status { font-size: 12px; color: var(--color-text-sub); margin-top: 6px; padding: 8px 10px; background: #fff; border-radius: 8px; border: 1px solid var(--color-border); }
-        .loc-status.set { color: #047857; border-color: #a7f3d0; background: #ecfdf5; }
+        /* 6/22 #165 (B4): 住所は情報表示（成功ではない）＝緑をやめて中立に（緑は GAqP/成功専用） */
+        .loc-status.set { color: var(--color-text); border-color: var(--color-border); background: #fff; }
         .loc-help { font-size: 12px; color: var(--color-text-sub); margin-top: 6px; }
         /* 6/4 追加: 編集時にも「現在地を使う」ボタンを表示（初期登録と同様） */
         .loc-current-btn {
@@ -65,6 +66,32 @@
         }
         .loc-current-btn .material-symbols-outlined { font-size: 18px; }
         .loc-current-btn:active { opacity: 0.85; }
+
+        /* 6/22 #165/#166: 公開ヘルプ（青）／読み取り専用注記（グレー）／インラインエラー（赤）／電話入力／OTP */
+        .acc-edit__help { font-size: 12px; color: var(--color-cta); margin-top: 7px; line-height: 1.5; }
+        .acc-edit__note { font-size: 11.5px; color: var(--color-text-sub); margin-top: 6px; line-height: 1.5; }
+        .acc-field-error { font-size: 12px; color: var(--color-danger, #b91c1c); margin-top: 6px; }
+        .acc-edit input[type="tel"] {
+            width: 100%; padding: 10px 12px;
+            border: 1px solid var(--color-border); border-radius: 10px;
+            font-size: 16px; font-family: inherit; background: #fff; box-sizing: border-box;
+        }
+        .pc-otp-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 80;
+            display: flex; align-items: center; justify-content: center; padding: 24px;
+        }
+        .pc-otp-card { background: #fff; border-radius: 16px; padding: 22px 20px; max-width: 340px; width: 100%; }
+        .pc-otp-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+        .pc-otp-sub { font-size: 13px; color: var(--color-text-sub); margin-bottom: 14px; line-height: 1.5; }
+        .pc-otp-digits { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+        .pc-otp-d {
+            width: 40px; height: 48px; text-align: center; font-size: 20px; font-weight: 700;
+            border: 1px solid var(--color-border); border-radius: 10px; font-family: inherit;
+        }
+        .pc-otp-cancel {
+            width: 100%; margin-top: 8px; background: none; border: none;
+            color: var(--color-text-sub); font-size: 13px; cursor: pointer; font-family: inherit; padding: 8px;
+        }
     </style>
 </head>
 <body>
@@ -73,7 +100,7 @@
     <div class="page">
         <div class="page-header" style="align-items:center;">
             <a href="/pages/restaurant/account.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
-            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FISHLINK" class="brand-logo"></a>
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option>
@@ -85,10 +112,23 @@
         <div class="sub-page__title" data-i18n="account.basic"></div>
 
         <div class="sub-page">
-            <div class="acc-row">
-                <div class="acc-row__label" data-i18n="account.loginId"></div>
-                <div class="acc-row__value-line">
-                    <div class="acc-row__value" id="v-loginId">-</div>
+            <!-- 6/22 #166: 電話番号（ログインに使う番号）。編集＝新番号に SMS-OTP → 確認できたら変更。 -->
+            <div class="acc-row" id="row-phone">
+                <div class="acc-row__label" data-i18n="account.phone"></div>
+                <div class="acc-row__value-line" id="view-phone">
+                    <div class="acc-row__value" id="v-phone">-</div>
+                    <button class="acc-row__edit-btn" type="button" data-act="edit-phone">
+                        <span class="material-symbols-outlined">edit</span><span data-i18n="account.edit"></span>
+                    </button>
+                </div>
+                <div class="acc-edit" id="edit-phone" style="display:none;">
+                    <input id="input-phone" type="tel" inputmode="numeric" autocomplete="off" data-i18n="[placeholder]account.phonePlaceholder">
+                    <div class="acc-field-error" id="err-phone" style="display:none;"></div>
+                    <div class="acc-edit__note" data-i18n="account.phoneEditHelp"></div>
+                    <div class="acc-edit__actions">
+                        <button class="acc-edit__btn acc-edit__btn--secondary" type="button" data-act="cancel-phone" data-i18n="account.cancel"></button>
+                        <button class="acc-edit__btn acc-edit__btn--primary" type="button" data-act="send-otp" data-i18n="account.phoneSendCode"></button>
+                    </div>
                 </div>
             </div>
 
@@ -102,6 +142,8 @@
                 </div>
                 <div class="acc-edit" id="edit-displayName" style="display:none;">
                     <input id="input-displayName" type="text" maxlength="40" autocomplete="off">
+                    <div class="acc-edit__help" data-i18n="account.displayNamePublicHelp"></div>
+                    <div class="acc-field-error" id="err-displayName" style="display:none;"></div>
                     <div class="acc-edit__actions">
                         <button class="acc-edit__btn acc-edit__btn--secondary" type="button" data-act="cancel-name" data-i18n="account.cancel"></button>
                         <button class="acc-edit__btn acc-edit__btn--primary" type="button" data-act="save-name" data-i18n="account.save"></button>
@@ -126,6 +168,8 @@
                         <span data-i18n="register.useCurrentLocation"></span>
                     </button>
                     <div class="loc-status" id="loc-status" data-i18n="account.locationCurrent"></div>
+                    <div class="acc-edit__note" data-i18n="account.locationReadOnlyNote"></div>
+                    <div class="acc-field-error" id="err-location" style="display:none;"></div>
                     <div class="acc-edit__actions">
                         <button class="acc-edit__btn acc-edit__btn--secondary" type="button" data-act="cancel-loc" data-i18n="account.cancel"></button>
                         <button class="acc-edit__btn acc-edit__btn--primary" type="button" data-act="save-loc" id="save-loc-btn" data-i18n="account.save"></button>
@@ -135,14 +179,44 @@
         </div>
     </div>
 
+    <!-- 6/22 #166: Firebase Phone Auth の invisible reCAPTCHA コンテナ（電話番号変更の番号確認） -->
+    <div id="recaptcha-container"></div>
+
+    <!-- 6/22 #166: 電話番号変更の OTP モーダル -->
+    <div id="pc-otp-overlay" class="pc-otp-overlay" style="display:none;">
+        <div class="pc-otp-card">
+            <div class="pc-otp-title" data-i18n="register.otpTitle"></div>
+            <div class="pc-otp-sub" id="pc-otp-sub"></div>
+            <div class="pc-otp-digits">
+                <input class="pc-otp-d" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input class="pc-otp-d" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input class="pc-otp-d" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input class="pc-otp-d" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input class="pc-otp-d" maxlength="1" inputmode="numeric" autocomplete="off">
+                <input class="pc-otp-d" maxlength="1" inputmode="numeric" autocomplete="off">
+            </div>
+            <div class="acc-field-error" id="pc-otp-err" data-i18n="recover.codeError" style="display:none;"></div>
+            <button class="acc-edit__btn acc-edit__btn--primary" id="pc-otp-verify" style="width:100%; margin-top:10px;" data-i18n="recover.verify"></button>
+            <button type="button" class="pc-otp-cancel" id="pc-otp-cancel" data-i18n="register.otpCancel"></button>
+        </div>
+    </div>
+
     <script type="module">
         import { initI18n, initLangSelector } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
-        import { db } from '/js/firebase-config.js';
+        import { db, firebaseApp, auth, normalizePhone, isValidCambodiaPhone, formatPhoneDisplay } from '/js/firebase-config.js';
         import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { formatLocation, normalizeProvince } from '/js/province-utils.js';
         import { invalidate as invalidateDataCache } from '/js/data-cache.js';
         import { clearRenderState, saveRenderState, loadRenderState } from '/js/render-cache.js';
+        import { showToast } from '/js/toast.js';
+        // 6/22 #166: 電話番号の自己変更（OTP）。本人セッションを保つため OTP は secondary app で行う。
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js';
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js';
+        import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-functions.js';
+
+        // 6/22 #166: 本接続フラグ（#151 Phone Auth が ON 前提）。+855 到達 NG 時は send 失敗→運営手動案内へ。
+        const PHONE_CHANGE_OTP_ENABLED = true;
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -158,9 +232,31 @@
             document.getElementById(`view-${name}`).style.display = '';
             document.getElementById(`edit-${name}`).style.display = 'none';
         }
+        // 6/22 #165 (B5): 1項目ずつ編集（他の編集中行は表示に戻す＝保存ボタンは常に画面に1つ）
+        const EDIT_ROWS = ['phone', 'displayName', 'location'];
+        function closeAllEditors() {
+            EDIT_ROWS.forEach((n) => {
+                const v = document.getElementById(`view-${n}`);
+                const e = document.getElementById(`edit-${n}`);
+                if (v) v.style.display = '';
+                if (e) e.style.display = 'none';
+            });
+        }
         function showEdit(name) {
+            closeAllEditors();
             document.getElementById(`view-${name}`).style.display = 'none';
             document.getElementById(`edit-${name}`).style.display = '';
+        }
+
+        // 6/22 #165/#166: 次回訪問用の表示値キャッシュ（保存後にも更新）
+        function saveBasicRender() {
+            try {
+                saveRenderState('restaurant_account_basic', {
+                    phone: document.getElementById('v-phone')?.textContent || '',
+                    displayName: document.getElementById('v-displayName')?.textContent || '',
+                    location: document.getElementById('v-location')?.textContent || '',
+                });
+            } catch (e) { /* ignore */ }
         }
 
         function bindNameEdit() {
@@ -168,15 +264,18 @@
             const cancelBtn = document.querySelector('[data-act="cancel-name"]');
             const saveBtn = document.querySelector('[data-act="save-name"]');
             const input = document.getElementById('input-displayName');
+            const errEl = document.getElementById('err-displayName');
             editBtn.addEventListener('click', () => {
                 input.value = window.currentUserData?.displayName || '';
+                if (errEl) errEl.style.display = 'none';
                 showEdit('displayName');
                 input.focus();
             });
             cancelBtn.addEventListener('click', () => showView('displayName'));
             saveBtn.addEventListener('click', async () => {
+                if (errEl) errEl.style.display = 'none';
                 const newName = input.value.trim();
-                if (!newName) { alert(i18next.t('account.nameRequired')); return; }
+                if (!newName) { if (errEl) { errEl.textContent = i18next.t('account.nameRequired'); errEl.style.display = 'block'; } return; }
                 if (newName === window.currentUserData?.displayName) { showView('displayName'); return; }
                 saveBtn.disabled = true;
                 try {
@@ -187,9 +286,11 @@
                     clearRenderState();
                     document.getElementById('v-displayName').textContent = newName;
                     showView('displayName');
+                    saveBasicRender();
+                    showToast(i18next.t('account.saved'));   // 6/22 #165 (E): 保存トースト
                 } catch (err) {
                     console.error('save displayName failed:', err);
-                    alert(i18next.t('account.saveFailed'));
+                    if (errEl) { errEl.textContent = i18next.t('account.saveFailed'); errEl.style.display = 'block'; }
                 } finally {
                     saveBtn.disabled = false;
                 }
@@ -262,8 +363,10 @@
             const editBtn = document.querySelector('[data-act="edit-loc"]');
             const cancelBtn = document.querySelector('[data-act="cancel-loc"]');
             const saveBtn = document.getElementById('save-loc-btn');
+            const errEl = document.getElementById('err-location');
 
             editBtn.addEventListener('click', () => {
+                if (errEl) errEl.style.display = 'none';
                 showEdit('location');
                 waitForGoogleMaps(() => {
                     initEditMap();
@@ -302,7 +405,11 @@
             });
 
             saveBtn.addEventListener('click', async () => {
-                if (!pendingLocation) { alert(i18next.t('account.locationRequired')); return; }
+                if (errEl) errEl.style.display = 'none';
+                if (!pendingLocation) {
+                    if (errEl) { errEl.textContent = i18next.t('account.locationRequired'); errEl.style.display = 'block'; }
+                    return;
+                }
                 saveBtn.disabled = true;
                 try {
                     const uid = window.currentUser.uid;
@@ -323,21 +430,163 @@
                     clearRenderState();
                     document.getElementById('v-location').textContent = formatLocation(window.currentUserData) || '-';
                     showView('location');
+                    saveBasicRender();
+                    showToast(i18next.t('account.saved'));   // 6/22 #165 (E): 保存トースト
                 } catch (err) {
                     console.error('save location failed:', err);
-                    alert(i18next.t('account.saveFailed'));
+                    if (errEl) { errEl.textContent = i18next.t('account.saveFailed'); errEl.style.display = 'block'; }
                 } finally {
                     saveBtn.disabled = false;
                 }
             });
         }
 
-        // 5/25 #91/#92 拡張: 表示値を即時復元
+        // ─── 6/22 #166: 電話番号の編集（SMS-OTP・secondary app で本人セッションを保持） ───
+        let secondaryApp = null, secondaryAuth = null;
+        let pcRecaptcha = null, pcConfirmation = null, pcNewNorm = '';
+        function getSecondaryAuth() {
+            if (!secondaryAuth) {
+                // 本人セッション（primary auth）を壊さないため、OTP は別アプリインスタンスで実行する。
+                secondaryApp = initializeApp(firebaseApp.options, 'phone-change');
+                secondaryAuth = getAuth(secondaryApp);
+            }
+            return secondaryAuth;
+        }
+        // 6/22 修正: 送信ごとに reCAPTCHA コンテナを作り直す。
+        //   ⚠️ verifier を使い回すと再描画で "reCAPTCHA has already been rendered in this element" になる。
+        //   古い verifier を clear し、コンテナ DOM を新しい空 div に置換してから verifier を再作成する。
+        function freshRecaptcha() {
+            if (pcRecaptcha) { try { pcRecaptcha.clear(); } catch (e) { /* ignore */ } pcRecaptcha = null; }
+            const old = document.getElementById('recaptcha-container');
+            if (old) {
+                const fresh = document.createElement('div');
+                fresh.id = 'recaptcha-container';
+                old.replaceWith(fresh);
+            }
+            pcRecaptcha = new RecaptchaVerifier(getSecondaryAuth(), 'recaptcha-container', { size: 'invisible' });
+            return pcRecaptcha;
+        }
+
+        function bindPhoneEdit() {
+            const editBtn = document.querySelector('[data-act="edit-phone"]');
+            const cancelBtn = document.querySelector('[data-act="cancel-phone"]');
+            const sendBtn = document.querySelector('[data-act="send-otp"]');
+            const input = document.getElementById('input-phone');
+            const errEl = document.getElementById('err-phone');
+
+            editBtn.addEventListener('click', () => {
+                input.value = formatPhoneDisplay(window.currentUserData?.phone) || '';
+                if (errEl) errEl.style.display = 'none';
+                showEdit('phone');
+                input.focus();
+            });
+            cancelBtn.addEventListener('click', () => showView('phone'));
+
+            sendBtn.addEventListener('click', async () => {
+                if (errEl) errEl.style.display = 'none';
+                const norm = normalizePhone(input.value);
+                if (!isValidCambodiaPhone(norm)) {
+                    if (errEl) { errEl.textContent = i18next.t('error.phoneInvalid'); errEl.style.display = 'block'; }
+                    return;
+                }
+                if (norm === normalizePhone(window.currentUserData?.phone || '')) {
+                    if (errEl) { errEl.textContent = i18next.t('account.phoneSame'); errEl.style.display = 'block'; }
+                    return;
+                }
+                if (!PHONE_CHANGE_OTP_ENABLED) {
+                    if (errEl) { errEl.textContent = i18next.t('account.phoneChangeUnavailable'); errEl.style.display = 'block'; }
+                    return;
+                }
+                sendBtn.disabled = true;
+                loading.classList.add('show');
+                try {
+                    pcNewNorm = norm;
+                    const verifier = freshRecaptcha();
+                    pcConfirmation = await signInWithPhoneNumber(getSecondaryAuth(), '+' + norm, verifier);
+                    loading.classList.remove('show');
+                    document.getElementById('pc-otp-sub').textContent = i18next.t('register.otpSub', { phone: formatPhoneDisplay(norm) });
+                    document.querySelectorAll('.pc-otp-d').forEach((d) => { d.value = ''; });
+                    document.getElementById('pc-otp-err').style.display = 'none';
+                    document.getElementById('pc-otp-overlay').style.display = 'flex';
+                    document.querySelector('.pc-otp-d')?.focus();
+                } catch (err) {
+                    console.error('phone change OTP send failed:', err);
+                    loading.classList.remove('show');
+                    // +855 未到達・reCAPTCHA 失敗等 → 運営手動変更の案内へフォールバック
+                    if (errEl) { errEl.textContent = i18next.t('account.phoneSendFailed'); errEl.style.display = 'block'; }
+                    try { if (pcRecaptcha) { await pcRecaptcha.clear(); pcRecaptcha = null; } } catch (e) { /* ignore */ }
+                } finally {
+                    sendBtn.disabled = false;
+                }
+            });
+        }
+
+        function setupPcOtp() {
+            const digits = Array.from(document.querySelectorAll('.pc-otp-d'));
+            digits.forEach((d, i) => {
+                d.addEventListener('input', () => {
+                    d.value = d.value.replace(/\D/g, '').slice(0, 1);
+                    if (d.value && i < digits.length - 1) digits[i + 1].focus();
+                });
+                d.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !d.value && i > 0) digits[i - 1].focus();
+                });
+            });
+            document.getElementById('pc-otp-cancel').addEventListener('click', async () => {
+                document.getElementById('pc-otp-overlay').style.display = 'none';
+                try { await getSecondaryAuth().signOut(); } catch (e) { /* ignore */ }
+            });
+            document.getElementById('pc-otp-verify').addEventListener('click', async () => {
+                const code = digits.map((d) => d.value).join('');
+                const errEl = document.getElementById('pc-otp-err');
+                if (code.length !== 6 || !pcConfirmation) { errEl.style.display = 'block'; return; }
+                const vbtn = document.getElementById('pc-otp-verify');
+                vbtn.disabled = true;
+                loading.classList.add('show');
+                try {
+                    // secondary app で新番号を検証（phone provider セッション）→ IDトークンを取得。
+                    await pcConfirmation.confirm(code);
+                    const phoneIdToken = await getSecondaryAuth().currentUser.getIdToken();
+                    // 本人セッション（primary）で callable を呼ぶ＝request.auth.uid＝本人。
+                    const functions = getFunctions(undefined, 'asia-southeast1');
+                    const changeFn = httpsCallable(functions, 'changePhoneWithOtp');
+                    await changeFn({ phoneIdToken });
+                    // secondary の phone-provider セッションを解除（本人セッションは無傷）。
+                    try { await getSecondaryAuth().signOut(); } catch (e) { /* ignore */ }
+                    // ローカル状態を更新（メール変更を反映するためトークンも更新）。
+                    const uid = window.currentUser?.uid;
+                    if (window.currentUserData) window.currentUserData.phone = pcNewNorm;
+                    if (uid) invalidateDataCache('users', uid);
+                    try { await auth.currentUser?.getIdToken(true); } catch (e) { /* ignore */ }
+                    document.getElementById('v-phone').textContent = formatPhoneDisplay(pcNewNorm);
+                    document.getElementById('pc-otp-overlay').style.display = 'none';
+                    showView('phone');
+                    loading.classList.remove('show');
+                    saveBasicRender();
+                    showToast(i18next.t('account.saved'));
+                } catch (err) {
+                    console.error('phone change failed:', err);
+                    loading.classList.remove('show');
+                    const code2 = String(err?.code || '');
+                    if (code2 === 'functions/already-exists') {
+                        errEl.textContent = i18next.t('error.phoneTaken');
+                    } else if (code2.startsWith('functions/')) {
+                        errEl.textContent = i18next.t('account.phoneChangeFailed');
+                    } else {
+                        errEl.textContent = i18next.t('recover.codeError');
+                    }
+                    errEl.style.display = 'block';
+                    vbtn.disabled = false;
+                }
+            });
+        }
+
+        // 6/22 #165: 表示値を即時復元（電話番号は formatPhoneDisplay 済みの表示文字列をキャッシュ）
         (function applyCache() {
             try {
                 const cached = loadRenderState('restaurant_account_basic');
                 if (!cached) return;
-                if (cached.loginId) document.getElementById('v-loginId').textContent = cached.loginId;
+                if (cached.phone) document.getElementById('v-phone').textContent = cached.phone;
                 if (cached.displayName) document.getElementById('v-displayName').textContent = cached.displayName;
                 if (cached.location) document.getElementById('v-location').textContent = cached.location;
             } catch (e) { /* ignore */ }
@@ -345,21 +594,17 @@
 
         waitForUserData(() => {
             const d = window.currentUserData || {};
-            document.getElementById('v-loginId').textContent = d.loginId || '-';
+            // 6/22 #166: 電話番号表示（旧ログインIDアカウントは loginId フォールバック）
+            document.getElementById('v-phone').textContent = formatPhoneDisplay(d.phone) || d.loginId || '-';
             document.getElementById('v-displayName').textContent = d.displayName || '-';
             const loc = formatLocation(d) || i18next.t('account.locationUnset');
             document.getElementById('v-location').textContent = loc;
             bindNameEdit();
             bindLocationEdit();
+            bindPhoneEdit();
+            setupPcOtp();
             loading.classList.remove('show'); document.body.classList.add('app-ready');
-            // 5/25 #91/#92 拡張: 次回訪問用に表示値をキャッシュ
-            try {
-                saveRenderState('restaurant_account_basic', {
-                    loginId: document.getElementById('v-loginId')?.textContent || '',
-                    displayName: document.getElementById('v-displayName')?.textContent || '',
-                    location: document.getElementById('v-location')?.textContent || '',
-                });
-            } catch (e) { /* ignore */ }
+            saveBasicRender();   // 6/22: 次回訪問用に表示値をキャッシュ
         });
     </script>
 </body>

@@ -2046,6 +2046,72 @@ exports.resetPasswordWithPhone = onCall(
   }
 );
 
+// ── 6/22 #166: 電話番号の自己変更（合成メール口座のログイン番号＝メールを移行つきで更新） ──
+//   識別子は {phone}@fishlink.local（合成メール）なので、電話番号を変える＝Auth のメールを変える。
+//   オーケストレーションの肝：クライアントは「合成メールの本人」と「Phone Auth の新番号ユーザー」に
+//   同時にはサインインできない。そこで本人セッションは保ったまま、新番号の OTP 検証だけを
+//   secondary Firebase app で行い、その phone-provider ユーザーの IDトークン(phoneIdToken=新番号 検証済み)を
+//   本callable に渡す。
+//   本callable は：
+//     ① request.auth.uid＝本人（＝変更対象の口座。本人の口座しか変えられない＝なりすまし不可）
+//     ② phoneIdToken を verifyIdToken して phone_number（検証済み新番号）を取り出す（新番号の所有を server 検証）
+//   の2つの server 検証で、本人の口座のメール＋Firestore users.phone を新番号へ更新する。
+//   重複は Firestore 事前チェック＋Auth のメール一意制約（email-already-exists）で二重に防ぐ。
+exports.changePhoneWithOtp = onCall(
+  { region: "asia-southeast1", invoker: "public", cors: true },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required");
+    }
+    const uid = request.auth.uid; // ＝本人（変更対象の口座）。本人以外は変えられない。
+    const phoneIdToken = request.data && request.data.phoneIdToken;
+    if (!phoneIdToken || typeof phoneIdToken !== "string") {
+      throw new HttpsError("permission-denied", "Phone verification required");
+    }
+    // 新番号の所有を server で検証（secondary app の phone-provider IDトークン）。
+    let decoded;
+    try {
+      decoded = await getAuth().verifyIdToken(phoneIdToken);
+    } catch (e) {
+      throw new HttpsError("permission-denied", "Phone verification failed");
+    }
+    const tokenPhone = decoded && decoded.phone_number;
+    if (!tokenPhone) {
+      throw new HttpsError("permission-denied", "Phone verification required");
+    }
+    const normalized = normalizePhoneServer(tokenPhone);
+    if (!/^855\d{8,9}$/.test(normalized)) {
+      throw new HttpsError("invalid-argument", "Invalid phone number");
+    }
+    // 重複チェック（自分自身は除外）。他人が同じ番号で登録済みなら拒否。
+    const dupSnap = await db.collection("users")
+      .where("phone", "==", normalized).limit(2).get();
+    const conflict = dupSnap.docs.find((d) => d.id !== uid);
+    if (conflict) {
+      throw new HttpsError("already-exists", "Phone number already in use");
+    }
+    // 既に自分の番号（変更なし）なら no-op で成功。
+    const mine = dupSnap.docs.find((d) => d.id === uid);
+    if (mine) {
+      return { ok: true, unchanged: true };
+    }
+    // Auth のログインメールを {新phone}@fishlink.local に更新（Admin SDK＝検証メール不要）。
+    const newEmail = `${normalized}@fishlink.local`;
+    try {
+      await getAuth().updateUser(uid, { email: newEmail });
+    } catch (e) {
+      // Auth のメール一意制約。Firestore 事前チェックを抜けたレースなどはここで弾く。
+      if (e && (e.code === "auth/email-already-exists" || e.errorInfo?.code === "auth/email-already-exists")) {
+        throw new HttpsError("already-exists", "Phone number already in use");
+      }
+      throw new HttpsError("internal", "Failed to update phone number");
+    }
+    // Firestore の表示用 phone も更新。
+    await db.doc(`users/${uid}`).update({ phone: normalized });
+    return { ok: true, phone: normalized };
+  }
+);
+
 // ── Cloud Vision API 経由の画像OCR（CAA価格表取り込み用） ──
 // クライアントは base64 文字列を渡し、抽出テキストを受け取る
 // 管理者のみ呼び出し可能

@@ -1,0 +1,77 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── 既存ルール（現行 Console と同一・そのまま） ──────────────────
+
+    match /fishListings/{uid}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /qr/{uid}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /reports/{uid}/{allPaths=**} {
+      allow write: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null
+        && (request.auth.uid == uid
+         || firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    match /chat/{orderId}/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /profile/{uid}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ✅ voice ブロックは /b/{bucket}/o の中に置く（5/23 #81）
+    match /voice/{orderId}/{file=**} {
+      allow read: if request.auth != null
+        && (firestore.get(/databases/(default)/documents/orders/$(orderId)).data.farmerId == request.auth.uid
+         || firestore.get(/databases/(default)/documents/orders/$(orderId)).data.restaurantId == request.auth.uid);
+      allow write: if request.auth != null
+        && (firestore.get(/databases/(default)/documents/orders/$(orderId)).data.farmerId == request.auth.uid
+         || firestore.get(/databases/(default)/documents/orders/$(orderId)).data.restaurantId == request.auth.uid)
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('audio/.*');
+    }
+
+    // ── 6/22 追加：許可リストから漏れていた既存機能のパス ─────────────
+    // ⚠️ 現行 Console は許可リスト方式。下記3パスはアプリで実使用しているが
+    //    ルールが無く既定で拒否されていた＝画像アップロードが失敗していた。
+
+    // 🔴 #170: 管理FAQ の回答画像（admin/faq.html が faq/{id}/ へアップロード）。
+    //   公開FAQの画像は全ユーザーが閲覧（read:true）／書込みは admin のみ（FAQ管理は管理者専用）。
+    //   ＝これが無かったため「画像つきFAQ保存が失敗（文字のみOK）」になっていた（#170 の根因）。
+    match /faq/{id}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // #145: 運営チャットの添付画像（admin-chat.html がユーザー側で adminChats/{uid}/ へ／
+    //   管理側の返信画像も同パス）。本人＝uid、または admin が読み書き（reports と同パターン）。
+    match /adminChats/{uid}/{allPaths=**} {
+      allow read: if request.auth != null
+        && (request.auth.uid == uid
+         || firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow write: if request.auth != null
+        && (request.auth.uid == uid
+         || firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    // #129: 精算の入金控え／送金スクショ（admin/order.html が settlements/{orderId}/ へアップロード）。
+    //   運営の照合用＝admin のみ読み書き（一般ユーザーには非公開）。
+    match /settlements/{orderId}/{allPaths=**} {
+      allow read, write: if request.auth != null
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+  }
+}

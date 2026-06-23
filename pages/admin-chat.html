@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d6e4c">
-    <title>FishLink</title>
+    <title>FISHLINK</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -70,10 +70,13 @@
         .sc-deskbtn.danger { border-color: var(--color-danger); color: var(--color-danger); }
         .sc-deskbtn .material-symbols-outlined { font-size: 18px; }
         .sc-escnote { font-size: 11.5px; color: #94a3b8; text-align: center; margin: 20px 0 8px; }
+        /* 6/22 #169 A5: 「運営にメッセージを送る」＝副次の見た目（グレー枠・中立色＝最後の手段）。
+           自己解決の窓口（青枠）より控えめに（deflection＝運営チャットの量を抑える意図）。
+           ※チャット内の送信ボタン(.send-btn)は青のまま。 */
         .sc-escbtn {
-            display: block; width: 100%; text-align: center; font-size: 14px; font-weight: 800;
-            padding: 13px; border-radius: 12px; background: var(--color-cta); color: #fff;
-            border: none; cursor: pointer;
+            display: block; width: 100%; text-align: center; font-size: 13px; font-weight: 700;
+            padding: 12px; border-radius: 12px; background: #fff; color: #5a6470;
+            border: 1px solid #c9d0d8; cursor: pointer; font-family: inherit;
         }
 
         /* ③ チャット */
@@ -214,8 +217,10 @@
         // §4 振り分け窓口（ロール別の該当画面＝特定注文でなくリスト/ハブへ）
         const DESK = {
             farmer: {
-                order: [{ k: 'deskOrders', href: '/pages/farmer/orders.html' }, { k: 'deskReport', href: '/pages/farmer/orders.html', danger: true }],
-                delivery: [{ k: 'deskOrders', href: '/pages/farmer/orders.html' }, { k: 'deskReport', href: '/pages/farmer/orders.html', danger: true }],
+                // 6/22 #169 A8: 注文/配送カテゴリは窓口1ボタンに統合（状況確認も問題報告も各注文画面で行う）。
+                //   独立した赤「問題を報告」ボタンは置かない（着地が注文リストのトップで報告対象とズレるため）。
+                order: [{ k: 'deskOrders', href: '/pages/farmer/orders.html' }],
+                delivery: [{ k: 'deskOrders', href: '/pages/farmer/orders.html' }],
                 payment: [{ k: 'deskSales', href: '/pages/farmer/account/sales.html' }, { k: 'deskRemitStatus', href: '/pages/farmer/payment.html' }],
                 referral: [{ k: 'deskReferral', href: '/pages/farmer/account.html' }],
                 account: [{ k: 'deskBasic', href: '/pages/farmer/account/basic.html' }, { k: 'deskRecover', href: '/recover.html' }],
@@ -223,8 +228,9 @@
                 other: [],
             },
             restaurant: {
-                order: [{ k: 'deskOrderStatus', href: '/pages/restaurant/orders.html' }, { k: 'deskReport', href: '/pages/restaurant/orders.html', danger: true }],
-                delivery: [{ k: 'deskOrderStatus', href: '/pages/restaurant/orders.html' }, { k: 'deskReport', href: '/pages/restaurant/orders.html', danger: true }],
+                // 6/22 #169 A8: 注文/配送カテゴリは窓口1ボタンに統合（独立した赤「問題を報告」は置かない）。
+                order: [{ k: 'deskOrderStatus', href: '/pages/restaurant/orders.html' }],
+                delivery: [{ k: 'deskOrderStatus', href: '/pages/restaurant/orders.html' }],
                 payment: [{ k: 'deskOrderStatus', href: '/pages/restaurant/orders.html' }, { k: 'deskPayment', href: '/pages/restaurant/payment.html' }],
                 referral: [{ k: 'deskReferral', href: '/pages/restaurant/account.html' }],
                 account: [{ k: 'deskBasic', href: '/pages/restaurant/account/basic.html' }, { k: 'deskRecover', href: '/recover.html' }],

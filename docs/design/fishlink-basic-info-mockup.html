@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 基本情報 - モック</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #ECEEF0; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 24px 12px 60px; color: #1A1A1A;
+  }
+  .intro {
+    max-width: 860px; margin-bottom: 20px; background: #FFF;
+    padding: 16px 18px; border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-size: 14px; line-height: 1.7;
+  }
+  .intro h1 { margin: 0 0 8px; font-size: 17px; color: #0B5FB0; }
+  .intro p { margin: 4px 0; color: #4A4A4A; }
+  .intro b { color: #0B5FB0; }
+
+  .phones { display: flex; gap: 22px 22px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .phone-label { font-size: 13px; font-weight: 700; color: #5A6470; max-width: 390px; text-align: center; }
+
+  .phone {
+    width: 390px; max-width: 100%; background: #F7F9FB;
+    border-radius: 36px; overflow: hidden; position: relative;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.15); display: flex; flex-direction: column;
+    padding-bottom: 18px; align-self: flex-start;
+  }
+  .header {
+    flex: 0 0 auto; background: #FFF; padding: 12px 16px; border-bottom: 1px solid #EEF1F4;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .back { font-size: 20px; color: #5A6470; }
+  .logo { font-size: 17px; font-weight: 800; color: #0B5FB0; }
+  .logo::before { content: "🐟 "; }
+  .lang {
+    margin-left: auto; background: #F0F4F8; border: 1px solid #DDE3E9;
+    padding: 4px 10px; border-radius: 16px; font-size: 12px; font-weight: 600;
+  }
+  .page-title { text-align: center; font-size: 18px; font-weight: 700; padding: 14px 0 6px; }
+
+  .content { padding: 6px 16px 24px; }
+
+  /* フィールドカード */
+  .field { background: #F1F4F7; border-radius: 13px; padding: 14px 15px; margin-bottom: 13px; }
+  .field.editing { background: #FFF; border: 1px solid #E3E8EE; box-shadow: 0 1px 5px rgba(0,0,0,0.05); }
+  .f-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .f-label { font-size: 12.5px; color: #7A828C; margin-bottom: 5px; }
+  .f-label .req { color: #C2410C; font-weight: 700; margin-left: 6px; font-size: 11px; }
+  .f-value { font-size: 16px; font-weight: 700; color: #1A1A1A; }
+  .edit-btn {
+    flex: 0 0 auto; background: #FFF; border: 1px solid #D7DCE2; border-radius: 18px;
+    padding: 6px 13px; font-size: 13px; font-weight: 600; color: #0B5FB0; cursor: pointer;
+  }
+  .edit-btn::before { content: "✎ "; }
+  .f-input {
+    width: 100%; background: #FFF; border: 1px solid #C9D0D8; border-radius: 10px;
+    padding: 11px 12px; font-size: 15px; color: #1A1A1A; margin-top: 2px;
+  }
+  .f-input.ro { background: #F4F6F8; color: #6B7178; }
+  .f-help { font-size: 12.5px; color: #7A828C; margin-top: 7px; line-height: 1.5; }
+  .f-help.pub { color: #0B5FB0; }
+  .f-actions { display: flex; gap: 10px; margin-top: 13px; }
+  .btn { flex: 1; padding: 11px 0; border-radius: 10px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; }
+  .btn-cancel { background: #EEF1F4; color: #4A4A4A; }
+  .btn-save { background: #0B5FB0; color: #FFF; }
+  .btn-save.full { width: 100%; flex: none; margin-top: 11px; }
+
+  /* 地図 */
+  .map {
+    position: relative; height: 170px; border-radius: 11px; overflow: hidden; margin-top: 8px;
+    background: linear-gradient(135deg,#DCEBD8 0%,#CFE3EA 55%,#BFD8E6 100%);
+  }
+  .map.sat { background: linear-gradient(135deg,#4b5d3a 0%,#3c4a4a 60%,#2f3e46 100%); }
+  .map-toggle {
+    position: absolute; top: 10px; left: 10px; display: flex; background: #FFF;
+    border-radius: 9px; overflow: hidden; font-size: 12.5px; font-weight: 700;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  }
+  .map-toggle span { padding: 6px 12px; color: #5A6470; }
+  .map-toggle .mt-on { background: #FFF; color: #1A1A1A; }
+  .map-toggle .mt-off { background: #EAEEF2; }
+  .pin { position: absolute; top: 46%; left: 47%; font-size: 26px; transform: translate(-50%,-100%); }
+  .loc-btn {
+    background: #FFF; border: 1px solid #B7D2EC; color: #0B5FB0; border-radius: 20px;
+    padding: 8px 14px; font-size: 13px; font-weight: 700; margin-top: 11px; cursor: pointer;
+  }
+  .loc-btn::before { content: "◎ "; }
+  .ro-tag { font-size: 11.5px; color: #9AA1A9; margin-top: 5px; }
+
+  /* 保存成功トースト（設定保存の共通フィードバック） */
+  .toast {
+    position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+    background: rgba(26,32,40,0.93); color: #FFF; font-size: 13.5px; font-weight: 700;
+    padding: 12px 20px; border-radius: 22px; display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25); white-space: nowrap; z-index: 5;
+  }
+  .toast .tc { color: #4ADE80; font-weight: 800; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 基本情報（モック）— 農家（買い手も同構造）</h1>
+  <p><b>ログインID → 電話番号</b>に（ログインに使う番号を表示）。<b>@ハンドル（test_xxx）は出さない</b></p>
+  <p><b>電話番号は編集可（OTP）</b>：新しい番号にSMS確認コード → 確認できたら変更（到達性ゲート）</p>
+  <p><b>表示名に公開ヘルプ</b>「この名前は買い手に公開されます」／<b>保存ボタンは青</b>（農家側の緑→青）</p>
+  <p><b>位置情報</b>：地図/航空写真トグル＋ピン操作。<b>「現在の位置情報」はピン地点の住所を表示するだけ（読み取り専用）</b></p>
+  <p><b>編集は1項目ずつ</b>（ある項目を編集中は他は表示のまま＝保存ボタンは常に1つ）。<b>保存成功＝「✓ 保存しました」トースト</b>（設定保存の共通ルール）。アバターはここでなく<b>生産者ページ/レストランページ</b>で設定</p>
+</div>
+
+<div class="phones">
+
+  <!-- A 表示状態 -->
+  <div class="phone-wrap">
+    <div class="phone-label">A 表示状態（農家）</div>
+    <div class="phone">
+      <div class="header"><span class="back">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="page-title">基本情報</div>
+      <div class="content">
+        <div class="field">
+          <div class="f-row">
+            <div><div class="f-label">電話番号</div><div class="f-value">012 345 678</div></div>
+            <button class="edit-btn">編集</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="f-row">
+            <div><div class="f-label">表示名</div><div class="f-value">farmer5</div></div>
+            <button class="edit-btn">編集</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="f-row">
+            <div><div class="f-label">位置情報</div><div class="f-value">タケオ州, Doun Kaev</div></div>
+            <button class="edit-btn">編集</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B 表示名 編集中 -->
+  <div class="phone-wrap">
+    <div class="phone-label">B 表示名を編集中（公開ヘルプ／保存青／1項目ずつ）</div>
+    <div class="phone">
+      <div class="header"><span class="back">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="page-title">基本情報</div>
+      <div class="content">
+        <div class="field">
+          <div class="f-row">
+            <div><div class="f-label">電話番号</div><div class="f-value">012 345 678</div></div>
+            <button class="edit-btn">編集</button>
+          </div>
+        </div>
+        <div class="field editing">
+          <div class="f-label">表示名</div>
+          <input class="f-input" value="farmer5">
+          <div class="f-help pub">この名前は買い手に公開されます。</div>
+          <div class="f-actions">
+            <button class="btn btn-cancel">キャンセル</button>
+            <button class="btn btn-save">保存</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="f-row">
+            <div><div class="f-label">位置情報</div><div class="f-value">タケオ州, Doun Kaev</div></div>
+            <button class="edit-btn">編集</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C 位置情報 編集中 -->
+  <div class="phone-wrap">
+    <div class="phone-label">C 位置情報を編集中（トグル／読み取り専用住所）</div>
+    <div class="phone">
+      <div class="header"><span class="back">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="page-title">基本情報</div>
+      <div class="content">
+        <div class="field">
+          <div class="f-row">
+            <div><div class="f-label">表示名</div><div class="f-value">farmer5</div></div>
+            <button class="edit-btn">編集</button>
+          </div>
+        </div>
+        <div class="field editing">
+          <div class="f-label">位置情報</div>
+          <div class="f-help">地図をタップしてピンを動かしてください。</div>
+          <div class="map">
+            <div class="map-toggle"><span class="mt-on">地図</span><span class="mt-off">航空写真</span></div>
+            <div class="pin">📍</div>
+          </div>
+          <button class="loc-btn">現在地を使う</button>
+          <input class="f-input ro" value="Takeo Ra Railway Station, Doun Kaev, Cambodia" readonly>
+          <div class="ro-tag">※ ピン地点の住所を表示（手入力はできません）</div>
+          <div class="f-actions">
+            <button class="btn btn-cancel">キャンセル</button>
+            <button class="btn btn-save">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- D 電話番号 編集中（OTP） -->
+  <div class="phone-wrap">
+    <div class="phone-label">D 電話番号を編集中（OTP確認）</div>
+    <div class="phone">
+      <div class="header"><span class="back">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="page-title">基本情報</div>
+      <div class="content">
+        <div class="field editing">
+          <div class="f-label">電話番号</div>
+          <input class="f-input" value="012 345 678">
+          <button class="btn btn-save full">確認コードを送信</button>
+          <div class="f-help">新しい番号にSMSで確認コードを送ります。確認できると番号が変わります（番号が使えるかの確認も兼ねます）。</div>
+          <div class="f-actions">
+            <button class="btn btn-cancel">キャンセル</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="f-row">
+            <div><div class="f-label">表示名</div><div class="f-value">farmer5</div></div>
+            <button class="edit-btn">編集</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="f-row">
+            <div><div class="f-label">位置情報</div><div class="f-value">タケオ州, Doun Kaev</div></div>
+            <button class="edit-btn">編集</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E 保存後（トースト） -->
+  <div class="phone-wrap">
+    <div class="phone-label">E 保存した直後（✓ 保存しました トースト）</div>
+    <div class="phone">
+      <div class="header"><span class="back">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="page-title">基本情報</div>
+      <div class="content">
+        <div class="field">
+          <div class="f-row">
+            <div><div class="f-label">電話番号</div><div class="f-value">012 345 678</div></div>
+            <button class="edit-btn">編集</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="f-row">
+            <div><div class="f-label">表示名</div><div class="f-value">大星農場</div></div>
+            <button class="edit-btn">編集</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="f-row">
+            <div><div class="f-label">位置情報</div><div class="f-value">タケオ州, Doun Kaev</div></div>
+            <button class="edit-btn">編集</button>
+          </div>
+        </div>
+        <div style="height:56px;"></div>
+      </div>
+      <div class="toast"><span class="tc">✓</span> 保存しました</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

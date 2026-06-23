@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
-    <title>FishLink</title>
+    <title>FISHLINK</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -14,12 +14,14 @@
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
     <style>
+        /* 6/22 #167: 買い手の「支払い情報」→「返金先」（任意・新規 refundAccount）。
+           送金先（農家）と同じ画面構造だが、任意＋未登録の専用空状態＋返金版の説明/警告。 */
         .sub-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
-        .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
+        .sub-page__title { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
         .acc-row { background: #f8fafc; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
         .acc-row__label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 4px; }
         .acc-row__value { font-size: 15px; font-weight: 600; word-break: break-all; }
-        .acc-row input { width: 100%; border: 1px solid var(--color-border); background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 16px; font-family: inherit; margin-top: 4px; }
+        .acc-row input, .qr-group input { width: 100%; border: 1px solid var(--color-border); background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 16px; font-family: inherit; margin-top: 4px; }
         .qr-box { border: 1px dashed var(--color-border); background: #f9fafb; border-radius: 14px; padding: 12px; text-align: center; }
         .qr-box img { width: 180px; height: 180px; max-width: 100%; object-fit: contain; border-radius: 8px; background: #fff; }
         .qr-box__placeholder { width: 180px; height: 180px; max-width: 100%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: #94a3b8; background: #fff; border-radius: 8px; }
@@ -30,7 +32,41 @@
         .save-row button { flex: 1; border: none; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; justify-content: center; text-align: center; }
         .save-row .save { background: var(--color-cta); color: #fff; }
         .edit-toggle { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-        .edit-btn { background: #eef2ff; color: #3730a3; border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+        .edit-btn { background: var(--color-cta-lt); color: var(--color-cta); border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+        /* 6/22 #167 (C2): キャンセルは中立グレー */
+        #btn-cancel { background: #eceef0; color: #4a4a4a; }
+
+        /* 6/22 #167: 返金版の説明（青）＋名義一致の注意（amber） */
+        .why-box { display: flex; gap: 8px; align-items: flex-start; background: var(--color-cta-lt); border: 1px solid #cfe0ee; border-radius: 12px; padding: 11px 13px; font-size: 12.5px; color: #1b4d7e; line-height: 1.6; margin-bottom: 12px; }
+        .why-box .material-symbols-outlined { font-size: 18px; color: var(--color-cta); flex-shrink: 0; }
+        .name-notice { display: flex; gap: 8px; align-items: flex-start; background: #fff7e6; border: 1px solid #f3d998; border-radius: 12px; padding: 11px 13px; font-size: 12.5px; color: #8a6a28; font-weight: 600; line-height: 1.6; margin-bottom: 14px; }
+        .name-notice .material-symbols-outlined { font-size: 18px; color: #b45309; flex-shrink: 0; }
+
+        /* 6/22 #167 (C1): 必須/いずれか1つ必須 バッジ＋「受取用QR」グループ＋「─ または ─」 */
+        .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; vertical-align: 1px; }
+        .badge.req { background: #fcebeb; color: #c2410c; }
+        .badge.either { background: var(--color-cta-lt); color: var(--color-cta); }
+        .badge.opt { background: #eef1f4; color: var(--color-text-sub); }
+        .badge .star { font-weight: 600; }
+        .acc-row__label .badge, .qr-group__head .badge { margin-left: 6px; }
+        .qr-group { border: 1px solid var(--color-border); border-radius: 13px; padding: 12px 13px; background: #fcfdfe; margin-bottom: 10px; }
+        .qr-group__head { font-size: 12.5px; font-weight: 700; color: var(--color-text); margin-bottom: 6px; }
+        .qr-sub-label { font-size: 12px; color: var(--color-text-sub); margin: 8px 0 4px; }
+        .or-divider { display: flex; align-items: center; gap: 10px; margin: 12px 2px; color: var(--color-text-sub); font-size: 12px; font-weight: 700; }
+        .or-divider::before, .or-divider::after { content: ""; flex: 1; height: 1px; background: var(--color-border); }
+        .ref-note { font-size: 11.5px; color: #9aa1a9; margin-top: 8px; line-height: 1.5; }
+
+        /* インラインバリデーション */
+        .field-error { display: none; color: var(--color-danger); font-size: 12px; font-weight: 600; margin-top: 6px; line-height: 1.5; }
+        .field-error.show { display: block; }
+        .input-error, .input-error:focus { border-color: var(--color-danger) !important; background: #fff5f5 !important; }
+
+        /* 6/22 #167 (C7): 未登録の空状態（専用画面・バラの「−」を出さない） */
+        .empty-state { text-align: center; padding: 26px 14px 8px; }
+        .empty-state__icon { font-size: 44px; color: var(--color-text-sub); margin-bottom: 10px; }
+        .empty-state__title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+        .empty-state__text { font-size: 13px; color: var(--color-text-sub); line-height: 1.7; margin-bottom: 18px; }
+        .empty-state__btn { width: 100%; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; background: var(--color-cta); color: #fff; }
     </style>
 </head>
 <body>
@@ -39,7 +75,7 @@
     <div class="page">
         <div class="page-header" style="align-items:center;">
             <a href="/pages/restaurant/account.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
-            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FISHLINK" class="brand-logo"></a>
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option>
@@ -48,19 +84,29 @@
             </select>
         </div>
 
-        <div class="sub-page__title" data-i18n="account.payment"></div>
+        <div class="sub-page__title">
+            <span data-i18n="account.refund"></span>
+            <span class="badge opt" data-i18n="post.optional"></span>
+        </div>
 
         <div class="sub-page">
 
-        <div class="edit-toggle">
-            <button class="edit-btn" id="btn-edit">
-                <span class="material-symbols-outlined" style="font-size:14px;">edit</span>
-                <span data-i18n="account.edit"></span>
-            </button>
+        <!-- 6/22 #167 (C7): 未登録の空状態（専用画面） -->
+        <div id="empty-state" class="empty-state" style="display:none;">
+            <div class="empty-state__icon"><span class="material-symbols-outlined" style="font-size:44px;">account_balance_wallet</span></div>
+            <div class="empty-state__title" data-i18n="account.refundEmptyTitle"></div>
+            <div class="empty-state__text" data-i18n="account.refundEmptyText"></div>
+            <button class="empty-state__btn" id="btn-register" data-i18n="account.refundRegisterBtn"></button>
         </div>
 
-        <!-- 表示モード -->
-        <div id="view-mode">
+        <!-- 表示モード（登録済み） -->
+        <div id="view-mode" style="display:none;">
+            <div class="edit-toggle">
+                <button class="edit-btn" id="btn-edit">
+                    <span class="material-symbols-outlined" style="font-size:14px;">edit</span>
+                    <span data-i18n="account.edit"></span>
+                </button>
+            </div>
             <div class="acc-row">
                 <div class="acc-row__label" data-i18n="account.accountName"></div>
                 <div class="acc-row__value" id="v-accountName">-</div>
@@ -79,16 +125,27 @@
 
         <!-- 編集モード -->
         <div id="edit-mode" style="display:none;">
+            <!-- 6/22 #167 (C6): なぜ口座が要るか（返金版・青） -->
+            <div class="why-box">
+                <span class="material-symbols-outlined">info</span>
+                <span data-i18n="account.refundWhy"></span>
+            </div>
+            <!-- 6/22 #167 (C5): 名義一致の注意（返金版・amber） -->
+            <div class="name-notice">
+                <span class="material-symbols-outlined">warning</span>
+                <span data-i18n="account.refundNameNotice"></span>
+            </div>
             <div class="acc-row">
-                <div class="acc-row__label" data-i18n="account.accountName"></div>
+                <div class="acc-row__label"><span data-i18n="account.accountName"></span><span class="badge req" data-i18n="post.required"></span><span class="badge req star">＊</span></div>
                 <input type="text" id="in-accountName" data-i18n="[placeholder]account.accountNamePlaceholder">
+                <div class="field-error" id="err-accountName" data-i18n="account.errorAccountName"></div>
             </div>
-            <div class="acc-row">
-                <div class="acc-row__label" data-i18n="account.qrLink"></div>
+            <div class="qr-group">
+                <div class="qr-group__head"><span data-i18n="account.qrGroupHead"></span><span class="badge either" data-i18n="account.eitherRequired"></span><span class="badge either star">＊</span></div>
+                <div class="qr-sub-label" data-i18n="account.qrLink"></div>
                 <input type="url" id="in-qrLink" data-i18n="[placeholder]account.qrLinkPlaceholder">
-            </div>
-            <div class="acc-row">
-                <div class="acc-row__label" data-i18n="account.qrImage"></div>
+                <div class="or-divider"><span data-i18n="account.orDivider"></span></div>
+                <div class="qr-sub-label" data-i18n="account.qrImage"></div>
                 <div class="qr-box" id="e-qrImage">
                     <div class="qr-box__placeholder"><span class="material-symbols-outlined" style="font-size:40px;">qr_code_2</span></div>
                 </div>
@@ -97,11 +154,15 @@
                     <button type="button" id="btn-qr-remove" class="danger" data-i18n="account.qrRemove"></button>
                     <input type="file" id="qr-file-input" accept="image/*" style="display:none;">
                 </div>
+                <div class="field-error" id="err-qrLink" data-i18n="account.errorQrLinkFormat"></div>
+                <div class="field-error" id="err-qr" data-i18n="account.errorQrRequired"></div>
             </div>
+            <div class="ref-note" data-i18n="account.refundRefNote"></div>
             <div class="save-row">
                 <button class="edit-btn" id="btn-cancel" style="flex:1;" data-i18n="account.cancel"></button>
                 <button class="save" id="btn-save" data-i18n="account.save"></button>
             </div>
+            <div class="field-error" id="err-save" data-i18n="account.saveFailed" style="margin-top:8px;"></div>
         </div>
 
         </div>
@@ -112,10 +173,10 @@
         import { watchAuthState } from '/js/auth.js';
         import { db, storage } from '/js/firebase-config.js';
         import { doc, updateDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
-        import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+        import { ref } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { uploadImageResized } from '/js/image-resize.js';
-        // 5/25 #91/#92 拡張: 表示パートを render-cache 化
-        import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        import { invalidate as invalidateDataCache } from '/js/data-cache.js';
+        import { showToast } from '/js/toast.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -123,11 +184,16 @@
         initLangSelector();
 
         let userData = null;
-        let editState = { qrImageUrl: null, qrFile: null, qrRemoved: false };
+        let editState = { qrImage: null, qrFile: null, qrRemoved: false };
 
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
             else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        function isRegistered() {
+            const r = userData?.refundAccount;
+            return !!(r && r.name && (r.qrLink || r.qrImage));
         }
 
         function showQr(containerId, url) {
@@ -139,54 +205,46 @@
             }
         }
 
+        function showSection(name) {
+            document.getElementById('empty-state').style.display = name === 'empty' ? 'block' : 'none';
+            document.getElementById('view-mode').style.display = name === 'view' ? 'block' : 'none';
+            document.getElementById('edit-mode').style.display = name === 'edit' ? 'block' : 'none';
+        }
+
         function renderView() {
-            document.getElementById('v-accountName').textContent = userData.accountName || '-';
+            const r = userData.refundAccount || {};
+            document.getElementById('v-accountName').textContent = r.name || '-';
             const linkEl = document.getElementById('v-qrLink');
-            if (userData.qrLink) {
-                linkEl.innerHTML = `<a href="${userData.qrLink}" target="_blank" rel="noopener" style="color:#0369a1;">${userData.qrLink}</a>`;
+            if (r.qrLink) {
+                linkEl.innerHTML = `<a href="${r.qrLink}" target="_blank" rel="noopener" style="color:#0369a1;">${r.qrLink}</a>`;
             } else {
                 linkEl.textContent = '-';
             }
-            showQr('v-qrImage', userData.qrImageUrl || null);
-            // 5/25 #91/#92 拡張: 次回訪問用にキャッシュ保存
-            try {
-                saveRenderState('restaurant_account_payment', {
-                    accountName: document.getElementById('v-accountName')?.textContent || '',
-                    qrLinkHtml: document.getElementById('v-qrLink')?.innerHTML || '',
-                    qrImageHtml: document.getElementById('v-qrImage')?.innerHTML || '',
-                });
-            } catch (e) { /* ignore */ }
+            showQr('v-qrImage', r.qrImage || null);
         }
 
-        // 5/25 #91/#92 拡張: ページ初期化前にキャッシュから即時復元
-        (function applyCache() {
-            try {
-                const cached = loadRenderState('restaurant_account_payment');
-                if (!cached) return;
-                const an = document.getElementById('v-accountName');
-                const ql = document.getElementById('v-qrLink');
-                const qi = document.getElementById('v-qrImage');
-                if (an && cached.accountName) an.textContent = cached.accountName;
-                if (ql && cached.qrLinkHtml) ql.innerHTML = cached.qrLinkHtml;
-                if (qi && cached.qrImageHtml) qi.innerHTML = cached.qrImageHtml;
-            } catch (e) { /* ignore */ }
-        })();
+        // 登録済み→view／未登録→empty を表示
+        function refresh() {
+            if (isRegistered()) { renderView(); showSection('view'); }
+            else { showSection('empty'); }
+        }
 
-        document.getElementById('btn-edit').addEventListener('click', () => {
-            document.getElementById('in-accountName').value = userData.accountName || '';
-            document.getElementById('in-qrLink').value = userData.qrLink || '';
-            editState = { qrImageUrl: userData.qrImageUrl || null, qrFile: null, qrRemoved: false };
-            showQr('e-qrImage', editState.qrImageUrl);
-            document.getElementById('view-mode').style.display = 'none';
-            document.getElementById('edit-mode').style.display = 'block';
-            document.getElementById('btn-edit').style.display = 'none';
-        });
+        function openEdit() {
+            const r = userData.refundAccount || {};
+            document.getElementById('in-accountName').value = r.name || '';
+            document.getElementById('in-qrLink').value = r.qrLink || '';
+            editState = { qrImage: r.qrImage || null, qrFile: null, qrRemoved: false };
+            showQr('e-qrImage', editState.qrImage);
+            ['err-accountName', 'err-qrLink', 'err-qr', 'err-save'].forEach(e => document.getElementById(e)?.classList.remove('show'));
+            document.getElementById('in-accountName').classList.remove('input-error');
+            document.getElementById('in-qrLink').classList.remove('input-error');
+            showSection('edit');
+        }
 
-        document.getElementById('btn-cancel').addEventListener('click', () => {
-            document.getElementById('view-mode').style.display = 'block';
-            document.getElementById('edit-mode').style.display = 'none';
-            document.getElementById('btn-edit').style.display = 'inline-flex';
-        });
+        document.getElementById('btn-edit').addEventListener('click', openEdit);
+        document.getElementById('btn-register').addEventListener('click', openEdit);
+
+        document.getElementById('btn-cancel').addEventListener('click', () => refresh());
 
         document.getElementById('btn-qr-upload').addEventListener('click', () => {
             document.getElementById('qr-file-input').click();
@@ -205,42 +263,90 @@
         document.getElementById('btn-qr-remove').addEventListener('click', () => {
             editState.qrFile = null;
             editState.qrRemoved = true;
-            editState.qrImageUrl = null;
+            editState.qrImage = null;
             document.getElementById('qr-file-input').value = '';
             showQr('e-qrImage', null);
+        });
+
+        // 入力でその欄のエラー解除
+        ['in-accountName', 'in-qrLink'].forEach((id) => {
+            document.getElementById(id)?.addEventListener('input', () => {
+                document.getElementById(id).classList.remove('input-error');
+                document.getElementById('err-accountName')?.classList.remove('show');
+                document.getElementById('err-qrLink')?.classList.remove('show');
+                document.getElementById('err-qr')?.classList.remove('show');
+            });
         });
 
         document.getElementById('btn-save').addEventListener('click', async () => {
             const uid = window.currentUser?.uid;
             if (!uid) return;
             const btn = document.getElementById('btn-save');
+
+            // インラインバリデーション（登録する場合＝名義必須＋「QRリンク or QR画像」のいずれか1つ必須）
+            const accountNameRaw = document.getElementById('in-accountName').value.trim();
+            const qrLinkRaw = document.getElementById('in-qrLink').value.trim();
+            const hasImage = !!(editState.qrFile) || (!!editState.qrImage && !editState.qrRemoved);
+            ['err-accountName', 'err-qrLink', 'err-qr', 'err-save'].forEach(e => document.getElementById(e)?.classList.remove('show'));
+            document.getElementById('in-accountName').classList.remove('input-error');
+            document.getElementById('in-qrLink').classList.remove('input-error');
+
+            let firstError = null;
+            if (!accountNameRaw) {
+                document.getElementById('err-accountName').classList.add('show');
+                document.getElementById('in-accountName').classList.add('input-error');
+                firstError = firstError || document.getElementById('in-accountName');
+            }
+            if (qrLinkRaw && !/^https?:\/\/link\.payway\.com\.kh\//i.test(qrLinkRaw)) {
+                document.getElementById('err-qrLink').classList.add('show');
+                document.getElementById('in-qrLink').classList.add('input-error');
+                firstError = firstError || document.getElementById('in-qrLink');
+            }
+            if (!qrLinkRaw && !hasImage) {
+                document.getElementById('err-qr').classList.add('show');
+                firstError = firstError || document.getElementById('in-qrLink');
+            }
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (typeof firstError.focus === 'function') firstError.focus({ preventScroll: true });
+                return;
+            }
+
             btn.disabled = true;
             loading.classList.add('show');
             try {
-                const accountName = document.getElementById('in-accountName').value.trim();
-                const qrLink = document.getElementById('in-qrLink').value.trim();
-                let qrImageUrl = editState.qrImageUrl;
+                const withTimeout = (promise, ms, label) =>
+                    Promise.race([
+                        promise,
+                        new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout: ${label} (${ms}ms)`)), ms)),
+                    ]);
+
+                const name = accountNameRaw;
+                const qrLink = qrLinkRaw;
+                let qrImage = editState.qrImage;
                 if (editState.qrFile) {
-                    // 5/11 #67: リサイズ+圧縮+リトライ
                     const baseName = (editState.qrFile.name || 'qr').replace(/\.[^.]+$/, '');
                     const storageRef = ref(storage, `qr/${uid}/${Date.now()}_${baseName}.jpg`);
-                    qrImageUrl = await uploadImageResized(storageRef, editState.qrFile);
+                    qrImage = await uploadImageResized(storageRef, editState.qrFile);
                 } else if (editState.qrRemoved) {
-                    qrImageUrl = null;
+                    qrImage = null;
                 }
-                await updateDoc(doc(db, 'users', uid), {
-                    accountName: accountName || null,
-                    qrLink: qrLink || null,
-                    qrImageUrl: qrImageUrl || null,
-                });
-                userData.accountName = accountName || null;
-                userData.qrLink = qrLink || null;
-                userData.qrImageUrl = qrImageUrl || null;
-                renderView();
-                document.getElementById('btn-cancel').click();
+                const refundAccount = { name: name || null, qrLink: qrLink || null, qrImage: qrImage || null };
+                await withTimeout(
+                    updateDoc(doc(db, 'users', uid), { refundAccount }),
+                    20000,
+                    'updateDoc users refundAccount'
+                );
+                userData.refundAccount = refundAccount;
+                if (window.currentUserData) window.currentUserData.refundAccount = refundAccount;
+                invalidateDataCache('users', uid);
+                refresh();
+                showToast(i18next.t('account.saved'));   // 6/22 #167/E: 保存成功トースト
             } catch (err) {
-                console.error(err);
-                alert(i18next.t('account.saveFailed'));
+                console.error('refund account save failed:', err);
+                // 6/22 E: 保存エラーはインライン（ブラウザ alert は使わない）
+                const se = document.getElementById('err-save');
+                if (se) se.classList.add('show');
             } finally {
                 btn.disabled = false;
                 loading.classList.remove('show'); document.body.classList.add('app-ready');
@@ -249,7 +355,7 @@
 
         waitForUserData(() => {
             userData = { ...window.currentUserData };
-            renderView();
+            refresh();
             loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
     </script>

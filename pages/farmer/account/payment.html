@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
-    <title>FishLink</title>
+    <title>FISHLINK</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -19,7 +19,19 @@
         .acc-row { background: #f8fafc; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
         .acc-row__label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 4px; }
         .acc-row__value { font-size: 15px; font-weight: 600; word-break: break-all; }
-        .acc-row input { width: 100%; border: 1px solid var(--color-border); background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 16px; font-family: inherit; margin-top: 4px; }
+        .acc-row input, .qr-group input { width: 100%; border: 1px solid var(--color-border); background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 16px; font-family: inherit; margin-top: 4px; }
+        /* 6/22 #167 (C1): 必須/いずれか1つ必須 バッジ＋「受取用QR」グループ＋「─ または ─」 */
+        .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-left: 6px; vertical-align: 1px; }
+        .badge.req { background: #fcebeb; color: #c2410c; }
+        .badge.either { background: var(--color-cta-lt); color: var(--color-cta); }
+        .badge.opt { background: #eef1f4; color: var(--color-text-sub); }
+        .qr-group { border: 1px solid var(--color-border); border-radius: 13px; padding: 12px 13px; background: #fcfdfe; margin-bottom: 10px; }
+        .qr-group__head { font-size: 12.5px; font-weight: 700; color: var(--color-text); margin-bottom: 6px; }
+        .qr-sub-label { font-size: 12px; color: var(--color-text-sub); margin: 8px 0 4px; }
+        .or-divider { display: flex; align-items: center; gap: 10px; margin: 12px 2px; color: var(--color-text-sub); font-size: 12px; font-weight: 700; }
+        .or-divider::before, .or-divider::after { content: ""; flex: 1; height: 1px; background: var(--color-border); }
+        /* 6/22 #167 (C2): キャンセルは中立グレー（.edit-btn の薄青を上書き） */
+        #btn-cancel { background: #eceef0; color: #4a4a4a; }
         .qr-box { border: 1px dashed var(--color-border); background: #f9fafb; border-radius: 14px; padding: 12px; text-align: center; }
         .qr-box img { width: 180px; height: 180px; max-width: 100%; object-fit: contain; border-radius: 8px; background: #fff; }
         .qr-box__placeholder { width: 180px; height: 180px; max-width: 100%; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: #94a3b8; background: #fff; border-radius: 8px; }
@@ -47,7 +59,7 @@
     <div class="page">
         <div class="page-header" style="align-items:center;">
             <a href="/pages/farmer/account.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
-            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FISHLINK" class="brand-logo"></a>
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option>
@@ -93,18 +105,17 @@
                 <span data-i18n="account.nameMatchNotice"></span>
             </div>
             <div class="acc-row">
-                <div class="acc-row__label" data-i18n="account.accountName"></div>
+                <div class="acc-row__label"><span data-i18n="account.accountName"></span><span class="badge req" data-i18n="post.required"></span></div>
                 <input type="text" id="in-accountName" data-i18n="[placeholder]account.accountNamePlaceholder">
                 <div class="field-error" id="err-accountName" data-i18n="account.errorAccountName"></div>
             </div>
-            <div class="acc-row">
-                <div class="acc-row__label" data-i18n="account.qrLink"></div>
+            <!-- 6/22 #167 (C1): 受取用QR＝QRリンク or QR画像 のいずれか1つ必須（1グループ＋「─ または ─」） -->
+            <div class="qr-group">
+                <div class="qr-group__head"><span data-i18n="account.qrGroupHead"></span><span class="badge either" data-i18n="account.eitherRequired"></span></div>
+                <div class="qr-sub-label" data-i18n="account.qrLink"></div>
                 <input type="url" id="in-qrLink" data-i18n="[placeholder]account.qrLinkPlaceholder">
-                <div class="input-hint" data-i18n="account.qrEitherHint"></div>
-                <div class="field-error" id="err-qrLink" data-i18n="account.errorQrLinkFormat"></div>
-            </div>
-            <div class="acc-row">
-                <div class="acc-row__label" data-i18n="account.qrImage"></div>
+                <div class="or-divider"><span data-i18n="account.orDivider"></span></div>
+                <div class="qr-sub-label" data-i18n="account.qrImage"></div>
                 <div class="qr-box" id="e-qrImage">
                     <div class="qr-box__placeholder"><span class="material-symbols-outlined" style="font-size:40px;">qr_code_2</span></div>
                 </div>
@@ -113,12 +124,14 @@
                     <button type="button" id="btn-qr-remove" class="danger" data-i18n="account.qrRemove"></button>
                     <input type="file" id="qr-file-input" accept="image/*" style="display:none;">
                 </div>
+                <div class="field-error" id="err-qrLink" data-i18n="account.errorQrLinkFormat"></div>
                 <div class="field-error" id="err-qr" data-i18n="account.errorQrRequired"></div>
             </div>
             <div class="save-row">
                 <button class="edit-btn" id="btn-cancel" style="flex:1;" data-i18n="account.cancel"></button>
                 <button class="save" id="btn-save" data-i18n="account.save"></button>
             </div>
+            <div class="field-error" id="err-save" data-i18n="account.saveFailed" style="margin-top:8px;"></div>
         </div>
 
         </div>
@@ -133,6 +146,7 @@
         import { uploadImageResized } from '/js/image-resize.js';
         // 5/25 #91/#92 拡張: 表示パートを render-cache 化
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        import { showToast } from '/js/toast.js';   // 6/22 #167/E: 保存成功トースト
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -249,7 +263,7 @@
             const qrLinkRaw = document.getElementById('in-qrLink').value.trim();
             const hasImage = !!(editState.qrFile) || (!!editState.qrImageUrl && !editState.qrRemoved);
             // エラー表示クリア
-            ['err-accountName', 'err-qrLink', 'err-qr'].forEach(e => document.getElementById(e)?.classList.remove('show'));
+            ['err-accountName', 'err-qrLink', 'err-qr', 'err-save'].forEach(e => document.getElementById(e)?.classList.remove('show'));
             document.getElementById('in-accountName').classList.remove('input-error');
             document.getElementById('in-qrLink').classList.remove('input-error');
 
@@ -313,11 +327,12 @@
                 userData.qrImageUrl = qrImageUrl || null;
                 renderView();
                 document.getElementById('btn-cancel').click();
+                showToast(i18next.t('account.saved'));   // 6/22 #167/E: 保存成功トースト
             } catch (err) {
                 console.error('QR save failed:', err);
-                // 5/3: silent fail防止 — エラー詳細をユーザーに見せる
-                const detail = err?.message || String(err) || 'unknown';
-                alert(`${i18next.t('account.saveFailed')}\n[${detail.slice(0, 120)}]`);
+                // 6/22 E: 保存エラーはインライン（ブラウザ alert は使わない）
+                const se = document.getElementById('err-save');
+                if (se) se.classList.add('show');
             } finally {
                 btn.disabled = false;
                 loading.classList.remove('show'); document.body.classList.add('app-ready');

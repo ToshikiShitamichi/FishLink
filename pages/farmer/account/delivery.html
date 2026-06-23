@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
+    <title>FISHLINK</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        /* 6/22 #168: 配送設定 独立画面（farmerDelivery を出品フォームと共有・正本はマイページ）。
+           #161⑤⑥⑦⑧（出品フォームの配送設定）と内容・文言を揃える。 */
+        .sub-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
+        .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
+        .warn { display: flex; gap: 8px; align-items: flex-start; background: #fff7e6; border: 1px solid #f3d998; border-radius: 12px; padding: 11px 13px; font-size: 12.5px; color: #8a6a28; line-height: 1.6; margin-bottom: 18px; }
+        .warn .material-symbols-outlined { font-size: 18px; color: #b45309; flex-shrink: 0; }
+        .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-left: 6px; vertical-align: 1px; }
+        .badge.req { background: #fcebeb; color: #c2410c; }
+        .badge.opt { background: #eef1f4; color: var(--color-text-sub); }
+        .fb { margin-bottom: 18px; }
+        .fb-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        /* 6/22 修正: ラベルに残り幅を割り当て（CJKが1文字幅に潰れて縦折り返しになるのを防ぐ） */
+        .fb-label { font-size: 14.5px; font-weight: 700; flex: 1 1 auto; min-width: 0; }
+        .fb-iw { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
+        /* ⚠️ グローバル input[type=number]{width:100%}（詳細度 0,1,1）に勝つため .fb-iw .fb-input（0,2,0）で上書き＝コンパクト幅を維持 */
+        .fb-iw .fb-input { width: 96px; text-align: right; border: 1px solid var(--color-border); border-radius: 9px; padding: 9px 11px; font-size: 15px; font-weight: 700; font-family: inherit; background: #fff; box-sizing: border-box; }
+        .fb-iw .fb-input::placeholder { color: #b6bdc6; font-weight: 500; }
+        .fb-iw .fb-input.input-error { border-color: var(--color-danger); background: #fff5f5; }
+        .fb-unit { font-size: 13px; color: var(--color-text-sub); white-space: nowrap; }
+        /* 6/22 #168 (#161⑥): 送料無料距離のヘルプはニュートラルグレー（緑の使いすぎを解消） */
+        .fb-help { font-size: 12px; color: var(--color-text-sub); margin-top: 8px; line-height: 1.6; }
+        .field-error { display: none; color: var(--color-danger); font-size: 12px; font-weight: 600; margin-top: 6px; }
+        .field-error.show { display: block; }
+        /* 6/22 #168 (#161⑤): 数値スピナー非表示（数値キーボード＝inputmode=numeric） */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+        .f-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .f-actions button, .f-actions a { flex: 1; border: none; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; text-align: center; }
+        .f-actions .cancel { background: #eceef0; color: #4a4a4a; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+        .f-actions .save { background: var(--color-cta); color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="page">
+        <div class="page-header" style="align-items:center;">
+            <a href="/pages/farmer/account.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/farmer/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FISHLINK" class="brand-logo"></a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
+            </select>
+        </div>
+
+        <div class="sub-page__title" data-i18n="account.deliverySetting"></div>
+
+        <div class="sub-page">
+            <!-- 全出品共通の警告（出品あり＝N件／0件＝今後の出品に適用） -->
+            <div class="warn">
+                <span class="material-symbols-outlined">warning</span>
+                <span id="warn-text"></span>
+            </div>
+
+            <div class="fb">
+                <div class="fb-top">
+                    <div class="fb-label"><span data-i18n="post.deliverableRadius"></span><span class="badge req" data-i18n="post.required"></span></div>
+                    <div class="fb-iw"><input class="fb-input" id="in-radius" type="number" min="0" inputmode="numeric" data-i18n="[placeholder]post.deliverableRadiusPlaceholder"><span class="fb-unit">km</span></div>
+                </div>
+                <div class="fb-help" data-i18n="post.deliverableRadiusNote"></div>
+                <div class="field-error" id="err-radius" data-i18n="post.errorDeliverableRadius"></div>
+            </div>
+
+            <div class="fb">
+                <div class="fb-top">
+                    <div class="fb-label"><span data-i18n="post.deliveryRate"></span><span class="badge req" data-i18n="post.required"></span></div>
+                    <div class="fb-iw"><input class="fb-input" id="in-fee" type="number" min="0" inputmode="numeric" data-i18n="[placeholder]post.deliveryRatePlaceholder"><span class="fb-unit">KHR/10km</span></div>
+                </div>
+                <div class="fb-help" data-i18n="post.deliveryRateExample"></div>
+                <div class="field-error" id="err-fee" data-i18n="post.errorDeliveryFee"></div>
+            </div>
+
+            <div class="fb">
+                <div class="fb-top">
+                    <div class="fb-label"><span data-i18n="post.freeDeliveryDistance"></span><span class="badge opt" data-i18n="post.optional"></span></div>
+                    <div class="fb-iw"><input class="fb-input" id="in-free" type="number" min="0" inputmode="numeric" data-i18n="[placeholder]post.freeDeliveryDistancePlaceholder"><span class="fb-unit">km</span></div>
+                </div>
+                <div class="fb-help" data-i18n="post.freeDeliveryNote"></div>
+            </div>
+
+            <div class="f-actions">
+                <a class="cancel" href="/pages/farmer/account.html" data-i18n="account.cancel"></a>
+                <button class="save" id="btn-save" data-i18n="post.deliverySheetSave"></button>
+            </div>
+            <div class="field-error" id="err-save" data-i18n="account.saveFailed" style="margin-top:8px;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import { doc, updateDoc, collection, query, where, getCountFromServer } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { invalidate as invalidateDataCache } from '/js/data-cache.js';
+        import { showToast } from '/js/toast.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        let listingCount = 0;
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        // 全出品共通の警告文（出品あり＝N件／0件＝今後の出品に適用）
+        function renderWarn() {
+            const el = document.getElementById('warn-text');
+            if (!el) return;
+            el.textContent = listingCount > 0
+                ? i18next.t('post.deliverySheetWarn', { count: listingCount })
+                : i18next.t('account.deliveryWarnEmpty');
+        }
+
+        function prefill() {
+            // 初回・未設定＝空＋プレースホルダ（プリフィルしない）。設定済みなら現在値を表示。
+            const fd = window.currentUserData?.farmerDelivery || null;
+            if (fd) {
+                document.getElementById('in-radius').value = fd.deliverableRadiusKm != null ? fd.deliverableRadiusKm : '';
+                document.getElementById('in-fee').value = fd.deliveryFeePer10km != null ? fd.deliveryFeePer10km : '';
+                document.getElementById('in-free').value = fd.freeDeliveryKm ? fd.freeDeliveryKm : '';
+            }
+        }
+
+        document.getElementById('in-radius').addEventListener('input', () => {
+            document.getElementById('in-radius').classList.remove('input-error');
+            document.getElementById('err-radius').classList.remove('show');
+        });
+        document.getElementById('in-fee').addEventListener('input', () => {
+            document.getElementById('in-fee').classList.remove('input-error');
+            document.getElementById('err-fee').classList.remove('show');
+        });
+
+        document.getElementById('btn-save').addEventListener('click', async () => {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            const btn = document.getElementById('btn-save');
+            const radius = parseFloat(document.getElementById('in-radius').value) || 0;
+            const fee = parseInt(document.getElementById('in-fee').value, 10) || 0;
+            const free = parseFloat(document.getElementById('in-free').value) || 0;
+
+            // インラインバリデーション（配送可能距離・送料は必須＝0より大／無料距離は任意）
+            ['err-radius', 'err-fee', 'err-save'].forEach(e => document.getElementById(e)?.classList.remove('show'));
+            document.getElementById('in-radius').classList.remove('input-error');
+            document.getElementById('in-fee').classList.remove('input-error');
+            let firstError = null;
+            if (radius <= 0) {
+                document.getElementById('err-radius').classList.add('show');
+                document.getElementById('in-radius').classList.add('input-error');
+                firstError = firstError || document.getElementById('in-radius');
+            }
+            if (fee <= 0) {
+                document.getElementById('err-fee').classList.add('show');
+                document.getElementById('in-fee').classList.add('input-error');
+                firstError = firstError || document.getElementById('in-fee');
+            }
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (typeof firstError.focus === 'function') firstError.focus({ preventScroll: true });
+                return;
+            }
+
+            btn.disabled = true;
+            loading.classList.add('show');
+            try {
+                const farmerDelivery = { deliverableRadiusKm: radius, deliveryFeePer10km: fee, freeDeliveryKm: free || 0 };
+                // farmerDelivery は農家docのみが正＝1箇所更新で全出品の買い手側表示に即反映
+                await updateDoc(doc(db, 'users', uid), { farmerDelivery });
+                if (window.currentUserData) window.currentUserData.farmerDelivery = farmerDelivery;
+                // 配送条件は買い手側の距離・送料計算に影響するため data-cache を破棄
+                invalidateDataCache('users', uid);
+                showToast(i18next.t('account.saved'));   // 6/22 #168/E: 保存成功トースト
+            } catch (err) {
+                console.error('save farmerDelivery failed:', err);
+                const se = document.getElementById('err-save');
+                if (se) se.classList.add('show');
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+
+        onLanguageChange(() => renderWarn());
+
+        waitForUserData(async () => {
+            prefill();
+            // 出品数（正確な件数・集計1read）。失敗時は0扱い→「今後の出品に適用」を表示。
+            const uid = window.currentUser?.uid;
+            if (uid) {
+                try {
+                    const cnt = await getCountFromServer(query(
+                        collection(db, 'fishListings'),
+                        where('farmerId', '==', uid),
+                        where('isActive', '==', true)
+                    ));
+                    listingCount = cnt.data().count || 0;
+                } catch (e) { listingCount = 0; }
+            }
+            renderWarn();
+            loading.classList.remove('show'); document.body.classList.add('app-ready');
+        });
+    </script>
+</body>
+</html>

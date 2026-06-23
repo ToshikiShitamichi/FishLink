@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
-    <title>FishLink</title>
+    <title>FISHLINK</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -19,7 +19,19 @@
         .acc-menu-head { padding: 16px 0; }
         .acc-menu-head__sub { font-size: 12px; color: var(--color-text-sub); }
         .acc-menu-head__name { font-size: 22px; font-weight: 700; color: var(--color-text); margin-top: 4px; }
-        .acc-menu-head__id { font-size: 13px; color: var(--color-text-sub); margin-top: 2px; }
+        /* 6/22 #164: マイページ top にアバター表示（公開ページで設定した avatarUrl・表示のみ・未設定はデフォルト） */
+        .acc-profile { display: flex; align-items: center; gap: 14px; padding: 16px 0; }
+        .acc-avatar {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: #e3ecf6; border: 1px solid #d7e1ed;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; flex-shrink: 0; color: var(--color-text-sub);
+        }
+        .acc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .acc-avatar .material-symbols-outlined { font-size: 32px; }
+        /* 6/22 #164: 紹介行の動的サブ文言（特典額・クーポン枚数）＝青アクセント／返金先「未登録」＝中立グレー */
+        .acc-menu-item__meta--accent { color: var(--color-cta); font-weight: 600; }
+        .acc-menu-item__meta--muted { color: var(--color-text-sub); }
 
         .acc-menu-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
         .acc-menu-item {
@@ -48,11 +60,12 @@
             flex-shrink: 0;
         }
 
+        /* 6/22 #164: ログアウトは破壊的でない＝中立グレー（赤は削除など danger 専用） */
         .logout-btn-full {
             width: 100%;
-            background: #fef2f2;
-            color: #b91c1c;
-            border: 1px solid #fecaca;
+            background: var(--color-surface);
+            color: var(--color-text-sub);
+            border: 1px solid var(--color-border);
             border-radius: 14px;
             padding: 12px;
             font-size: 14px;
@@ -77,98 +90,8 @@
             border-radius: 50%;
         }
 
-        /* 5/23 #82 Phase 1 → 6/7 #134: 紹介コードカード（ソフトブルー＝GAqP緑と区別） */
-        .referral-card {
-            background: var(--color-cta-lt);
-            border: 1px solid #cfe0ee;
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 14px;
-        }
-        .referral-card__head {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 13px; font-weight: 700; color: var(--color-cta);
-            margin-bottom: 4px;
-        }
-        .referral-card__head .material-symbols-outlined { font-size: 18px; }
-        .referral-card__desc {
-            font-size: 11px; color: #3e6a98;
-            line-height: 1.4;
-            margin-bottom: 10px;
-        }
-        .referral-card__code {
-            background: #fff;
-            border: 1px solid #d5e6f8;
-            border-radius: 10px;
-            padding: 12px;
-            text-align: center;
-            font-family: monospace;
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: #0b1b33;
-            margin-bottom: 10px;
-            user-select: all;
-        }
-        .referral-card__actions { display: flex; gap: 8px; }
-        .referral-card__btn {
-            flex: 1;
-            background: #fff;
-            border: 1px solid var(--color-cta);
-            color: var(--color-cta);
-            border-radius: 999px;
-            padding: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: inherit;
-            display: flex; align-items: center; justify-content: center; gap: 4px;
-        }
-        .referral-card__btn .material-symbols-outlined { font-size: 16px; }
-        .referral-card__btn--primary {
-            background: var(--color-cta);
-            color: #fff;
-            border-color: var(--color-cta);
-        }
-        .referral-card__phase-note {
-            font-size: 10px; color: #7c97b5;
-            text-align: center;
-            margin-top: 8px;
-            font-style: italic;
-        }
-
-        /* 5/24 #82 Phase 2 Chunk 4: 紹介ボーナス枠カード（農家側） */
-        .bonus-card {
-            background: linear-gradient(135deg, #fff7ed, #fed7aa);
-            border: 1px solid #fdba74;
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 14px;
-        }
-        .bonus-card__head {
-            display: flex; align-items: center; gap: 6px;
-            font-size: 13px; font-weight: 700; color: #9a3412;
-            margin-bottom: 8px;
-        }
-        .bonus-card__head .material-symbols-outlined { font-size: 18px; }
-        .bonus-card__body {
-            font-size: 12px; color: #7c2d12; line-height: 1.5;
-        }
-        .bonus-card__count {
-            display: inline-block;
-            background: #c2410c;
-            color: #fff;
-            border-radius: 999px;
-            padding: 2px 10px;
-            font-size: 16px;
-            font-weight: 700;
-            margin-right: 6px;
-        }
-        .bonus-card__note {
-            font-size: 10px; color: #9a3412;
-            margin-top: 6px;
-            font-style: italic;
-        }
+        /* 6/22 #164: 紹介コードカード／紹介ボーナス枠カードは 1行メニュー化で廃止（CSS も削除）。
+           コード/コピー/シェアは紹介専用ページ（account/referral.html）へ移動。 */
     </style>
 </head>
 
@@ -214,49 +137,34 @@
 
         <div class="acc-menu-page">
 
-            <div class="acc-menu-head">
-                <div class="acc-menu-head__sub" data-i18n="role.farmer"></div>
-                <div class="acc-menu-head__name" id="display-name">-</div>
-                <div class="acc-menu-head__id" id="login-id">-</div>
+            <!-- 6/22 #164: プロフィールヘッダー（アバター＋役割＋表示名・@ハンドルは出さない） -->
+            <div class="acc-profile">
+                <div class="acc-avatar" id="avatar"><span class="material-symbols-outlined">person</span></div>
+                <div>
+                    <div class="acc-menu-head__sub" data-i18n="role.farmer"></div>
+                    <div class="acc-menu-head__name" id="display-name">-</div>
+                </div>
             </div>
 
-            <!-- 5/23 #82 Phase 1: 紹介コードカード -->
-            <div class="referral-card">
-                <div class="referral-card__head">
-                    <span class="material-symbols-outlined">card_giftcard</span>
-                    <span data-i18n="referral.cardTitle"></span>
-                </div>
-                <div class="referral-card__desc" data-i18n="referral.cardDescFarmer"></div>
-                <div class="referral-card__code" id="referral-code">--------</div>
-                <div class="referral-card__actions">
-                    <button type="button" id="referral-copy" class="referral-card__btn">
-                        <span class="material-symbols-outlined">content_copy</span>
-                        <span data-i18n="referral.copy"></span>
-                    </button>
-                    <button type="button" id="referral-share" class="referral-card__btn referral-card__btn--primary">
-                        <span class="material-symbols-outlined">share</span>
-                        <span data-i18n="referral.share"></span>
-                    </button>
-                </div>
-                <div class="referral-card__phase-note" data-i18n="referral.phase1Note"></div>
-            </div>
-
-            <!-- 5/24 #82 Phase 2 Chunk 4: 紹介ボーナス枠（未消費チケット） -->
-            <div class="bonus-card" id="bonus-card" style="display:none;">
-                <div class="bonus-card__head">
-                    <span class="material-symbols-outlined">military_tech</span>
-                    <span data-i18n="bonus.farmerCardTitle"></span>
-                </div>
-                <div class="bonus-card__body" id="bonus-card-body"></div>
-                <div class="bonus-card__note" data-i18n="bonus.farmerDescNote"></div>
-            </div>
-
+            <!-- 6/22 #164: 並び順＝基本情報→生産者ページ→送金先→配送設定→売上・取引→紹介→運営メッセージ -->
             <div class="acc-menu-list">
                 <a class="acc-menu-item" href="/pages/farmer/account/basic.html">
                     <div class="acc-menu-item__icon"><span class="material-symbols-outlined">person</span></div>
                     <div class="acc-menu-item__body">
                         <div class="acc-menu-item__title" data-i18n="account.basic"></div>
                         <div class="acc-menu-item__meta" data-i18n="account.menuHintBasic"></div>
+                    </div>
+                    <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
+                </a>
+
+                <!-- 6/11 #137 §10（農家側も同様）: 「生産者ページ」はプロフィール編集画面へ。公開プレビューは
+                     編集画面内の「公開ページをプレビュー」リンクから（公開ページに編集導線は置かない）。
+                     6/22 #164: 基本情報のすぐ下＝公開ページ。サブは「買い手に公開される〜」。 -->
+                <a class="acc-menu-item" href="/pages/farmer/account/profile.html">
+                    <div class="acc-menu-item__icon" style="background:#ecfdf5; color:#047857;"><span class="material-symbols-outlined">eco</span></div>
+                    <div class="acc-menu-item__body">
+                        <div class="acc-menu-item__title" data-i18n="profile.farmerTitle"></div>
+                        <div class="acc-menu-item__meta" data-i18n="account.menuHintProfileFarmer"></div>
                     </div>
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
@@ -270,6 +178,16 @@
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
 
+                <!-- 6/22 #164/#168: 配送設定（独立画面・farmerDelivery を出品フォームと共有） -->
+                <a class="acc-menu-item" href="/pages/farmer/account/delivery.html">
+                    <div class="acc-menu-item__icon" style="background:#e7f0fa; color:#1d4ed8;"><span class="material-symbols-outlined">local_shipping</span></div>
+                    <div class="acc-menu-item__body">
+                        <div class="acc-menu-item__title" data-i18n="account.deliverySetting"></div>
+                        <div class="acc-menu-item__meta" data-i18n="account.menuHintDelivery"></div>
+                    </div>
+                    <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
+                </a>
+
                 <a class="acc-menu-item" href="/pages/farmer/account/sales.html">
                     <div class="acc-menu-item__icon" style="background:#dcfce7; color:#166534;"><span class="material-symbols-outlined">trending_up</span></div>
                     <div class="acc-menu-item__body">
@@ -279,13 +197,13 @@
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
 
-                <!-- 6/11 #137 §10（農家側も同様）: 「生産者ページ」はプロフィール編集画面へ。公開プレビューは
-                     編集画面内の「公開ページをプレビュー」リンクから（公開ページに編集導線は置かない）。 -->
-                <a class="acc-menu-item" href="/pages/farmer/account/profile.html">
-                    <div class="acc-menu-item__icon" style="background:#ecfdf5; color:#047857;"><span class="material-symbols-outlined">eco</span></div>
+                <!-- 6/22 #164: 紹介＝1行メニュー化（巨大カード廃止）。サブ文言は状態で動的（金額は運営設定）。
+                     コード/コピー/シェアは紹介専用ページ（account/referral.html）。 -->
+                <a class="acc-menu-item" href="/pages/farmer/account/referral.html">
+                    <div class="acc-menu-item__icon" style="background:#fbf0dc; color:#b45309;"><span class="material-symbols-outlined">redeem</span></div>
                     <div class="acc-menu-item__body">
-                        <div class="acc-menu-item__title" data-i18n="profile.farmerTitle"></div>
-                        <div class="acc-menu-item__meta" data-i18n="account.menuHintProfileFarmer"></div>
+                        <div class="acc-menu-item__title" data-i18n="account.referralFarmer"></div>
+                        <div class="acc-menu-item__meta acc-menu-item__meta--accent" id="referral-sub"></div>
                     </div>
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
@@ -334,10 +252,10 @@
         import {
             collection, query, where, onSnapshot, doc, getDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
-        // 5/23 #82 Phase 1: 紹介コード
-        import { ensureUserReferralCode } from '/js/referral.js';
-        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ（紹介コード・ボーナス枠など非同期描画分）
+        // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ（紹介サブ文言など非同期描画分）
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // 6/22 #164: アバター画像（公開ページで設定した avatarUrl・表示のみ・未設定はデフォルト）
+        import { asCachedImgAttrs } from '/js/image-cache.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -353,34 +271,29 @@
         function renderHead() {
             const d = window.currentUserData || {};
             document.getElementById('display-name').textContent = d.displayName || '-';
-            document.getElementById('login-id').textContent = d.loginId ? `@${d.loginId}` : '';
+            // 6/22 #164: アバター（avatarUrl・未設定はデフォルトの人型アイコン）
+            const av = document.getElementById('avatar');
+            if (av) {
+                av.innerHTML = d.avatarUrl
+                    ? `<img ${asCachedImgAttrs(d.avatarUrl)} alt="">`
+                    : `<span class="material-symbols-outlined">person</span>`;
+            }
         }
 
-        // 5/25 #91/#92 拡張: 紹介コード・ボーナスカードの HTML を即時復元
+        // 6/22 #164: 紹介行のサブ文言を即時復元（非同期算出分）
         (function applyAccountCache() {
             try {
                 const cached = loadRenderState('farmer_account');
-                if (!cached) return;
-                if (cached.referralCode) {
-                    const el = document.getElementById('referral-code');
-                    if (el) el.textContent = cached.referralCode;
-                }
-                if (cached.bonusHtml) {
-                    const body = document.getElementById('bonus-card-body');
-                    const card = document.getElementById('bonus-card');
-                    if (body && card) {
-                        body.innerHTML = cached.bonusHtml;
-                        card.style.display = cached.bonusVisible ? 'block' : 'none';
-                    }
+                if (cached && cached.referralSub != null) {
+                    const el = document.getElementById('referral-sub');
+                    if (el) el.textContent = cached.referralSub;
                 }
             } catch (e) { /* ignore */ }
         })();
         function saveAccountRender() {
             try {
                 saveRenderState('farmer_account', {
-                    referralCode: document.getElementById('referral-code')?.textContent || '',
-                    bonusHtml: document.getElementById('bonus-card-body')?.innerHTML || '',
-                    bonusVisible: document.getElementById('bonus-card')?.style.display === 'block',
+                    referralSub: document.getElementById('referral-sub')?.textContent || '',
                 });
             } catch (e) { /* ignore */ }
         }
@@ -419,85 +332,35 @@
             await logout();
         });
 
-        // 5/23 #82 Phase 1: 紹介コードの表示・コピー・シェア
-        async function showReferralCode() {
-            const uid = window.currentUser?.uid;
-            if (!uid) return;
-            let code = '--------';
+        // 6/22 #164: 紹介行の動的サブ文言（settings/referral の現在値＋本人の保留ボーナス数を反映）。
+        //   コード/コピー/シェアは紹介専用ページ（account/referral.html）に移動。
+        let referralState = null; // { enabled, amount, count }
+        async function computeReferralSub() {
             try {
-                code = await ensureUserReferralCode(uid, window.currentUserData);
-            } catch (e) {
-                console.warn('ensureUserReferralCode failed:', e);
-                return;
-            }
-            document.getElementById('referral-code').textContent = code;
-
-            document.getElementById('referral-copy').addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText(code);
-                    alert(i18next.t('referral.copied'));
-                } catch (e) {
-                    const ta = document.createElement('textarea');
-                    ta.value = code;
-                    document.body.appendChild(ta);
-                    ta.select();
-                    try { document.execCommand('copy'); } catch (_) { /* ignore */ }
-                    ta.remove();
-                    alert(i18next.t('referral.copied'));
-                }
-            });
-
-            document.getElementById('referral-share').addEventListener('click', async () => {
-                const shareText = i18next.t('referral.shareText', { code });
-                if (navigator.share) {
-                    try {
-                        await navigator.share({ text: shareText });
-                    } catch (e) { /* ユーザーキャンセル */ }
-                } else {
-                    try {
-                        await navigator.clipboard.writeText(shareText);
-                        alert(i18next.t('referral.copied'));
-                    } catch (e) { /* ignore */ }
-                }
-            });
-        }
-
-        // 5/24 #82 Phase 2 Chunk 4: 紹介ボーナス枠（未消費チケット）の表示
-        async function showFarmerBonus() {
-            const uid = window.currentUser?.uid;
-            if (!uid) return;
-            const card = document.getElementById('bonus-card');
-            const body = document.getElementById('bonus-card-body');
-            if (!card || !body) return;
-            try {
-                // settings/referral から金額・enabled を読む
                 const settingsSnap = await getDoc(doc(db, 'settings', 'referral'));
                 const settings = settingsSnap.exists() ? settingsSnap.data() : null;
-                const amountKhr = Number(settings?.farmerBonusKhr || 0);
-                // settings 未設定 / OFF / 金額 0 → カード自体を表示しない（情報の混乱を避ける）
-                if (!settings || settings.enabled !== true || amountKhr <= 0) {
-                    card.style.display = 'none';
-                    return;
-                }
+                const amount = Number(settings?.farmerBonusKhr || 0);
+                const enabled = !!settings && settings.enabled === true && amount > 0;
                 const count = Number(window.currentUserData?.pendingFarmerBonus || 0);
-                if (count > 0) {
-                    body.innerHTML = `<span class="bonus-card__count">${count}</span>` +
-                        `<span>${escapeHtml(i18next.t('bonus.farmerHasTickets', { count, amount: amountKhr.toLocaleString() }))}</span>`;
-                } else {
-                    body.innerHTML = escapeHtml(i18next.t('bonus.farmerEmpty'));
-                }
-                card.style.display = 'block';
+                referralState = { enabled, amount, count };
             } catch (e) {
-                console.warn('showFarmerBonus failed:', e);
-                card.style.display = 'none';
+                console.warn('computeReferralSub failed:', e);
+                referralState = { enabled: false, amount: 0, count: 0 };
             }
+            renderReferralSub();
         }
-
-        // ローカル escapeHtml（他ファイル同様にインライン定義）
-        function escapeHtml(s) {
-            return String(s == null ? '' : s)
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        function renderReferralSub() {
+            const el = document.getElementById('referral-sub');
+            if (!el) return;
+            const s = referralState || { enabled: false, amount: 0, count: 0 };
+            const amountStr = s.amount ? s.amount.toLocaleString() : '';
+            if (s.enabled && s.count > 0) {
+                el.textContent = i18next.t('account.referralSubFarmerActive', { count: s.count, amount: amountStr });
+            } else if (s.enabled) {
+                el.textContent = i18next.t('account.referralSubFarmerEmpty', { amount: amountStr });
+            } else {
+                el.textContent = i18next.t('account.referralSubDefault');
+            }
         }
 
         waitForUserData(() => {
@@ -507,18 +370,14 @@
             if (window.currentUser?.uid) {
                 subscribeTodos(window.currentUser.uid, 'farmer');
                 subscribeNotifications(window.currentUser.uid);
-                // 6/11 #137 §10（農家側も同様）: 「生産者ページ」はプロフィール編集画面へ直リンク（静的 href）。
-                //   買い手から見える公開ページは編集画面内の「公開ページをプレビュー」から開く。
-                // 5/23 #82 Phase 1: 紹介コード表示
-                showReferralCode().then(saveAccountRender);   // 5/25 #91/#92 拡張: 完了後にキャッシュ更新
-                // 5/24 #82 Phase 2 Chunk 4: 紹介ボーナス枠表示
-                showFarmerBonus().then(saveAccountRender);
+                // 6/22 #164: 紹介行の動的サブ文言を算出（完了後にキャッシュ更新）
+                computeReferralSub().then(saveAccountRender);
             }
             // 5/23 #69 Phase C: 初期スピナー解除
             document.body.classList.add('app-ready');
         });
 
-        onLanguageChange(() => renderHead());
+        onLanguageChange(() => { renderHead(); renderReferralSub(); });
     </script>
 </body>
 

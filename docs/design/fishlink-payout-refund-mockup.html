@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 送金先／返金先 - モック</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #ECEEF0; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 24px 12px 60px; color: #1A1A1A;
+  }
+  .intro {
+    max-width: 860px; margin-bottom: 20px; background: #FFF;
+    padding: 16px 18px; border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-size: 14px; line-height: 1.7;
+  }
+  .intro h1 { margin: 0 0 8px; font-size: 17px; color: #0B5FB0; }
+  .intro p { margin: 4px 0; color: #4A4A4A; }
+  .intro b { color: #0B5FB0; }
+
+  .phones { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .phone-label { font-size: 13px; font-weight: 700; color: #5A6470; max-width: 390px; text-align: center; }
+
+  .phone {
+    width: 390px; max-width: 100%; background: #F7F9FB;
+    border-radius: 36px; overflow: hidden; position: relative;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.15); display: flex; flex-direction: column;
+    padding-bottom: 18px; align-self: flex-start;
+  }
+  .header {
+    flex: 0 0 auto; background: #FFF; padding: 12px 16px; border-bottom: 1px solid #EEF1F4;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .back { font-size: 20px; color: #5A6470; }
+  .logo { font-size: 17px; font-weight: 800; color: #0B5FB0; }
+  .logo::before { content: "🐟 "; }
+  .lang { margin-left: auto; background: #F0F4F8; border: 1px solid #DDE3E9; padding: 4px 10px; border-radius: 16px; font-size: 12px; font-weight: 600; }
+  .page-title { display:flex; align-items:center; justify-content:center; gap:8px; font-size: 18px; font-weight: 700; padding: 14px 0 6px; position: relative; }
+  .edit-top {
+    position: absolute; right: 16px; top: 12px; background: #FFF; border: 1px solid #D7DCE2;
+    border-radius: 18px; padding: 6px 13px; font-size: 13px; font-weight: 600; color: #0B5FB0; cursor: pointer;
+  }
+  .edit-top::before { content: "✎ "; }
+
+  .content { padding: 8px 16px 24px; }
+
+  /* 警告・説明ボックス */
+  .warn { background: #FBF0DC; color: #8A5A00; border-radius: 11px; padding: 11px 13px; font-size: 12.5px; line-height: 1.55; margin-bottom: 14px; }
+  .warn::before { content: "⚠️ "; }
+  .why { background: #EAF2FB; color: #1B4D7E; border-radius: 11px; padding: 11px 13px; font-size: 12.5px; line-height: 1.6; margin-bottom: 14px; }
+  .why::before { content: "ℹ️ "; }
+
+  /* バッジ */
+  .badge { display:inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-left: 7px; vertical-align: 1px; }
+  .badge.req { background: #FCEBEB; color: #C2410C; }
+  .badge.either { background: #EAF2FB; color: #0B5FB0; }
+  .badge.opt { background: #EEF1F4; color: #7A828C; }
+
+  /* フィールド */
+  .f-label { font-size: 12.5px; color: #5A6470; font-weight: 700; margin-bottom: 6px; }
+  .f-sub-label { font-size: 12px; color: #7A828C; margin: 6px 0 4px; }
+  .f-input { width: 100%; background: #FFF; border: 1px solid #C9D0D8; border-radius: 10px; padding: 11px 12px; font-size: 14.5px; color: #1A1A1A; }
+  .f-value { font-size: 15px; font-weight: 700; color: #1A1A1A; word-break: break-all; }
+  .f-link { font-size: 14px; color: #0B5FB0; word-break: break-all; }
+  .block { margin-bottom: 15px; }
+  .ref-note { font-size: 11.5px; color: #9AA1A9; margin-top: 5px; }
+
+  /* 受取用QR グループ */
+  .qr-group { border: 1px solid #DCE2E8; border-radius: 13px; padding: 12px 13px; background: #FCFDFE; }
+  .qr-group-head { font-size: 12.5px; font-weight: 700; color: #1A1A1A; margin-bottom: 6px; }
+  .or-divider { display: flex; align-items: center; gap: 10px; margin: 12px 2px; color: #9AA1A9; font-size: 12px; font-weight: 700; }
+  .or-divider::before, .or-divider::after { content: ""; flex: 1; height: 1px; background: #E2E7EC; }
+  .qr-box { border: 1.5px dashed #C9D2DB; border-radius: 12px; padding: 14px; text-align: center; background: #FFF; }
+  .qr-img { width: 110px; height: 110px; margin: 0 auto 10px; border-radius: 8px; background: #F1F4F7; display: flex; align-items: center; justify-content: center; font-size: 40px; }
+  .qr-actions { display: flex; gap: 10px; justify-content: center; }
+  .qr-btn { background: #FFF; border: 1px solid #D7DCE2; border-radius: 9px; padding: 7px 13px; font-size: 13px; font-weight: 600; color: #1A1A1A; cursor: pointer; }
+  .qr-btn.del { color: #E5453F; }
+
+  /* QR画像（表示状態の大きめ） */
+  .qr-view { width: 180px; height: 180px; margin: 6px auto 0; border-radius: 10px; background: #FFF; border: 1px solid #E3E8EE; display: flex; align-items: center; justify-content: center; font-size: 64px; }
+
+  .f-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn { flex: 1; padding: 12px 0; border-radius: 10px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; }
+  .btn-cancel { background: #EEF1F4; color: #4A4A4A; }
+  .btn-save { background: #0B5FB0; color: #FFF; }
+  .btn-save.full { width: 100%; flex: none; margin-top: 14px; }
+
+  /* 空状態（返金先・未登録） */
+  .empty { text-align: center; padding: 26px 14px 8px; }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+  .empty-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .empty-text { font-size: 13px; color: #6B7178; line-height: 1.7; margin-bottom: 18px; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 送金先（農家）／返金先（買い手）— モック</h1>
+  <p><b>必須/任意を明示</b>：口座の登録名＝<b>[必須]</b>、QRは<b>「受取用QR」グループ＋[いずれか1つ必須]</b>＋<b>「─ または ─」</b>でリンク/画像のどちらか片方でいいと視覚化</p>
+  <p><b>警告</b>：送金先「送金はこの名義・QR宛に…お間違いのないよう」／返金先は同じ警告の<b>返金版</b></p>
+  <p><b>返金先＝任意</b>：未登録は<b>専用の空状態</b>（バラの「−」を出さない）＋<b>なぜ要るかの説明</b>＋〔返金先を登録する〕。登録は<b>必須化せず促すだけ</b></p>
+  <p>送金先（農家）は<b>必須</b>（出品ゲート）。保存ボタン青／キャンセル中立／QR削除＝赤。保存成功は<b>「✓ 保存しました」トースト</b></p>
+</div>
+
+<div class="phones">
+
+  <!-- ① 送金先 表示（農家） -->
+  <div class="phone-wrap">
+    <div class="phone-label">① 送金先情報・表示（農家）</div>
+    <div class="phone">
+      <div class="header"><span class="back">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="page-title">送金先情報 <span class="edit-top">編集</span></div>
+      <div class="content">
+        <div class="block">
+          <div class="f-label">口座の登録名</div>
+          <div class="f-value">TACHIBANAKI RYOSUKE</div>
+        </div>
+        <div class="block">
+          <div class="f-label">QRリンク</div>
+          <div class="f-link">https://link.payway.com.kh/ABAPAYD8436667x</div>
+        </div>
+        <div class="block">
+          <div class="f-label">QR画像</div>
+          <div class="qr-view">🔳</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 送金先 編集（農家） -->
+  <div class="phone-wrap">
+    <div class="phone-label">② 送金先情報・編集（農家・必須/いずれか1つ必須）</div>
+    <div class="phone">
+      <div class="header"><span class="back">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="page-title">送金先情報</div>
+      <div class="content">
+        <div class="warn">送金はこの名義・QR宛に行われます。お間違いのないようご確認ください。</div>
+        <div class="block">
+          <div class="f-label">口座の登録名 <span class="badge req">必須</span></div>
+          <input class="f-input" value="TACHIBANAKI RYOSUKE">
+        </div>
+        <div class="qr-group">
+          <div class="qr-group-head">受取用QR <span class="badge either">いずれか1つ必須</span></div>
+          <div class="f-sub-label">QRリンク</div>
+          <input class="f-input" value="https://link.payway.com.kh/ABAPAYD8436667x">
+          <div class="or-divider">または</div>
+          <div class="f-sub-label">QR画像</div>
+          <div class="qr-box">
+            <div class="qr-img">🔳</div>
+            <div class="qr-actions">
+              <button class="qr-btn">QR画像を選択</button>
+              <button class="qr-btn del">削除</button>
+            </div>
+          </div>
+        </div>
+        <div class="f-actions">
+          <button class="btn btn-cancel">キャンセル</button>
+          <button class="btn btn-save">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 返金先 空状態（買い手・未登録） -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ 返金先・未登録（買い手・任意の空状態）</div>
+    <div class="phone">
+      <div class="header"><span class="back">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="page-title">返金先 <span class="badge opt" style="margin-left:8px;">任意</span></div>
+      <div class="content">
+        <div class="empty">
+          <div class="empty-icon">↩️</div>
+          <div class="empty-title">まだ登録されていません</div>
+          <div class="empty-text">返金が発生したときの<b>受取先</b>です。問題があった注文の返金は、ここに登録した口座・QRに送られます。<br>登録しておくと、万一の返金がスムーズです（必要になってからでもOK）。</div>
+          <button class="btn btn-save full">返金先を登録する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 返金先 編集（買い手） -->
+  <div class="phone-wrap">
+    <div class="phone-label">④ 返金先・編集（買い手・登録する場合）</div>
+    <div class="phone">
+      <div class="header"><span class="back">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="page-title">返金先</div>
+      <div class="content">
+        <div class="why">返金が発生したときの受取先です。問題があった注文の返金は、ここに送られます。</div>
+        <div class="warn">返金はこの名義・QR宛に行われます。お間違いのないようご確認ください。</div>
+        <div class="block">
+          <div class="f-label">口座の登録名 <span class="badge req">必須<span style="font-weight:600;">＊</span></span></div>
+          <input class="f-input" placeholder="口座名義（ABA / Wing など）">
+        </div>
+        <div class="qr-group">
+          <div class="qr-group-head">受取用QR <span class="badge either">いずれか1つ必須＊</span></div>
+          <div class="f-sub-label">QRリンク</div>
+          <input class="f-input" placeholder="https://link.payway.com.kh/...">
+          <div class="or-divider">または</div>
+          <div class="f-sub-label">QR画像</div>
+          <div class="qr-box">
+            <div class="qr-img">🔳</div>
+            <div class="qr-actions">
+              <button class="qr-btn">QR画像を選択</button>
+              <button class="qr-btn del">削除</button>
+            </div>
+          </div>
+        </div>
+        <div class="ref-note">＊ 返金先の登録は任意です。登録する場合は、口座の登録名＋受取用QR（いずれか1つ）が必要です。</div>
+        <div class="f-actions">
+          <button class="btn btn-cancel">キャンセル</button>
+          <button class="btn btn-save">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
