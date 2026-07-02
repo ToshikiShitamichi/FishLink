@@ -183,7 +183,16 @@ export async function uploadImageResized(storageRef, file, opts = {}) {
         // リサイズは1回だけ（リトライ毎にやり直すのは無駄）
         blob = await resizeImage(file, resizeOpts);
     } catch (err) {
-        throw wrapUploadError(err, 'resize', file);
+        // 6/26 #179 🔴: リサイズ/デコード失敗時は「原画像のままアップロード」にフォールバック。
+        //   ＝保存を丸ごと失敗にしない（最優先）。QR画像等は数百KBと小さく、リサイズできなくても
+        //   保存できれば実用上OK。Android実機のJPEG（EXIF orientation/progressive/HEIC偽装）で
+        //   createImageBitmap も <img> も decode に失敗するケース（phase=resize / Image decode failed）への対策。
+        console.warn('resize failed → falling back to original file:', err?.message || err);
+        blob = file;
+        // 再読込で MIME が落ちる経路（type=空）でも contentType を補う（既定 JPEG）。
+        if (!uploadMeta.contentType) {
+            uploadMeta.contentType = (file && file.type) ? file.type : 'image/jpeg';
+        }
     }
 
     try {

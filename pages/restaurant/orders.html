@@ -3,10 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
-    <title>FishLink</title>
+    <title>FISHLINK</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -174,12 +174,18 @@
         .os-badge--dec { background:#fdecea; color:#d14343; }
         .os-badge--confirm { background:#eef1f4; color:#5a6470; }
         .os-badge--deliv { background:var(--color-cta-lt); color:var(--color-cta); }
+        .os-badge--arrived { background:#e7f4ec; color:#2e7d32; }
         .os-amt { font-size:21px; font-weight:800; color:var(--color-cta); margin-top:8px; }
+        /* 案B #174: 即ウォレット返金の安心行（緑＝返金済み専用） */
+        .os-refunded { display:flex; align-items:flex-start; gap:6px; background:#e7f4ec; color:#2e7d32; font-size:12.5px; font-weight:800; padding:9px 11px; border-radius:9px; margin-top:9px; line-height:1.4; }
+        .os-refunded .material-symbols-outlined { font-size:16px; flex:0 0 auto; }
+        .os-refunded__sub { display:block; font-weight:600; color:#3e7a4e; font-size:11px; margin-top:1px; }
         .os-warn { display:flex; align-items:center; gap:6px; background:#fdecea; color:#d14343; font-size:12.5px; font-weight:800; padding:8px 11px; border-radius:9px; margin-top:9px; }
         .os-warn .material-symbols-outlined { font-size:16px; }
         .os-note { background:var(--color-bg); border:1px solid var(--color-border); border-radius:9px; padding:9px 11px; font-size:12px; color:var(--color-text-sub); margin-top:9px; line-height:1.5; }
         .os-statusline { display:flex; align-items:center; gap:6px; background:#f0f4f8; color:#42566b; font-size:12px; font-weight:700; padding:8px 11px; border-radius:9px; margin-top:9px; }
         .os-statusline .material-symbols-outlined { font-size:16px; }
+        .os-statusline--ok { background:#e7f4ec; color:#2e7d32; }
         .os-btn { display:block; width:100%; box-sizing:border-box; text-align:center; font-size:13px; font-weight:800; padding:11px; border-radius:10px; margin-top:10px; border:none; cursor:pointer; font-family:inherit; text-decoration:none; }
         .os-btn--pri { background:var(--color-cta); color:#fff; }
         .os-btn--sec { background:var(--color-surface); color:var(--color-cta); border:1.5px solid var(--color-cta); }
@@ -218,7 +224,7 @@
 
     <div class="page" style="padding-bottom:80px; max-width:480px; margin:0 auto;">
         <div class="page-header" style="align-items:center;">
-            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FISHLINK" class="brand-logo"></a>
             <select id="lang-selector" style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
                 <option value="km">ខ្មែរ</option><option value="en">ENGLISH</option><option value="ja">日本語</option>
             </select>
@@ -279,7 +285,7 @@
     <div class="os-modal-ov" id="cancel-modal">
         <div class="os-modal">
             <div class="os-modal__t" data-i18n="orders.cancelModalTitle"></div>
-            <div class="os-modal__b" data-i18n="orders.cancelModalBody"></div>
+            <div class="os-modal__b" id="cancel-modal-body" data-i18n="orders.cancelModalBody"></div>
             <div class="os-modal__act">
                 <button type="button" class="os-modal__btn os-modal__btn--keep" id="cancel-modal-keep" data-i18n="orders.cancelModalKeep"></button>
                 <button type="button" class="os-modal__btn os-modal__btn--ok" id="cancel-modal-ok" data-i18n="orders.cancelModalOk"></button>
@@ -296,6 +302,7 @@
         import { subscribeNotifications } from '/js/notifications.js';
         import { subscribeCart } from '/js/cart.js';
         import { getOrderNumber } from '/js/order-utils.js';
+        import { showToast } from '/js/toast.js';
         // 6/17 #150: 問題報告の入口出し分け（報告期限＝配送完了＋N時間／1注文1オープン）
         import { getReportWindowHours, computeReportEntry, reportDeadlineText } from '/js/report-window.js';
         // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ
@@ -373,35 +380,33 @@
             try { localStorage.setItem(DECLINED_DISMISS_KEY, JSON.stringify([...s])); } catch (e) { /* ignore */ }
         }
 
-        // お支払い待ち（urgent・最重要・支払金額＝青）
-        function renderPayNowCard(o) {
+        // 案B #174: お支払い未確認（例外＝運営が入金を確認できない時だけ）。MVPでは発火しないが実装しておく。
+        //   〔もう一度支払う〕〔運営に問い合わせる〕。自動キャンセルしない（運営が照合/督促で解決）。
+        function renderPaymentUnconfirmedCard(o) {
             const { d, order, fishName, farmerName } = o;
             const orderNo = getOrderNumber({ id: d.id, ...order });
             const total = (order.totalAmount || 0).toLocaleString();
-            const deadlineMs = order.paymentDeadline?.toMillis?.() || null;
-            const isOverdue = deadlineMs && Date.now() > deadlineMs;
-            const warn = isOverdue
-                ? `<div class="os-warn"><span class="material-symbols-outlined">schedule</span>${i18next.t('orders.deadlinePassedShort')}</div>`
-                : '';
             return `
-                <a class="os-card os-card--urgent" href="/pages/restaurant/payment.html?id=${d.id}">
+                <div class="os-card os-card--urgent" id="order-${d.id}">
                     <div class="os-card__top">
                         <div class="os-card__th">${thumbHtml(order)}</div>
                         <div class="os-card__ci">
-                            <span class="os-badge os-badge--pay">${i18next.t('orders.payWaitBadge')}</span>
+                            <span class="os-badge os-badge--pay">${i18next.t('orders.payUnconfirmedBadge')}</span>
                             <div class="os-card__nm">${fishName}${multiBadgeHtml(order)}</div>
                             <div class="os-card__fl">${orderNo}</div>
                             <div class="os-card__meta">${metaLineHtml(order, farmerName)}</div>
                             <div class="os-amt">${total} KHR</div>
                         </div>
                     </div>
-                    ${warn}
-                    <div class="os-btn os-btn--pri">${i18next.t('payment.goToPayment')}</div>
-                </a>
-                ${renderReportEntry(order, d.id)}`;
+                    <div class="os-note">${i18next.t('orders.payUnconfirmedNote')}</div>
+                    <div class="btnrow" style="display:flex; gap:8px;">
+                        <a class="os-btn os-btn--pri" style="flex:1; margin-top:0;" href="/pages/restaurant/cart.html">${i18next.t('orders.payAgain')}</a>
+                        <a class="os-btn os-btn--sec" style="flex:1; margin-top:0;" href="/pages/admin-chat.html?view=chat">${i18next.t('orders.contactSupport')}</a>
+                    </div>
+                </div>`;
         }
 
-        // 6/17 #150 §4/§5: お支払い待ちカード下の問題報告入口（配送完了＋N時間の期限内のみ表示・報告中は「報告済み・対応中」）。
+        // 6/17 #150 §4/§5: 問題報告入口（配送完了＋N時間の期限内のみ表示・報告中は「報告済み・対応中」）。
         function renderReportEntry(order, orderId) {
             const re = computeReportEntry(order, 'restaurant', reportHours);
             if (re.phase === 'reported') {
@@ -442,19 +447,40 @@
                             <div class="os-card__meta">${metaLineHtml(order, farmerName)}</div>
                         </div>
                     </div>
-                    <div class="os-note">${i18next.t('orders.declinedNotice')}</div>
+                    <div class="os-note">${order.autoDeclined ? i18next.t('orders.autoDeclinedNotice') : i18next.t('orders.declinedNotice')}</div>
+                    ${refundLineHtml(order)}
                     <a class="os-btn os-btn--pri" data-reorder-id="${d.id}" href="${reorderHref}">${i18next.t('orders.reorderSameFish')}</a>
                     <button type="button" class="os-close" data-act="dismiss-declined" data-id="${d.id}"><span class="material-symbols-outlined" style="font-size:15px; vertical-align:-3px; margin-right:2px;">close</span>${i18next.t('orders.closeLabel')}</button>
                 </div>`;
         }
 
-        // 進行中（農家確認中／出荷準備・配達中）
+        // 案B #174: 前払い注文の辞退/キャンセル＝即ウォレット返金（緑の安心行）。
+        //   返金額＝order.refundAmount（CFが確定）→ 無ければ subtotal → totalAmount でフォールバック。
+        function refundLineHtml(order) {
+            if (order.prepaid !== true) return '';
+            const amt = Number(order.refundAmount ?? order.subtotal ?? order.totalAmount ?? 0);
+            if (!(amt > 0)) return '';
+            return `<div class="os-refunded">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span class="os-refunded__t">${i18next.t('orders.refundedToWallet', { amount: amt.toLocaleString() })}<span class="os-refunded__sub">${i18next.t('orders.refundedToWalletSub')}</span></span>
+            </div>`;
+        }
+
+        // 進行中（お支払い確認中／農家確認中／出荷準備・配達中）
+        //   案B #174: status==='pending' の前払い注文は depositConfirmed で文言を出し分け
+        //     ・!depositConfirmed → お支払い確認中（⏳ 運営が入金を確認しています）
+        //     ・depositConfirmed  → 農家確認中（⏳ 農家が在庫を確認しています）
+        //   どちらも〔注文をキャンセル（ウォレットに返金）〕可（承認前のみ）。
         function renderInProgressCard(o) {
             const { d, order, fishName, farmerName } = o;
             const orderNo = getOrderNumber({ id: d.id, ...order });
             const isPending = order.status === 'pending';
+            const isPrepaid = order.prepaid === true;
+            const isPayConfirming = isPending && isPrepaid && !order.depositConfirmed;
             const badge = isPending
-                ? `<span class="os-badge os-badge--confirm">${i18next.t('orders.confirmingBadge')}</span>`
+                ? (isPayConfirming
+                    ? `<span class="os-badge os-badge--confirm">${i18next.t('orders.payConfirmingBadge')}</span>`
+                    : `<span class="os-badge os-badge--confirm">${i18next.t('orders.confirmingBadge')}</span>`)
                 : `<span class="os-badge ${order.status === 'delivering' ? 'os-badge--deliv' : 'os-badge--confirm'}">${i18next.t('delivery.' + order.status)}</span>`;
             const head = `
                 <div class="os-card__top">
@@ -467,11 +493,23 @@
                     </div>
                 </div>`;
             if (isPending) {
+                const statusKey = isPayConfirming ? 'orders.payConfirmingLine' : 'orders.farmerConfirming';
                 return `
                     <div class="os-card" id="order-${d.id}">
                         ${head}
-                        <div class="os-statusline"><span class="material-symbols-outlined">hourglass_top</span>${i18next.t('orders.farmerConfirming')}</div>
-                        <button type="button" class="os-cancel" data-act="cancel-order" data-id="${d.id}">${i18next.t('orders.cancelOrder')}</button>
+                        <div class="os-statusline"><span class="material-symbols-outlined">hourglass_top</span>${i18next.t(statusKey)}</div>
+                        <button type="button" class="os-cancel" data-act="cancel-order" data-id="${d.id}">${order.prepaid === true ? i18next.t('orders.cancelWithRefund') : i18next.t('orders.cancelOrder')}</button>
+                    </div>`;
+            }
+            // 配達中＝〔配送状況を確認〕＋〔問題を報告〕（窓内のみ・report-window が制御）。承認済/準備中＝〔配送状況を確認〕のみ。
+            if (order.status === 'delivering') {
+                return `
+                    <div class="os-card" id="order-${d.id}">
+                        ${head}
+                        <div class="btnrow" style="display:flex; gap:8px;">
+                            <a class="os-btn os-btn--sec" style="flex:1; margin-top:0;" href="/pages/restaurant/delivery.html?id=${d.id}">${i18next.t('delivery.goTracking')}</a>
+                            ${renderDeliveringReportBtn(order, d.id)}
+                        </div>
                     </div>`;
             }
             return `
@@ -479,6 +517,37 @@
                     ${head}
                     <div class="os-btn os-btn--sec">${i18next.t('delivery.goTracking')}</div>
                 </a>`;
+        }
+
+        // 配達中カードの〔問題を報告〕ボタン（report-window が窓内と判定した時のみ・delivering は通常 hidden）。
+        function renderDeliveringReportBtn(order, orderId) {
+            const re = computeReportEntry(order, 'restaurant', reportHours);
+            if (re.phase === 'reported') {
+                return `<span class="os-btn os-btn--sec" style="flex:1; margin-top:0; color:#64748b; border-color:#e2e8f0;">${i18next.t('report.reportedInProgress')}</span>`;
+            }
+            if (!re.show) return '';
+            return `<a class="os-btn os-btn--sec" style="flex:1; margin-top:0;" href="/pages/restaurant/report.html?id=${orderId}">${i18next.t('review.reportIssue')}</a>`;
+        }
+
+        // 案B #174: お届け済み（配送完了→数時間後に自動で取引完了・問題があれば報告）。緑バッジ。
+        //   paymentProblemHold → 報告済み・対応中（renderReportEntry が出す）。
+        function renderDeliveredCard(o) {
+            const { d, order, fishName, farmerName } = o;
+            const orderNo = getOrderNumber({ id: d.id, ...order });
+            return `
+                <div class="os-card" id="order-${d.id}">
+                    <div class="os-card__top">
+                        <div class="os-card__th">${thumbHtml(order)}</div>
+                        <div class="os-card__ci">
+                            <span class="os-badge os-badge--arrived">${i18next.t('orders.deliveredBadge')}</span>
+                            <div class="os-card__nm">${fishName}${multiBadgeHtml(order)}</div>
+                            <div class="os-card__fl">${orderNo}</div>
+                            <div class="os-card__meta">${metaLineHtml(order, farmerName)}</div>
+                        </div>
+                    </div>
+                    <div class="os-statusline os-statusline--ok"><span class="material-symbols-outlined">check_circle</span>${i18next.t('orders.deliveredNote')}</div>
+                    ${renderReportEntry(order, d.id)}
+                </div>`;
         }
 
         const ORDERS_PAGE_SIZE = 30;
@@ -510,8 +579,6 @@
             }
 
             const isCompletedStatus = (s) => s === 'completed' || s === 'delivered';
-            const sortByPaymentDeadline = (a, b) =>
-                (a.order.paymentDeadline?.toMillis?.() || 0) - (b.order.paymentDeadline?.toMillis?.() || 0);
             const sortByDelivery = (a, b) => {
                 const da = a.order.deliveryDateIso || '';
                 const dbb = b.order.deliveryDateIso || '';
@@ -520,35 +587,50 @@
             };
             const sortByCreatedDesc = (a, b) =>
                 (b.order.createdAt?.toMillis?.() || 0) - (a.order.createdAt?.toMillis?.() || 0);
+            const isRemitted = (order) => ['remitted', 'done'].includes(order.adminStatus);
+            // 取引完了＝前払いは tradeCompleted フラグ（or 送金済）／legacy は paymentStatus==='paid'。
+            const isTradeDone = (order) => order.prepaid === true
+                ? (order.tradeCompleted === true || isRemitted(order))
+                : (order.paymentStatus === 'paid');
 
             const dismissed = getDismissedDeclined();
-            const payNow = allOrders
-                .filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus !== 'paid')
-                .sort(sortByPaymentDeadline);
+            // 案B: お支払い未確認（例外）＝対応が必要。MVPでは発火しない。
+            const payUnconfirmed = allOrders
+                .filter(o => o.order.status === 'pending' && o.order.prepaid === true && o.order.paymentUnconfirmed === true)
+                .sort(sortByCreatedDesc);
             const declinedAll = allOrders.filter(o => o.order.status === 'declined');
             const declinedVisible = declinedAll.filter(o => !dismissed.has(o.d.id)).sort(sortByCreatedDesc);
-            const confirming = allOrders.filter(o => o.order.status === 'pending').sort(sortByDelivery);
+            // 進行中の pending（お支払い未確認は除外）
+            const confirming = allOrders
+                .filter(o => o.order.status === 'pending' && o.order.paymentUnconfirmed !== true)
+                .sort(sortByDelivery);
             const shipping = allOrders.filter(o => ['approved', 'preparing', 'delivering'].includes(o.order.status)).sort(sortByDelivery);
-            const inProgress = [...confirming, ...shipping];
-            const completedPaid = allOrders.filter(o => isCompletedStatus(o.order.status) && o.order.paymentStatus === 'paid');
+            // お届け済み（配送完了・取引未完了・保留含む）＝進行中セクションに混ぜる
+            const deliveredFeed = allOrders
+                .filter(o => isCompletedStatus(o.order.status) && !isTradeDone(o.order))
+                .sort(sortByDelivery);
+            const completedDone = allOrders.filter(o => isCompletedStatus(o.order.status) && isTradeDone(o.order));
             const cancelled = allOrders.filter(o => o.order.status === 'cancelled');
 
-            const actionCount = payNow.length + declinedVisible.length;
+            const actionCount = payUnconfirmed.length + declinedVisible.length;
+            const inProgressCount = confirming.length + shipping.length + deliveredFeed.length;
             const ndCount = declinedAll.length + cancelled.length;
-            const doneCount = completedPaid.length;
+            const doneCount = completedDone.length;
             const hasHistory = doneCount + ndCount > 0;
 
             let html = '';
             if (actionCount > 0) {
                 html += `<div class="os-sec os-sec--act">${i18next.t('orders.actionNeeded')} <span class="os-sec__n">${actionCount}</span></div>`;
-                html += payNow.map(renderPayNowCard).join('');
+                html += payUnconfirmed.map(renderPaymentUnconfirmedCard).join('');
                 html += declinedVisible.map(renderDeclinedCard).join('');
             }
-            if (inProgress.length > 0) {
-                html += `<div class="os-sec">${i18next.t('orders.inProgressNow')} <span class="os-sec__n">${inProgress.length}</span></div>`;
-                html += inProgress.map(renderInProgressCard).join('');
+            if (inProgressCount > 0) {
+                html += `<div class="os-sec">${i18next.t('orders.inProgressNow')} <span class="os-sec__n">${inProgressCount}</span></div>`;
+                html += confirming.map(renderInProgressCard).join('');
+                html += shipping.map(renderInProgressCard).join('');
+                html += deliveredFeed.map(renderDeliveredCard).join('');
             }
-            if (actionCount === 0 && inProgress.length === 0) {
+            if (actionCount === 0 && inProgressCount === 0) {
                 html += `<div class="os-allclear"><span class="material-symbols-outlined">check_circle</span>${i18next.t('orders.allClear')}</div>`;
             }
             if (hasHistory) {
@@ -587,6 +669,18 @@
             const ov = document.getElementById('cancel-modal');
             const okBtn = document.getElementById('cancel-modal-ok');
             const keepBtn = document.getElementById('cancel-modal-keep');
+            const bodyEl = document.getElementById('cancel-modal-body');
+            // 案B: 前払い注文は「お支払い済みの◯KHRはウォレットに返金されます」を出す（金額入り）。
+            const o = allOrdersCache.find(x => x.d.id === orderId);
+            const order = o?.order;
+            if (bodyEl) {
+                if (order && order.prepaid === true) {
+                    const amt = Number(order.refundAmount ?? order.subtotal ?? order.totalAmount ?? 0);
+                    bodyEl.innerHTML = i18next.t('orders.cancelRefundModalBody', { amount: amt.toLocaleString() });
+                } else {
+                    bodyEl.textContent = i18next.t('orders.cancelModalBody');
+                }
+            }
             ov.classList.add('show');
             keepBtn.onclick = () => ov.classList.remove('show');
             // 背景タップで閉じる（シート本体のタップは閉じない）
@@ -599,7 +693,7 @@
                     await loadOrders();
                 } catch (e) {
                     ov.classList.remove('show');
-                    alert(e.message === 'not_pending' ? i18next.t('orders.cancelFailedApproved') : i18next.t('payment.errorSubmit'));
+                    showToast(e.message === 'not_pending' ? i18next.t('orders.cancelFailedApproved') : i18next.t('payment.errorSubmit'), { icon: false });
                     await loadOrders();
                 } finally {
                     okBtn.disabled = false;

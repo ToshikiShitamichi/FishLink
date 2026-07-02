@@ -437,6 +437,17 @@ const MESSAGES = {
     en: { title: "Referral bonus applied", body: "{{amount}} KHR referral bonus added to this transaction" },
     km: { title: "បានអនុវត្តប្រាក់រង្វាន់ណែនាំ", body: "បានបន្ថែមប្រាក់រង្វាន់ {{amount}} KHR លើប្រតិបត្តិការនេះ" },
   },
+  // 6/26 #171 案B: 辞退／承認前キャンセル → 買い手へ即ウォレット返金通知（お金が動いた通知は確実に出す）
+  declinedRefund: {
+    ja: { title: "{{farmer}} が注文を辞退しました", body: "{{amount}} KHR をウォレットに返金しました（次回のご注文で使えます）" },
+    en: { title: "{{farmer}} declined your order", body: "{{amount}} KHR was refunded to your wallet (use it on your next order)" },
+    km: { title: "{{farmer}} បានបដិសេធការបញ្ជាទិញ", body: "បានបង្វិល {{amount}} KHR ទៅកាបូបវិញ (ប្រើបានលើការបញ្ជាទិញបន្ទាប់)" },
+  },
+  cancelledRefund: {
+    ja: { title: "注文をキャンセルしました", body: "{{amount}} KHR をウォレットに返金しました（次回のご注文で使えます）" },
+    en: { title: "Order cancelled", body: "{{amount}} KHR was refunded to your wallet (use it on your next order)" },
+    km: { title: "បានបោះបង់ការបញ្ជាទិញ", body: "បានបង្វិល {{amount}} KHR ទៅកាបូបវិញ (ប្រើបានលើការបញ្ជាទិញបន្ទាប់)" },
+  },
 };
 
 const REPORT_TYPE_LABELS = {
@@ -734,6 +745,8 @@ async function consumeFarmerBonusForOrder(orderId, order, settings) {
     if (orderSnap.data()?.referralBonusAmount > 0) return { consumed: false }; // 2 重防止
     tx.update(farmerRef, {
       pendingFarmerBonus: admin.FieldValue.increment(-1),
+      // 6/26 #177: 紹介ボーナスの「獲得合計」（紹介専用ページ A5 が users.referralBonusTotalKhr を表示）。
+      referralBonusTotalKhr: admin.FieldValue.increment(amountKhr),
     });
     tx.update(orderRef, {
       referralBonusAmount: amountKhr,
@@ -762,6 +775,125 @@ async function consumeFarmerBonusForOrder(orderId, order, settings) {
   } catch (e) {
     console.warn("referralBonusApplied FCM failed:", e.message);
   }
+}
+
+/**
+ * 案B #171: 注文の辞退／承認前キャンセル時に、買い手へ「即ウォレット返金」する（payment-spec §4.3/§4.5）。
+ *  - 返金額 = min(order.subtotal, paymentGroupTotal − グループ内の既返金合計)。
+ *    複数農家カートで 1 農家辞退＝その農家の小計を満額返金・クーポン割引は残った農家に残る。
+ *    全農家が辞退/キャンセルでグループ全額に達したら、クーポンを未使用に戻す（再利用可）。
+ *  - 残高クレジット＋台帳記録＋order の冪等マーカー refundedToWallet を 1 トランザクションで。
+ *  - 残高（wallets）書き込みは必ず CF（rules は write:false）。
+ * @param {string} orderId
+ * @param {object} order   declined/cancelled になった order データ（before/after どちらでも可）
+ * @param {'declined'|'cancelled'} reason
+ */
+async function runRefundToWallet(orderId, order, reason) {
+  const admin = require("firebase-admin/firestore");
+  if (order.prepaid !== true) return;            // 案B（前払い）注文のみ
+  if (order.refundedToWallet === true) return;   // 既に返金済み
+  const buyerId = order.restaurantId;
+  if (!buyerId) return;
+  const groupId = order.paymentGroupId || null;
+
+  // グループ内の order 参照を集める（単一農家なら自分のみ）＋クーポンコード特定
+  let groupRefs = [db.doc(`orders/${orderId}`)];
+  let couponCode = order.appliedCouponCode || null;
+  if (groupId) {
+    try {
+      const gsnap = await db.collection("orders").where("paymentGroupId", "==", groupId).get();
+      if (!gsnap.empty) {
+        groupRefs = gsnap.docs.map((d) => d.ref);
+        for (const d of gsnap.docs) {
+          if (!couponCode && d.data().appliedCouponCode) couponCode = d.data().appliedCouponCode;
+        }
+      }
+    } catch (e) { console.warn("refund group query failed:", e.message); }
+  }
+  // 農家名（台帳の counterpart 表示用）はトランザクション外で取得
+  let farmerName = "";
+  try {
+    const fs = await db.doc(`users/${order.farmerId}`).get();
+    farmerName = fs.data()?.displayName || "";
+  } catch (_) { /* ignore */ }
+
+  const walletRef = db.doc(`wallets/${buyerId}`);
+  const couponRef = couponCode ? db.doc(`coupons/${couponCode}`) : null;
+  const orderNo = order.orderNumber || `FL-${String(orderId).slice(0, 8).toUpperCase()}`;
+
+  let creditedAmount = 0;
+  try {
+    await db.runTransaction(async (tx) => {
+      const orderRef = db.doc(`orders/${orderId}`);
+      const oSnap = await tx.get(orderRef);
+      const fresh = oSnap.data() || {};
+      if (fresh.refundedToWallet === true) return;       // 二重返金防止
+      // グループ各 order を fresh 読み（既返金合計・残数）
+      const groupSnaps = await Promise.all(groupRefs.map((r) => tx.get(r)));
+      const wSnap = await tx.get(walletRef);
+      const couponSnap = couponRef ? await tx.get(couponRef) : null;
+
+      const paidTotal = Number(fresh.paymentGroupTotal || fresh.totalAmount || 0);
+      let alreadyRefunded = 0;
+      let othersAllSettled = true;
+      for (const gs of groupSnaps) {
+        if (gs.id === orderId) continue;
+        const gd = gs.data() || {};
+        if (gd.refundedToWallet === true) alreadyRefunded += Number(gd.refundAmount || 0);
+        else if (gd.status !== "declined" && gd.status !== "cancelled") othersAllSettled = false;
+      }
+      const base = Number(fresh.subtotal || fresh.totalAmount || 0);
+      let refund = Math.min(base, paidTotal - alreadyRefunded);
+      if (!isFinite(refund) || refund < 0) refund = 0;
+      creditedAmount = refund;
+
+      const bal = Number(wSnap.data()?.balance || 0);
+      tx.set(walletRef, { buyerId, balance: bal + refund }, { merge: true });
+      if (refund > 0) {
+        const txRef = db.collection(`wallets/${buyerId}/transactions`).doc();
+        tx.set(txRef, {
+          amount: refund,
+          type: reason === "cancelled" ? "refund_cancelled" : "refund_declined",
+          counterpart: farmerName,
+          relatedOrderId: orderId,
+          orderNumber: orderNo,
+          createdAt: admin.FieldValue.serverTimestamp(),
+        });
+      }
+      tx.update(orderRef, {
+        refundedToWallet: true,
+        refundAmount: refund,
+        refundedAt: admin.FieldValue.serverTimestamp(),
+      });
+
+      // グループ全額返金に達した＆クーポン使用済みなら未使用に戻す（payment-spec §4.3「全農家辞退→クーポン未使用」）
+      if (couponSnap && couponSnap.exists && othersAllSettled
+          && (alreadyRefunded + refund) >= paidTotal && couponSnap.data().usedOrderId) {
+        tx.update(couponRef, { usedAt: null, usedOrderId: null });
+      }
+    });
+  } catch (e) {
+    console.error("runRefundToWallet failed:", orderId, e);
+    return;
+  }
+
+  // 買い手へ「ウォレットに返金しました」通知（お金が動いた通知は確実に出す＝案Bの安心の核）
+  try {
+    const restSnap = await db.doc(`users/${buyerId}`).get();
+    const lang = restSnap.data()?.lang || "en";
+    const vars = { farmer: farmerName, amount: creditedAmount.toLocaleString() };
+    const msgKey = reason === "cancelled" ? "cancelledRefund" : "declinedRefund";
+    const { title, body } = getMessage(msgKey, lang, vars);
+    await notifyUser(buyerId, {
+      type: "wallet_refund",
+      title, body,
+      msgKey, vars,
+      url: "/pages/restaurant/wallet.html",
+      orderId,
+    });
+  } catch (e) { console.warn("wallet_refund notify failed:", e.message); }
+
+  console.log("Refunded to wallet:", orderId, reason, "amount:", creditedAmount);
 }
 
 /**
@@ -844,6 +976,41 @@ exports.onOrderCreated = onDocumentCreated(
         stock: admin.FieldValue.increment(-it.quantity),
       });
       console.log("Stock decremented:", it.listingId, "-", it.quantity);
+    }
+
+    // 6/26 #171 案B: 前払いウォレット充当のデビット（CF管理・冪等・残高クランプ）。
+    //   買い手は注文時にウォレット残高を充当（walletApplied）＋残額をKHQRで前払い。
+    //   ⚠️ 残高デビットは必ずCF側で行う（rules で wallet は write:false）＝クライアント改竄防止。
+    //   ・トランザクションで現残高を読み、min(walletApplied, balance) をクランプして減算。
+    //   ・order.walletDebited マーカーで at-least-once 再配信の二重デビットを防止（tradeCount と同方式）。
+    //   ・複数農家カートでも各 order が自分の walletApplied 分を1回ずつ落とす（wallet doc 上で直列化）。
+    if (order.prepaid === true && Number(order.walletApplied) > 0) {
+      try {
+        const orderRef = event.data.ref;
+        const walletRef = db.doc(`wallets/${order.restaurantId}`);
+        await db.runTransaction(async (tx) => {
+          const oSnap = await tx.get(orderRef);
+          if (oSnap.data()?.walletDebited === true) return; // 二重デビット防止
+          const wSnap = await tx.get(walletRef);
+          const bal = Number(wSnap.data()?.balance || 0);
+          const debit = Math.max(0, Math.min(Number(order.walletApplied), bal));
+          if (debit > 0) {
+            tx.set(walletRef, { buyerId: order.restaurantId, balance: bal - debit }, { merge: true });
+            const txRef = db.collection(`wallets/${order.restaurantId}/transactions`).doc();
+            tx.set(txRef, {
+              amount: -debit,
+              type: "order_use",
+              counterpart: orderNumber,
+              relatedOrderId: event.params.orderId,
+              createdAt: admin.FieldValue.serverTimestamp(),
+            });
+          }
+          tx.update(orderRef, { walletDebited: true });
+        });
+        console.log("Wallet debited (order_use):", event.params.orderId, "applied:", order.walletApplied);
+      } catch (e) {
+        console.error("wallet debit failed:", event.params.orderId, e);
+      }
     }
 
     // 農家のやることリストに「承認・辞退」を追加
@@ -954,7 +1121,10 @@ exports.onOrderUpdated = onDocumentUpdated(
         // 「メッセージが届いています」reply todo は両者ともクリア（残り続けるバグ修正）
         await clearTodo(after.farmerId, 'farmer_reply', orderId);
         await clearTodo(after.restaurantId, 'rest_reply', orderId);
-        await createTodo(after.restaurantId, 'rest_pay', orderId);
+        // 6/26 #171 案B: 前払い注文は受取時払いが無い＝買い手の支払いtodoを作らない。
+        if (after.prepaid !== true) {
+          await createTodo(after.restaurantId, 'rest_pay', orderId);
+        }
 
         // 6/10 #137/#138: 取引完了の累計（プロフィールの信頼ブロック「取引N件」・spec §5）。
         //   農家・レストラン双方の users.tradeCount を +1。辞退/キャンセル（'declined' 等）は
@@ -985,34 +1155,37 @@ exports.onOrderUpdated = onDocumentUpdated(
         // - settings/referral.enabled が false なら全スキップ（冪等・失敗してもログのみ）
         await processReferralAndBonus(orderId, after);
 
-        // paymentDeadline = 配送完了時刻 + 10分（既にセット済みならスキップ）
-        if (!after.paymentDeadline) {
+        // 配送完了時刻を記録（問題報告の期限・案Bの自動取引完了の基点 = completedAt + N時間）。
+        // 6/26 #171 案B: 前払い注文は受取時払いの支払期限・督促 push を作らない（completedAt のみ）。
+        //   旧（受取時払い）注文だけ paymentDeadline + paymentDeadlineSet push を維持。
+        if (!after.completedAt) {
           const now = new Date();
-          const deadline = new Date(now.getTime() + 10 * 60 * 1000);
-          await event.data.after.ref.update({
-            // 6/17 #150: 配送完了時刻（問題報告の期限 = completedAt + N時間 の基点）。
-            //   既存注文（completedAt 未設定）は report-window.js が paymentDeadline から逆算（= 完了時刻+10分）。
-            completedAt: now,
-            paymentDeadline: deadline,
-            paymentReminderSent: false,
-          });
-
-          // ①即時通知：「HH:MMまでにお支払いください」（カンボジア時間 UTC+7）
-          const khm = new Date(deadline.getTime() + 7 * 60 * 60 * 1000);
-          const deadlineStr = `${khm.getUTCHours()}:${String(khm.getUTCMinutes()).padStart(2, '0')}`;
-          const restSnap2 = await db.doc(`users/${after.restaurantId}`).get();
-          const lang2 = restSnap2.data()?.lang || "en";
-          const farmerSnap2 = await db.doc(`users/${after.farmerId}`).get();
-          const farmerName2 = farmerSnap2.data()?.displayName || "Farmer";
-          const payVars = { deadline: deadlineStr, farmer: farmerName2 };
-          const { title, body } = getMessage("paymentDeadlineSet", lang2, payVars);
-          await notifyUser(after.restaurantId, {
-            type: "payment_deadline_set",
-            title, body,
-            msgKey: "paymentDeadlineSet", vars: payVars,
-            url: `/pages/restaurant/payment.html?id=${orderId}`,
-            orderId,
-          });
+          if (after.prepaid === true) {
+            await event.data.after.ref.update({ completedAt: now });
+          } else {
+            const deadline = new Date(now.getTime() + 10 * 60 * 1000);
+            await event.data.after.ref.update({
+              completedAt: now,
+              paymentDeadline: deadline,
+              paymentReminderSent: false,
+            });
+            // ①即時通知：「HH:MMまでにお支払いください」（カンボジア時間 UTC+7）
+            const khm = new Date(deadline.getTime() + 7 * 60 * 60 * 1000);
+            const deadlineStr = `${khm.getUTCHours()}:${String(khm.getUTCMinutes()).padStart(2, '0')}`;
+            const restSnap2 = await db.doc(`users/${after.restaurantId}`).get();
+            const lang2 = restSnap2.data()?.lang || "en";
+            const farmerSnap2 = await db.doc(`users/${after.farmerId}`).get();
+            const farmerName2 = farmerSnap2.data()?.displayName || "Farmer";
+            const payVars = { deadline: deadlineStr, farmer: farmerName2 };
+            const { title, body } = getMessage("paymentDeadlineSet", lang2, payVars);
+            await notifyUser(after.restaurantId, {
+              type: "payment_deadline_set",
+              title, body,
+              msgKey: "paymentDeadlineSet", vars: payVars,
+              url: `/pages/restaurant/payment.html?id=${orderId}`,
+              orderId,
+            });
+          }
         }
       }
     }
@@ -1135,6 +1308,16 @@ exports.onOrderUpdated = onDocumentUpdated(
       }
     }
 
+    // 6/26 #171 案B: 前払い注文の辞退／承認前キャンセル → 買い手へ即ウォレット返金（小計満額・グループ按分）。
+    //   手動辞退も自動辞退も対象（自動辞退の早期 return より前に実行）。返金通知も runRefundToWallet が送る。
+    if (after.prepaid === true) {
+      if (after.status === "declined" && before.status !== "declined") {
+        await runRefundToWallet(orderId, after, "declined");
+      } else if (after.status === "cancelled" && before.status === "pending") {
+        await runRefundToWallet(orderId, after, "cancelled");
+      }
+    }
+
     // 期限切れ自動辞退は autoDeclineExpiredOrders 内で両者に通知するため、ここではスキップ
     if (after.status === "declined" && after.autoDeclined === true) {
       console.log("Skip onOrderUpdated notify: auto-declined order", orderId);
@@ -1176,6 +1359,12 @@ exports.onOrderUpdated = onDocumentUpdated(
         orderId,
       });
       console.log("Cancel notification sent to farmer:", after.farmerId, "lang:", farmerLang);
+      return;
+    }
+
+    // 6/26 #171 案B: 前払い注文の辞退通知は runRefundToWallet が「ウォレットに返金しました」を送るため、
+    //   ここでの declined 通知は重複させない（approved は買い手へ通知を出す）。
+    if (after.status === "declined" && after.prepaid === true) {
       return;
     }
 
@@ -1356,8 +1545,9 @@ async function autoDeclineOrder(orderDoc, reason = "承認期限切れによる�
     });
   }
 
-  // レストランへ通知
-  {
+  // レストランへ通知（6/26 #171 案B: 前払い注文は onOrderUpdated→runRefundToWallet が
+  //   「ウォレットに返金しました」通知を送るため、ここでの期限切れ辞退通知は重複させない）。
+  if (order.prepaid !== true) {
     const vars = { farmer: farmerName, fish: fishName, qty: qtyLabel };
     const { title, body } = getMessage("expiredDeclinedRestaurant", restData.lang || "en", vars);
     await notifyUser(order.restaurantId, {
@@ -1695,6 +1885,8 @@ exports.checkPaymentDeadlineExpired = onSchedule(
 
     for (const d of snap.docs) {
       const order = d.data();
+      // 6/26 #171 案B: 前払い注文は受取時払いの督促対象外（未払い注文は存在しない＝督促を出さない）。
+      if (order.prepaid === true) continue;
       if (order.paymentStatus === "paid") continue;
       if (order.paymentReminderSent === true) continue;
 
@@ -1736,6 +1928,52 @@ exports.checkPaymentDeadlineExpired = onSchedule(
       });
       console.log("Payment deadline expired reminder sent:", d.id);
     }
+  }
+);
+
+// ── 6/26 #171 案B: 配送完了 + 問題報告ウィンドウ経過で「取引完了」を自動確定（5分ごと） ──
+//   旧 checkPaymentDeadlineExpired（受取時払い督促）の置換的役割。前払い注文のみ対象。
+//   completedAt から settings/campaign.reportWindowHours（既定4時間）経過し、問題報告（paymentProblemHold）が
+//   無ければ tradeCompleted を立てる → 買い手「完了」・送金解禁・レビュー解禁。送金の実行は運営手動（不変）。
+//   ※ status=='completed' のみクエリ（複合インデックス不要）→ コードで前払い/未完了/期限経過/保留なしを絞る。
+exports.autoCompleteTrades = onSchedule(
+  { schedule: "every 5 minutes", region: "asia-southeast1" },
+  async () => {
+    const admin = require("firebase-admin/firestore");
+    let windowH = 4;
+    try {
+      const s = await db.doc("settings/campaign").get();
+      const v = Number(s.data()?.reportWindowHours);
+      if (isFinite(v) && v > 0) windowH = v;
+    } catch (_) { /* default 4 */ }
+    const cutoffMs = Date.now() - windowH * 60 * 60 * 1000;
+
+    let snap;
+    try {
+      snap = await db.collection("orders").where("status", "==", "completed").get();
+    } catch (e) {
+      console.error("[autoCompleteTrades] query failed:", e.message);
+      return;
+    }
+    let n = 0;
+    for (const d of snap.docs) {
+      const o = d.data();
+      if (o.prepaid !== true) continue;            // 案B（前払い）注文のみ
+      if (o.tradeCompleted === true) continue;     // 既に取引完了
+      if (o.paymentProblemHold === true) continue; // 問題報告で保留中は確定しない
+      const completedAtMs = o.completedAt?.toMillis?.() ? o.completedAt.toMillis() : 0;
+      if (!completedAtMs || completedAtMs > cutoffMs) continue; // まだ窓内
+      try {
+        await d.ref.update({
+          tradeCompleted: true,
+          tradeCompletedAt: admin.FieldValue.serverTimestamp(),
+        });
+        n++;
+      } catch (e) {
+        console.error("[autoCompleteTrades] update failed:", d.id, e.message);
+      }
+    }
+    if (n > 0) console.log(`[autoCompleteTrades] trade-completed: ${n}`);
   }
 );
 
@@ -2109,6 +2347,69 @@ exports.changePhoneWithOtp = onCall(
     // Firestore の表示用 phone も更新。
     await db.doc(`users/${uid}`).update({ phone: normalized });
     return { ok: true, phone: normalized };
+  }
+);
+
+// ── 6/26 #171/#176 案B: ウォレット残高の返金（出金）申請（callable・admin SDK）──
+//   残高（wallets）は rules で write:false ＝ CF のみが書ける。申請＝全額（MVP・部分指定なし）。
+//   ①残高を即0に減算＋台帳に「残高の返金（申請）」を記録（二重使用防止）②運営チャット（adminChats）に
+//   申請メッセージを投稿（onAdminChatMessage が親docサマリ＋管理者通知を処理）→ 運営が返金先へ手動送金。
+exports.requestWalletWithdrawal = onCall(
+  { region: "asia-southeast1", invoker: "public", cors: true },
+  async (request) => {
+    const admin = require("firebase-admin/firestore");
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Authentication required");
+
+    const userSnap = await db.doc(`users/${uid}`).get();
+    const userData = userSnap.data() || {};
+    const refund = userData.refundAccount || {};
+    const hasDest = refund.name && (refund.qrLink || refund.qrImage);
+    if (!hasDest) throw new HttpsError("failed-precondition", "Refund destination not registered");
+
+    const walletRef = db.doc(`wallets/${uid}`);
+    let amount = 0;
+    await db.runTransaction(async (tx) => {
+      const wSnap = await tx.get(walletRef);
+      const bal = Number(wSnap.data()?.balance || 0);
+      if (bal <= 0) throw new HttpsError("failed-precondition", "No balance to withdraw");
+      amount = bal;
+      tx.set(walletRef, { buyerId: uid, balance: 0 }, { merge: true });
+      const txRef = db.collection(`wallets/${uid}/transactions`).doc();
+      tx.set(txRef, {
+        amount: -bal,
+        type: "withdraw_request",
+        counterpart: null,
+        relatedOrderId: null,
+        createdAt: admin.FieldValue.serverTimestamp(),
+      });
+    });
+
+    // 運営チャットに申請メッセージを投稿（senderRole:'user' → onAdminChatMessage が親doc＋管理者通知を処理）。
+    //   ⚠️ 運営は返金先へ手動送金する＝「返金先QR」を必ず見せる必要がある：
+    //      QR画像は imageUrls で添付（チャットに描画）／QRリンクは本文に載せる。
+    //      onAdminChatMessage は type==='withdraw_request' をマスク対象外にする（リンク・名義を潰さない）。
+    try {
+      let body = `【ウォレット残高の返金 申請】\n金額: ${amount.toLocaleString()} KHR\n返金先: ${refund.name || "-"}`;
+      if (refund.qrLink) body += `\nQRリンク: ${refund.qrLink}`;
+      const msgData = {
+        senderRole: "user",
+        senderId: uid,
+        type: "withdraw_request",
+        text: body,
+        withdrawalAmount: amount,
+        category: "payment",
+        isRead: false,
+        createdAt: admin.FieldValue.serverTimestamp(),
+      };
+      if (refund.qrImage) msgData.imageUrls = [refund.qrImage]; // 返金先QR画像を運営に表示（チャットに描画）
+      await db.collection(`adminChats/${uid}/messages`).add(msgData);
+    } catch (e) {
+      console.error("withdrawal chat post failed:", uid, e.message);
+      // チャット投稿失敗でも残高は減算済み＝申請自体は受理（ログのみ）
+    }
+
+    return { ok: true, amount };
   }
 );
 
@@ -2697,7 +2998,9 @@ exports.onAdminChatMessage = onDocumentCreated(
     // 6/14 #145 / #120: サーバ側で連絡先を再検知（バイパス防止）。ユーザー発言のみ。
     //   client は admin-chat.html 送信時に maskContacts 済みだが、API 直叩きを防ぐため再マスクし、
     //   発動時は本文をマスク後で上書き＋contactMasked フラグを立てる（Q&A onCommentCreated と同方式）。
-    if (senderRole === "user" && text) {
+    // 6/28 #176: ウォレット返金申請（withdraw_request）は運営が返金先へ送金するための正規メッセージ＝
+    //   返金先の QRリンク/名義をマスクしない（通常のユーザー発言のみ連絡先マスク）。
+    if (senderRole === "user" && text && data.type !== "withdraw_request") {
       const serverDetect = maskContactsServer(text);
       if (serverDetect.hit && serverDetect.masked !== text) {
         text = serverDetect.masked;

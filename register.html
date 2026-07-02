@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
     <title>FishLink</title>
@@ -520,10 +520,33 @@
         let regConfirmation = null;
         let regRecaptcha = null;
         let regPayload = null;
-        function ensureRegRecaptcha() {
-            if (regRecaptcha) return regRecaptcha;
+        // 6/26 #180: reCAPTCHA を試行ごとに作り直す（"already rendered"・stale verifier・
+        //   カンボジア回線で google reCAPTCHA が不安定な問題への対策）。recaptcha-container の DOM ごと差し替える。
+        function freshRegRecaptcha() {
+            try { if (regRecaptcha) regRecaptcha.clear(); } catch (e) { /* ignore */ }
+            regRecaptcha = null;
+            const old = document.getElementById('recaptcha-container');
+            if (old) {
+                const fresh = document.createElement('div');
+                fresh.id = 'recaptcha-container';
+                old.replaceWith(fresh);
+            }
             regRecaptcha = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
             return regRecaptcha;
+        }
+        // 6/26 #180: SMS送信を最大2回試行（reCAPTCHA の一過性エラーで誤って失敗扱いにしない＝成功すれば出さない）。
+        async function sendRegOtp(normPhone) {
+            let lastErr;
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    const verifier = freshRegRecaptcha();
+                    return await signInWithPhoneNumber(auth, '+' + normPhone, verifier);
+                } catch (err) {
+                    lastErr = err;
+                    console.warn(`register OTP attempt ${attempt + 1} failed:`, err?.message || err);
+                }
+            }
+            throw lastErr;
         }
 
         // 本登録（createUserWithEmailAndPassword）。OTP OFF時は直接、ON時はOTP検証後に呼ぶ。
@@ -563,8 +586,7 @@
             loading.classList.add('show');
             window.isRegistering = true;   // phone provider のサインインで watchAuthState がリダイレクトしないように
             try {
-                const verifier = ensureRegRecaptcha();
-                regConfirmation = await signInWithPhoneNumber(auth, '+' + payload.normPhone, verifier);
+                regConfirmation = await sendRegOtp(payload.normPhone);
                 loading.classList.remove('show');
                 document.getElementById('reg-otp-sub').textContent = i18next.t('register.otpSub', { phone: payload.phone });
                 document.querySelectorAll('.reg-otp-d').forEach(d => { d.value = ''; });

@@ -41,9 +41,14 @@
   .badge.dec { background:#FDECEA; color:#D14343; }
   .badge.confirm { background:#EEF1F4; color:#5A6470; }
   .badge.deliv { background:#EAF2FB; color:#0B5FB0; }
+  .badge.arrived { background:#E7F4EC; color:#2E7D32; }
   .price { font-size:21px; font-weight:800; margin-top:8px; }
   .warn { display:flex; align-items:center; gap:6px; background:#FDECEA; color:#D14343; font-size:12.5px; font-weight:800; padding:8px 11px; border-radius:9px; margin-top:9px; }
   .note { background:#F7F9FB; border:1px solid #EAEEF2; border-radius:9px; padding:9px 11px; font-size:12px; color:#5A6470; margin-top:9px; line-height:1.5; }
+  .refunded { display:flex; flex-direction:column; align-items:flex-start; gap:2px; background:#E7F4EC; color:#2E7D32; font-size:12.5px; font-weight:800; padding:9px 11px; border-radius:9px; margin-top:9px; line-height:1.4; }
+  .refunded .sub { font-weight:600; color:#3E7A4E; font-size:11px; }
+  .btnrow { display:flex; gap:8px; margin-top:10px; }
+  .btnrow .btn { flex:1; margin-top:0; }
   .statusline { display:flex; align-items:center; gap:6px; background:#F0F4F8; color:#42566B; font-size:12px; font-weight:700; padding:8px 11px; border-radius:9px; margin-top:9px; }
   .btn { display:block; text-align:center; font-size:13px; font-weight:800; padding:11px; border-radius:10px; margin-top:10px; }
   .btn.pri { background:#0B5FB0; color:#FFF; }
@@ -95,13 +100,38 @@
   .dechead .l { font-size:11px; color:#5A6470; margin-top:3px; }
   .dreason { background:#F7F9FB; border:1px solid #EAEEF2; border-radius:9px; padding:8px 11px; font-size:12px; color:#5A6470; margin-top:10px; }
   .dreason b { color:#33414E; }
+
+  /* キャンセル確認モーダル */
+  .mask { position:absolute; inset:0; background:rgba(20,28,38,0.46); display:flex; align-items:center; justify-content:center; padding:0 26px; }
+  .modal { background:#FFF; border-radius:16px; padding:22px 20px 16px; text-align:center; width:100%; max-width:300px; box-shadow:0 18px 48px rgba(0,0,0,0.28); }
+  .modal .mt { font-size:17px; font-weight:800; margin-bottom:9px; }
+  .modal .mb { font-size:13px; color:#5A6470; line-height:1.65; margin-bottom:18px; }
+  .modal .mb b { color:#2E7D32; }
+  .modal .ma { display:flex; gap:10px; }
+  .modal .mbtn { flex:1; border:none; border-radius:10px; padding:12px 0; font-size:14.5px; font-weight:800; cursor:pointer; font-family:inherit; }
+  .modal .m-no { background:#EEF1F4; color:#4A4A4A; }
+  .modal .m-cancel { background:#E5453F; color:#FFF; }
+  /* 購入詳細（read-only・案B） */
+  .sec-lbl { font-size:12px; font-weight:800; color:#5A6470; margin:14px 4px 6px; }
+  .dstatus { border-radius:11px; padding:12px 13px; margin-bottom:11px; }
+  .dstatus .ds-s { font-size:15px; font-weight:800; } .dstatus .ds-d { font-size:11.5px; margin-top:4px; line-height:1.5; }
+  .dstatus.arrived { background:#E7F4EC; border:1px solid #BFE3CC; } .dstatus.arrived .ds-s { color:#2E7D32; } .dstatus.arrived .ds-d { color:#3E7A4E; }
+  .dstatus.fin { background:#EAEFF3; border:1px solid #D6DEE6; } .dstatus.fin .ds-s { color:#42566B; } .dstatus.fin .ds-d { color:#5A6470; }
+  .paycard { background:#FFF; border:1px solid #EAEEF2; border-radius:14px; padding:13px 14px; margin-bottom:11px; }
+  .paycard .pc-total { display:flex; justify-content:space-between; align-items:baseline; padding-bottom:9px; border-bottom:1px solid #F2F4F7; margin-bottom:7px; }
+  .paycard .pc-total .l { font-size:13px; font-weight:800; } .paycard .pc-total .v { font-size:21px; font-weight:800; color:#0B5FB0; }
+  .prow2 { display:flex; justify-content:space-between; font-size:12.5px; padding:5px 0; } .prow2 .l { color:#5A6470; } .prow2 .v { font-weight:700; }
+  .prow2.promo .l, .prow2.promo .v { color:#B36A00; }
+  .prow2.wallet .l, .prow2.wallet .v { color:#0B5FB0; }
+  .prow2.total2 { border-top:1px solid #F2F4F7; margin-top:4px; padding-top:8px; } .prow2.total2 .l, .prow2.total2 .v { font-weight:800; }
+  .paid-chip2 { display:inline-flex; align-items:center; gap:5px; background:#E7F4EC; color:#2E7D32; font-size:11.5px; font-weight:800; border-radius:8px; padding:6px 10px; margin-top:9px; }
 </style>
 </head>
 <body>
 
 <div class="intro">
-  <h1>買い手（レストラン）「注文状況」— A案（農家側のミラー）</h1>
-  <p>構造＝<b>対応が必要 → 進行中 → 「購入履歴を見る」1行</b>。買い手固有：<b>対応が必要＝お支払い待ち（KHQR・最重要）＋辞退された注文（再注文）</b>／進行中＝農家確認中・出荷・配達中（待つ）／履歴＝完了・過去の辞退は<b>購入・取引</b>へ。<b>CTAは青</b>（お支払いへ進む/再注文/配送状況を確認）、<b>赤は「支払期限を過ぎています」注記だけ</b>。</p>
+  <h1>買い手（レストラン）「注文状況」— 案B 前払い対応</h1>
+  <p>構造＝<b>対応が必要 → 進行中 → 「購入履歴を見る」1行</b>。<b>【案B 前払いで作り直し】</b>① 注文は支払い完了で成立するので「お支払い待ち」カードは廃止 ② 例外で<b>運営が入金を確認できない時だけ「お支払い未確認」</b>カード（〔もう一度支払う〕＋〔運営に問い合わせる〕）③ 農家辞退カードに<b>「✓ ウォレットに返金しました（次回使えます）」</b>を追加（前払い済みなので即返金）。進行中＝<b>お支払い確認中</b>（払った直後・待つだけ）・農家確認中・配達中・<b>お届け済み</b>（配達完了→数時間後に自動で取引完了／問題があれば〔問題を報告〕）。<b>追加3点</b>＝(1)配達中／お届け済みに<b>〔問題を報告〕導線</b>（→問題報告フロー・ウォレットの問題返金の起点）(2)お支払い未確認は<b>運営が照合して解決</b>（自動キャンセルしない＝即農家へ方式で農家が準備中の恐れ＋払ったのに照合できてない場合は金が実在するため。督促・照合はspecで詰める） (3)<b>承認期限切れの自動辞退カード</b>（「農家から返答がなく自動辞退」＋✓返金）。さらに<b>〈農家確認中〉は農家の承認前なので〔注文をキャンセル〕可</b>（前払い済み→押すとウォレットに返金／承認後は不可＝〔問題を報告〕に切替）。<b>CTAは青</b>、緑＝返金済みの安心。</p>
 </div>
 
 <div class="stage">
@@ -113,22 +143,25 @@
     <div class="tt">注文状況</div>
     <div class="bd">
 
-      <div class="sh act">対応が必要 <span class="n">2</span></div>
+      <div class="sh act">対応が必要 <span class="n">3</span></div>
 
-      <!-- お支払い待ち（最重要） -->
+      <!-- お支払いを確認できませんでした（例外＝運営が入金を確認できない） -->
       <div class="c urgent">
         <div class="ctop">
           <div class="th"></div>
           <div class="ci">
-            <span class="badge pay" style="float:right">お支払い待ち</span>
+            <span class="badge pay" style="float:right">お支払い未確認</span>
             <div class="nm">パンガシウス（8 head/kg）5kg</div>
             <div class="fl">FL-260612-001</div>
             <div class="meta">🏠 大星農場 ・ 6/13（金）7:00–8:00</div>
             <div class="price">58,525 KHR</div>
           </div>
         </div>
-        <div class="warn">⏰ 支払期限を過ぎています</div>
-        <button class="btn pri">お支払いへ進む</button>
+        <div class="note">入金を確認できませんでした。もう一度お支払いいただくか、運営にお問い合わせください。</div>
+        <div class="btnrow">
+          <button class="btn pri">もう一度支払う</button>
+          <button class="btn sec">運営に問い合わせる</button>
+        </div>
       </div>
 
       <!-- 辞退された注文（再注文） -->
@@ -143,11 +176,43 @@
           </div>
         </div>
         <div class="note">農家に在庫切れで辞退されました。別の農家から同じ魚を再注文できます。</div>
+        <div class="refunded">✓ 56,950 KHR をウォレットに返金しました<span class="sub">次回の注文で使えます</span></div>
         <button class="btn pri">同じ魚を再注文する</button>
         <div class="closebtn">× 閉じる</div>
       </div>
 
-      <div class="sh">進行中 <span class="n">2</span></div>
+      <!-- 辞退された注文（承認期限切れの自動辞退） -->
+      <div class="c">
+        <div class="ctop">
+          <div class="th"></div>
+          <div class="ci">
+            <span class="badge dec" style="float:right">辞退済み</span>
+            <div class="nm">シルバーバーブ（10 head/kg）5kg</div>
+            <div class="fl">FL-260611-004</div>
+            <div class="meta">🏠 メコン淡水魚 ・ 6/12（木）8:00–9:00</div>
+          </div>
+        </div>
+        <div class="note">農家から返答がなく、自動的に辞退になりました。別の農家から同じ魚を再注文できます。</div>
+        <div class="refunded">✓ 41,300 KHR をウォレットに返金しました<span class="sub">次回の注文で使えます</span></div>
+        <button class="btn pri">同じ魚を再注文する</button>
+        <div class="closebtn">× 閉じる</div>
+      </div>
+
+      <div class="sh">進行中 <span class="n">4</span></div>
+
+      <!-- お支払い確認中（払った直後・待つだけ） -->
+      <div class="c">
+        <div class="ctop">
+          <div class="th"></div>
+          <div class="ci">
+            <span class="badge confirm" style="float:right">お支払い確認中</span>
+            <div class="nm">パンガシウス（6 head/kg）5kg</div>
+            <div class="fl">FL-260612-010</div>
+            <div class="meta">🏠 大星農場 ・ 6/14（土）7:00–8:00</div>
+          </div>
+        </div>
+        <div class="statusline">⏳ 運営が入金を確認しています</div>
+      </div>
 
       <!-- 農家確認中 -->
       <div class="c">
@@ -161,6 +226,7 @@
           </div>
         </div>
         <div class="statusline">⏳ 農家が在庫を確認しています</div>
+        <div class="closebtn" style="color:#5A6470">注文をキャンセル（ウォレットに返金）</div>
       </div>
 
       <!-- 配達中 -->
@@ -174,7 +240,25 @@
             <div class="meta">🏠 メコン淡水魚 ・ 6/13（金）11:00–12:00</div>
           </div>
         </div>
-        <button class="btn sec">配送状況を確認</button>
+        <div class="btnrow">
+          <button class="btn sec">配送状況を確認</button>
+          <button class="btn sec">問題を報告</button>
+        </div>
+      </div>
+
+      <!-- お届け済み（確認中・問題があれば報告） -->
+      <div class="c">
+        <div class="ctop">
+          <div class="th"></div>
+          <div class="ci">
+            <span class="badge arrived" style="float:right">お届け済み</span>
+            <div class="nm">キノボリウオ（10 head/kg）5kg</div>
+            <div class="fl">FL-260611-002</div>
+            <div class="meta">🏠 大星農場 ・ 6/13（金）6:00–7:00</div>
+          </div>
+        </div>
+        <div class="statusline">✓ 配達完了。問題がなければ数時間後に自動で取引完了します</div>
+        <button class="btn sec">問題を報告する</button>
       </div>
 
       <div class="sh hist">履歴</div>
@@ -275,7 +359,7 @@
           <div class="fl">FL-260606-002</div>
           <div class="meta">🏠 大星農場 ・ 6/6（金）6:00–7:00</div>
         </div></div>
-        <div class="dreason">自分でキャンセル（農家の承認前）</div>
+        <div class="dreason">自分でキャンセル（農家の承認前）・ウォレット返金済み</div>
       </div>
 
       <div class="c">
@@ -299,6 +383,124 @@
       </div>
 
       <span class="closebtn" style="color:#0B5FB0">もっと見る（あと4件）</span>
+    </div>
+  </div>
+</div>
+
+<!-- ④ 注文をキャンセル → 確認モーダル -->
+<div class="col">
+  <div class="lab">④ 〔注文をキャンセル〕→ 確認モーダル<span class="t">農家の承認前のみ・キャンセルでウォレット返金</span></div>
+  <div class="phone">
+    <div class="hd"><span class="lg">🐟 FISHLINK</span><span class="sp">🌐 日本語　🔔12　✓✓7　👤</span></div>
+    <div class="tt">注文状況</div>
+    <div class="bd">
+      <div class="sh">進行中 <span class="n">4</span></div>
+      <div class="c">
+        <div class="ctop">
+          <div class="th"></div>
+          <div class="ci">
+            <span class="badge confirm" style="float:right">農家確認中</span>
+            <div class="nm">レッドティラピア（3 head/kg）5kg</div>
+            <div class="fl">FL-260612-008</div>
+            <div class="meta">🏠 クメール養殖 ・ 6/14（土）6:00–7:00</div>
+          </div>
+        </div>
+        <div class="statusline">⏳ 農家が在庫を確認しています</div>
+        <div class="closebtn" style="color:#5A6470">注文をキャンセル（ウォレットに返金）</div>
+      </div>
+    </div>
+    <div class="mask">
+      <div class="modal">
+        <div class="mt">この注文をキャンセルしますか？</div>
+        <div class="mb">お支払い済みの <b>48,300 KHR</b> はウォレットに返金されます（次回の注文で使えます）。農家の承認前なのでキャンセルできます。</div>
+        <div class="ma">
+          <button class="mbtn m-no">やめる</button>
+          <button class="mbtn m-cancel">キャンセルする</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ 購入詳細（お届け済み・read-only）案B -->
+<div class="col">
+  <div class="lab">⑤ 購入詳細（お届け済み）<span class="t">read-only・前払い済み・払うボタン無し</span></div>
+  <div class="phone">
+    <div class="hd"><span style="font-size:18px">←</span><span class="lg">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+    <div class="tt">購入詳細</div>
+    <div class="bd">
+      <div class="c">
+        <div class="ctop">
+          <div class="th"></div>
+          <div class="ci">
+            <div class="nm">スポットパンガシウス（3 head/kg）5kg</div>
+            <div class="fl">FL-260627-001</div>
+            <div class="meta">🏠 farmer5 ・ 6/27（土）9:00–10:00 ・ 内臓処理あり</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-lbl">現在の状態</div>
+      <div class="dstatus arrived">
+        <div class="ds-s">お届け済み</div>
+        <div class="ds-d">問題がなければ数時間後に取引完了します。</div>
+      </div>
+
+      <div class="sec-lbl">お支払い</div>
+      <div class="paycard">
+        <div class="pc-total"><span class="l">合計</span><span class="v">48,231 KHR</span></div>
+        <div class="prow2"><span class="l">魚代</span><span class="v">36,750 KHR</span></div>
+        <div class="prow2"><span class="l">送料</span><span class="v">12,400 KHR</span></div>
+        <div class="prow2 promo"><span class="l">🏷 キャンペーン割引</span><span class="v">−919 KHR</span></div>
+        <div class="prow2 wallet"><span class="l">💰 ウォレット利用</span><span class="v">−10,000 KHR</span></div>
+        <div class="prow2 total2"><span class="l">お支払い額（KHQR）</span><span class="v">38,231 KHR</span></div>
+        <div class="paid-chip2">✓ お支払い済み（前払い）</div>
+      </div>
+
+      <button class="btn sec">問題を報告</button>
+      <div class="closebtn">本日 4:07 まで報告できます</div>
+      <div class="closebtn" style="margin-top:0">※ レビューは取引完了後に表示されます</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤' 購入詳細（完了・read-only）案B -->
+<div class="col">
+  <div class="lab">⑤' 購入詳細（完了）<span class="t">read-only・レビュー解禁</span></div>
+  <div class="phone">
+    <div class="hd"><span style="font-size:18px">←</span><span class="lg">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+    <div class="tt">購入詳細</div>
+    <div class="bd">
+      <div class="c">
+        <div class="ctop">
+          <div class="th"></div>
+          <div class="ci">
+            <div class="nm">スポットパンガシウス（3 head/kg）5kg</div>
+            <div class="fl">FL-260627-001</div>
+            <div class="meta">🏠 farmer5 ・ 6/27（土）9:00–10:00 ・ 内臓処理あり</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-lbl">現在の状態</div>
+      <div class="dstatus fin">
+        <div class="ds-s">✓ 完了</div>
+        <div class="ds-d">お取引が完了しました。</div>
+      </div>
+
+      <div class="sec-lbl">お支払い</div>
+      <div class="paycard">
+        <div class="pc-total"><span class="l">合計</span><span class="v">48,231 KHR</span></div>
+        <div class="prow2"><span class="l">魚代</span><span class="v">36,750 KHR</span></div>
+        <div class="prow2"><span class="l">送料</span><span class="v">12,400 KHR</span></div>
+        <div class="prow2 promo"><span class="l">🏷 キャンペーン割引</span><span class="v">−919 KHR</span></div>
+        <div class="prow2 wallet"><span class="l">💰 ウォレット利用</span><span class="v">−10,000 KHR</span></div>
+        <div class="prow2 total2"><span class="l">お支払い額（KHQR）</span><span class="v">38,231 KHR</span></div>
+        <div class="paid-chip2">✓ お支払い済み（前払い）</div>
+      </div>
+
+      <button class="btn pri">同じ魚を再注文する</button>
+      <button class="btn sec">レビューを送信</button>
     </div>
   </div>
 </div>

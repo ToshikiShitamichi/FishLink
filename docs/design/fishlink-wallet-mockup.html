@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK ウォレット（案B 前払い・買い手専用）- モック</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:900px; margin-bottom:20px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; } .intro b{color:#0B5FB0;} .intro .gr{color:#2E7D32;}
+
+  .stage { display:flex; flex-wrap:wrap; gap:26px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; color:#5A6470; max-width:390px; text-align:center; }
+
+  .phone { width:390px; max-width:100%; background:#F7F9FB; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; align-self:flex-start; min-height:720px; }
+  .header { flex:0 0 auto; background:#FFF; padding:12px 14px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:9px; }
+  .header .bk { font-size:19px; color:#5A6470; } .header .logo { font-weight:800; color:#0B5FB0; font-size:15px; } .header .logo::before{content:"🐟 ";}
+  .header .lang { margin-left:auto; font-size:11px; color:#0B5FB0; font-weight:700; border:1px solid #CFE0EE; border-radius:12px; padding:3px 9px; }
+  .title { text-align:center; font-size:17px; font-weight:800; padding:13px 0 4px; }
+  .body { padding:8px 14px 20px; }
+
+  /* 残高カード */
+  .bal-card { background:#FFF; border:1px solid #E3E8EE; border-radius:18px; padding:22px 16px 18px; text-align:center; box-shadow:0 2px 10px rgba(11,95,176,0.06); }
+  .bal-label { font-size:12.5px; color:#5A6470; font-weight:700; }
+  .bal-num { font-size:34px; font-weight:800; color:#0B5FB0; margin:4px 0 12px; letter-spacing:-.5px; }
+  .bal-num.zero { color:#9AA3B0; }
+  .bal-nudge { display:inline-flex; align-items:center; gap:6px; background:#EAF2FB; color:#0B5FB0; font-size:12px; font-weight:700; border-radius:20px; padding:7px 13px; line-height:1.3; }
+  .bal-subnote { font-size:11px; color:#9AA3B0; margin-top:8px; }
+  .bal-empty-note { font-size:12px; color:#5A6470; line-height:1.65; margin:2px 6px 0; }
+  .refund-link { text-align:center; margin:13px 0 6px; }
+  .refund-link a { font-size:12.5px; color:#5A6470; font-weight:700; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+
+  /* 利用履歴 */
+  .hist-h { font-size:13.5px; font-weight:800; color:#1A1A1A; margin:20px 4px 8px; }
+  .hist { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; overflow:hidden; }
+  .hist-row { display:flex; align-items:flex-start; gap:11px; padding:13px 14px; border-bottom:1px solid #F2F4F7; }
+  .hist-row:last-child { border-bottom:none; }
+  .hr-ic { width:30px; height:30px; flex:0 0 auto; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .hr-ic.in { background:#E7F4EC; } .hr-ic.out { background:#EEF1F4; }
+  .hr-main { flex:1; min-width:0; }
+  .hr-reason { font-size:13px; font-weight:700; color:#1A1A1A; }
+  .hr-cp { font-size:11.5px; color:#5A6470; margin-top:2px; }
+  .hr-date { font-size:11px; color:#9AA3B0; margin-top:3px; }
+  .hr-amt { font-size:14px; font-weight:800; white-space:nowrap; align-self:center; }
+  .hr-amt.plus { color:#2E7D32; } .hr-amt.minus { color:#1A1A1A; }
+
+  .empty { text-align:center; padding:34px 18px; }
+  .empty .ei { font-size:30px; } .empty .et { font-size:12.5px; color:#9AA3B0; margin-top:8px; line-height:1.6; }
+
+  /* 返金申請シート */
+  .mask { position:absolute; inset:0; background:rgba(20,28,38,0.46); display:flex; align-items:flex-end; }
+  .sheet { background:#FFF; width:100%; border-radius:20px 20px 0 0; padding:8px 18px 22px; box-shadow:0 -10px 40px rgba(0,0,0,0.2); }
+  .sheet-handle { width:38px; height:4px; background:#D7DCE2; border-radius:3px; margin:6px auto 14px; }
+  .sheet-title { font-size:16px; font-weight:800; text-align:center; margin-bottom:14px; }
+  .srow { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 0; border-bottom:1px solid #F2F4F7; }
+  .srow .sl { font-size:12.5px; color:#5A6470; } .srow .sv { font-size:13.5px; font-weight:800; text-align:right; }
+  .srow .sv.amt { color:#0B5FB0; font-size:16px; }
+  .srow .sv .sub2 { display:block; font-size:10.5px; color:#9AA3B0; font-weight:600; }
+  .dest { display:flex; align-items:center; gap:7px; }
+  .dest .chg { font-size:11px; font-weight:800; color:#0B5FB0; border:1px solid #BBD3EC; border-radius:8px; padding:3px 9px; }
+  .dest-warn { background:#FBF3E6; border:1px solid #F0DDB8; border-radius:11px; padding:11px 12px; margin:10px 0 4px; }
+  .dest-warn .dw-t { font-size:12.5px; font-weight:800; color:#B36A00; } .dest-warn .dw-t::before{content:"⚠️ ";}
+  .dest-warn .dw-b { font-size:11.5px; color:#8A6A2E; margin-top:4px; line-height:1.55; }
+  .dest-warn .dw-cta { display:block; text-align:center; background:#0B5FB0; color:#FFF; font-size:13px; font-weight:800; border-radius:10px; padding:10px; margin-top:10px; }
+  .sheet-note { display:flex; gap:8px; background:#F4F6F9; border-radius:11px; padding:11px 12px; margin:13px 0 16px; }
+  .sheet-note .ni { font-size:14px; } .sheet-note .nt { font-size:11.5px; color:#5A6470; line-height:1.6; }
+  .sbtn { width:100%; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; background:#0B5FB0; color:#FFF; }
+  .sbtn .sub { display:block; font-size:11px; font-weight:600; opacity:.85; margin-top:2px; }
+  .sbtn.disabled { background:#E6E9ED; color:#A4ABB5; }
+  .sbtn-note { font-size:11px; color:#9AA3B0; text-align:center; margin-top:7px; }
+  .scancel { display:block; width:100%; text-align:center; background:none; border:none; color:#5A6470; font-size:13px; font-weight:700; padding:13px 0 2px; cursor:pointer; font-family:inherit; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK ウォレット（案B 前払い・買い手専用）— モック</h1>
+  <p><b>ウォレットは買い手専用</b>（農家は売上を送金で受け取るため不要）。残高は<b>農家の辞退・受け取りの問題の返金</b>で貯まり、<b>次回の注文で自動的に使われます</b>（チャージ機能は無い＝KHQRで都度払い）。</p>
+  <p>方針＝<b>残高を主役・出金は控えめ</b>（系内に貯めて使ってほしい／でも「取り戻せる」安心は残す＝前払い抵抗の緩和）。〔残高の返金を申請〕は<b>控えめなテキストリンク</b>。入口はマイページの「💰ウォレット 残高◯◯」行から。</p>
+  <p>利用履歴＝<b>日付・理由・相手（農家名 / 注文FL番号）・金額</b>（増は<span class="gr">緑＋</span>／減は黒−）。返金申請は<b>確認シート→運営チャットへ申請</b>（自動出金は作らない・運営が返金先へ手動送金）。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① 通常（残高あり＋履歴） -->
+  <div class="phone-wrap">
+    <div class="phone-label">① 通常（残高あり＋利用履歴）</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">ウォレット</div>
+      <div class="body">
+        <div class="bal-card">
+          <div class="bal-label">残高</div>
+          <div class="bal-num">23,500 KHR</div>
+          <div class="bal-nudge">💡 次回の注文で自動的に使われます</div>
+          <div class="bal-subnote">支払い時に使う金額を選べます</div>
+        </div>
+        <div class="refund-link"><a>残高の返金を申請</a></div>
+
+        <div class="hist-h">利用履歴</div>
+        <div class="hist">
+          <div class="hist-row">
+            <div class="hr-ic out">↗</div>
+            <div class="hr-main">
+              <div class="hr-reason">残高の返金（申請）</div>
+              <div class="hr-cp">運営チャットで申請 → 返金先へ送金</div>
+              <div class="hr-date">2026/6/15</div>
+            </div>
+            <div class="hr-amt minus">−11,600 KHR</div>
+          </div>
+          <div class="hist-row">
+            <div class="hr-ic out">🛒</div>
+            <div class="hr-main">
+              <div class="hr-reason">注文に使用</div>
+              <div class="hr-cp">FL-260612-003</div>
+              <div class="hr-date">2026/6/12</div>
+            </div>
+            <div class="hr-amt minus">−23,500 KHR</div>
+          </div>
+          <div class="hist-row">
+            <div class="hr-ic in">🐟</div>
+            <div class="hr-main">
+              <div class="hr-reason">受け取りの問題の返金</div>
+              <div class="hr-cp">パイリン農場 ・ FL-260610-001</div>
+              <div class="hr-date">2026/6/10</div>
+            </div>
+            <div class="hr-amt plus">+6,825 KHR</div>
+          </div>
+          <div class="hist-row">
+            <div class="hr-ic in">↩</div>
+            <div class="hr-main">
+              <div class="hr-reason">辞退の返金</div>
+              <div class="hr-cp">大星農場 ・ FL-260608-005</div>
+              <div class="hr-date">2026/6/8</div>
+            </div>
+            <div class="hr-amt plus">+51,775 KHR</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 空状態（新規） -->
+  <div class="phone-wrap">
+    <div class="phone-label">② 空状態（新規・残高0）＝出金リンクは出さない</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">ウォレット</div>
+      <div class="body">
+        <div class="bal-card">
+          <div class="bal-label">残高</div>
+          <div class="bal-num zero">0 KHR</div>
+          <div class="bal-empty-note">農家が注文を辞退したときや、受け取りに問題があったときの<b>返金がここに貯まり</b>、次回の注文で自動的に使われます。</div>
+        </div>
+
+        <div class="hist-h">利用履歴</div>
+        <div class="hist">
+          <div class="empty">
+            <div class="ei">💰</div>
+            <div class="et">まだ利用履歴はありません。<br>返金が発生するとここに表示されます。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 返金申請の確認シート（返金先 登録済み） -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ 〔残高の返金を申請〕→ 確認シート（返金先 登録済み）</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">ウォレット</div>
+      <div class="body">
+        <div class="bal-card">
+          <div class="bal-label">残高</div>
+          <div class="bal-num">23,500 KHR</div>
+          <div class="bal-nudge">💡 次回の注文で自動的に使われます</div>
+          <div class="bal-subnote">支払い時に使う金額を選べます</div>
+        </div>
+        <div class="refund-link"><a>残高の返金を申請</a></div>
+      </div>
+      <div class="mask">
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">残高の返金を申請</div>
+          <div class="srow"><span class="sl">返金する金額</span><span class="sv amt">23,500 KHR<span class="sub2">残高ぜんぶ</span></span></div>
+          <div class="srow"><span class="sl">返金先</span><span class="sv"><span class="dest">🏦 ABA ・ アンコール◯◯ <span class="chg">変更</span></span></span></div>
+          <div class="sheet-note"><span class="ni">🔒</span><span class="nt">運営が内容を確認し、上記の返金先に手動で振り込みます（<b>1〜3営業日</b>）。申請すると残高はすぐに差し引かれます。</span></div>
+          <button class="sbtn">運営に申請する<span class="sub">運営チャットに申請内容が送られます</span></button>
+          <button class="scancel">キャンセル</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 返金申請の確認シート（返金先 未登録） -->
+  <div class="phone-wrap">
+    <div class="phone-label">④ 同・返金先が未登録 → 登録CTA（JIT）／申請ボタンは無効</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">ウォレット</div>
+      <div class="body">
+        <div class="bal-card">
+          <div class="bal-label">残高</div>
+          <div class="bal-num">23,500 KHR</div>
+          <div class="bal-nudge">💡 次回の注文で自動的に使われます</div>
+          <div class="bal-subnote">支払い時に使う金額を選べます</div>
+        </div>
+        <div class="refund-link"><a>残高の返金を申請</a></div>
+      </div>
+      <div class="mask">
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">残高の返金を申請</div>
+          <div class="srow"><span class="sl">返金する金額</span><span class="sv amt">23,500 KHR<span class="sub2">残高ぜんぶ</span></span></div>
+          <div class="dest-warn">
+            <div class="dw-t">返金先が登録されていません</div>
+            <div class="dw-b">返金を受け取る口座・QRを登録してください。登録後に申請できます。</div>
+            <span class="dw-cta">返金先を登録する</span>
+          </div>
+          <button class="sbtn disabled">運営に申請する</button>
+          <div class="sbtn-note">返金先を登録すると申請できます</div>
+          <button class="scancel">キャンセル</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

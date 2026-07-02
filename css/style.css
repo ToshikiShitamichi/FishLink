@@ -548,6 +548,20 @@ body.app-ready .loading-overlay.show {
     }
 }
 
+/* 6/26 #181: 固定フッター（CTAバー・チャット入力・アクションバー）のセーフエリア対応。
+   viewport-fit=cover を全 app HTML に付けたことで、env(safe-area-inset-bottom) が実値を返すようになった。
+   各ページ page-scoped の固定フッターはホームバー/ジェスチャーバーに潜らないよう bottom 余白に safe-area を加算。
+   ここで一括（!important で page-scoped を上書き＝下端余白のみ・他のpaddingは保持）。
+   ※ 案B 新フッター（cart .grand-total-bar 等）は各ページ側で calc(... + env(...)) 済み。 */
+@supports (padding: max(0px)) {
+    .footer-actions,
+    .delivery-footer,
+    .footer-input,
+    .order-footer {
+        padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+    }
+}
+
 /* ── ページヘッダー ──────────────────────────────────────────── */
 .page-header {
     display: flex;

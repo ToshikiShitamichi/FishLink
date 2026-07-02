@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
+    <title>FISHLINK</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        /* 6/27 #173 ウォレット（案B 前払い・買い手専用）。残高を主役・出金は控えめ。 */
+        .sub-page { max-width: 480px; margin: 0 auto; padding: 0 16px 60px; }
+        .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
+
+        /* 残高カード */
+        .bal-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 18px; padding: 22px 16px 18px; text-align: center; box-shadow: 0 2px 10px rgba(11, 95, 176, 0.06); }
+        .bal-label { font-size: 12.5px; color: var(--color-text-sub); font-weight: 700; }
+        .bal-num { font-size: 34px; font-weight: 800; color: var(--color-cta); margin: 4px 0 12px; letter-spacing: -.5px; }
+        .bal-num.zero { color: #9aa3b0; }
+        .bal-nudge { display: inline-flex; align-items: center; gap: 6px; background: var(--color-cta-lt); color: var(--color-cta); font-size: 12px; font-weight: 700; border-radius: 20px; padding: 7px 13px; line-height: 1.3; }
+        .bal-nudge .material-symbols-outlined { font-size: 16px; }
+        .bal-subnote { font-size: 11px; color: #9aa3b0; margin-top: 8px; }
+        .bal-empty-note { font-size: 12px; color: var(--color-text-sub); line-height: 1.65; margin: 2px 6px 0; }
+        .bal-empty-note b { color: var(--color-text); }
+        .refund-link { text-align: center; margin: 13px 0 6px; }
+        .refund-link a { font-size: 12.5px; color: var(--color-text-sub); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+        /* 利用履歴 */
+        .hist-h { font-size: 13.5px; font-weight: 800; color: var(--color-text); margin: 20px 4px 8px; }
+        .hist { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 14px; overflow: hidden; }
+        .hist-row { display: flex; align-items: flex-start; gap: 11px; padding: 13px 14px; border-bottom: 1px solid #f2f4f7; }
+        .hist-row:last-child { border-bottom: none; }
+        .hr-ic { width: 30px; height: 30px; flex: 0 0 auto; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+        .hr-ic .material-symbols-outlined { font-size: 17px; }
+        .hr-ic.in { background: #e7f4ec; color: #2e7d32; }
+        .hr-ic.out { background: #eef1f4; color: #5a6470; }
+        .hr-main { flex: 1; min-width: 0; }
+        .hr-reason { font-size: 13px; font-weight: 700; color: var(--color-text); }
+        .hr-cp { font-size: 11.5px; color: var(--color-text-sub); margin-top: 2px; word-break: break-word; }
+        .hr-date { font-size: 11px; color: #9aa3b0; margin-top: 3px; }
+        .hr-amt { font-size: 14px; font-weight: 800; white-space: nowrap; align-self: center; }
+        .hr-amt.plus { color: #2e7d32; }
+        .hr-amt.minus { color: var(--color-text); }
+
+        .empty { text-align: center; padding: 34px 18px; }
+        .empty .material-symbols-outlined { font-size: 30px; color: #9aa3b0; }
+        .empty .et { font-size: 12.5px; color: #9aa3b0; margin-top: 8px; line-height: 1.6; }
+
+        /* 返金申請シート（入力/レビュー＝ボトムシート可） */
+        .ws-mask { position: fixed; inset: 0; background: rgba(20, 28, 38, 0.46); display: none; align-items: flex-end; z-index: 1200; }
+        .ws-mask.show { display: flex; }
+        .ws-sheet { background: var(--color-surface); width: 100%; max-width: 480px; margin: 0 auto; border-radius: 20px 20px 0 0; padding: 8px 18px calc(22px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2); }
+        .ws-handle { width: 38px; height: 4px; background: #d7dce2; border-radius: 3px; margin: 6px auto 14px; }
+        .ws-title { font-size: 16px; font-weight: 800; text-align: center; margin-bottom: 14px; }
+        .srow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 0; border-bottom: 1px solid #f2f4f7; }
+        .srow .sl { font-size: 12.5px; color: var(--color-text-sub); }
+        .srow .sv { font-size: 13.5px; font-weight: 800; text-align: right; }
+        .srow .sv.amt { color: var(--color-cta); font-size: 16px; }
+        .srow .sv .sub2 { display: block; font-size: 10.5px; color: #9aa3b0; font-weight: 600; }
+        .dest { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+        .dest .material-symbols-outlined { font-size: 16px; color: var(--color-text-sub); }
+        .dest .chg { font-size: 11px; font-weight: 800; color: var(--color-cta); border: 1px solid #bbd3ec; border-radius: 8px; padding: 3px 9px; text-decoration: none; }
+        .dest-warn { background: #fbf3e6; border: 1px solid #f0ddb8; border-radius: 11px; padding: 11px 12px; margin: 10px 0 4px; }
+        .dest-warn .dw-t { font-size: 12.5px; font-weight: 800; color: #b36a00; display: flex; align-items: center; gap: 5px; }
+        .dest-warn .dw-t .material-symbols-outlined { font-size: 16px; }
+        .dest-warn .dw-b { font-size: 11.5px; color: #8a6a2e; margin-top: 4px; line-height: 1.55; }
+        .dest-warn .dw-cta { display: block; text-align: center; background: var(--color-cta); color: #fff; font-size: 13px; font-weight: 800; border-radius: 10px; padding: 10px; margin-top: 10px; text-decoration: none; }
+        .sheet-note { display: flex; gap: 8px; background: #f4f6f9; border-radius: 11px; padding: 11px 12px; margin: 13px 0 16px; }
+        .sheet-note .material-symbols-outlined { font-size: 17px; color: var(--color-text-sub); flex-shrink: 0; }
+        .sheet-note .nt { font-size: 11.5px; color: var(--color-text-sub); line-height: 1.6; }
+        .sheet-note .nt b { color: var(--color-text); }
+        .sbtn { width: 100%; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; background: var(--color-cta); color: #fff; }
+        .sbtn .sub { display: block; font-size: 11px; font-weight: 600; opacity: .85; margin-top: 2px; }
+        .sbtn:disabled, .sbtn.disabled { background: #e6e9ed; color: #a4abb5; cursor: default; }
+        .sbtn-note { font-size: 11px; color: #9aa3b0; text-align: center; margin-top: 7px; }
+        .scancel { display: block; width: 100%; text-align: center; background: none; border: none; color: var(--color-text-sub); font-size: 13px; font-weight: 700; padding: 13px 0 2px; cursor: pointer; font-family: inherit; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="page">
+        <div class="page-header" style="align-items:center;">
+            <a href="/pages/restaurant/account.html" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FISHLINK" class="brand-logo"></a>
+            <select id="lang-selector"
+                style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
+            </select>
+        </div>
+
+        <div class="sub-page__title" data-i18n="wallet.title"></div>
+
+        <div class="sub-page">
+
+            <!-- 残高カード -->
+            <div class="bal-card">
+                <div class="bal-label" data-i18n="wallet.balance"></div>
+                <div class="bal-num" id="bal-num">0 KHR</div>
+                <!-- 残高あり：自動充当のナッジ -->
+                <div id="bal-positive" style="display:none;">
+                    <div class="bal-nudge"><span class="material-symbols-outlined">lightbulb</span><span data-i18n="wallet.nudge"></span></div>
+                    <div class="bal-subnote" data-i18n="wallet.nudgeSub"></div>
+                </div>
+                <!-- 残高0：説明 -->
+                <div class="bal-empty-note" id="bal-empty" style="display:none;" data-i18n="[html]wallet.emptyNote"></div>
+            </div>
+
+            <!-- 〔残高の返金を申請〕＝残高>0 のときだけ表示（控えめなテキストリンク） -->
+            <div class="refund-link" id="refund-link" style="display:none;">
+                <a id="refund-link-a" data-i18n="wallet.refundRequest"></a>
+            </div>
+
+            <div class="hist-h" data-i18n="wallet.historyTitle"></div>
+            <div class="hist" id="hist"></div>
+        </div>
+    </div>
+
+    <!-- 返金申請シート -->
+    <div class="ws-mask" id="ws-mask">
+        <div class="ws-sheet">
+            <div class="ws-handle"></div>
+            <div class="ws-title" data-i18n="wallet.sheetTitle"></div>
+            <div class="srow">
+                <span class="sl" data-i18n="wallet.sheetAmount"></span>
+                <span class="sv amt" id="ws-amount">0 KHR<span class="sub2" data-i18n="wallet.sheetAll"></span></span>
+            </div>
+            <!-- 返金先（登録済み） -->
+            <div class="srow" id="ws-dest-row" style="display:none;">
+                <span class="sl" data-i18n="wallet.sheetDest"></span>
+                <span class="sv">
+                    <span class="dest">
+                        <span class="material-symbols-outlined">account_balance</span>
+                        <span id="ws-dest-text"></span>
+                        <a class="chg" href="/pages/restaurant/account/payment.html" data-i18n="wallet.sheetChange"></a>
+                    </span>
+                </span>
+            </div>
+            <!-- 返金先（未登録）→ 登録CTA -->
+            <div class="dest-warn" id="ws-dest-warn" style="display:none;">
+                <div class="dw-t"><span class="material-symbols-outlined">warning</span><span data-i18n="wallet.destMissingTitle"></span></div>
+                <div class="dw-b" data-i18n="wallet.destMissingBody"></div>
+                <a class="dw-cta" href="/pages/restaurant/account/payment.html" data-i18n="wallet.registerDest"></a>
+            </div>
+            <div class="sheet-note">
+                <span class="material-symbols-outlined">lock</span>
+                <span class="nt" data-i18n="[html]wallet.sheetNote"></span>
+            </div>
+            <button class="sbtn" id="ws-submit">
+                <span data-i18n="wallet.sheetSubmit"></span>
+                <span class="sub" data-i18n="wallet.sheetSubmitSub"></span>
+            </button>
+            <div class="sbtn-note" id="ws-submit-note" style="display:none;" data-i18n="wallet.sheetSubmitDisabledNote"></div>
+            <button class="scancel" id="ws-cancel" data-i18n="wallet.sheetCancel"></button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import {
+            doc, getDoc, collection, query, orderBy, getDocs
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-functions.js';
+        import { saveRenderState, loadRenderState, serializeTimestamps, reviveTimestamps } from '/js/render-cache.js';
+        import { showToast } from '/js/toast.js';
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        let balance = 0;
+        let txs = [];          // ウォレット利用履歴（新しい順）
+        let refundAccount = null;
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        const fmtKhr = n => `${Number(n || 0).toLocaleString()} KHR`;
+        function fmtDate(ts) {
+            const d = ts?.toDate ? ts.toDate() : (typeof ts === 'number' ? new Date(ts) : (ts?.seconds ? new Date(ts.seconds * 1000) : null));
+            if (!d) return '';
+            return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+        }
+
+        // 履歴タイプ → アイコン / 理由ラベル / 入出金方向
+        const TX_META = {
+            refund_declined: { dir: 'in', icon: 'undo', reason: 'wallet.txDeclined' },
+            refund_cancelled: { dir: 'in', icon: 'undo', reason: 'wallet.txCancelled' },
+            refund_problem: { dir: 'in', icon: 'set_meal', reason: 'wallet.txProblem' },
+            order_use: { dir: 'out', icon: 'shopping_cart', reason: 'wallet.txOrderUse' },
+            withdraw_request: { dir: 'out', icon: 'north_east', reason: 'wallet.txWithdraw' },
+        };
+
+        function counterpartHtml(tx) {
+            // 出金＝固定の案内文。order_use＝FL番号（counterpart）。返金＝農家名（counterpart）＋FL番号（orderNumber があれば）。
+            if (tx.type === 'withdraw_request') return escapeHtml(i18next.t('wallet.txWithdrawCp'));
+            const parts = [];
+            if (tx.counterpart) parts.push(escapeHtml(tx.counterpart));
+            // 返金行で農家名（counterpart）に加えて注文FL番号があれば併記
+            if (tx.orderNumber && tx.orderNumber !== tx.counterpart) parts.push(escapeHtml(tx.orderNumber));
+            return parts.join(' ・ ');
+        }
+
+        function renderBalance() {
+            const numEl = document.getElementById('bal-num');
+            numEl.textContent = fmtKhr(balance);
+            numEl.classList.toggle('zero', !(balance > 0));
+            document.getElementById('bal-positive').style.display = balance > 0 ? 'block' : 'none';
+            document.getElementById('bal-empty').style.display = balance > 0 ? 'none' : 'block';
+            // 出金リンクは残高>0 のときだけ
+            document.getElementById('refund-link').style.display = balance > 0 ? 'block' : 'none';
+        }
+
+        function renderHistory() {
+            const el = document.getElementById('hist');
+            if (!txs.length) {
+                el.innerHTML = `<div class="empty"><span class="material-symbols-outlined">account_balance_wallet</span><div class="et">${escapeHtml(i18next.t('wallet.empty'))}</div></div>`;
+                return;
+            }
+            el.innerHTML = txs.map(tx => {
+                const meta = TX_META[tx.type] || { dir: (Number(tx.amount) >= 0 ? 'in' : 'out'), icon: 'sync_alt', reason: 'wallet.txOther' };
+                const amt = Number(tx.amount || 0);
+                const plus = amt >= 0;
+                const amtStr = `${plus ? '+' : '−'}${Math.abs(amt).toLocaleString()} KHR`;
+                const cp = counterpartHtml(tx);
+                return `
+                    <div class="hist-row">
+                        <div class="hr-ic ${meta.dir}"><span class="material-symbols-outlined">${meta.icon}</span></div>
+                        <div class="hr-main">
+                            <div class="hr-reason">${escapeHtml(i18next.t(meta.reason))}</div>
+                            ${cp ? `<div class="hr-cp">${cp}</div>` : ''}
+                            <div class="hr-date">${fmtDate(tx.createdAt)}</div>
+                        </div>
+                        <div class="hr-amt ${plus ? 'plus' : 'minus'}">${amtStr}</div>
+                    </div>`;
+            }).join('');
+        }
+
+        function render() {
+            renderBalance();
+            renderHistory();
+        }
+
+        function destRegistered() {
+            const r = refundAccount;
+            return !!(r && r.name && (r.qrLink || r.qrImage));
+        }
+        function destLabel() {
+            const r = refundAccount || {};
+            return r.name || '';
+        }
+
+        // ── 返金申請シート ──────────────────────────────────────────
+        const wsMask = document.getElementById('ws-mask');
+        function openSheet() {
+            document.getElementById('ws-amount').innerHTML = `${escapeHtml(fmtKhr(balance))}<span class="sub2">${escapeHtml(i18next.t('wallet.sheetAll'))}</span>`;
+            const registered = destRegistered();
+            document.getElementById('ws-dest-row').style.display = registered ? 'flex' : 'none';
+            document.getElementById('ws-dest-warn').style.display = registered ? 'none' : 'block';
+            if (registered) document.getElementById('ws-dest-text').textContent = destLabel();
+            const submit = document.getElementById('ws-submit');
+            submit.disabled = !registered;
+            submit.classList.toggle('disabled', !registered);
+            document.getElementById('ws-submit-note').style.display = registered ? 'none' : 'block';
+            wsMask.classList.add('show');
+        }
+        function closeSheet() { wsMask.classList.remove('show'); }
+
+        document.getElementById('refund-link-a').addEventListener('click', openSheet);
+        document.getElementById('ws-cancel').addEventListener('click', closeSheet);
+        wsMask.addEventListener('click', (e) => { if (e.target === wsMask) closeSheet(); });
+
+        let submitting = false;
+        document.getElementById('ws-submit').addEventListener('click', async () => {
+            if (submitting || !destRegistered() || !(balance > 0)) return;
+            submitting = true;
+            const btn = document.getElementById('ws-submit');
+            btn.disabled = true; btn.classList.add('disabled');
+            loading.classList.add('show');
+            try {
+                const functions = getFunctions(undefined, 'asia-southeast1');
+                const requestFn = httpsCallable(functions, 'requestWalletWithdrawal');
+                await requestFn({});
+                closeSheet();
+                showToast(i18next.t('wallet.requested'));
+                // 残高は CF が即減算済み。運営チャット（会話直行）へ。
+                location.href = '/pages/admin-chat.html?view=chat';
+            } catch (e) {
+                console.error('requestWalletWithdrawal failed:', e);
+                loading.classList.remove('show');
+                btn.disabled = false; btn.classList.remove('disabled');
+                submitting = false;
+                showToast(i18next.t('wallet.requestFailed'), { icon: false });
+            }
+        });
+
+        // ── データ読み込み ───────────────────────────────────────────
+        async function load() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            // 残高
+            const wsnap = await getDoc(doc(db, 'wallets', uid));
+            balance = wsnap.exists() ? Number(wsnap.data().balance || 0) : 0;
+            // 利用履歴（新しい順）
+            const tsnap = await getDocs(query(collection(db, `wallets/${uid}/transactions`), orderBy('createdAt', 'desc')));
+            txs = tsnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            // 返金先（users.refundAccount）
+            refundAccount = window.currentUserData?.refundAccount || null;
+            render();
+            try {
+                saveRenderState('restaurant_wallet', {
+                    balance,
+                    txs: serializeTimestamps(txs),
+                });
+            } catch (e) { /* ignore */ }
+        }
+
+        onLanguageChange(() => render());
+
+        // 描画キャッシュ（残高・履歴を即時復元）
+        let cachedRendered = false;
+        try {
+            const cached = loadRenderState('restaurant_wallet');
+            if (cached && (cached.balance != null || cached.txs)) {
+                balance = Number(cached.balance || 0);
+                txs = reviveTimestamps(cached.txs || []);
+                render();
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+                cachedRendered = true;
+            }
+        } catch (e) { console.warn('cached restaurant_wallet render failed:', e); }
+
+        waitForUserData(async () => {
+            if (!cachedRendered) loading.classList.add('show');
+            try { await load(); } catch (e) { console.error(e); }
+            finally { loading.classList.remove('show'); document.body.classList.add('app-ready'); }
+        });
+    </script>
+</body>
+</html>

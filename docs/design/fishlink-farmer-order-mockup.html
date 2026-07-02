@@ -65,6 +65,9 @@
   .badge.arrived { background:#E0F2EF; color:#0B7A6B; }
   .deadline { display:flex; align-items:center; gap:6px; background:#FDECEA; color:#D14343; font-size:12.5px; font-weight:800; padding:8px 11px; border-radius:9px; margin-top:10px; }
   .arrivenote { display:flex; align-items:center; gap:6px; background:#F0F4F8; color:#42566B; font-size:12px; font-weight:700; padding:8px 11px; border-radius:9px; margin-top:10px; }
+  .oc-paid { font-size:10.5px; color:#2E7D32; font-weight:800; margin-top:3px; }
+  .paid-band { display:flex; flex-direction:column; gap:3px; background:#E7F4EC; border:1px solid #BFE3CC; color:#2E7D32; border-radius:10px; padding:10px 13px; margin:14px 0 6px; font-weight:800; font-size:13.5px; }
+  .paid-band .pb-sub { font-weight:600; color:#3E7A4E; font-size:11px; line-height:1.5; }
   .histrow { display:flex; align-items:center; gap:12px; background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:13px 14px; }
   .histrow .hi { font-size:18px; }
   .histrow .ht { flex:1; }
@@ -99,6 +102,8 @@
   .lcard .lci { flex:1; min-width:0; }
   .lcard .badge { float:right; }
   .badge.paywait { background:#FFF3DC; color:#B36A00; }
+  .badge.checking { background:#FBE0C8; color:#C2410C; }
+  .lcard .lhold { font-size:11px; color:#C2410C; font-weight:700; margin-top:5px; }
   .badge.txdone { background:#EAEFF3; color:#42566B; }
   .badge.cancel { background:#EEF1F4; color:#7A8593; }
   .lcard .ldate { font-size:11.5px; color:#C2620E; font-weight:700; }
@@ -216,6 +221,9 @@
   .sys .st { font-weight:600; color:#5A8AC0; margin-left:6px; }
   .sys.warn { background:#FFF4E2; color:#B36A00; border-color:#F3D998; }
   .sys.warn .st { color:#C79350; }
+  .sys.done { background:#E7F4EC; color:#2E7D32; border-color:#BFE3CC; max-width:92%; }
+  .sys.done .st { color:#5E9E73; }
+  .delivered-note { display:flex; align-items:center; justify-content:center; gap:7px; background:#E7F4EC; color:#2E7D32; border:1px solid #BFE3CC; border-radius:10px; padding:11px; font-size:13px; font-weight:800; margin-top:10px; }
 
   /* 配送ステータス送信ブロック（農家側のみ・押下制御B） */
   .status-send { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:11px 12px; margin-top:8px; }
@@ -235,6 +243,7 @@
 
 <div class="intro">
   <h1>FISHLINK 農家側 — 注文確認 / 承認・辞退 / 配送管理（モック）</h1>
+  <p><b>【2026-06-26 案B 前払い対応】</b>レストランは<b>注文時に前払い済み</b>＝農家は「承認して届ければ確実に受け取れる」。①承認待ちカードに<b>「✓ 支払い済み（前払い）」</b>＋②承認待ち詳細の金額上に<b>緑の支払い済み帯</b>（受取予定額は配送完了後に送金）＋③承認モーダルに「レストランは支払い済みです」。①到着カードの<b>「お支払いをお待ちください」→「お受け取りをお待ちください」</b>（受取時にお金は発生しない）。受取額・送金タイミング（配送完了後）は不変。⑥売上・取引に<b>「確認中」（問題報告で送金保留）</b>を追加＝バッジ＋サマリで「送金待ち（本日送金予定）」と「確認中（問題報告あり・保留）」を別枠表示（保留分を"本日入る額"に混ぜない）。タップで精算の送金状況（確認中）へ。</p>
   <p>反映：手数料は<b>通常5%（−1,875）を出しキャンペーンで戻す</b>形（ラベルと額のズレ解消）／評価は<b>★93%（40件）</b>（小数廃止）／<b>魚単価は分解表示（魚単価7,000＋内臓処理500）</b>／CTAは<b>青</b>（オレンジ廃止）／承認確認は<b>自前モーダル</b>（標準ダイアログ置換）。</p>
   <p>承認期限＝<b>1時間（運営パラメータ）＋10分前リマインド</b>・期限切れは<b>自動辞退</b>。辞退は<b>理由を構造化選択</b>。部分承認は<b>MVPは二択維持</b>（数量の部分承認は次フェーズ）。送料は<b>農家へ全額パススルー</b>（手数料は魚代のみ）。レビューは<b>完了後のみ解禁</b>。</p>
   <p><b>【2026-06-11 注文確認リスト再設計＝A案・優先フィード型】</b>①＝<b>対応が必要（承認待ち・要約カード＋承認期限＋「対応する」→詳細②）→ 進行中（準備中/配送中/到着・「配送管理へ」）→ 「取引履歴を見る」1行</b>。承認待ちの全詳細インライン展開を廃止／配達日グルーピング廃止（承認期限順）／到着＝進行中に「到着」バッジ＋「お受け取り・お支払いをお待ちください」。<b>⑥＝売上・取引</b>（注文確認「取引履歴を見る」とマイページ「売上確認」の着地を統合）＝期間 ▾（本日/過去1週間/過去1か月/日付指定/すべて）＋辞退チップ／サマリ＝<b>受取額（手取り）</b>＋うち送金待ち（ある時だけ・本日夕方に送金予定）／<b>軽いリスト＝状態・金額のみ・タップで送金状況画面</b>（送金状況/レビュー送信/問題報告はそこ）／辞退選択時は件数＋理由リスト。</p>
@@ -259,6 +268,7 @@
               <div class="oc-name">ヒレナマズ（5-7 head/kg）5kg</div>
               <div class="oc-rest">🏬 レストラン・アンコール</div>
               <div class="oc-fl">FL-260611-001</div>
+              <div class="oc-paid">✓ 支払い済み（前払い）</div>
             </div>
             <span class="badge wait">承認待ち</span>
           </div>
@@ -304,7 +314,7 @@
             </div>
             <span class="badge arrived">📍 到着</span>
           </div>
-          <div class="arrivenote">📦 お受け取り・お支払いをお待ちください</div>
+          <div class="arrivenote">📦 お受け取りをお待ちください</div>
           <div class="oc-actions"><button class="btn sec full">配送管理へ</button></div>
         </div>
 
@@ -359,6 +369,9 @@
           <div class="rest-links"><span class="link">レビューを見る</span><span class="link">Google Mapsで開く</span></div>
         </div>
 
+        <!-- 支払い済み（前払い）＝案Bの農家メリット -->
+        <div class="paid-band">✓ 支払い済み（前払い）<span class="pb-sub">レストランのお支払いは完了しています。受取予定額は配送完了後に送金されます。</span></div>
+
         <!-- 金額（魚単価+内臓処理は魚代の内訳に折り込む） -->
         <div class="sec-label">金額</div>
         <div class="info-card">
@@ -400,7 +413,7 @@
             レストラン：test_restaurant5<br>
             受取予定額：<b>48,963 KHR</b>
           </div>
-          <div class="mnote">承認すると、レストランに通知が届きます。</div>
+          <div class="mnote">レストランは支払い済みです。承認すると、レストランに通知が届きます。</div>
           <div class="mact"><button class="mbtn cancel">キャンセル</button><button class="mbtn ok">承認する</button></div>
         </div>
       </div>
@@ -437,7 +450,7 @@
 
   <!-- ④' 辞退確認モーダル（自前・ボトムシート・承認と対称） -->
   <div class="phone-wrap">
-    <div class="phone-label">④' 辞退確認モーダル <span class="tag">承認と対称・自前ボトムシート</span></div>
+    <div class="phone-label">④' 辞退確認モーダル <span class="tag">承認と対称・自前中央モーダル</span></div>
     <div class="phone">
       <div class="f-header"><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 👤</span></div>
       <div class="f-title">注文内容を確認</div>
@@ -460,7 +473,7 @@
             レストラン：test_restaurant5<br>
             辞退理由：<b>在庫が足りない</b>
           </div>
-          <div class="mnote">辞退すると、レストランに通知が届きます（この注文は他の農家に回されます）。</div>
+          <div class="mnote">辞退すると、レストランに通知され、お支払いは返金されます。</div>
           <div class="mact"><button class="mbtn cancel">キャンセル</button><button class="mbtn ok">辞退する</button></div>
         </div>
       </div>
@@ -517,6 +530,56 @@
     </div>
   </div>
 
+  <!-- ⑤ 配送完了の確認モーダル（中央・案B文言＝前払い済み） -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑤ 配送完了の確認モーダル <span class="tag">中央・案B文言（前払い済み）</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">📞 🌐</span></div>
+      <div class="f-body" style="filter:blur(1px); padding-bottom:120px;">
+        <div class="chat-head">
+          <div class="ch-name">レストラン・アンコール</div>
+          <div class="ch-sub">配達中 ・ レッドティラピア 5kg ・ 納品 6/4（水）7:00–8:00 ・ FL-260604-007</div>
+          <div class="ch-loc">📍 プノンペン, Daun Penh ・ 地図を見る</div>
+        </div>
+        <div class="bubble them">受け取りました。ありがとうございます！<div class="tm">7:05</div></div>
+      </div>
+      <div class="overlay">
+        <div class="modal">
+          <div class="mt">配送完了にしますか？</div>
+          <div class="mnote">レストランに配達完了が通知されます。問題がなければ数時間後に取引完了し、送金が確定します。</div>
+          <div class="mact"><button class="mbtn cancel">キャンセル</button><button class="mbtn ok">配送完了にする</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤' 配送完了後（完了システムメッセージ・送金待ちへ） -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑤' 配送完了後 <span class="tag">完了システムメッセージ＋送金待ちの案内</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">📞 🌐</span></div>
+      <div class="f-body" style="padding-bottom:150px;">
+        <div class="chat-head">
+          <div class="ch-name">レストラン・アンコール</div>
+          <div class="ch-sub">配達完了 ・ レッドティラピア 5kg ・ 納品 6/4（水）7:00–8:00 ・ FL-260604-007</div>
+          <div class="ch-loc">📍 プノンペン, Daun Penh ・ 地図を見る</div>
+        </div>
+
+        <div class="date-sep">6月4日（水）</div>
+
+        <div class="sys"><span class="ic"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 4.4 H9.4 V11 H1.8 Z"/><path d="M9.4 6.6 H12.2 L14.2 8.9 V11 H9.4 Z"/><circle cx="4.3" cy="12" r="1.25"/><circle cx="11.7" cy="12" r="1.25"/></svg></span>配達に向かっています <span class="st">6:40</span></div>
+
+        <div class="bubble them">受け取りました。ありがとうございます！<div class="tm">7:05</div></div>
+
+        <div class="sys done"><span class="ic"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3.2 8.6 6.4 11.8 12.8 4.4"/></svg></span>配送完了。問題がなければ数時間後に取引完了・送金確定します <span class="st">7:06</span></div>
+      </div>
+      <div class="f-footer">
+        <div class="msg-input"><span>📷 🎤</span><div class="mi-box">メッセージを入力…</div><span class="mi-send">送信</span></div>
+        <div class="delivered-note">✓ 配送完了（送金待ち）・問題がなければ数時間後に送金確定</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ⑥ 売上・取引（取引履歴＋売上集計を統合） -->
   <div class="phone-wrap">
     <div class="phone-label">⑥ 売上・取引 <span class="tag">注文確認「取引履歴を見る」/マイページ「売上確認」の着地・期間▾＋辞退・軽いリスト</span></div>
@@ -531,7 +594,10 @@
             <div class="smc"><div class="v">13<span class="u"> 件</span></div><div class="l">取引数</div></div>
             <div class="smc"><div class="v">47,975<span class="u"> KHR</span></div><div class="l">平均単価</div></div>
           </div>
-          <div class="pend">うち送金待ち 58,838 KHR <span class="note">・ 本日中に送金予定</span></div>
+          <div class="pend">
+            <div>送金待ち <b>58,838 KHR</b> <span class="note">・本日中に送金予定</span></div>
+            <div style="color:#C2410C; margin-top:5px;">確認中 <b>48,963 KHR</b> <span class="note">・問題報告あり（保留）</span></div>
+          </div>
         </div>
 
         <div class="lcard"><div class="lth"></div><div class="lci">
@@ -540,6 +606,15 @@
           <div class="lname">ヒレナマズ（10 head/kg）5kg</div>
           <div class="lsub">🏬 <span class="shop">レストラン・アンコール</span></div>
           <div class="lamt">受取予定額 <b>58,838 KHR</b></div>
+        </div><span class="chev">›</span></div>
+
+        <div class="lcard"><div class="lth"></div><div class="lci">
+          <span class="badge checking">確認中</span>
+          <div class="ldate">📅 5/21（木）6:00–7:00</div>
+          <div class="lname">パンガシウス（8 head/kg）8kg</div>
+          <div class="lsub">🏬 <span class="shop">アンコール食堂</span></div>
+          <div class="lamt">受取予定額（保留中） <b>48,963 KHR</b></div>
+          <div class="lhold">⚠ 問題が報告されています（運営が確認中）</div>
         </div><span class="chev">›</span></div>
 
         <div class="lcard"><div class="lth"></div><div class="lci">

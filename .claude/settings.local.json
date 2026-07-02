@@ -117,7 +117,26 @@
       "Bash(grep -E \"\\\\.html$|\\\\.js$|\\\\.json$\")",
       "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\('deliverySheetWarn:', JSON.stringify\\(j.post.deliverySheetWarn\\)\\); console.log\\('deliveryWarnEmpty:', JSON.stringify\\(j.account.deliveryWarnEmpty\\)\\); console.log\\('deliverableRadiusNote:', JSON.stringify\\(j.post.deliverableRadiusNote\\)\\); console.log\\('freeDeliveryNote:', JSON.stringify\\(j.post.freeDeliveryNote\\)\\); console.log\\('deliveryRateExample:', JSON.stringify\\(j.post.deliveryRateExample\\)\\);\")",
       "Bash(node --check js/toast.js)",
-      "Bash(grep -rhno \"ref\\(storage, [\\\\`'\\\\\"][a-zA-Z]*\" pages/ js/)"
+      "Bash(grep -rhno \"ref\\(storage, [\\\\`'\\\\\"][a-zA-Z]*\" pages/ js/)",
+      "mcp__claude_ai_Notion__notion-search",
+      "PowerShell(git -C c:\\\\work\\\\FishLink status --short)",
+      "PowerShell(git -C c:\\\\work\\\\FishLink status --porcelain)",
+      "PowerShell($files = @\\(\"functions/index.js\",\"pages/restaurant/cart.html\",\"pages/restaurant/orders.html\",\"pages/farmer/orders.html\",\"pages/restaurant/payment.html\",\"pages/farmer/payment.html\",\"pages/restaurant/order.html\",\"pages/restaurant/account.html\",\"js/image-resize.js\",\"js/data-cache.js\",\"js/referral.js\",\"pages/restaurant/account/referral.html\",\"sw.js\",\"css/style.css\",\"js/recover.js\",\"recover.html\",\"register.html\"\\) ; foreach \\($f in $files\\) { $p = Join-Path \"c:\\\\work\\\\FishLink\" $f ; if \\(Test-Path $p\\) { $lines = \\(Get-Content $p | Measure-Object -Line\\).Lines ; Write-Output \\(\"{0,6}  {1}\" -f $lines, $f\\) } else { Write-Output \\(\"  N/A  {0}\" -f $f\\) } })",
+      "Bash(python -c \"import json,io; d=json.load\\(io.open\\('locales/ja.json',encoding='utf-8'\\)\\); a=d.get\\('adminChat',{}\\); [print\\(repr\\(k\\),'=',repr\\(v\\)\\) for k,v in a.items\\(\\)]\")",
+      "Bash(node -e \"const d=require\\('./locales/ja.json'\\); const a=d.adminChat||{}; for\\(const k in a\\) console.log\\(JSON.stringify\\(k\\)+' = '+JSON.stringify\\(a[k]\\)\\);\")",
+      "Bash(node --check js/referral.js)",
+      "Bash(node --check /tmp/cart-check.mjs)",
+      "Bash(node --check ./cart-check.mjs)",
+      "Bash(rm -f ./cart-check.mjs)",
+      "Bash(node \"C:/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/d7e5aec2-c70b-4e7c-b54f-b2e96dd2ed80/scratchpad/merge-i18n.js\")",
+      "PowerShell(cd c:\\\\work\\\\FishLink; git status --porcelain | Where-Object { $_ -match '\\\\.html$|\\\\.js$|\\\\.json$' } | ForEach-Object { $_.Substring\\(3\\) })",
+      "Bash(node -e 'const ja=require\\(\"./locales/ja.json\"\\); console.log\\(Object.keys\\(ja.order||{}\\).filter\\(k=>/stock|min/i.test\\(k\\)\\)\\); console.log\\(\"orders.stock?\",ja.orders&&ja.orders.stock,\"orders.minOrder?\",ja.orders&&ja.orders.minOrder\\)')",
+      "Bash(cat)",
+      "Bash(python /tmp/extract.py)",
+      "Bash(grep -iv \"fishlink-\\\\|fishLink_\\\\|//\\\\|/\\\\* \\\\|firebase\\\\|storage\")",
+      "Bash(node -e 'const ja=require\\(\"./locales/ja.json\"\\); console.log\\(\"orders.cancelOrder:\", JSON.stringify\\(ja.orders&&ja.orders.cancelOrder\\)\\)')",
+      "PowerShell(cd c:\\\\work\\\\FishLink; $lines=\\(Get-Content CLAUDE.md | Measure-Object -Line\\).Lines; Write-Output \"CLAUDE.md total lines: $lines\")",
+      "PowerShell(cd c:\\\\work\\\\FishLink; $changed = git status --porcelain | Where-Object { $_ -notmatch 'docs/design|settings.local' }; Write-Output \\(\"Changed \\(non-doc\\) files: \" + \\($changed | Measure-Object\\).Count\\); Write-Output \"--- substantive \\(non-viewport-only\\) ---\"; git diff --stat -- functions/index.js firestore.rules js/image-resize.js js/referral.js pages/restaurant/cart.html pages/restaurant/orders.html pages/restaurant/payment.html pages/restaurant/wallet.html pages/restaurant/account.html pages/farmer/orders.html pages/farmer/payment.html pages/farmer/delivery.html pages/farmer/account.html pages/restaurant/account/referral.html pages/farmer/account/referral.html recover.html register.html css/style.css sw.js 2>$null | Select-Object -Last 25)"
     ]
   }
 }

@@ -395,7 +395,29 @@ self.addEventListener('notificationclick', (event) => {
 // 6/22 (v137): 実機UI修正＝#168 配送設定のラベルと入力欄のバランス（グローバル select/input[number]{width:100%}
 //   に勝つよう `.fb-iw .fb-input` で幅を上書き＋ラベル flex:1＝CJKの1文字縦折り返しを解消）／
 //   #169 C9 FAQ 画面言語セレクタが全幅だった真因＝`#lang-selector` に `width:auto` 欠落（他 admin 画面と同じく追加）。
-const CACHE_NAME = 'fishlink-v137';
+// 6/26+6/27 (v138): #171-184 案B（前払い＋ウォレット）精算作り直し＋束B紹介＋実機不具合3件。
+//   #171 backend: wallets コレクション（残高+台帳・CFのみ書込）／onOrderCreated でウォレットデビット／
+//     onOrderUpdated で辞退・キャンセル→即ウォレット返金（複数農家クーポン按分・全額返金でクーポン復活）／
+//     autoCompleteTrades（配送完了+Nh で取引完了自動確定・旧督促を前払いはスキップ）／consumeFarmerBonus で
+//     referralBonusTotalKhr（#177獲得合計）／requestWalletWithdrawal callable（出金申請→残高即減算→運営チャット）。
+//     firestore.rules に wallets 追加（Console 手動公開要）。
+//   #172 cart.html: 前払い（注文内容確認→ウォレット充当→KHQR）ステージ＋#178 クーポン期限近い順に自動適用。
+//   #174 restaurant/orders.html: 注文状況を案B再構成（お支払い確認中/農家確認中+キャンセル/お届け済み/辞退→ウォレット返金行）。
+//   #183 restaurant/payment.html: read-only 購入詳細化（受取時払いフロー撤去・✓お支払い済み(前払い)）。
+//   #173 restaurant/wallet.html 新規（残高・履歴4種・返金申請）＋#176 マイページ💰ウォレット行。
+//   #175 farmer/orders.html: ✓支払い済み(前払い)バッジ/帯・承認/辞退モーダル文言。
+//   #182 farmer/payment.html: 送金待ち/確認中/送金済（FISHLINK預かり）。#184 farmer/delivery.html 配送完了モーダル文言。
+//   #177 referral.html×2: 紹介専用ページ（2段階タイミング・運営値・ロール別報酬・獲得合計・空状態）。
+//   #179 image-resize.js: リサイズ/デコード失敗時は原画像フォールバック（QR登録ブロッカー解消）。
+//   #180 recover/register: reCAPTCHA を試行ごと作り直し＋リトライ（カンボジア回線の誤エラー抑止）。
+//   #181 全 app HTML に viewport-fit=cover（下部ナビ env(safe-area) を有効化）＋固定フッター safe-area。
+//   locales 3言語に 113 キー追加/改。functions・firestore.rules デプロイ要。
+// 6/28 (v139): #176 実機修正＝ウォレット返金申請カードに「返金先QR」が出ない不具合。
+//   requestWalletWithdrawal callable が本文テキストのみ投稿していた → refundAccount.qrImage を imageUrls で添付
+//   （admin-chat.html / admin/users.html とも m.imageUrls を描画）＋ qrLink は本文に記載。
+//   onAdminChatMessage は type==='withdraw_request' を連絡先マスク対象外に（返金先リンク/名義を潰さない）。
+//   ＝functions のみの修正（hosting 変更なし）だが、旧SW強制更新のため版番号バンプ。
+const CACHE_NAME = 'fishlink-v139';
 
 const PRECACHE_URLS = [
     '/',

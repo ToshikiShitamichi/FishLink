@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
     <title>FishLink</title>
@@ -193,10 +193,34 @@
         let confirmationResult = null;   // signInWithPhoneNumber の結果（OTP検証に使う）
         let recaptchaVerifier = null;
         let recoveryPhone = '';          // 正規化済み電話番号（リセット後のログインに使う）
-        function ensureRecaptcha() {
-            if (recaptchaVerifier) return recaptchaVerifier;
+        // 6/26 #180: reCAPTCHA を試行ごとに作り直す（"already rendered"・stale verifier・
+        //   カンボジア回線で google reCAPTCHA が不安定な問題への対策）。recaptcha-container の DOM ごと差し替える。
+        function freshRecaptcha() {
+            try { if (recaptchaVerifier) recaptchaVerifier.clear(); } catch (e) { /* ignore */ }
+            recaptchaVerifier = null;
+            const old = document.getElementById('recaptcha-container');
+            if (old) {
+                const fresh = document.createElement('div');
+                fresh.id = 'recaptcha-container';
+                old.replaceWith(fresh);
+            }
             recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
             return recaptchaVerifier;
+        }
+        // 6/26 #180: SMS送信を最大2回試行（reCAPTCHA の一過性エラーで誤って失敗扱い＝運営手動リセット案内に
+        //   落ちるのを減らす。SMS が実際に送れたら成功扱いで先へ進める）。
+        async function sendOtp(normPhone) {
+            let lastErr;
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    const verifier = freshRecaptcha();
+                    return await signInWithPhoneNumber(auth, '+' + normPhone, verifier);
+                } catch (err) {
+                    lastErr = err;
+                    console.warn(`recover OTP attempt ${attempt + 1} failed:`, err?.message || err);
+                }
+            }
+            throw lastErr;
         }
 
         const phoneInput = document.getElementById('rec-phone');
@@ -234,8 +258,7 @@
             sendBtn.disabled = true;
             try {
                 recoveryPhone = norm;
-                const verifier = ensureRecaptcha();
-                confirmationResult = await signInWithPhoneNumber(auth, '+' + norm, verifier);
+                confirmationResult = await sendOtp(norm);
                 document.getElementById('code-sub').textContent = i18next.t('recover.codeSub', { phone: raw });
                 document.getElementById('step-phone').style.display = 'none';
                 document.getElementById('step-code').style.display = 'block';
@@ -268,9 +291,7 @@
             e.preventDefault();
             if (!recoveryPhone) return;
             try {
-                try { if (recaptchaVerifier) { await recaptchaVerifier.clear(); recaptchaVerifier = null; } } catch (er) { /* ignore */ }
-                const verifier = ensureRecaptcha();
-                confirmationResult = await signInWithPhoneNumber(auth, '+' + recoveryPhone, verifier);
+                confirmationResult = await sendOtp(recoveryPhone);
                 document.getElementById('err-otp').classList.remove('show');
             } catch (err) {
                 console.error('resend OTP failed:', err);

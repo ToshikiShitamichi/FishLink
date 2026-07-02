@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 支払いフロー（案B 前払い）- モック</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:900px; margin-bottom:20px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; } .intro b{color:#0B5FB0;} .intro .am{color:#B36A00;}
+
+  .stage { display:flex; flex-wrap:wrap; gap:26px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; color:#5A6470; max-width:390px; text-align:center; }
+
+  .phone { width:390px; max-width:100%; background:#F7F9FB; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; align-self:flex-start; }
+  .header { flex:0 0 auto; background:#FFF; padding:12px 14px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:9px; }
+  .header .bk { font-size:19px; color:#5A6470; } .header .logo { font-weight:800; color:#0B5FB0; font-size:15px; } .header .logo::before{content:"🐟 ";}
+  .header .lang { margin-left:auto; font-size:11px; color:#0B5FB0; font-weight:700; border:1px solid #CFE0EE; border-radius:12px; padding:3px 9px; }
+  .title { text-align:center; font-size:17px; font-weight:800; padding:13px 0 4px; }
+  .body { padding:8px 14px 16px; }
+
+  .ord { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .ord .otop { display:flex; align-items:center; font-size:13.5px; font-weight:800; }
+  .ord .odist { margin-left:auto; font-size:11px; color:#5A6470; font-weight:600; }
+  .ord .oitem { font-size:12px; color:#5A6470; margin:6px 0 8px; }
+  .orow { display:flex; justify-content:space-between; font-size:13px; padding:6px 0; }
+  .orow .ol { color:#3A4250; } .orow .ov { font-weight:700; }
+  .orow.sub { border-top:1px solid #F0F2F5; margin-top:3px; padding-top:8px; font-weight:800; }
+  .deliv { background:#EAF2FB; border-radius:9px; padding:8px 11px; font-size:12px; color:#0B5FB0; font-weight:700; margin-top:8px; }
+
+  .pay { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .pay .pt { font-size:13.5px; font-weight:800; margin-bottom:6px; }
+  .prow { display:flex; align-items:center; justify-content:space-between; font-size:13px; padding:7px 0; gap:10px; }
+  .prow .pl { color:#3A4250; display:flex; align-items:center; gap:8px; }
+  .prow .pv { font-weight:700; white-space:nowrap; }
+  .prow.wallet .pl, .prow.wallet .pv { color:#0B5FB0; }
+  .act { font-size:11.5px; font-weight:800; color:#0B5FB0; border:1px solid #BBD3EC; border-radius:8px; padding:3px 9px; }
+  .bal { font-size:10.5px; color:#9AA3B0; font-weight:600; }
+  .prow.total { border-top:1px solid #ECEFF3; margin-top:4px; padding-top:11px; }
+  .prow.total .pl { font-size:14px; font-weight:800; color:#1A1A1A; }
+  .prow.total .pv { font-size:20px; font-weight:800; color:#0B5FB0; }
+  .paid-full { font-size:12px; color:#2E7D32; font-weight:800; text-align:right; margin-top:2px; }
+
+  .wallet-edit { background:#F2F6FB; border:1px solid #D2E0F2; border-radius:11px; padding:11px 12px; margin:6px 0 2px; }
+  .wallet-edit .we-l { font-size:11.5px; color:#5A6470; margin-bottom:7px; } .wallet-edit .we-l b{color:#0B5FB0;}
+  .we-input { display:flex; align-items:center; gap:7px; }
+  .we-field { flex:1; background:#FFF; border:1.5px solid #0B5FB0; border-radius:9px; padding:9px 12px; font-size:16px; font-weight:800; text-align:right; color:#0B1B33; }
+  .we-unit { font-size:12px; color:#5A6470; font-weight:700; }
+  .we-quick { display:flex; gap:8px; margin-top:9px; }
+  .we-quick span { flex:1; text-align:center; font-size:12px; font-weight:800; border:1px solid #BBD3EC; border-radius:8px; padding:8px 0; color:#0B5FB0; background:#FFF; }
+
+  .escrow { display:flex; gap:8px; background:#EEF3FB; border:1px solid #D8E4F5; border-radius:12px; padding:11px 12px; margin-bottom:12px; }
+  .escrow .ei { font-size:16px; } .escrow .etx { font-size:11.5px; color:#3E6A98; line-height:1.55; }
+
+  .footer { background:#FFF; border-top:1px solid #EEF1F4; padding:12px 14px 18px; }
+  .btn { width:100%; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; background:#0B5FB0; color:#FFF; }
+  .btn .sub { display:block; font-size:11px; font-weight:600; opacity:.85; margin-top:2px; }
+
+  /* KHQR画面 */
+  .khqr-amt { text-align:center; margin:6px 0 12px; }
+  .khqr-amt .kl { font-size:12px; color:#5A6470; } .khqr-amt .kv { font-size:26px; font-weight:800; color:#0B5FB0; }
+  .qr-card { background:#FFF; border:1px solid #E3E8EE; border-radius:16px; padding:18px; text-align:center; }
+  .qr-brand { font-size:13px; font-weight:800; color:#0B5FB0; margin-bottom:4px; } .qr-brand::before{content:"🐟 ";}
+  .qr-img { width:200px; height:200px; margin:10px auto; border-radius:10px; background:
+      repeating-linear-gradient(0deg,#1A2028 0 8px,transparent 8px 16px),
+      repeating-linear-gradient(90deg,#1A2028 0 8px,transparent 8px 16px); background-color:#FFF; border:6px solid #FFF; box-shadow:0 0 0 1px #E3E8EE; opacity:.92; }
+  .qr-tag { font-size:11px; color:#9AA3B0; }
+  .qr-help { font-size:12px; color:#5A6470; line-height:1.6; margin:14px 2px 0; }
+  .qr-help b { color:#0B5FB0; }
+  /* KHQR金額の差引リキャップ＋アクション */
+  .khqr-amt .kv-row { display:flex; align-items:center; justify-content:center; gap:8px; }
+  .copy-chip { font-size:10.5px; font-weight:800; color:#0B5FB0; border:1px solid #BBD3EC; border-radius:7px; padding:3px 8px; cursor:pointer; }
+  .copy-chip::before { content:"📋 "; }
+  .khqr-sub { text-align:center; font-size:11px; color:#9AA3B0; margin:-6px 0 14px; }
+  .khqr-sub b { color:#5A6470; font-weight:700; }
+  .qr-actions { margin-top:12px; }
+  .qr-open { display:block; width:100%; text-align:center; border:none; border-radius:11px; padding:12px; font-size:13.5px; font-weight:800; cursor:pointer; font-family:inherit; background:#0B5FB0; color:#FFF; }
+  .qr-open::before { content:"🏦 "; }
+  .qr-open .qs { display:block; font-size:10.5px; font-weight:600; opacity:.85; margin-top:1px; }
+  .qr-row2 { display:flex; gap:8px; margin-top:8px; }
+  .qr-sbtn { flex:1; text-align:center; border:1px solid #BBD3EC; border-radius:10px; padding:10px 0; font-size:12.5px; font-weight:800; color:#0B5FB0; background:#FFF; cursor:pointer; font-family:inherit; }
+
+  /* 確認モーダル */
+  .mask { position:absolute; inset:0; background:rgba(20,28,38,0.46); display:flex; align-items:center; justify-content:center; padding:0 26px; }
+  .modal { background:#FFF; border-radius:16px; padding:22px 20px 16px; text-align:center; width:100%; max-width:300px; box-shadow:0 18px 48px rgba(0,0,0,0.28); }
+  .modal .mt { font-size:17px; font-weight:800; margin-bottom:9px; }
+  .modal .mb { font-size:13px; color:#5A6470; line-height:1.65; margin-bottom:18px; }
+  .modal .ma { display:flex; gap:10px; }
+  .modal .mbtn { flex:1; border:none; border-radius:10px; padding:12px 0; font-size:14.5px; font-weight:800; cursor:pointer; }
+  .modal .m-no { background:#EEF1F4; color:#4A4A4A; } .modal .m-yes { background:#0B5FB0; color:#FFF; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 支払いフロー（案B＝注文時前払い）— モック</h1>
+  <p><b>割引（キャンペーン・クーポン）はカートで適用</b>。この画面（注文内容の確認）は<b>カートの合計 → 💰ウォレット利用 → お支払い額（KHQR）</b>＝支払い手段だけを扱う（Q1）。</p>
+  <p>ウォレット＝自動で全額充当・<b>〔変更〕で使う金額を指定</b>（0で使わない）。残高で全額まかなえれば<b>KHQR不要</b>。🔒 エスクロー安心文（受け取りに問題があれば返金）。</p>
+  <p>〔KHQRで支払う〕→ <b>FISHLINK受取QR（金額入り）</b> → 〔支払いました〕→ <b>確認モーダル</b> → 即 農家へ（状態＝支払い確認中・運営が並行確認・自動確認=Bakong連携が理想＝要確認）。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① 通常 -->
+  <div class="phone-wrap">
+    <div class="phone-label">① 通常（ウォレット一部充当 → 残額をKHQR）</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">注文内容の確認</div>
+      <div class="body">
+        <div class="ord">
+          <div class="otop">🌾 大星農場 <span class="odist">配送距離 24.8 km</span></div>
+          <div class="oitem">レッドティラピア 3 head/kg・5kg（内臓処理あり）</div>
+          <div class="orow"><span class="ol">小計（魚代）</span><span class="ov">39,375 KHR</span></div>
+          <div class="orow"><span class="ol">配送料</span><span class="ov">12,400 KHR</span></div>
+          <div class="orow sub"><span class="ol">この農家への小計</span><span class="ov">51,775 KHR</span></div>
+          <div class="deliv">📅 納品 6/8（月） ・ 🕐 6:00–7:00</div>
+        </div>
+        <div class="pay">
+          <div class="pt">お支払い</div>
+          <div class="prow"><span class="pl">合計（カートより）</span><span class="pv">51,775 KHR</span></div>
+          <div class="prow wallet"><span class="pl">💰 ウォレット利用 <span class="bal">残高 23,500</span></span><span class="pv">−23,500 KHR <span class="act">変更</span></span></div>
+          <div class="prow total"><span class="pl">お支払い額</span><span class="pv">28,275 KHR</span></div>
+        </div>
+        <div class="escrow"><span class="ei">🔒</span><span class="etx">お支払いは受け取りまで運営が安全にお預かりします。<b>農家が辞退した場合や、受け取りに問題があった場合は、ウォレットに返金されます。</b></span></div>
+      </div>
+      <div class="footer"><button class="btn">KHQRで支払う<span class="sub">28,275 KHR</span></button></div>
+    </div>
+  </div>
+
+  <!-- ② ウォレットで全額 -->
+  <div class="phone-wrap">
+    <div class="phone-label">② ウォレットで全額まかなえる（KHQR不要）</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">注文内容の確認</div>
+      <div class="body">
+        <div class="ord">
+          <div class="otop">🌾 大星農場 <span class="odist">配送距離 24.8 km</span></div>
+          <div class="oitem">レッドティラピア 3 head/kg・5kg（内臓処理あり）</div>
+          <div class="orow sub"><span class="ol">この農家への小計</span><span class="ov">51,775 KHR</span></div>
+          <div class="deliv">📅 納品 6/8（月） ・ 🕐 6:00–7:00</div>
+        </div>
+        <div class="pay">
+          <div class="pt">お支払い</div>
+          <div class="prow"><span class="pl">合計（カートより）</span><span class="pv">51,775 KHR</span></div>
+          <div class="prow wallet"><span class="pl">💰 ウォレット利用 <span class="bal">残高 60,000</span></span><span class="pv">−51,775 KHR <span class="act">変更</span></span></div>
+          <div class="prow total"><span class="pl">お支払い額</span><span class="pv">0 KHR</span></div>
+          <div class="paid-full">✓ ウォレット残高でお支払い（KHQR不要）</div>
+        </div>
+        <div class="escrow"><span class="ei">🔒</span><span class="etx">お支払いは受け取りまで運営が安全にお預かりします。<b>農家が辞退した場合や、受け取りに問題があった場合は、ウォレットに返金されます。</b></span></div>
+      </div>
+      <div class="footer"><button class="btn">注文を確定する<span class="sub">ウォレットからお支払い</span></button></div>
+    </div>
+  </div>
+
+  <!-- ③ 金額指定 -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ 〔変更〕でウォレットを使う金額を指定（部分利用）</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">注文内容の確認</div>
+      <div class="body">
+        <div class="ord">
+          <div class="otop">🌾 大星農場 <span class="odist">配送距離 24.8 km</span></div>
+          <div class="oitem">レッドティラピア 3 head/kg・5kg（内臓処理あり）</div>
+          <div class="orow sub"><span class="ol">この農家への小計</span><span class="ov">51,775 KHR</span></div>
+          <div class="deliv">📅 納品 6/8（月） ・ 🕐 6:00–7:00</div>
+        </div>
+        <div class="pay">
+          <div class="pt">お支払い</div>
+          <div class="prow"><span class="pl">合計（カートより）</span><span class="pv">51,775 KHR</span></div>
+          <div class="prow wallet"><span class="pl">💰 ウォレット利用 <span class="bal">残高 23,500</span></span><span class="pv">−15,000 KHR <span class="act">閉じる</span></span></div>
+          <div class="wallet-edit">
+            <div class="we-l">ウォレットを使う金額（上限 <b>23,500 KHR</b>）</div>
+            <div class="we-input"><input class="we-field" value="15,000" inputmode="numeric"><span class="we-unit">KHR</span></div>
+            <div class="we-quick"><span>全額（23,500）</span><span>使わない（0）</span></div>
+          </div>
+          <div class="prow total"><span class="pl">お支払い額</span><span class="pv">36,775 KHR</span></div>
+        </div>
+        <div class="escrow"><span class="ei">🔒</span><span class="etx">お支払いは受け取りまで運営が安全にお預かりします。<b>農家が辞退した場合や、受け取りに問題があった場合は、ウォレットに返金されます。</b></span></div>
+      </div>
+      <div class="footer"><button class="btn">KHQRで支払う<span class="sub">36,775 KHR</span></button></div>
+    </div>
+  </div>
+
+  <!-- ④ 複数農家 -->
+  <div class="phone-wrap">
+    <div class="phone-label">④ 複数農家（まとめて1回払い・農家ごとに承認/辞退）</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">注文内容の確認</div>
+      <div class="body">
+        <div class="ord">
+          <div class="otop">🌾 大星農場 <span class="odist">配送距離 24.8 km</span></div>
+          <div class="oitem">レッドティラピア 5kg（内臓処理あり）</div>
+          <div class="orow sub"><span class="ol">この農家への小計</span><span class="ov">51,775 KHR</span></div>
+          <div class="deliv">📅 納品 6/8（月） ・ 🕐 6:00–7:00</div>
+        </div>
+        <div class="ord">
+          <div class="otop">🌾 パイリン農場 <span class="odist">配送距離 18.2 km</span></div>
+          <div class="oitem">ナイルティラピア 4kg（内臓処理なし）</div>
+          <div class="orow sub"><span class="ol">この農家への小計</span><span class="ov">32,000 KHR</span></div>
+          <div class="deliv">📅 納品 6/8（月） ・ 🕐 7:00–8:00</div>
+        </div>
+        <div class="pay">
+          <div class="pt">お支払い</div>
+          <div class="prow"><span class="pl">大星農場</span><span class="pv">51,775 KHR</span></div>
+          <div class="prow"><span class="pl">パイリン農場</span><span class="pv">32,000 KHR</span></div>
+          <div class="prow wallet"><span class="pl">💰 ウォレット利用 <span class="bal">残高 23,500</span></span><span class="pv">−23,500 KHR <span class="act">変更</span></span></div>
+          <div class="prow total"><span class="pl">お支払い額</span><span class="pv">60,275 KHR</span></div>
+        </div>
+        <div class="escrow"><span class="ei">🔒</span><span class="etx"><b>農家ごとに承認/辞退されます。</b>辞退された農家の分は<b>ウォレットに返金</b>（他の農家はそのまま進みます）。</span></div>
+      </div>
+      <div class="footer"><button class="btn">KHQRで支払う<span class="sub">60,275 KHR</span></button></div>
+    </div>
+  </div>
+
+  <!-- ⑤ KHQR画面 -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑤ KHQR画面（FISHLINK受取QR・金額入り）</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">お支払い</div>
+      <div class="body">
+        <div class="khqr-amt"><div class="kl">お支払い額</div><div class="kv-row"><div class="kv">28,275 KHR</div><span class="copy-chip">金額をコピー</span></div></div>
+        <div class="khqr-sub">合計 51,775 − 💰ウォレット <b>23,500</b> を差し引き済み</div>
+        <div class="qr-card">
+          <div class="qr-brand">FISHLINK（KHQR）</div>
+          <div class="qr-img"></div>
+          <div class="qr-tag">金額が入ったQRです（28,275 KHR）</div>
+        </div>
+        <div class="qr-actions">
+          <button class="qr-open">銀行アプリで開く<span class="qs">ABA / Wing / ACLEDA など（金額入り）</span></button>
+          <div class="qr-row2">
+            <button class="qr-sbtn">🖼 QR画像を保存</button>
+          </div>
+        </div>
+        <div class="qr-help">同じ端末で払うとき＝<b>〔銀行アプリで開く〕</b>が最短。開かない銀行は<b>〔QR画像を保存〕</b>→銀行アプリの「画像から読み取り」で。<br><b>FISHLINKが受け取り、受け取りまで安全にお預かりします</b>（農家の辞退・受け取りの問題はウォレットに返金）。</div>
+      </div>
+      <div class="footer"><button class="btn">支払いました</button></div>
+    </div>
+  </div>
+
+  <!-- ⑥ 確認モーダル -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑥ 〔支払いました〕の確認モーダル（中央）</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">お支払い</div>
+      <div class="body">
+        <div class="khqr-amt"><div class="kl">お支払い額</div><div class="kv-row"><div class="kv">28,275 KHR</div><span class="copy-chip">金額をコピー</span></div></div>
+        <div class="khqr-sub">合計 51,775 − 💰ウォレット <b>23,500</b> を差し引き済み</div>
+        <div class="qr-card">
+          <div class="qr-brand">FISHLINK（KHQR）</div>
+          <div class="qr-img"></div>
+          <div class="qr-tag">金額が入ったQRです（28,275 KHR）</div>
+        </div>
+        <div class="qr-actions">
+          <button class="qr-open">銀行アプリで開く<span class="qs">ABA / Wing / ACLEDA など（金額入り）</span></button>
+          <div class="qr-row2">
+            <button class="qr-sbtn">🖼 QR画像を保存</button>
+          </div>
+        </div>
+      </div>
+      <div class="footer"><button class="btn">支払いました</button></div>
+      <div class="mask">
+        <div class="modal">
+          <div class="mt">お支払いは完了しましたか？</div>
+          <div class="mb">「支払いました」を押すと、農家に注文が届きます。まだの場合は、QRで先にお支払いください。</div>
+          <div class="ma"><button class="mbtn m-no">まだです</button><button class="mbtn m-yes">支払いました</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

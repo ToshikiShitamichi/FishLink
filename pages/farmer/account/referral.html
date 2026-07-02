@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
     <title>FISHLINK</title>
@@ -15,8 +15,8 @@
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
     <style>
-        /* 6/22 #164: 紹介専用ページ（マイページ 1行メニューの遷移先）。
-           コード/コピー/シェアをここに集約。ボーナス・クーポンの詳細状態は別途（束B）。 */
+        /* 6/22 #164 / 6/27 #177: 紹介専用ページ（マイページ 1行メニューの遷移先）。
+           コード/コピー/シェア＋紹介ボーナス（農家）。特典は稼働中（順次提供注記は廃止）。 */
         .sub-page { max-width: 480px; margin: 0 auto; padding: 0 16px 40px; }
         .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
         .ref-card {
@@ -26,7 +26,8 @@
             padding: 16px;
         }
         .ref-card__desc { font-size: 12.5px; color: #3e6a98; line-height: 1.6; margin-bottom: 12px; }
-        .ref-card__label { font-size: 12px; color: var(--color-text-sub); margin-bottom: 6px; }
+        .ref-card__label { font-size: 14px; font-weight: 700; color: var(--color-cta); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        .ref-card__label .material-symbols-outlined { font-size: 18px; }
         .ref-card__code {
             background: #fff;
             border: 1px solid #d5e6f8;
@@ -57,6 +58,30 @@
         }
         .ref-card__btn .material-symbols-outlined { font-size: 17px; }
         .ref-card__btn--primary { background: var(--color-cta); color: #fff; border-color: var(--color-cta); }
+
+        /* 報酬カード（白） */
+        .reward-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            padding: 14px;
+            margin-top: 14px;
+        }
+        .reward-card__title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 11px; }
+        .reward-card__title .material-symbols-outlined { font-size: 19px; color: #b36a00; }
+
+        /* 農家ボーナス（amber） */
+        .bonus-box { background: #fff7e6; border: 1px solid #f3d998; border-radius: 12px; padding: 13px; }
+        .bonus-box__amt { font-size: 17px; font-weight: 700; color: #b36a00; }
+        .bonus-box__st { font-size: 11.5px; color: #9a7430; margin-top: 5px; line-height: 1.5; }
+        .bonus-box__tot { font-size: 12px; color: var(--color-text-sub); margin-top: 10px; border-top: 1px solid #f0e2c2; padding-top: 9px; }
+        .reward-hint { font-size: 11.5px; color: var(--color-text-sub); line-height: 1.6; margin-top: 8px; }
+
+        /* 報酬の空状態（共有を促す） */
+        .reward-empty { text-align: center; padding: 14px 10px 6px; }
+        .reward-empty .re-i { font-size: 30px; color: #c9a14a; }
+        .reward-empty .re-t { font-size: 13px; color: var(--color-text-sub); margin-top: 7px; }
+        .reward-empty .re-p { font-size: 13px; font-weight: 700; color: var(--color-cta); margin-top: 9px; line-height: 1.55; }
     </style>
 </head>
 
@@ -83,8 +108,8 @@
 
         <div class="sub-page">
             <div class="ref-card">
-                <div class="ref-card__desc" data-i18n="referral.cardDescFarmer"></div>
-                <div class="ref-card__label" data-i18n="referral.cardTitle"></div>
+                <div class="ref-card__label"><span class="material-symbols-outlined">redeem</span><span data-i18n="referral.cardTitle"></span></div>
+                <div class="ref-card__desc" data-i18n="referral.timingTwoStage"></div>
                 <div class="ref-card__code" id="referral-code">--------</div>
                 <div class="ref-card__actions">
                     <button type="button" id="referral-copy" class="ref-card__btn">
@@ -97,13 +122,19 @@
                     </button>
                 </div>
             </div>
+
+            <!-- 紹介ボーナス（農家・amber） -->
+            <div class="reward-card">
+                <div class="reward-card__title"><span class="material-symbols-outlined">redeem</span><span data-i18n="referral.bonusTitle"></span></div>
+                <div id="bonus-body"></div>
+            </div>
         </div>
     </div>
 
     <script type="module">
-        import { initI18n, initLangSelector } from '/js/i18n.js';
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
-        import { ensureUserReferralCode } from '/js/referral.js';
+        import { ensureUserReferralCode, getReferralSettings } from '/js/referral.js';
         import { showToast } from '/js/toast.js';
 
         const loading = document.getElementById('loading');
@@ -128,6 +159,44 @@
                 return;
             }
             document.getElementById('referral-code').textContent = referralCode;
+        }
+
+        // #177 A5/A6: 農家の紹介ボーナス状態（運営設定の動的値＋保留回数＋獲得合計）。
+        //   pendingFarmerBonus = あと◯回 ／ settings.farmerBonusKhr = +◯◯（直書きしない）
+        //   referralBonusTotalKhr = 獲得合計（CF で加算・新フィールド／default 0）。ボーナスは期限なし（B8）。
+        let bonusState = null; // { count, amount, total }
+        async function loadBonus() {
+            const count = Number(window.currentUserData?.pendingFarmerBonus || 0);
+            const total = Number(window.currentUserData?.referralBonusTotalKhr || 0);
+            let amount = 0;
+            try {
+                const s = await getReferralSettings();
+                amount = Number(s?.farmerBonusKhr || 0);
+            } catch (e) { console.warn('getReferralSettings failed:', e); }
+            bonusState = { count, amount, total };
+            renderBonus();
+        }
+        function renderBonus() {
+            const body = document.getElementById('bonus-body');
+            if (!body || !bonusState) return;
+            const { count, amount, total } = bonusState;
+            const amountStr = amount ? amount.toLocaleString() : '';
+            if (count > 0) {
+                body.innerHTML = `
+                    <div class="bonus-box">
+                        <div class="bonus-box__amt">${i18next.t('referral.bonusRemaining', { n: count, amount: amountStr })}</div>
+                        <div class="bonus-box__st">${i18next.t('referral.bonusPending')}</div>
+                        <div class="bonus-box__tot">${i18next.t('referral.bonusTotal', { amount: total.toLocaleString() })}</div>
+                    </div>
+                    <div class="reward-hint">${i18next.t('referral.amountDynamicHint')}</div>`;
+            } else {
+                body.innerHTML = `
+                    <div class="reward-empty">
+                        <div class="re-i"><span class="material-symbols-outlined" style="font-size:30px;">redeem</span></div>
+                        <div class="re-t">${i18next.t('referral.emptyBonus')}</div>
+                        <div class="re-p">${i18next.t('referral.shareToEarnBonus', { amount: amountStr })}</div>
+                    </div>`;
+            }
         }
 
         async function copyText(text) {
@@ -160,9 +229,12 @@
 
         waitForUserData(() => {
             showReferralCode();
+            loadBonus();
             loading.classList.remove('show');
             document.body.classList.add('app-ready');
         });
+
+        onLanguageChange(() => { renderBonus(); });
     </script>
 </body>
 

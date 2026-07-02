@@ -112,6 +112,24 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // 6/26 #171 案B: ウォレット（買い手専用・残高＋台帳）。
+    //   書き込みは Cloud Functions（admin SDK＝ルールをバイパス）のみ。
+    //   返金クレジット（辞退/キャンセル/問題）・注文使用デビット・出金申請は全て CF 経由。
+    //   ＝クライアントが残高を改竄できないようにする（お金の核）。
+    match /wallets/{uid} {
+      allow read: if request.auth != null
+        && (request.auth.uid == uid
+         || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow write: if false;
+
+      match /transactions/{txId} {
+        allow read: if request.auth != null
+          && (request.auth.uid == uid
+           || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+        allow write: if false;
+      }
+    }
+
     match /todos/{uid}/items/{id} {
       allow read: if request.auth.uid == uid;
       allow write: if false;

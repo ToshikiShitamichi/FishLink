@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
     <title>FISHLINK</title>
@@ -79,7 +79,7 @@
     <div class="page">
 
         <div class="page-header" style="align-items:center;">
-            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FISHLINK" class="brand-logo"></a>
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub); margin-right:6px;">
                 <option value="km">ខ្មែរ</option>
@@ -140,6 +140,17 @@
                     <div class="acc-menu-item__body">
                         <div class="acc-menu-item__title" data-i18n="profile.restaurantInfoTitle"></div>
                         <div class="acc-menu-item__meta" data-i18n="account.menuHintProfileRestaurant"></div>
+                    </div>
+                    <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
+                </a>
+
+                <!-- 6/27 #176: ウォレット（買い手専用・案B 前払いの返金が貯まる）。返金先の上。
+                     サブ＝残高（wallets/{uid}.balance を JS で出す）。 -->
+                <a class="acc-menu-item" href="/pages/restaurant/wallet.html">
+                    <div class="acc-menu-item__icon" style="background:#eaf2fb; color:#0b5fb0;"><span class="material-symbols-outlined">account_balance_wallet</span></div>
+                    <div class="acc-menu-item__body">
+                        <div class="acc-menu-item__title" data-i18n="account.wallet"></div>
+                        <div class="acc-menu-item__meta acc-menu-item__meta--accent" id="wallet-sub"></div>
                     </div>
                     <span class="material-symbols-outlined acc-menu-item__chev">chevron_right</span>
                 </a>
@@ -270,7 +281,9 @@
             }
         }
 
-        // 6/22 #164: 紹介行のサブ文言を即時復元（非同期算出分）
+        // 6/27 #176: ウォレット残高（TDZ回避のため、これを参照する applyAccountCache IIFE より前に宣言）
+        let walletBalance = 0;
+        // 6/22 #164 / 6/27 #176: 紹介行・ウォレット行のサブ文言を即時復元（非同期算出分）
         (function applyAccountCache() {
             try {
                 const cached = loadRenderState('restaurant_account');
@@ -278,14 +291,38 @@
                     const el = document.getElementById('referral-sub');
                     if (el) el.textContent = cached.referralSub;
                 }
+                if (cached && cached.walletBalance != null) {
+                    walletBalance = Number(cached.walletBalance);
+                    renderWalletSub();
+                }
             } catch (e) { /* ignore */ }
         })();
         function saveAccountRender() {
             try {
                 saveRenderState('restaurant_account', {
                     referralSub: document.getElementById('referral-sub')?.textContent || '',
+                    walletBalance,
                 });
             } catch (e) { /* ignore */ }
+        }
+
+        // 6/27 #176: ウォレット残高（wallets/{uid}.balance）をマイページ行のサブに出す。
+        async function computeWalletSub() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            try {
+                const wsnap = await getDoc(doc(db, 'wallets', uid));
+                walletBalance = wsnap.exists() ? Number(wsnap.data().balance || 0) : 0;
+            } catch (e) {
+                console.warn('computeWalletSub failed:', e);
+                walletBalance = 0;
+            }
+            renderWalletSub();
+        }
+        function renderWalletSub() {
+            const el = document.getElementById('wallet-sub');
+            if (!el) return;
+            el.textContent = i18next.t('account.walletBalance', { amount: Number(walletBalance || 0).toLocaleString() });
         }
 
         function watchOrderBadge() {
@@ -371,14 +408,14 @@
                     const badge = document.getElementById('cart-badge');
                     if (badge) badge.style.display = items.length > 0 ? 'block' : 'none';
                 });
-                // 6/22 #164: 紹介行の動的サブ文言を算出（完了後にキャッシュ更新）
-                computeReferralSub().then(saveAccountRender);
+                // 6/22 #164 / 6/27 #176: 紹介行・ウォレット行の動的サブ文言を算出（完了後にキャッシュ更新）
+                Promise.all([computeReferralSub(), computeWalletSub()]).then(saveAccountRender);
             }
             // 5/23 #69 Phase C: 初期スピナー解除
             document.body.classList.add('app-ready');
         });
 
-        onLanguageChange(() => { renderHead(); renderReferralSub(); });
+        onLanguageChange(() => { renderHead(); renderReferralSub(); renderWalletSub(); });
     </script>
 </body>
 

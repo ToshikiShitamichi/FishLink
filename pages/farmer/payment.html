@@ -3,10 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
-    <title>FishLink</title>
+    <title>FISHLINK</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -352,9 +352,13 @@
             loading.classList.remove('show'); document.body.classList.add('app-ready');
         });
 
-        // 6/5 #129: 農家のレビュー解禁は「支払い確認後」のみ（運営が入金確認済 以降）
+        // レビュー解禁：案B（前払い）＝送金済（remitted/done）以降のみ（§7.2）。
+        //   旧（受取時払い）＝支払い確認後（payment_confirmed 以降）。
         function isPaymentConfirmedOrBeyond() {
             if (!orderData) return false;
+            if (orderData.prepaid === true) {
+                return ['remitted', 'done'].includes(orderData.adminStatus);
+            }
             return ['payment_confirmed', 'remitted', 'done'].includes(orderData.adminStatus);
         }
 
@@ -477,22 +481,37 @@
 
         function renderStatus(adminStatus, paymentStatus) {
             const box = document.getElementById('status-box');
-            let cls = 'pending', titleKey = 'payment.statusWaitingPayment', descKey = 'payment.statusWaitingPaymentDesc';
+            const isPrepaid = orderData?.prepaid === true;
 
             // 6/5 #129 ④: 問題報告で送金保留中＝「確認中（問題が報告されています）」。送金前のみ有効
             const hold = orderData?.paymentProblemHold === true
                 && !['remitted', 'done'].includes(adminStatus);
 
-            if (hold) {
-                cls = 'confirmed'; titleKey = 'payment.statusProblemHold'; descKey = 'payment.statusProblemHoldDesc';
-            } else if (adminStatus === 'done') {
-                cls = 'done'; titleKey = 'payment.statusDone'; descKey = 'payment.statusDoneDesc';
-            } else if (adminStatus === 'remitted') {
-                cls = 'remitted'; titleKey = 'payment.statusRemitted'; descKey = 'payment.statusRemittedDesc';
-            } else if (adminStatus === 'payment_confirmed') {
-                cls = 'confirmed'; titleKey = 'payment.statusConfirmed'; descKey = 'payment.statusConfirmedDesc';
-            } else if (paymentStatus === 'paid') {
-                cls = 'confirmed'; titleKey = 'payment.statusPaidByRestaurant'; descKey = 'payment.statusPaidByRestaurantDesc';
+            let cls, titleKey, descKey;
+            if (isPrepaid) {
+                // 6/26 #182 案B（前払い）：レストランは前払い済み＝農家視点は「送金待ち」が基本状態。
+                //   保留＝確認中／remitted・done＝送金済／それ以外（支払い確認中・準備中・配送完了窓・取引完了）＝送金待ち。
+                if (hold) {
+                    cls = 'confirmed'; titleKey = 'payment.statusProblemHold'; descKey = 'payment.statusProblemHoldDesc';
+                } else if (['remitted', 'done'].includes(adminStatus)) {
+                    cls = 'remitted'; titleKey = 'payment.statusRemitted'; descKey = 'payment.statusRemittedDesc';
+                } else {
+                    cls = 'pending'; titleKey = 'payment.statusPayoutWaiting'; descKey = 'payment.payoutWaitingDesc';
+                }
+            } else {
+                // 旧（受取時払い）：従来ロジックを維持
+                cls = 'pending'; titleKey = 'payment.statusWaitingPayment'; descKey = 'payment.statusWaitingPaymentDesc';
+                if (hold) {
+                    cls = 'confirmed'; titleKey = 'payment.statusProblemHold'; descKey = 'payment.statusProblemHoldDesc';
+                } else if (adminStatus === 'done') {
+                    cls = 'done'; titleKey = 'payment.statusDone'; descKey = 'payment.statusDoneDesc';
+                } else if (adminStatus === 'remitted') {
+                    cls = 'remitted'; titleKey = 'payment.statusRemitted'; descKey = 'payment.statusRemittedDesc';
+                } else if (adminStatus === 'payment_confirmed') {
+                    cls = 'confirmed'; titleKey = 'payment.statusConfirmed'; descKey = 'payment.statusConfirmedDesc';
+                } else if (paymentStatus === 'paid') {
+                    cls = 'confirmed'; titleKey = 'payment.statusPaidByRestaurant'; descKey = 'payment.statusPaidByRestaurantDesc';
+                }
             }
 
             box.innerHTML = `
@@ -506,14 +525,15 @@
             document.getElementById('amount-label').textContent =
                 hold ? i18next.t('payment.receiveAmountHold') : i18next.t('payment.receiveAmount');
 
-            // 6/5 #129: 送金についての説明＝保留中は中立グレー＋返金可能性を明記（緑にしない）
+            // 送金についての説明（中立グレー）。案B＝FISHLINK 預かりの説明。保留中は返金可能性を明記。
             const infoBox = document.getElementById('info-box');
             infoBox.classList.toggle('neutral', hold);
             document.getElementById('info-box-title').textContent = i18next.t('payment.aboutRemittance');
-            document.getElementById('info-box-desc').textContent =
-                hold ? i18next.t('payment.remittanceHoldDesc') : i18next.t('payment.remittanceDesc');
+            document.getElementById('info-box-desc').textContent = hold
+                ? i18next.t('payment.remittanceHoldDesc')
+                : (isPrepaid ? i18next.t('payment.aboutRemittancePrepay') : i18next.t('payment.remittanceDesc'));
 
-            // 6/5 #129: レビュー導線は支払い確認後のみ
+            // レビュー導線：案B＝送金済（remitted/done）以降のみ／旧＝支払い確認後
             refreshReviewArea();
         }
     </script>

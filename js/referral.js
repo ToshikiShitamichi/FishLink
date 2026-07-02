@@ -44,6 +44,52 @@ export function isValidReferralCode(code) {
 }
 
 /**
+ * 6/27 #177: 運営設定 settings/referral を取得（紹介専用ページの動的金額表示用）。
+ * { enabled, restaurantCouponKhr, farmerBonusKhr, couponValidDays } を返す（無い場合 null）。
+ * 金額は直書きせず必ずこの設定値を表示する。
+ * @returns {Promise<object|null>}
+ */
+export async function getReferralSettings() {
+    const snap = await getDoc(doc(db, 'settings', 'referral'));
+    return snap.exists() ? snap.data() : null;
+}
+
+/**
+ * 6/27 #177: 買い手の「使えるクーポン（ウォレット）」一覧を取得。
+ * coupons where ownerUid==uid → クライアントで未使用・期限内のみ絞り込み（複合 index 不要）。
+ * 各クーポン：{ code, amountKhr, sourceUid, expiresAtMs }。期限が近い（古い）順にソート。
+ * @param {string} uid
+ * @returns {Promise<Array<{code:string, amountKhr:number, sourceUid:string|null, expiresAtMs:number|null}>>}
+ */
+export async function fetchUsableCoupons(uid) {
+    if (!uid) return [];
+    const q = query(collection(db, 'coupons'), where('ownerUid', '==', uid));
+    const snap = await getDocs(q);
+    const now = Date.now();
+    const list = snap.docs.map(d => {
+        const c = d.data();
+        const expMs = c.expiresAt?.toMillis?.() ?? (c.expiresAt instanceof Date ? c.expiresAt.getTime() : null);
+        return {
+            code: d.id,
+            amountKhr: Number(c.amountKhr || 0),
+            sourceUid: c.sourceUid || null,
+            expiresAtMs: expMs,
+            usedAt: c.usedAt,
+            usedOrderId: c.usedOrderId,
+        };
+    }).filter(c => !c.usedAt && !c.usedOrderId)
+      .filter(c => c.expiresAtMs == null || c.expiresAtMs > now);
+    // 期限が近い順（null は末尾）
+    list.sort((a, b) => {
+        if (a.expiresAtMs == null && b.expiresAtMs == null) return 0;
+        if (a.expiresAtMs == null) return 1;
+        if (b.expiresAtMs == null) return -1;
+        return a.expiresAtMs - b.expiresAtMs;
+    });
+    return list.map(({ code, amountKhr, sourceUid, expiresAtMs }) => ({ code, amountKhr, sourceUid, expiresAtMs }));
+}
+
+/**
  * 既存ユーザーが referralCode を持っていなければ生成して保存（lazy backfill）。
  * @param {string} uid users/{uid}
  * @param {object} userData 現在の users/{uid} データ（既知なら渡す。不要なら null）

@@ -3,10 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
-    <title>FishLink</title>
+    <title>FISHLINK</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -483,6 +483,96 @@
         .del-modal__btn { flex: 1; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 800; cursor: pointer; font-family: inherit; }
         .del-modal__btn--cancel { background: #eceef0; color: var(--color-text-sub); }
         .del-modal__btn--ok { background: #E5453F; color: #fff; }
+
+        /* #172: お支払い（前払い）セクション */
+        .pay-section__card {
+            background: var(--color-surface); border: 1px solid var(--color-border);
+            border-radius: 14px; padding: 14px;
+        }
+        .pay-section__title { font-size: 13.5px; font-weight: 800; margin-bottom: 6px; }
+        .pay-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; font-size: 13px; padding: 7px 0;
+        }
+        .pay-row__label { color: var(--color-text); display: flex; align-items: center; gap: 6px; }
+        .pay-row__value { font-weight: 700; white-space: nowrap; }
+        .pay-row.wallet .pay-row__label, .pay-row.wallet .pay-row__value { color: var(--color-cta); }
+        .pay-row__bal { font-size: 10.5px; color: var(--color-text-sub); font-weight: 600; }
+        .pay-row__act {
+            font-size: 11.5px; font-weight: 800; color: var(--color-cta);
+            border: 1px solid #bbd3ec; border-radius: 8px; padding: 3px 9px;
+            background: none; cursor: pointer; font-family: inherit; margin-left: 6px;
+        }
+        .pay-row.total {
+            border-top: 1px solid #eceff3; margin-top: 4px; padding-top: 11px;
+        }
+        .pay-row.total .pay-row__label { font-size: 14px; font-weight: 800; color: var(--color-text); }
+        .pay-row.total .pay-row__value { font-size: 20px; font-weight: 800; color: var(--color-cta); }
+        .pay-paid-full { font-size: 12px; color: #2e7d32; font-weight: 800; text-align: right; margin-top: 2px; }
+        .wallet-edit {
+            background: var(--color-cta-lt); border: 1px solid #d2e0f2;
+            border-radius: 11px; padding: 11px 12px; margin: 6px 0 2px;
+        }
+        .wallet-edit__l { font-size: 11.5px; color: var(--color-text-sub); margin-bottom: 7px; }
+        .wallet-edit__l b { color: var(--color-cta); }
+        .wallet-edit__input { display: flex; align-items: center; gap: 7px; }
+        .wallet-edit__field {
+            flex: 1; background: #fff; border: 1.5px solid var(--color-cta);
+            border-radius: 9px; padding: 9px 12px; font-size: 16px; font-weight: 800;
+            text-align: right; color: #0b1b33; font-family: inherit; min-width: 0;
+            -moz-appearance: textfield;
+        }
+        .wallet-edit__field::-webkit-outer-spin-button,
+        .wallet-edit__field::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .wallet-edit__unit { font-size: 12px; color: var(--color-text-sub); font-weight: 700; }
+        .wallet-edit__quick { display: flex; gap: 8px; margin-top: 9px; }
+        .wallet-edit__quick button {
+            flex: 1; text-align: center; font-size: 12px; font-weight: 800;
+            border: 1px solid #bbd3ec; border-radius: 8px; padding: 8px 0;
+            color: var(--color-cta); background: #fff; cursor: pointer; font-family: inherit;
+        }
+        .escrow-note {
+            display: flex; gap: 8px; background: #eef3fb; border: 1px solid #d8e4f5;
+            border-radius: 12px; padding: 11px 12px; margin-top: 12px;
+        }
+        .escrow-note .material-symbols-outlined { font-size: 18px; color: #3e6a98; flex-shrink: 0; }
+        .escrow-note span:last-child { font-size: 11.5px; color: #3e6a98; line-height: 1.55; }
+
+        /* #172: KHQR ステージ */
+        .khqr-amt { text-align: center; margin: 6px 0 12px; }
+        .khqr-amt__label { font-size: 12px; color: var(--color-text-sub); }
+        .khqr-amt__row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 2px; }
+        .khqr-amt__value { font-size: 26px; font-weight: 800; color: var(--color-cta); }
+        .copy-chip {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: 10.5px; font-weight: 800; color: var(--color-cta);
+            border: 1px solid #bbd3ec; border-radius: 7px; padding: 4px 8px;
+            cursor: pointer; font-family: inherit; background: #fff;
+        }
+        .copy-chip .material-symbols-outlined { font-size: 13px; }
+        .khqr-sub { text-align: center; font-size: 11px; color: var(--color-text-sub); margin: -4px 0 14px; }
+        .khqr-sub b { color: var(--color-text); font-weight: 700; }
+        .qr-card {
+            background: var(--color-surface); border: 1px solid var(--color-border);
+            border-radius: 16px; padding: 18px; text-align: center;
+        }
+        .qr-card__brand { font-size: 13px; font-weight: 800; color: var(--color-cta); margin-bottom: 8px; }
+        .qr-card__img { width: 200px; height: 200px; object-fit: contain; margin: 4px auto; display: block; }
+        .qr-card__tag { font-size: 11px; color: var(--color-text-sub); margin-top: 4px; }
+        .qr-actions { margin-top: 12px; }
+        .qr-open {
+            display: block; width: 100%; text-align: center; text-decoration: none;
+            border-radius: 11px; padding: 12px; font-size: 13.5px; font-weight: 800;
+            background: var(--color-cta); color: #fff;
+        }
+        .qr-open__sub { display: block; font-size: 10.5px; font-weight: 600; opacity: .85; margin-top: 1px; }
+        .qr-sbtn {
+            display: block; width: 100%; text-align: center; text-decoration: none;
+            margin-top: 8px; border: 1px solid #bbd3ec; border-radius: 10px;
+            padding: 10px 0; font-size: 12.5px; font-weight: 800;
+            color: var(--color-cta); background: #fff;
+        }
+        .qr-help { font-size: 12px; color: var(--color-text-sub); line-height: 1.6; margin: 14px 2px 0; }
     </style>
 </head>
 
@@ -492,7 +582,7 @@
     <div style="max-width:480px; margin:0 auto;">
         <div class="page-header" style="align-items:center; padding:12px 16px;">
             <a href="javascript:history.back()" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
-            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FISHLINK" class="brand-logo"></a>
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option>
@@ -537,18 +627,64 @@
         </div>
         <div id="confirm-container"></div>
 
-        <!-- 6/7 #134 C: クーポンはコード入力を撤廃し、ウォレットから1タップ適用。
-             所有者・未使用・期限内のクーポンを並べ、タップで appliedCoupon を切替。
-             案Z＝適用中はキャンペーン割引を出さない（renderConfirm が制御）。 -->
-        <div class="coupon-wallet-block" id="coupon-wallet-block" style="margin:14px 16px; padding:14px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:14px; display:none;">
-            <div style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--color-text); margin-bottom:8px;">
-                <span class="material-symbols-outlined" style="font-size:16px; color:#b36a00;">confirmation_number</span>
-                <span data-i18n="coupon.walletTitle"></span>
+        <!-- #178: クーポンは「期限が近い順に自動適用」（手動で1枚選ぶUIは作らない）。
+             1枚だけ自動適用し「✓ 適用中／〔外す〕」を表示。外すと今回は使わない（次回に取っておく）。 -->
+        <div class="coupon-applied" id="coupon-applied" style="margin:14px 16px; padding:12px 14px; background:#fff7e6; border:1px solid #f3d998; border-radius:14px; display:none; align-items:center; gap:10px;">
+            <span class="material-symbols-outlined" style="font-size:18px; color:#b36a00;">confirmation_number</span>
+            <div style="flex:1; min-width:0;">
+                <div id="coupon-applied-amt" style="font-size:13px; font-weight:800; color:#b36a00;"></div>
+                <div id="coupon-applied-meta" style="font-size:11px; color:#9a7430; margin-top:2px;"></div>
             </div>
-            <div id="coupon-wallet-list"></div>
-            <div style="font-size:11px; color:var(--color-text-sub); margin-top:8px;" data-i18n="coupon.walletTapHint"></div>
-            <div style="font-size:11px; color:#b36a00; margin-top:5px;" data-i18n="coupon.walletCampaignNote"></div>
+            <div style="text-align:right; flex-shrink:0;">
+                <div style="font-size:12px; font-weight:800; color:#b36a00;" data-i18n="coupon.walletApplied"></div>
+                <button type="button" id="coupon-remove-btn" style="background:none; border:none; padding:2px 0; cursor:pointer; font-family:inherit; font-size:11px; color:var(--color-cta); font-weight:700;" data-i18n="coupon.removeForNow"></button>
+            </div>
         </div>
+
+        <!-- #172: お支払い（前払い）＝合計（カートより）→ 💰ウォレット利用 → お支払い額（青）。
+             ウォレットは既定で全額自動充当・〔変更〕で金額指定（0=使わない）。 -->
+        <div class="pay-section" id="pay-section" style="margin:14px 16px;">
+            <div class="pay-section__card">
+                <div class="pay-section__title" data-i18n="payment.payTitle"></div>
+                <div id="pay-rows"></div>
+            </div>
+            <div class="escrow-note">
+                <span class="material-symbols-outlined">lock</span>
+                <span id="escrow-text" data-i18n="payment.escrowNote"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- #172: KHQR ステージ（FISHLINK受取QR・金額入り） -->
+    <div class="stage-page" id="khqr-page">
+        <div class="khqr-amt">
+            <div class="khqr-amt__label" data-i18n="payment.payAmount"></div>
+            <div class="khqr-amt__row">
+                <div class="khqr-amt__value" id="khqr-amt-value">0 KHR</div>
+                <button type="button" class="copy-chip" id="khqr-copy-btn">
+                    <span class="material-symbols-outlined">content_copy</span>
+                    <span data-i18n="payment.copyAmount"></span>
+                </button>
+            </div>
+        </div>
+        <div class="khqr-sub" id="khqr-sub"></div>
+        <div class="qr-card">
+            <div class="qr-card__brand" data-i18n="payment.khqrBrand"></div>
+            <img class="qr-card__img" src="/images/fishlink-qr.png" alt="FISHLINK QR">
+            <div class="qr-card__tag" id="khqr-tag"></div>
+        </div>
+        <div class="qr-actions">
+            <a class="qr-open" href="https://link.payway.com.kh/ABAPAYsh433547o" target="_blank" rel="noopener">
+                <span class="material-symbols-outlined" style="font-size:18px; vertical-align:-4px;">account_balance</span>
+                <span data-i18n="payment.openBank"></span>
+                <span class="qr-open__sub" data-i18n="payment.openBankSub"></span>
+            </a>
+            <a class="qr-sbtn" href="/images/fishlink-qr.png" download="fishlink-qr.png">
+                <span class="material-symbols-outlined" style="font-size:16px; vertical-align:-3px;">image</span>
+                <span data-i18n="payment.saveQr"></span>
+            </a>
+        </div>
+        <div class="qr-help" data-i18n="payment.khqrHelp"></div>
     </div>
 
     <!-- 出品詳細モーダル -->
@@ -577,6 +713,18 @@
         </div>
         <button class="checkout-btn" id="checkout-btn" data-i18n="cart.checkout"></button>
         <div class="err-msg" id="err-msg"></div>
+    </div>
+
+    <!-- #172: 〔支払いました〕の確認モーダル（中央）。確認系は中央モーダルで統一（#160）。 -->
+    <div class="del-modal-ov" id="paid-modal">
+        <div class="del-modal">
+            <div class="del-modal__title" data-i18n="payment.confirmPaidTitle"></div>
+            <div style="font-size:13px; color:var(--color-text-sub); line-height:1.65; margin-bottom:18px;" data-i18n="payment.confirmPaidBody"></div>
+            <div class="del-modal__actions">
+                <button type="button" class="del-modal__btn del-modal__btn--cancel" id="paid-modal-no" data-i18n="payment.confirmPaidNo"></button>
+                <button type="button" class="del-modal__btn" style="background:var(--color-cta); color:#fff;" id="paid-modal-yes" data-i18n="payment.confirmPaidYes"></button>
+            </div>
+        </div>
     </div>
 
     <!-- 6/21 #163④: 削除確認＝中央モーダル（ブラウザ confirm 置換）。確定「削除する」赤・キャンセル グレー。 -->
@@ -623,6 +771,7 @@
 
         // 状態
         let cartItems = [];                // [{ listingId, farmerId, quantity, gutProcessing }]
+        let cartLoaded = false;            // subscribeCart 初回到達済み（cache 復元のバー表示尊重のため）
         const listingCache = new Map();    // listingId -> listing data
         const farmerCache = new Map();     // farmerId -> farmer data
         const distanceCache = new Map();   // farmerId -> km
@@ -638,7 +787,16 @@
         // 5/24 #82 Phase 2 Chunk 3: 適用済みクーポン
         // { code: '...', amountKhr: 5000 } / 未適用なら null
         // 適用時はキャンペーン割引（レストラン側）を無効化し、注文金額から差し引く。
+        // #178: 期限が近い（古い）順に自動適用（手動で1枚選ぶUIは廃止）。〔外す〕で null。
         let appliedCoupon = null;
+        let couponManuallyRemoved = false; // 〔外す〕で「今回は使わない」を選んだら再自動適用しない
+
+        // #172: ウォレット（前払い充当）。残高は wallets/{uid}.balance（read-only / CF が書く）。
+        let walletBalance = 0;
+        let walletApplied = 0;      // この注文で使うウォレット額（既定=全額自動・上限=min(残高, 充当前お支払い額)）
+        let walletUserSet = false;  // ユーザーが〔変更〕で明示指定したか（true なら自動再充当しない）
+        let walletEditOpen = false; // 〔変更〕の入力欄を開いているか
+        let confirmGrandTotal = 0;  // renderConfirm が算出したクーポン適用後の合計（=充当前お支払い額）
 
         // ── Google Maps ready 待ち ──
         function waitForGoogleMaps() {
@@ -792,11 +950,14 @@
                     leadTimeHours = c.leadTimeHours != null ? c.leadTimeHours : 8;
                 }
 
-                // 6/7 #134 C: クーポンウォレットを先読み（confirm ステージで 1 タップ適用）
+                // 6/7 #134 C → #178: クーポンウォレットを先読み（confirm ステージで自動適用）
                 await loadCouponWallet();
+                // #172: ウォレット残高を先読み（read-only）
+                await loadWalletBalance();
 
                 subscribeCart(window.currentUser.uid, async (items) => {
                     cartItems = items;
+                    cartLoaded = true;
                     await render();
                 });
             } catch (err) {
@@ -832,11 +993,11 @@
             if (cartItems.length === 0) {
                 container.innerHTML = '';
                 empty.style.display = 'block';
-                bar.style.display = 'none';
+                if (stage === 'cart') bar.style.display = 'none';
                 return;
             }
             empty.style.display = 'none';
-            bar.style.display = 'block';
+            if (stage === 'cart') bar.style.display = 'block';
 
             // listings / farmers を先読み
             const listingIds = [...new Set(cartItems.map(it => it.listingId))];
@@ -1023,10 +1184,13 @@
         //   旧言語のままなので render() を呼び直す。initDatepickers は render() 内で呼ばれる。
         onLanguageChange(() => {
             render().catch(() => {});
-            // 6/7 #134 C: 確認画面のクーポンウォレットも言語に追従（紹介元名の語順含め再構築）
+            // 6/7 #134 C → #178: 確認画面のクーポン・お支払い明細も言語に追従（紹介元名の語順含め再構築）
             if (stage === 'confirm') {
                 loadCouponWallet().then(() => { renderCouponWallet(); renderConfirm().catch(() => {}); });
+            } else if (stage === 'khqr') {
+                renderKhqr(khqrPayAmount);
             }
+            updateFooter();
         });
 
         // 5/27 #94: 配送日カレンダーを i18next 言語に合わせてローカライズ（flatpickr）
@@ -1129,7 +1293,7 @@
             });
         }
 
-        // ── ステージ管理（cart / suggest / confirm）──
+        // ── ステージ管理（cart / suggest / confirm / khqr）──
         let stage = 'cart';
 
         function setStage(next) {
@@ -1137,18 +1301,55 @@
             const cartPage = document.getElementById('cart-page');
             const suggestPage = document.getElementById('suggest-page');
             const confirmPage = document.getElementById('confirm-page');
+            const khqrPage = document.getElementById('khqr-page');
             cartPage.style.display = stage === 'cart' ? 'block' : 'none';
             suggestPage.classList.toggle('show', stage === 'suggest');
             confirmPage.classList.toggle('show', stage === 'confirm');
+            khqrPage.classList.toggle('show', stage === 'khqr');
+            updateFooter();
+        }
 
+        // #172: フッター（合計バー＋ボタン）の表示・文言をステージとお支払い額で切替。
+        //   confirm: 合計バー表示。お支払い額>0 →〔KHQRで支払う ◯〕／==0 →〔注文を確定する〕。
+        //   khqr:    合計バーは隠し、ボタンは〔支払いました〕。
+        function updateFooter() {
+            const bar = document.getElementById('grand-total-bar');
+            const totalRow = bar.querySelector('.grand-total-row');
+            const couponRow = document.getElementById('coupon-discount-row');
+            const couponNote = document.getElementById('coupon-disable-campaign-note');
             const btn = document.getElementById('checkout-btn');
+            const sub = document.getElementById('checkout-btn-sub');
+            if (sub) sub.textContent = '';
             if (stage === 'cart') {
+                // cart 未ロード時は cache 復元のバー表示を尊重（チラつき回避）。
+                if (cartLoaded) bar.style.display = cartItems.length === 0 ? 'none' : 'block';
+                totalRow.style.display = 'flex';
                 btn.textContent = i18next.t('cart.toConfirm');
             } else if (stage === 'suggest') {
+                bar.style.display = 'block';
+                totalRow.style.display = 'flex';
                 btn.textContent = i18next.t('cart.next');
-            } else {
-                btn.textContent = i18next.t('cart.placeOrder');
+            } else if (stage === 'confirm') {
+                bar.style.display = 'block';
+                totalRow.style.display = 'flex';
+                const payAmount = Math.max(0, confirmGrandTotal - walletApplied);
+                if (payAmount > 0) {
+                    setBtnLabel(btn, i18next.t('payment.payByKhqr'), fmtKhr(payAmount));
+                } else {
+                    setBtnLabel(btn, i18next.t('payment.confirmOrder'), i18next.t('payment.payFromWallet'));
+                }
+            } else if (stage === 'khqr') {
+                bar.style.display = 'block';
+                totalRow.style.display = 'none';
+                if (couponRow) couponRow.style.display = 'none';
+                if (couponNote) couponNote.style.display = 'none';
+                setBtnLabel(btn, i18next.t('payment.paidBtn'), '');
             }
+        }
+
+        // ボタンにメイン文言＋サブ文言（小さく）をセット
+        function setBtnLabel(btn, main, sub) {
+            btn.innerHTML = `${escapeHtml(main)}${sub ? `<span id="checkout-btn-sub" style="display:block; font-size:11px; font-weight:600; opacity:.85; margin-top:2px;">${escapeHtml(sub)}</span>` : ''}`;
         }
 
         // ── 提案ロジック：カート内各itemに対して、別農家にも同じfishTypeの出品があれば提案 ──
@@ -1409,6 +1610,9 @@
             if (e.target.id === 'listing-modal') closeListingDetail();
         });
 
+        // #172: 農家ごとの小計（クーポン適用前の subtotal=この農家への小計）。複数農家のお支払い明細・placeOrders で使う。
+        const groupSubtotals = new Map();
+
         async function renderConfirm() {
             const container = document.getElementById('confirm-container');
             // 5/24 #82 Phase 2 Chunk 3: クーポン適用時はレストラン側キャンペーン割引を無効化
@@ -1416,6 +1620,7 @@
             const effectiveCampaignActive = appliedCoupon ? false : campaignActive;
             // render と同じロジックで最終内訳を算出
             const groups = groupByFarmer(cartItems);
+            groupSubtotals.clear();
             let html = '';
             let grandTotal = 0;
             for (const [farmerId, items] of groups.entries()) {
@@ -1439,6 +1644,7 @@
                 const itemsSum = sumItems(calcItems.map(c => c.prices));
                 const groupTotal = calcOrderTotal(itemsSum, deliveryFee);
                 grandTotal += groupTotal;
+                groupSubtotals.set(farmerId, groupTotal); // subtotal=この農家への小計（クーポン適用前）
 
                 const pick = deliveryPick.get(farmerId) || { dateIso: '', time: '' };
 
@@ -1489,7 +1695,114 @@
                 couponDiscountRow.style.display = 'none';
                 couponDisableNote.style.display = 'none';
             }
-            document.getElementById('grand-total').textContent = fmtKhr(grandTotal - effectiveDiscount);
+            // #178: クーポン適用後の合計（=充当前お支払い額）
+            confirmGrandTotal = Math.max(0, grandTotal - effectiveDiscount);
+            document.getElementById('grand-total').textContent = fmtKhr(confirmGrandTotal);
+            // #172: ウォレット既定充当（ユーザー未指定なら全額自動・上限=合計）を再計算し、お支払い明細を描画
+            recomputeWalletDefault();
+            renderPaySection();
+            updateFooter();
+        }
+
+        // #172: ウォレット既定値の再計算。ユーザーが〔変更〕で指定済みなら上限だけ clamp、
+        //   未指定なら「合計を上限に全額自動充当」。
+        function recomputeWalletDefault() {
+            const cap = Math.min(walletBalance, confirmGrandTotal);
+            if (!walletUserSet) {
+                walletApplied = cap;
+            } else {
+                walletApplied = Math.max(0, Math.min(walletApplied, cap));
+            }
+        }
+
+        // #172: お支払い明細（合計（カートより）→ 💰ウォレット利用 →〔変更〕→ お支払い額）を描画。
+        function renderPaySection() {
+            const rows = document.getElementById('pay-rows');
+            if (!rows) return;
+            const groups = groupByFarmer(cartItems);
+            const multiFarmer = groups.size > 1;
+            const payAmount = Math.max(0, confirmGrandTotal - walletApplied);
+            const cap = Math.min(walletBalance, confirmGrandTotal);
+
+            let html = '';
+            if (multiFarmer) {
+                // 複数農家：農家ごとの小計を並べる
+                for (const [farmerId] of groups.entries()) {
+                    const farmer = farmerCache.get(farmerId) || {};
+                    const sub = groupSubtotals.get(farmerId) || 0;
+                    html += `<div class="pay-row"><span class="pay-row__label">${escapeHtml(farmer.displayName || '-')}</span><span class="pay-row__value">${fmtKhr(sub)}</span></div>`;
+                }
+            } else {
+                html += `<div class="pay-row"><span class="pay-row__label">${escapeHtml(i18next.t('payment.fromCart'))}</span><span class="pay-row__value">${fmtKhr(confirmGrandTotal)}</span></div>`;
+            }
+
+            // ウォレット行（残高>0 のときだけ）
+            if (walletBalance > 0) {
+                const actLabel = walletEditOpen ? i18next.t('payment.walletClose') : i18next.t('payment.walletChange');
+                html += `<div class="pay-row wallet">
+                    <span class="pay-row__label">
+                        <span class="material-symbols-outlined" style="font-size:16px;">account_balance_wallet</span>
+                        <span>${escapeHtml(i18next.t('payment.walletUse'))}</span>
+                        <span class="pay-row__bal">${escapeHtml(i18next.t('payment.walletBalance', { amount: walletBalance.toLocaleString() }))}</span>
+                    </span>
+                    <span class="pay-row__value">−${fmtKhr(walletApplied)}<button type="button" class="pay-row__act" id="wallet-toggle">${escapeHtml(actLabel)}</button></span>
+                </div>`;
+                if (walletEditOpen) {
+                    html += `<div class="wallet-edit">
+                        <div class="wallet-edit__l">${i18next.t('payment.walletMax', { amount: `<b>${cap.toLocaleString()} KHR</b>` })}</div>
+                        <div class="wallet-edit__input">
+                            <input class="wallet-edit__field" id="wallet-input" inputmode="numeric" value="${walletApplied.toLocaleString()}">
+                            <span class="wallet-edit__unit">KHR</span>
+                        </div>
+                        <div class="wallet-edit__quick">
+                            <button type="button" id="wallet-all">${escapeHtml(i18next.t('payment.walletAll', { amount: cap.toLocaleString() }))}</button>
+                            <button type="button" id="wallet-none">${escapeHtml(i18next.t('payment.walletNone'))}</button>
+                        </div>
+                    </div>`;
+                }
+            }
+
+            html += `<div class="pay-row total"><span class="pay-row__label">${escapeHtml(i18next.t('payment.payAmount'))}</span><span class="pay-row__value">${fmtKhr(payAmount)}</span></div>`;
+            if (walletBalance > 0 && payAmount <= 0) {
+                html += `<div class="pay-paid-full">${escapeHtml(i18next.t('payment.paidFull'))}</div>`;
+            }
+            rows.innerHTML = html;
+
+            // 複数農家用エスクロー文言
+            const escrowText = document.getElementById('escrow-text');
+            if (escrowText) escrowText.textContent = i18next.t(multiFarmer ? 'payment.escrowNoteMulti' : 'payment.escrowNote');
+
+            bindPayActions(cap);
+        }
+
+        function bindPayActions(cap) {
+            const toggle = document.getElementById('wallet-toggle');
+            if (toggle) toggle.addEventListener('click', () => {
+                walletEditOpen = !walletEditOpen;
+                renderPaySection();
+            });
+            const input = document.getElementById('wallet-input');
+            if (input) {
+                const commit = () => {
+                    let v = Math.round(parseFloat(String(input.value).replace(/[^\d.]/g, '')));
+                    if (!Number.isFinite(v) || v < 0) v = 0;
+                    if (v > cap) v = cap;
+                    walletApplied = v;
+                    walletUserSet = true;
+                    renderPaySection();
+                    updateFooter();
+                };
+                input.addEventListener('blur', commit);
+                input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
+            }
+            const allBtn = document.getElementById('wallet-all');
+            if (allBtn) allBtn.addEventListener('click', () => {
+                walletApplied = cap; walletUserSet = true; renderPaySection(); updateFooter();
+            });
+            const noneBtn = document.getElementById('wallet-none');
+            if (noneBtn) noneBtn.addEventListener('click', () => {
+                walletApplied = 0; walletUserSet = true; renderPaySection(); updateFooter();
+            });
         }
 
         // 注文確定処理（旧インライン実装を関数化）
@@ -1580,24 +1893,42 @@
                 });
             }
 
+            // #172/#178: 各 draft の totalAmount（クーポン適用後）を先に確定。
+            orderDrafts.forEach((draft, idx) => {
+                draft.subtotal = draft.total; // subtotal = この農家への小計（クーポン適用前）
+                draft.appliedCouponCode = null;
+                draft.referralDiscountAmount = 0;
+                draft.totalAmount = draft.total;
+                if (appliedCoupon && idx === couponTargetIdx) {
+                    draft.referralDiscountAmount = Math.min(appliedCoupon.amountKhr, draft.total);
+                    draft.totalAmount = draft.total - draft.referralDiscountAmount;
+                    draft.appliedCouponCode = appliedCoupon.code;
+                }
+            });
+
+            // #172: 前払い（案B）。checkout 全体を1つの paymentGroup として束ね、
+            //   ウォレット充当を各 order に greedy で割り当てる（順番に min(totalAmount, 残ウォレット)）。
+            const groupTotalSum = orderDrafts.reduce((a, d) => a + d.totalAmount, 0);
+            // 念のため上限を再 clamp（confirm 後にカートが変わった等の保険）
+            let walletPool = Math.max(0, Math.min(walletApplied, walletBalance, groupTotalSum));
+            orderDrafts.forEach(draft => {
+                const w = Math.min(draft.totalAmount, walletPool);
+                draft.walletApplied = w;
+                draft.khqrAmount = draft.totalAmount - w;
+                walletPool -= w;
+            });
+
+            // #172: paymentGroupId = uid + '_' + 生成idの一部（CF の Date.now ではなくクライアント生成・グループ識別用）
+            const paymentGroupId = `${uid}_${doc(collection(db, 'orders')).id}`;
+
             const orderRefs = []; // coupon doc update 時に usedOrderId を埋めるため
             orderDrafts.forEach((draft, idx) => {
-                const { farmerId, pick, deliveryFee, itemDocs, itemsSum, total } = draft;
+                const { farmerId, pick, deliveryFee, itemDocs, itemsSum } = draft;
                 const first = itemDocs[0];
 
                 // M/D 形式
                 const [y, m, d] = pick.dateIso.split('-').map(Number);
                 const deliveryDate = `${m}/${d}`;
-
-                // クーポン適用：差額破棄ルール（discount > total なら total で cap）
-                let appliedCouponCode = null;
-                let referralDiscountAmount = 0;
-                let totalAmount = total;
-                if (appliedCoupon && idx === couponTargetIdx) {
-                    referralDiscountAmount = Math.min(appliedCoupon.amountKhr, total);
-                    totalAmount = total - referralDiscountAmount;
-                    appliedCouponCode = appliedCoupon.code;
-                }
 
                 const orderRef = doc(collection(db, 'orders'));
                 orderRefs[idx] = orderRef;
@@ -1615,7 +1946,7 @@
                     fishPrice: itemsSum.fishPrice,
                     serviceFee: itemsSum.serviceFee,
                     campaignDiscount: itemsSum.campaignDiscount,
-                    totalAmount,
+                    totalAmount: draft.totalAmount,
                     serviceRateUsed: serviceRate,
                     farmerCommission: itemsSum.farmerCommission,
                     farmerCommissionGross: itemsSum.farmerCommissionGross,
@@ -1623,8 +1954,19 @@
                     farmerRateUsed: farmerRate,
                     farmerReceiveAmount: itemsSum.farmerReceiveAmount + deliveryFee,
                     // 5/24 #82 Phase 2 Chunk 3: クーポン適用結果（適用先の order にのみ記録）
-                    appliedCouponCode,
-                    referralDiscountAmount,
+                    appliedCouponCode: draft.appliedCouponCode,
+                    referralDiscountAmount: draft.referralDiscountAmount,
+                    // #172 案B: 前払い＋ウォレット
+                    prepaid: true,
+                    paymentGroupId,
+                    paymentGroupTotal: groupTotalSum,
+                    subtotal: draft.subtotal,
+                    walletApplied: draft.walletApplied,
+                    khqrAmount: draft.khqrAmount,
+                    depositConfirmed: false,
+                    paymentUnconfirmed: false,
+                    tradeCompleted: false,
+                    refundedToWallet: false,
                     // legacy: 先頭item由来（既存表示・通知向け）
                     listingId: first.listingId,
                     quantity: first.quantity,
@@ -1637,7 +1979,8 @@
                     // ステータス
                     status: 'pending',
                     declineReason: null,
-                    paymentStatus: 'pending',
+                    // #172 案B: 前払い済みは作成時に paid（受取時払いの 'pending' から変更）
+                    paymentStatus: 'paid',
                     createdAt: serverTimestamp(),
                 });
             });
@@ -1660,9 +2003,24 @@
             location.replace('/pages/restaurant/orders.html');
         }
 
-        // ── 6/7 #134 C: クーポンウォレット（コード入力撤廃・1タップ適用）──
-        // 所有者・未使用・期限内のクーポンを取得し、タップで appliedCoupon を切替（1注文1クーポン＝排他）。
-        let availableCoupons = [];   // [{ code, amountKhr, expStr, sourceText }]
+        // ── #172: ウォレット残高（前払い充当の原資）──
+        // wallets/{uid}.balance を read（CF が書く・クライアントは read-only）。
+        async function loadWalletBalance() {
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            try {
+                const snap = await getDoc(doc(db, 'wallets', uid));
+                walletBalance = snap.exists() ? Number(snap.data()?.balance || 0) : 0;
+            } catch (e) {
+                console.warn('loadWalletBalance failed:', e);
+                walletBalance = 0;
+            }
+        }
+
+        // ── 6/7 #134 C → #178: クーポンウォレット（自動適用）──
+        // 所有者・未使用・期限内のクーポンを取得。#178: 期限が近い（古い）順に自動で1枚適用。
+        // 〔外す〕で「今回は使わない」（couponManuallyRemoved=true で再自動適用しない）。
+        let availableCoupons = [];   // [{ code, amountKhr, expStr, expMs, sourceText }] expMs 昇順（期限近い順）
 
         async function loadCouponWallet() {
             const uid = window.currentUser?.uid;
@@ -1676,7 +2034,12 @@
                 const usable = snap.docs.map(d => ({ code: d.id, ...d.data() }))
                     .filter(c => !c.usedAt && !c.usedOrderId)
                     .filter(c => { const e = c.expiresAt?.toMillis?.(); return !e || e > now; })
-                    .sort((a, b) => (b.issuedAt?.toMillis?.() || 0) - (a.issuedAt?.toMillis?.() || 0));
+                    // #178: 期限が近い（古い）順。期限なしは末尾。
+                    .sort((a, b) => {
+                        const ea = a.expiresAt?.toMillis?.() ?? Infinity;
+                        const eb = b.expiresAt?.toMillis?.() ?? Infinity;
+                        return ea - eb;
+                    });
                 // 紹介元名を一括取得（N+1 抑止・data-cache 経由）
                 const sourceUids = [...new Set(usable.map(c => c.sourceUid).filter(Boolean))];
                 const sourceNames = {};
@@ -1694,7 +2057,7 @@
                     if (!sName) sourceText = i18next.t('myCoupons.sourceUnknown');
                     else if (c.issuedReason === 'referrer') sourceText = i18next.t('myCoupons.sourceReferrer', { name: sName });
                     else sourceText = i18next.t('myCoupons.sourceReferred', { name: sName });
-                    return { code: c.code, amountKhr: Number(c.amountKhr || 0), expStr, sourceText };
+                    return { code: c.code, amountKhr: Number(c.amountKhr || 0), expMs: expMs ?? Infinity, expStr, sourceText };
                 });
             } catch (e) {
                 console.warn('loadCouponWallet failed:', e);
@@ -1702,47 +2065,43 @@
             }
         }
 
+        // #178: クーポンの自動適用＋「✓ 適用中／〔外す〕」表示。
         function renderCouponWallet() {
-            const block = document.getElementById('coupon-wallet-block');
-            const list = document.getElementById('coupon-wallet-list');
-            if (!block || !list) return;
+            const block = document.getElementById('coupon-applied');
+            if (!block) return;
             // 適用中クーポンがウォレットから消えていたら解除（期限切れ・別タブ使用など）
             if (appliedCoupon && !availableCoupons.some(c => c.code === appliedCoupon.code)) {
                 appliedCoupon = null;
             }
-            if (availableCoupons.length === 0) {
+            // 未適用かつ手動で外していなければ、期限が近い（古い）順の先頭を自動適用
+            if (!appliedCoupon && !couponManuallyRemoved && availableCoupons.length > 0) {
+                const c = availableCoupons[0];
+                appliedCoupon = { code: c.code, amountKhr: c.amountKhr };
+            }
+            if (!appliedCoupon) {
                 block.style.display = 'none';
                 return;
             }
-            block.style.display = 'block';
-            list.innerHTML = availableCoupons.map((c, i) => {
-                const sel = appliedCoupon && appliedCoupon.code === c.code;
-                const meta = [c.sourceText, c.expStr ? i18next.t('myCoupons.expiresAt', { date: c.expStr }) : '']
-                    .filter(Boolean).join(' · ');
-                const side = sel
-                    ? `<div class="cwallet-item__on">${i18next.t('coupon.walletApplied')}</div><div class="cwallet-item__rm">${i18next.t('coupon.remove')}</div>`
-                    : `<div class="cwallet-item__off">${i18next.t('coupon.walletApply')}</div>`;
-                return `<div class="cwallet-item ${sel ? 'selected' : ''}" data-coupon-idx="${i}">
-                    <div class="cwallet-item__main">
-                        <div class="cwallet-item__amt">${i18next.t('myCoupons.amountUnit', { amount: c.amountKhr.toLocaleString() })}</div>
-                        <div class="cwallet-item__meta">${escapeHtml(meta)}</div>
-                    </div>
-                    <div class="cwallet-item__side">${side}</div>
-                </div>`;
-            }).join('');
-            list.querySelectorAll('.cwallet-item').forEach(el => {
-                el.addEventListener('click', () => {
-                    const c = availableCoupons[Number(el.dataset.couponIdx)];
-                    if (!c) return;
-                    // 同じクーポンをタップ＝解除／別クーポンをタップ＝差し替え（1注文1クーポン）
-                    appliedCoupon = (appliedCoupon && appliedCoupon.code === c.code)
-                        ? null
-                        : { code: c.code, amountKhr: c.amountKhr };
-                    renderCouponWallet();
-                    if (stage === 'confirm') renderConfirm();
-                });
-            });
+            const c = availableCoupons.find(x => x.code === appliedCoupon.code);
+            block.style.display = 'flex';
+            const amtEl = document.getElementById('coupon-applied-amt');
+            const metaEl = document.getElementById('coupon-applied-meta');
+            if (amtEl) amtEl.textContent = i18next.t('myCoupons.amountUnit', { amount: appliedCoupon.amountKhr.toLocaleString() });
+            if (metaEl) {
+                const meta = c
+                    ? [c.sourceText, c.expStr ? i18next.t('myCoupons.expiresAt', { date: c.expStr }) : ''].filter(Boolean).join(' · ')
+                    : '';
+                metaEl.textContent = meta;
+            }
         }
+
+        // 〔外す〕＝今回は使わない（次回に取っておく）。再自動適用しない。
+        document.getElementById('coupon-remove-btn').addEventListener('click', () => {
+            appliedCoupon = null;
+            couponManuallyRemoved = true;
+            renderCouponWallet();
+            if (stage === 'confirm') renderConfirm();
+        });
 
         // ── チェックアウトボタン：ステージ遷移を制御 ──
         document.getElementById('checkout-btn').addEventListener('click', async () => {
@@ -1774,13 +2133,25 @@
                     }
 
                     // 6/1 #111 (diff10): 「配送料節約の提案」は当面非表示。常に確認画面へ直行。
-                    // 6/7 #134 C: 確認画面に入る前にウォレットを描画（1タップ適用）
+                    // 6/7 #134 C → #178: 確認画面に入る前にクーポンを自動適用。
+                    // #172: ウォレットは確認画面で自動全額充当（ユーザー指定はリセット）。
+                    walletUserSet = false;
+                    walletEditOpen = false;
                     renderCouponWallet();
                     await renderConfirm();
                     setStage('confirm');
                 } else if (stage === 'confirm') {
-                    // 5/7 #57: 確認画面で内容を確認できるためダイアログ撤去（カート経由統一に伴い重複確認を解消）
-                    await placeOrders();
+                    // #172: お支払い額>0 → KHQR画面へ。==0（ウォレット全額）→ 直接注文確定。
+                    const payAmount = Math.max(0, confirmGrandTotal - walletApplied);
+                    if (payAmount > 0) {
+                        renderKhqr(payAmount);
+                        setStage('khqr');
+                    } else {
+                        await placeOrders();
+                    }
+                } else if (stage === 'khqr') {
+                    // #172: 〔支払いました〕→ 中央確認モーダル → placeOrders
+                    openPaidModal();
                 }
             } catch (err) {
                 console.error(err);
@@ -1792,12 +2163,70 @@
             }
         });
 
+        // ── #172: KHQR画面の描画（お支払い額・差引リキャップ・タグ）──
+        function renderKhqr(payAmount) {
+            document.getElementById('khqr-amt-value').textContent = fmtKhr(payAmount);
+            document.getElementById('khqr-tag').textContent = i18next.t('payment.khqrTag', { amount: payAmount.toLocaleString() });
+            const sub = document.getElementById('khqr-sub');
+            if (walletApplied > 0) {
+                sub.innerHTML = i18next.t('payment.khqrDeducted', {
+                    total: confirmGrandTotal.toLocaleString(),
+                    wallet: `<b>${walletApplied.toLocaleString()}</b>`,
+                });
+                sub.style.display = 'block';
+            } else {
+                sub.style.display = 'none';
+            }
+            // 金額を保持（コピー用）
+            khqrPayAmount = payAmount;
+        }
+        let khqrPayAmount = 0;
+
+        // #172: 金額をコピー（KHQRは金額手入力＝誤入力防止）。数字のみコピー。
+        document.getElementById('khqr-copy-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('khqr-copy-btn');
+            const label = btn.querySelector('span[data-i18n]');
+            try {
+                await navigator.clipboard.writeText(String(khqrPayAmount));
+                if (label) { label.textContent = i18next.t('payment.copied'); setTimeout(() => { label.textContent = i18next.t('payment.copyAmount'); }, 1500); }
+            } catch (e) { console.warn('clipboard failed:', e); }
+        });
+
+        // #172: 〔支払いました〕中央確認モーダル → placeOrders
+        const paidModalEl = document.getElementById('paid-modal');
+        function openPaidModal() { paidModalEl.classList.add('show'); }
+        function closePaidModal() { paidModalEl.classList.remove('show'); }
+        document.getElementById('paid-modal-no').addEventListener('click', closePaidModal);
+        paidModalEl.addEventListener('click', (e) => { if (e.target === paidModalEl) closePaidModal(); });
+        document.getElementById('paid-modal-yes').addEventListener('click', async () => {
+            closePaidModal();
+            const btn = document.getElementById('checkout-btn');
+            btn.disabled = true;
+            loading.classList.add('show');
+            errEl.classList.remove('show');
+            try {
+                await placeOrders();
+            } catch (err) {
+                console.error(err);
+                errEl.textContent = err.message || i18next.t('cart.errorSubmit');
+                errEl.classList.add('show');
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+
         // 戻る矢印：ステージを1つ戻す、最前面なら history.back()
         const backLink = document.querySelector('.page-header__back');
         if (backLink) {
             backLink.addEventListener('click', (e) => {
                 // 6/1 #111 (diff10): 提案ステージは廃止。確認画面からはカートへ直接戻す。
-                if (stage === 'confirm' || stage === 'suggest') {
+                // #172: KHQR画面からは確認画面へ（クーポン行・お支払い明細を再描画）。
+                if (stage === 'khqr') {
+                    e.preventDefault();
+                    renderConfirm().catch(() => {});
+                    setStage('confirm');
+                } else if (stage === 'confirm' || stage === 'suggest') {
                     e.preventDefault();
                     setStage('cart');
                 }
