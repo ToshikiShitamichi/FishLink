@@ -1104,8 +1104,8 @@
             "body": "{{farmer}} {{fish}} {{qty}}kg ({{orderNo}})\nお支払いをお願いします"
         },
         "remitDone": {
-            "title": "ご入金がありました",
-            "body": "{{restaurant}} の注文 {{fish}} {{qty}}kg"
+            "title": "送金が完了しました",
+            "body": "{{restaurant}} の注文 {{fish}} {{qty}}kg\n取引相手を評価しましょう"
         },
         "adminChat": {
             "title": "運営からのメッセージ",
@@ -1114,6 +1114,46 @@
         "adminChatFromUser": {
             "title": "{{name}} からの問い合わせ",
             "body": "{{text}}"
+        },
+        "declinedRefund": {
+            "title": "{{farmer}} が注文を辞退しました",
+            "body": "{{amount}} KHR をウォレットに返金しました（次回のご注文で使えます）"
+        },
+        "cancelledRefund": {
+            "title": "注文をキャンセルしました",
+            "body": "{{amount}} KHR をウォレットに返金しました（次回のご注文で使えます）"
+        },
+        "deliveryStarted": {
+            "title": "{{farmer}} が配達に向かいました",
+            "body": "配送状況をチャットで確認できます"
+        },
+        "deliveryArrived": {
+            "title": "{{farmer}} が到着しました",
+            "body": "お受け取りをお願いします"
+        },
+        "deliveryDelayed": {
+            "title": "{{farmer}} が少し遅れそうです",
+            "body": "配送状況をチャットで確認できます"
+        },
+        "deliveredToBuyer": {
+            "title": "{{farmer}} がお届けしました",
+            "body": "受け取りをご確認ください"
+        },
+        "tradeCompletedReview": {
+            "title": "お取引が完了しました",
+            "body": "{{farmer}} を評価しましょう"
+        },
+        "problemReportedFarmer": {
+            "title": "問題が報告されています",
+            "body": "{{restaurant}} の注文について確認中です（送金は保留）"
+        },
+        "paymentUnconfirmed": {
+            "title": "入金を確認できませんでした",
+            "body": "もう一度お支払いください"
+        },
+        "couponExpiringSoon": {
+            "title": "クーポンの期限が近づいています",
+            "body": "{{amount}} KHR クーポン（あと{{days}}日）"
         }
     },
     "comments": {
@@ -1167,7 +1207,7 @@
         "farmerSide_communication": "やり取り",
         "farmerSide_reception": "受取対応",
         "comment": "コメント（任意）",
-        "commentPlaceholderRest": "良かった点などを書いてください",
+        "commentPlaceholderRest": "良かった点・気になった点など",
         "commentPlaceholderFarmer": "取引の様子をコメントで残せます",
         "submit": "レビューを送信",
         "reportIssue": "問題を報告",
@@ -1183,7 +1223,17 @@
         "verdictBad": "残念だった",
         "errorSubmit": "送信に失敗しました",
         "thanks": "ありがとうございました",
-        "backToOrders": "注文一覧へ戻る"
+        "backToOrders": "注文一覧へ戻る",
+        "backToOrderStatus": "注文状況へ戻る",
+        "backToOrderCheck": "注文確認へ戻る"
+    },
+    "pushOptin": {
+        "title": "通知をオンにしますか？",
+        "bodyBuyer": "農家の承認や配達状況をお知らせします。注文の進み具合を見逃しません。",
+        "bodyFarmer": "新しい注文が来たらすぐにお知らせします。承認の見逃し（失注）を防げます。",
+        "hint": "※ 次の画面で「許可」を選んでください",
+        "enable": "オンにする",
+        "later": "あとで"
     },
     "report": {
         "title": "問題を報告",

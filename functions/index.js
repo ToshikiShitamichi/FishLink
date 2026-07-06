@@ -394,9 +394,9 @@ const MESSAGES = {
     km: { title: "ហួសកំណត់ពេលបង់ប្រាក់", body: "{{farmer}} {{fish}} {{qty}}kg ({{orderNo}})\nសូមបញ្ចប់ការបង់ប្រាក់" },
   },
   remitDone: {
-    ja: { title: "ご入金がありました", body: "{{restaurant}} の注文 {{fish}} {{qty}}kg" },
-    en: { title: "Payment received", body: "Order from {{restaurant}}: {{fish}} {{qty}}kg" },
-    km: { title: "បានទទួលប្រាក់", body: "ការបញ្ជាទិញពី {{restaurant}}: {{fish}} {{qty}}kg" },
+    ja: { title: "送金が完了しました", body: "{{restaurant}} の注文 {{fish}} {{qty}}kg\n取引相手を評価しましょう" },
+    en: { title: "Remittance completed", body: "Order from {{restaurant}}: {{fish}} {{qty}}kg\nPlease rate your counterpart" },
+    km: { title: "ការផ្ទេរប្រាក់បានបញ្ចប់", body: "ការបញ្ជាទិញពី {{restaurant}}: {{fish}} {{qty}}kg\nសូមវាយតម្លៃដៃគូរបស់អ្នក" },
   },
   adminChat: {
     ja: { title: "運営からのメッセージ", body: "{{text}}" },
@@ -447,6 +447,54 @@ const MESSAGES = {
     ja: { title: "注文をキャンセルしました", body: "{{amount}} KHR をウォレットに返金しました（次回のご注文で使えます）" },
     en: { title: "Order cancelled", body: "{{amount}} KHR was refunded to your wallet (use it on your next order)" },
     km: { title: "បានបោះបង់ការបញ្ជាទិញ", body: "បានបង្វិល {{amount}} KHR ទៅកាបូបវិញ (ប្រើបានលើការបញ្ជាទិញបន្ទាប់)" },
+  },
+  // 6/29 #185 プッシュ通知 網羅（notification-spec v1.0 §3〜§5）──────────────
+  // 買い手：配送ステータス（配送開始／到着／少し遅れそう の3つだけ・§3-3 B）。文言に農家名。
+  deliveryStarted: {
+    ja: { title: "{{farmer}} が配達に向かいました", body: "配送状況をチャットで確認できます" },
+    en: { title: "{{farmer}} is on the way", body: "Track the delivery in the chat" },
+    km: { title: "{{farmer}} កំពុងធ្វើដំណើរដឹកជញ្ជូន", body: "តាមដានការដឹកជញ្ជូនក្នុងការជជែក" },
+  },
+  deliveryArrived: {
+    ja: { title: "{{farmer}} が到着しました", body: "お受け取りをお願いします" },
+    en: { title: "{{farmer}} has arrived", body: "Please receive your order" },
+    km: { title: "{{farmer}} បានមកដល់", body: "សូមទទួលការបញ្ជាទិញរបស់អ្នក" },
+  },
+  deliveryDelayed: {
+    ja: { title: "{{farmer}} が少し遅れそうです", body: "配送状況をチャットで確認できます" },
+    en: { title: "{{farmer}} may be slightly delayed", body: "Track the delivery in the chat" },
+    km: { title: "{{farmer}} អាចនឹងយឺតបន្តិច", body: "តាមដានការដឹកជញ្ជូនក្នុងការជជែក" },
+  },
+  // 買い手：お届け（配送完了・前払い注文）。§3-1。
+  //   ⚠️ 魚種/数量は入れない（複数item時の「他N件」が日本語固定＝他言語に漏れるため。文言は農家名のみ・spec通り）。
+  deliveredToBuyer: {
+    ja: { title: "{{farmer}} がお届けしました", body: "受け取りをご確認ください" },
+    en: { title: "{{farmer}} delivered your order", body: "Please confirm receipt" },
+    km: { title: "{{farmer}} បានដឹកជញ្ជូនរួចរាល់", body: "សូមបញ្ជាក់ការទទួល" },
+  },
+  // 買い手：取引完了（レビュー誘導）。§3-1。
+  tradeCompletedReview: {
+    ja: { title: "お取引が完了しました", body: "{{farmer}} を評価しましょう" },
+    en: { title: "Your transaction is complete", body: "Please rate {{farmer}}" },
+    km: { title: "ប្រតិបត្តិការរបស់អ្នកបានបញ្ចប់", body: "សូមវាយតម្លៃ {{farmer}}" },
+  },
+  // 農家：問題が報告された（送金確認中）。§3-2。
+  problemReportedFarmer: {
+    ja: { title: "問題が報告されています", body: "{{restaurant}} の注文について確認中です（送金は保留）" },
+    en: { title: "A problem was reported", body: "Reviewing the order from {{restaurant}} (remittance on hold)" },
+    km: { title: "មានការរាយការណ៍បញ្ហា", body: "កំពុងពិនិត្យការបញ្ជាទិញពី {{restaurant}} (ការផ្ទេរប្រាក់ត្រូវបានផ្អាក)" },
+  },
+  // 買い手：お支払い未確認。§3-1（運営が入金照合で未確認判定＝admin UI は別途）。
+  paymentUnconfirmed: {
+    ja: { title: "入金を確認できませんでした", body: "もう一度お支払いください" },
+    en: { title: "We couldn't confirm your payment", body: "Please pay again" },
+    km: { title: "យើងមិនអាចបញ្ជាក់ការទូទាត់បានទេ", body: "សូមទូទាត់ម្តងទៀត" },
+  },
+  // 買い手：クーポン期限リマインド（期限3日前に1回・未使用のみ）。§5。
+  couponExpiringSoon: {
+    ja: { title: "クーポンの期限が近づいています", body: "{{amount}} KHR クーポン（あと{{days}}日）" },
+    en: { title: "Your coupon is expiring soon", body: "{{amount}} KHR coupon ({{days}} days left)" },
+    km: { title: "គូប៉ុងរបស់អ្នកជិតផុតកំណត់", body: "គូប៉ុង {{amount}} KHR (នៅសល់ {{days}} ថ្ងៃ)" },
   },
 };
 
@@ -555,7 +603,7 @@ async function issueCouponToRestaurant(toUid, sourceUid, sourceReferralCode, iss
       type: "referral_coupon_issued",
       title, body,
       msgKey: "referralCouponIssued", vars,
-      url: "/pages/restaurant/account.html",
+      url: "/pages/restaurant/account/referral.html",
     });
   } catch (e) {
     console.warn("referralCouponIssued FCM failed:", e.message);
@@ -599,7 +647,7 @@ async function grantReferralReward(toUid, toRole, sourceUid, sourceReferralCode,
         type: "referral_bonus_earned",
         title, body,
         msgKey: "referralBonusEarned", vars,
-        url: "/pages/farmer/account.html",
+        url: "/pages/farmer/account/referral.html",
       });
     } catch (e) {
       console.warn("referralBonusEarned FCM failed:", e.message);
@@ -888,7 +936,8 @@ async function runRefundToWallet(orderId, order, reason) {
       type: "wallet_refund",
       title, body,
       msgKey, vars,
-      url: "/pages/restaurant/wallet.html",
+      // 6/29 #185: 辞退／承認前キャンセルの返金通知は「注文状況の辞退カード」へ（spec §3-1）。
+      url: "/pages/restaurant/orders.html",
       orderId,
     });
   } catch (e) { console.warn("wallet_refund notify failed:", e.message); }
@@ -1162,6 +1211,22 @@ exports.onOrderUpdated = onDocumentUpdated(
           const now = new Date();
           if (after.prepaid === true) {
             await event.data.after.ref.update({ completedAt: now });
+            // 6/29 #185: 前払い注文は受取時払い通知が無い＝買い手へ「お届け」通知を出す（spec §3-1・農家名のみ）。
+            try {
+              const restSnapC = await db.doc(`users/${after.restaurantId}`).get();
+              const langC = restSnapC.data()?.lang || "en";
+              const farmerSnapC = await db.doc(`users/${after.farmerId}`).get();
+              const farmerNameC = farmerSnapC.data()?.displayName || "Farmer";
+              const dVars = { farmer: farmerNameC };
+              const dMsg = getMessage("deliveredToBuyer", langC, dVars);
+              await notifyUser(after.restaurantId, {
+                type: "order_delivered",
+                title: dMsg.title, body: dMsg.body,
+                msgKey: "deliveredToBuyer", vars: dVars,
+                url: `/pages/restaurant/orders.html`,
+                orderId,
+              });
+            } catch (e) { console.warn("deliveredToBuyer notify failed:", e.message); }
           } else {
             const deadline = new Date(now.getTime() + 10 * 60 * 1000);
             await event.data.after.ref.update({
@@ -1262,6 +1327,43 @@ exports.onOrderUpdated = onDocumentUpdated(
           await clearTodo(auid, 'admin_done', orderId);
         }
       }
+    }
+
+    // 6/29 #185: 問題が報告された → 農家へ通知（送金保留・spec §3-2）。paymentProblemHold false→true の遷移で1回。
+    //   買い手 report.html が orders.paymentProblemHold=true を立てる（#129/#150）。
+    if (before.paymentProblemHold !== true && after.paymentProblemHold === true) {
+      try {
+        const farmerSnapP = await db.doc(`users/${after.farmerId}`).get();
+        const langP = farmerSnapP.data()?.lang || "en";
+        const restSnapP = await db.doc(`users/${after.restaurantId}`).get();
+        const restNameP = restSnapP.data()?.displayName || "Restaurant";
+        const pVars = { restaurant: restNameP };
+        const pMsg = getMessage("problemReportedFarmer", langP, pVars);
+        await notifyUser(after.farmerId, {
+          type: "problem_reported",
+          title: pMsg.title, body: pMsg.body,
+          msgKey: "problemReportedFarmer", vars: pVars,
+          url: `/pages/farmer/payment.html?id=${orderId}`,
+          orderId,
+        });
+      } catch (e) { console.warn("problemReportedFarmer notify failed:", e.message); }
+    }
+
+    // 6/29 #185: お支払い未確認 → 買い手へ通知（spec §3-1）。paymentUnconfirmed false→true。
+    //   運営が入金照合で「未確認」判定した瞬間（admin UI は別途＝前方互換で trigger を用意）。
+    if (before.paymentUnconfirmed !== true && after.paymentUnconfirmed === true) {
+      try {
+        const restSnapU = await db.doc(`users/${after.restaurantId}`).get();
+        const langU = restSnapU.data()?.lang || "en";
+        const uMsg = getMessage("paymentUnconfirmed", langU, {});
+        await notifyUser(after.restaurantId, {
+          type: "payment_unconfirmed",
+          title: uMsg.title, body: uMsg.body,
+          msgKey: "paymentUnconfirmed", vars: {},
+          url: `/pages/restaurant/payment.html?id=${orderId}`,
+          orderId,
+        });
+      } catch (e) { console.warn("paymentUnconfirmed notify failed:", e.message); }
     }
 
     if (!statusChanged) return;
@@ -1466,6 +1568,30 @@ exports.onMessageCreated = onDocumentCreated(
     const chatUrl = isFarmer
       ? `/pages/farmer/delivery.html?id=${orderId}`
       : `/pages/restaurant/delivery.html?id=${orderId}`;
+
+    // 6/29 #185: 配送ステータスのシステム行（type:'chat'+statusKind）は、買い手の行動が変わる
+    //   3つ（配送開始 ship_start／到着 arrived／少し遅れそう delay）だけ専用文言でプッシュ（spec §3-3 B）。
+    //   準備開始（prepare_start）等はチャットのシステム行に出すのみ＝プッシュしない。
+    //   （todo は上で通常どおり処理済み＝ここでは push のみ制御）
+    if (msg.statusKind) {
+      const DELIVERY_PUSH = { ship_start: "deliveryStarted", arrived: "deliveryArrived", delay: "deliveryDelayed" };
+      const dvKey = DELIVERY_PUSH[msg.statusKind];
+      if (!dvKey) {
+        console.log("Skip status push (not a buyer-facing delivery status):", orderId, msg.statusKind);
+        return;
+      }
+      const dvVars = { farmer: senderName };
+      const dv = getMessage(dvKey, lang, dvVars);
+      await notifyUser(toUid, {
+        type: `delivery_${msg.statusKind}`,
+        title: dv.title, body: dv.body,
+        msgKey: dvKey, vars: dvVars,
+        url: chatUrl,
+        orderId,
+      });
+      console.log("Delivery status push sent:", orderId, msg.statusKind, "→", toUid);
+      return;
+    }
 
     await notifyUser(toUid, {
       type: isVoice ? "chat_voice_message" : "chat_message",
@@ -1969,11 +2095,79 @@ exports.autoCompleteTrades = onSchedule(
           tradeCompletedAt: admin.FieldValue.serverTimestamp(),
         });
         n++;
+        // 6/29 #185: 取引完了 → 買い手へレビュー誘導通知（spec §3-1・買い手のレビュー解禁は tradeCompleted）。
+        try {
+          const restSnapT = await db.doc(`users/${o.restaurantId}`).get();
+          const langT = restSnapT.data()?.lang || "en";
+          const farmerSnapT = await db.doc(`users/${o.farmerId}`).get();
+          const farmerNameT = farmerSnapT.data()?.displayName || "Farmer";
+          const tVars = { farmer: farmerNameT };
+          const tMsg = getMessage("tradeCompletedReview", langT, tVars);
+          await notifyUser(o.restaurantId, {
+            type: "trade_completed",
+            title: tMsg.title, body: tMsg.body,
+            msgKey: "tradeCompletedReview", vars: tVars,
+            url: `/pages/restaurant/review.html?id=${d.id}`,
+            orderId: d.id,
+          });
+        } catch (e) { console.warn("tradeCompletedReview notify failed:", d.id, e.message); }
       } catch (e) {
         console.error("[autoCompleteTrades] update failed:", d.id, e.message);
       }
     }
     if (n > 0) console.log(`[autoCompleteTrades] trade-completed: ${n}`);
+  }
+);
+
+// ── 6/29 #185: 紹介クーポン 期限リマインド（期限3日前に1回・未使用の人だけ・spec §5）──
+//   毎日 09:00 カンボジア時間（= 02:00 UTC）に実行。
+//   ⚠️ 単一フィールド range（expiresAt <）のみで複合インデックス不要。usedAt/期限内/送信済みはコードで絞る。
+//      expiryReminderSent マーカーで 1 回だけ発火。
+exports.remindCouponExpiry = onSchedule(
+  { schedule: "0 2 * * *", timeZone: "UTC", region: "asia-southeast1" },
+  async () => {
+    const admin = require("firebase-admin/firestore");
+    const now = new Date();
+    const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    let snap;
+    try {
+      // 両端とも同一フィールド（expiresAt）の range ＝単一フィールドindexで足りる（複合index不要）。
+      // 下限 now で「既に期限切れ」を読み込み対象から除外＝読み取り集合が3日窓に限定され、増え続けない。
+      snap = await db.collection("coupons")
+        .where("expiresAt", ">", now)
+        .where("expiresAt", "<", in3Days)
+        .get();
+    } catch (e) {
+      console.error("[remindCouponExpiry] query failed:", e.message);
+      return;
+    }
+    let n = 0;
+    for (const d of snap.docs) {
+      const c = d.data();
+      if (c.usedAt) continue;                       // 使用済みは除外
+      if (c.expiryReminderSent === true) continue;  // 既に送信済み
+      const expMs = c.expiresAt?.toMillis?.() || 0;
+      if (!expMs || expMs <= now.getTime()) continue; // 既に期限切れは除外（3日以内かつ未来のみ）
+      if (!c.ownerUid) continue;
+      try {
+        const uSnap = await db.doc(`users/${c.ownerUid}`).get();
+        const lang = uSnap.data()?.lang || "en";
+        const daysLeft = Math.max(1, Math.ceil((expMs - now.getTime()) / (24 * 60 * 60 * 1000)));
+        const vars = { amount: Number(c.amountKhr || 0).toLocaleString(), days: String(daysLeft) };
+        const { title, body } = getMessage("couponExpiringSoon", lang, vars);
+        await notifyUser(c.ownerUid, {
+          type: "coupon_expiring",
+          title, body,
+          msgKey: "couponExpiringSoon", vars,
+          url: "/pages/restaurant/cart.html",
+        });
+        await d.ref.update({ expiryReminderSent: true });
+        n++;
+      } catch (e) {
+        console.warn("[remindCouponExpiry] failed for", d.id, ":", e.message);
+      }
+    }
+    if (n > 0) console.log(`[remindCouponExpiry] sent: ${n}`);
   }
 );
 

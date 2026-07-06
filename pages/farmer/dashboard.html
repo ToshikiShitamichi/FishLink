@@ -476,6 +476,9 @@
         initLangSelector();
         initHeaderPopovers();
 
+        // 6/29 #186: 初回出品後の通知ソフト確認（post から pending フラグを立てて来た場合のみ）。
+        import('/js/push-optin.js').then(m => m.consumePendingOptin('farmer')).catch(() => {});
+
         // ログアウト
         // ログアウトはアカウントページ内に移動
 

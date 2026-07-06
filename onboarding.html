@@ -174,7 +174,9 @@
 
     <script type="module">
         import { initI18n, initLangSelector } from '/js/i18n.js';
-        import { watchAuthState } from '/js/auth.js';
+        import { watchAuthState, enablePush } from '/js/auth.js';
+        // 6/29 #186: 通知許可の自前ソフト確認（登録完了直後）
+        import { maybePromptPushOptin } from '/js/push-optin.js';
 
         // SW 登録（更新検出で自動リロード）
         if ('serviceWorker' in navigator) {
@@ -209,9 +211,16 @@
             if (role === 'farmer') document.getElementById('step-payout').style.display = 'flex';
         }
         resolveRole();
+        // 6/29 #186: 登録完了直後にソフト確認モーダル（notification-spec §6）。役割別文言。
+        //   OS許可は〔オンにする〕押下時のみ（enablePush）。maybePrompt はトリガーごとに1回だけ。
+        if (role) maybePromptPushOptin(role, 'onboarding');
         // currentUserData が遅れて入るケースに備える
         const roleTimer = setInterval(() => {
-            if (window.currentUserData) { resolveRole(); clearInterval(roleTimer); }
+            if (window.currentUserData) {
+                resolveRole();
+                if (role) maybePromptPushOptin(role, 'onboarding');
+                clearInterval(roleTimer);
+            }
         }, 200);
         setTimeout(() => clearInterval(roleTimer), 4000);
 
@@ -270,9 +279,8 @@
 
         notifyBtn.addEventListener('click', async () => {
             if (!('Notification' in window)) return;
-            try {
-                await Notification.requestPermission();
-            } catch (e) { /* ignore */ }
+            // 6/29 #186: OS許可＋（許可されたら）FCMトークン発行までを enablePush に集約。
+            try { await enablePush(); } catch (e) { /* ignore */ }
             reflectNotifyState();
         });
 

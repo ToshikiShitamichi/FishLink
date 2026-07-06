@@ -246,8 +246,61 @@ async function logout() {
 }
 
 // ── FCMトークン取得・保存 ──────────────────────────
+// 6/29 #186: 通知許可の「登録直後の自動要求」を廃止。
+//   - requestFcmToken（watchAuthState から毎ページ呼ばれる）は「すでに許可済み」の場合だけ
+//     トークンを発行する（OSダイアログは出さない）。
+//   - OSダイアログはソフト確認の〔オンにする〕押下時（enablePush・js/push-optin.js 経由）にのみ出す。
 async function requestFcmToken(uid) {
     if (!VAPID_KEY) return;
+    // すでに許可済みのときだけトークン発行＋フォアグラウンド購読。未許可（default/denied）は何もしない。
+    if (!('Notification' in window) || Notification.permission !== 'granted') {
+        console.log('FCM token skipped (permission not granted):',
+            ('Notification' in window) ? Notification.permission : 'unsupported');
+        return;
+    }
+    await doRegisterFcm(uid);
+}
+
+// 6/29 #186: ソフト確認の〔オンにする〕押下時にだけ呼ぶ。OS許可を要求し、許可されたらトークン発行。
+//   戻り値＝最終的な Notification.permission（'granted' | 'denied' | 'default' | 'unsupported'）。
+async function enablePush() {
+    if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
+    let perm = Notification.permission;
+    if (perm === 'default') {
+        try { perm = await Notification.requestPermission(); }
+        catch (e) { console.warn('requestPermission failed:', e); return 'default'; }
+    }
+    if (perm === 'granted') {
+        const uid = window.currentUser?.uid;
+        if (uid) { try { await doRegisterFcm(uid); } catch (e) { console.warn('doRegisterFcm failed:', e.message); } }
+    }
+    return perm;
+}
+
+// 6/29 #186: 会話系通知を「その会話を開いている間」抑制するための判定。
+function isViewingConversation(data) {
+    try {
+        const convTypes = ['chat_message', 'chat_voice_message', 'admin_chat', 'comment_question', 'comment_reply'];
+        if (!data || !convTypes.includes(data.type)) return false;
+        const target = new URL(data.url || '', location.origin);
+        if (target.pathname !== location.pathname) return false;
+        // 会話の識別子は種類で異なる（配送/Q&A=id・運営チャット=uid）。両方で照合し、
+        // 別スレッドの通知を誤って抑制しない（例：運営が users.html?uid=A を見ている間の uid=B の通知）。
+        const tid = target.searchParams.get('id') || target.searchParams.get('uid');
+        if (tid) {
+            const cur = new URLSearchParams(location.search);
+            const cid = cur.get('id') || cur.get('uid');
+            if (tid !== cid) return false;
+        }
+        return true;
+    } catch (e) { return false; }
+}
+
+let fgBound = false; // onMessage の多重バインド防止（1ページ1回）
+
+// 実際のトークン発行・保存＋フォアグラウンド購読（許可済み前提で呼ぶ）
+async function doRegisterFcm(uid) {
+    if (!VAPID_KEY || !uid) return;
     try {
         // sw.js にFCM機能を統合済み — 更新があれば自動反映
         const registration = await navigator.serviceWorker.ready;
@@ -264,20 +317,6 @@ async function requestFcmToken(uid) {
         });
 
         const messaging = getMessaging();
-        // 5/4: 通知許可状態を診断ログ
-        if ('Notification' in window) {
-            console.log('FCM permission state (before):', Notification.permission);
-            // 5/5 #6: トラブル報告通知不達対策。default のときに明示的に権限要求
-            // （PWA再追加直後・初回ログイン時など、getToken が暗黙要求しないケース対応）
-            if (Notification.permission === 'default') {
-                try {
-                    const result = await Notification.requestPermission();
-                    console.log('FCM permission requested explicitly:', result);
-                } catch (e) {
-                    console.warn('Notification.requestPermission failed:', e);
-                }
-            }
-        }
         const token = await getToken(messaging, {
             vapidKey: VAPID_KEY,
             serviceWorkerRegistration: registration
@@ -291,31 +330,37 @@ async function requestFcmToken(uid) {
             // ログアウト時にこの端末分だけ arrayRemove するため、ローカルにも保持
             try { localStorage.setItem('fishlink_fcm_token', token); } catch (e) { /* ignore */ }
             console.log('FCM token registered (multi-device):', uid, token.slice(0, 20) + '...');
-            // 5/5 #6: 書き込み後に検証 — Firestore に実際反映されたかログ
-            try {
-                const verifySnap = await getDoc(doc(db, 'users', uid));
-                const arr = verifySnap.data()?.fcmTokens || [];
-                console.log('FCM tokens in Firestore after register:', arr.length);
-            } catch (e) { /* ignore */ }
         } else {
             console.warn('FCM getToken returned empty (permission not granted or SW issue). Permission:', Notification?.permission);
         }
 
-        // フォアグラウンド通知（data-onlyペイロード対応）
-        onMessage(messaging, (payload) => {
-            const title = payload.data?.title || 'FishLink';
-            const body = payload.data?.body || '';
-            navigator.serviceWorker.ready.then(reg => {
-                reg.showNotification(title, {
-                    body,
-                    icon: '/icons/icon-192.png',
-                    tag: 'fishlink-foreground',
+        // フォアグラウンド通知（data-onlyペイロード対応）— 1ページ1回だけバインド
+        if (!fgBound) {
+            fgBound = true;
+            onMessage(messaging, (payload) => {
+                const data = payload.data || {};
+                // 6/29 #186 A: フォアグラウンド抑制 — その会話を開いている間はプッシュを出さない
+                //   （画面内に新着が反映されるため）。別画面/別会話なら表示する。
+                if (typeof document !== 'undefined' && document.visibilityState === 'visible'
+                    && isViewingConversation(data)) {
+                    return;
+                }
+                const title = data.title || 'FishLink';
+                const body = data.body || '';
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification(title, {
+                        body,
+                        icon: '/icons/icon-192.png',
+                        tag: 'fishlink-foreground',
+                        // 6/29 #186: フォアグラウンド表示にも url を持たせてタップ遷移を効かせる
+                        data,
+                    });
                 });
             });
-        });
+        }
     } catch (err) {
         console.warn('FCM token request failed:', err.message);
     }
 }
 
-export { watchAuthState, register, login, logout };
+export { watchAuthState, register, login, logout, enablePush };

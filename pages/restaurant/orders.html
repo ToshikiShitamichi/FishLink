@@ -318,6 +318,9 @@
         initLangSelector();
         initHeaderPopovers();
 
+        // 6/29 #186: 初回注文後の通知ソフト確認（cart から pending フラグを立てて来た場合のみ）。
+        import('/js/push-optin.js').then(m => m.consumePendingOptin('restaurant')).catch(() => {});
+
         // ログアウトはアカウントページ内に移動
 
         function waitForUserData(cb) {

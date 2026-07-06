@@ -214,7 +214,7 @@
     <div style="max-width:480px; margin:0 auto;">
         <div class="page-header" style="align-items:center; padding:12px 16px;">
             <a href="javascript:history.back()" class="page-header__back" style="text-decoration:none; color:var(--color-text-sub); padding-right:8px;"><span class="material-symbols-outlined">arrow_back</span></a>
-            <a href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
+            <a id="home-logo" href="/pages/restaurant/dashboard.html" class="page-header__title" style="text-decoration:none; flex:1; display:flex; align-items:center;"><img src="/images/logo.png" alt="FishLink" class="brand-logo"></a>
             <select id="lang-selector"
                 style="font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
                 <option value="km">ខ្មែរ</option>
@@ -352,6 +352,19 @@
         (function waitForCurrent() {
             if (window.currentUser) { showSelfNoteIfNeeded(); return; }
             setTimeout(waitForCurrent, 200);
+        })();
+
+        // ヘッダーのロゴ（ホーム）は「閲覧者自身のダッシュボード」へ。
+        //   このページは農家の公開ページ（レストランが見る画面）だが、農家が自分の生産者ページを
+        //   プレビュー中にロゴを押すとレストランダッシュボードへ飛ぶ不具合を修正（role で出し分け）。
+        (function fixHomeLogo() {
+            const role = window.currentUserData?.role;
+            if (!role) { setTimeout(fixHomeLogo, 200); return; }
+            const logo = document.getElementById('home-logo');
+            if (!logo) return;
+            if (role === 'restaurant') logo.href = '/pages/restaurant/dashboard.html';
+            else if (role === 'farmer') logo.href = '/pages/farmer/dashboard.html';
+            // admin 等は既定（/pages/restaurant/dashboard.html）のまま
         })();
 
         // 6/10 #138: レビューカードの描画（線画スマイリー・もっと見る）は js/review-card.js に共通化。

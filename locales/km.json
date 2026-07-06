@@ -1104,8 +1104,8 @@
             "body": "{{farmer}} {{fish}} {{qty}}kg ({{orderNo}})\nសូមបញ្ចប់ការបង់ប្រាក់"
         },
         "remitDone": {
-            "title": "បានទទួលប្រាក់",
-            "body": "ការបញ្ជាទិញពី {{restaurant}}: {{fish}} {{qty}}kg"
+            "title": "ការផ្ទេរប្រាក់បានបញ្ចប់",
+            "body": "ការបញ្ជាទិញពី {{restaurant}}: {{fish}} {{qty}}kg\nសូមវាយតម្លៃដៃគូរបស់អ្នក"
         },
         "adminChat": {
             "title": "សារពីរដ្ឋបាល",
@@ -1114,6 +1114,46 @@
         "adminChatFromUser": {
             "title": "សំណើពី {{name}}",
             "body": "{{text}}"
+        },
+        "declinedRefund": {
+            "title": "{{farmer}} បានបដិសេធការបញ្ជាទិញ",
+            "body": "បានបង្វិល {{amount}} KHR ទៅកាបូបវិញ (ប្រើបានលើការបញ្ជាទិញបន្ទាប់)"
+        },
+        "cancelledRefund": {
+            "title": "បានបោះបង់ការបញ្ជាទិញ",
+            "body": "បានបង្វិល {{amount}} KHR ទៅកាបូបវិញ (ប្រើបានលើការបញ្ជាទិញបន្ទាប់)"
+        },
+        "deliveryStarted": {
+            "title": "{{farmer}} កំពុងធ្វើដំណើរដឹកជញ្ជូន",
+            "body": "តាមដានការដឹកជញ្ជូនក្នុងការជជែក"
+        },
+        "deliveryArrived": {
+            "title": "{{farmer}} បានមកដល់",
+            "body": "សូមទទួលការបញ្ជាទិញរបស់អ្នក"
+        },
+        "deliveryDelayed": {
+            "title": "{{farmer}} អាចនឹងយឺតបន្តិច",
+            "body": "តាមដានការដឹកជញ្ជូនក្នុងការជជែក"
+        },
+        "deliveredToBuyer": {
+            "title": "{{farmer}} បានដឹកជញ្ជូនរួចរាល់",
+            "body": "សូមបញ្ជាក់ការទទួល"
+        },
+        "tradeCompletedReview": {
+            "title": "ប្រតិបត្តិការរបស់អ្នកបានបញ្ចប់",
+            "body": "សូមវាយតម្លៃ {{farmer}}"
+        },
+        "problemReportedFarmer": {
+            "title": "មានការរាយការណ៍បញ្ហា",
+            "body": "កំពុងពិនិត្យការបញ្ជាទិញពី {{restaurant}} (ការផ្ទេរប្រាក់ត្រូវបានផ្អាក)"
+        },
+        "paymentUnconfirmed": {
+            "title": "យើងមិនអាចបញ្ជាក់ការទូទាត់បានទេ",
+            "body": "សូមទូទាត់ម្តងទៀត"
+        },
+        "couponExpiringSoon": {
+            "title": "គូប៉ុងរបស់អ្នកជិតផុតកំណត់",
+            "body": "គូប៉ុង {{amount}} KHR (នៅសល់ {{days}} ថ្ងៃ)"
         }
     },
     "comments": {
@@ -1167,7 +1207,7 @@
         "farmerSide_communication": "ការទំនាក់ទំនង",
         "farmerSide_reception": "ការទទួល",
         "comment": "មតិយោបល់ (ស្រេចចិត្ត)",
-        "commentPlaceholderRest": "សរសេរអ្វីដែលល្អ",
+        "commentPlaceholderRest": "ចំណុចល្អ ចំណុចគួរកត់សម្គាល់ ។ល។",
         "commentPlaceholderFarmer": "ទុកមតិយោបល់អំពីប្រតិបត្តិការ",
         "submit": "ផ្ញើការវាយតម្លៃ",
         "reportIssue": "រាយការណ៍បញ្ហា",
@@ -1183,7 +1223,17 @@
         "verdictBad": "មិនល្អ",
         "errorSubmit": "ផ្ញើបរាជ័យ",
         "thanks": "អរគុណ!",
-        "backToOrders": "ត្រឡប់ទៅការបញ្ជាទិញ"
+        "backToOrders": "ត្រឡប់ទៅការបញ្ជាទិញ",
+        "backToOrderStatus": "ត្រឡប់ទៅស្ថានភាពបញ្ជាទិញ",
+        "backToOrderCheck": "ត្រឡប់ទៅការបញ្ជាទិញ"
+    },
+    "pushOptin": {
+        "title": "បើកការជូនដំណឹង?",
+        "bodyBuyer": "យើងនឹងជូនដំណឹងអំពីការយល់ព្រម និងស្ថានភាពដឹកជញ្ជូន ដើម្បីកុំឲ្យអ្នកខកខានដំណើរការនៃការបញ្ជាទិញ។",
+        "bodyFarmer": "យើងនឹងជូនដំណឹងភ្លាមៗនៅពេលមានការបញ្ជាទិញថ្មី ដើម្បីកុំឲ្យខកខានការយល់ព្រម។",
+        "hint": "នៅអេក្រង់បន្ទាប់ សូមជ្រើសរើស «អនុញ្ញាត»។",
+        "enable": "បើក",
+        "later": "ពេលក្រោយ"
     },
     "report": {
         "title": "រាយការណ៍បញ្ហា",

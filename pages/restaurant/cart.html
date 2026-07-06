@@ -1998,6 +1998,9 @@
 
             await batch.commit();
             await clearCart(uid);
+            // 6/29 #186: 初回注文後に通知ソフト確認を出すため pending フラグを立てる（遷移先 orders.html で回収）。
+            //   遷移直前なので localStorage を同期セット（動的 import の非同期完了を待たない）。
+            try { localStorage.setItem('fishlink_push_optin_pending', 'restaurant'); } catch (e) { /* ignore */ }
             // 5/23 #78: 注文確定後は location.replace で履歴を置換。戻るボタンで
             //   空のカート画面に戻れないようにし、ユーザーの混乱を防ぐ。
             location.replace('/pages/restaurant/orders.html');

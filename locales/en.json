@@ -1104,8 +1104,8 @@
             "body": "{{farmer}} {{fish}} {{qty}}kg ({{orderNo}})\nPlease complete the payment"
         },
         "remitDone": {
-            "title": "Payment received",
-            "body": "Order from {{restaurant}}: {{fish}} {{qty}}kg"
+            "title": "Remittance completed",
+            "body": "Order from {{restaurant}}: {{fish}} {{qty}}kg\nPlease rate your counterpart"
         },
         "adminChat": {
             "title": "Message from admin",
@@ -1114,6 +1114,46 @@
         "adminChatFromUser": {
             "title": "Inquiry from {{name}}",
             "body": "{{text}}"
+        },
+        "declinedRefund": {
+            "title": "{{farmer}} declined your order",
+            "body": "{{amount}} KHR was refunded to your wallet (use it on your next order)"
+        },
+        "cancelledRefund": {
+            "title": "Order cancelled",
+            "body": "{{amount}} KHR was refunded to your wallet (use it on your next order)"
+        },
+        "deliveryStarted": {
+            "title": "{{farmer}} is on the way",
+            "body": "Track the delivery in the chat"
+        },
+        "deliveryArrived": {
+            "title": "{{farmer}} has arrived",
+            "body": "Please receive your order"
+        },
+        "deliveryDelayed": {
+            "title": "{{farmer}} may be slightly delayed",
+            "body": "Track the delivery in the chat"
+        },
+        "deliveredToBuyer": {
+            "title": "{{farmer}} delivered your order",
+            "body": "Please confirm receipt"
+        },
+        "tradeCompletedReview": {
+            "title": "Your transaction is complete",
+            "body": "Please rate {{farmer}}"
+        },
+        "problemReportedFarmer": {
+            "title": "A problem was reported",
+            "body": "Reviewing the order from {{restaurant}} (remittance on hold)"
+        },
+        "paymentUnconfirmed": {
+            "title": "We couldn't confirm your payment",
+            "body": "Please pay again"
+        },
+        "couponExpiringSoon": {
+            "title": "Your coupon is expiring soon",
+            "body": "{{amount}} KHR coupon ({{days}} days left)"
         }
     },
     "comments": {
@@ -1167,7 +1207,7 @@
         "farmerSide_communication": "Communication",
         "farmerSide_reception": "Reception",
         "comment": "Comment (optional)",
-        "commentPlaceholderRest": "Write what went well",
+        "commentPlaceholderRest": "What went well, what to note, etc.",
         "commentPlaceholderFarmer": "Leave a comment about the transaction",
         "submit": "Submit review",
         "reportIssue": "Report an issue",
@@ -1183,7 +1223,17 @@
         "verdictBad": "Not great",
         "errorSubmit": "Failed to submit",
         "thanks": "Thank you!",
-        "backToOrders": "Back to orders"
+        "backToOrders": "Back to orders",
+        "backToOrderStatus": "Back to order status",
+        "backToOrderCheck": "Back to orders"
+    },
+    "pushOptin": {
+        "title": "Turn on notifications?",
+        "bodyBuyer": "We'll notify you about farmer approvals and delivery updates, so you never miss your order's progress.",
+        "bodyFarmer": "We'll notify you the moment a new order arrives, so you don't miss approvals.",
+        "hint": "In the next screen, please choose \"Allow\".",
+        "enable": "Turn on",
+        "later": "Later"
     },
     "report": {
         "title": "Report Issue",

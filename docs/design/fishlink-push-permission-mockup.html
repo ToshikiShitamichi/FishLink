@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 通知許可の自前ソフト確認 — モック</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:900px; margin-bottom:20px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; } .intro b{color:#0B5FB0;}
+
+  .stage { display:flex; flex-wrap:wrap; gap:26px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; color:#5A6470; max-width:390px; text-align:center; }
+
+  .phone { width:390px; max-width:100%; height:720px; background:#F7F9FB; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+  .header { background:#FFF; padding:12px 14px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:9px; }
+  .header .logo { font-weight:800; color:#0B5FB0; font-size:15px; } .header .logo::before{content:"🐟 ";}
+  .header .lang { margin-left:auto; font-size:11px; color:#0B5FB0; font-weight:700; border:1px solid #CFE0EE; border-radius:12px; padding:3px 9px; }
+
+  /* 背景（登録完了の直後＝薄く） */
+  .bg { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:60px 24px; text-align:center; }
+  .bg .ok { width:64px; height:64px; border-radius:50%; background:#E7F4EC; color:#2E7D32; font-size:30px; display:flex; align-items:center; justify-content:center; }
+  .bg .t1 { font-size:18px; font-weight:800; margin-top:16px; } .bg .t2 { font-size:13px; color:#5A6470; margin-top:6px; }
+
+  /* ソフト確認モーダル（自前・中央） */
+  .mask { position:absolute; inset:0; background:rgba(20,28,38,0.46); display:flex; align-items:center; justify-content:center; padding:0 24px; }
+  .modal { background:#FFF; border-radius:18px; padding:24px 20px 16px; text-align:center; width:100%; max-width:300px; box-shadow:0 18px 48px rgba(0,0,0,0.28); }
+  .modal .ic { width:56px; height:56px; border-radius:16px; background:#EAF2FB; color:#0B5FB0; font-size:26px; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
+  .modal .mt { font-size:17px; font-weight:800; margin-bottom:8px; }
+  .modal .mb { font-size:13px; color:#5A6470; line-height:1.6; margin-bottom:18px; }
+  .modal .on { display:block; width:100%; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; background:#0B5FB0; color:#FFF; }
+  .modal .hint { font-size:11px; color:#9AA3B0; margin:8px 0 4px; } .modal .hint b { color:#5A6470; font-weight:700; }
+  .modal .later { display:block; width:100%; text-align:center; background:none; border:none; color:#9AA3B0; font-size:13px; font-weight:700; padding:10px 0 2px; cursor:pointer; font-family:inherit; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 通知許可 — 自前のソフト確認（許可前ダイアログ）</h1>
+  <p><b>基本オン</b>だが、いきなりOS許可を出さず<b>自前のソフト確認を挟む</b>（二段構え）。〔オンにする〕を押した人にだけ <b>OSダイアログ</b> が出る（＝OSの一発勝負を温存）。〔あとで〕を押した人は <b>初回注文（買い手）/初回出品（農家）で再度</b>。</p>
+  <p>役割で文言を変える／<b>〔オンにする〕＝青で目立つ・〔あとで〕＝地味なテキスト</b>／<b>「次の画面で『許可』を選んでください」</b>を小さく添える（OSダイアログの文言は変えられないため自前側で誘導）。<b>聞くタイミング＝登録完了の直後</b>。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① 買い手版 -->
+  <div class="phone-wrap">
+    <div class="phone-label">① 買い手（レストラン）版 ・ 登録完了の直後</div>
+    <div class="phone">
+      <div class="header"><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="bg">
+        <div class="ok">✓</div>
+        <div class="t1">登録が完了しました</div>
+        <div class="t2">FISHLINKへようこそ</div>
+      </div>
+      <div class="mask">
+        <div class="modal">
+          <div class="ic">🔔</div>
+          <div class="mt">通知をオンにしますか？</div>
+          <div class="mb">農家の<b style="color:#0B5FB0">承認や配達状況</b>をお知らせします。注文の進み具合を見逃しません。</div>
+          <button class="on">オンにする</button>
+          <div class="hint">※ 次の画面で<b>「許可」</b>を選んでください</div>
+          <button class="later">あとで</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 農家版 -->
+  <div class="phone-wrap">
+    <div class="phone-label">② 農家版 ・ 登録完了の直後</div>
+    <div class="phone">
+      <div class="header"><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="bg">
+        <div class="ok">✓</div>
+        <div class="t1">登録が完了しました</div>
+        <div class="t2">FISHLINKへようこそ</div>
+      </div>
+      <div class="mask">
+        <div class="modal">
+          <div class="ic">🔔</div>
+          <div class="mt">通知をオンにしますか？</div>
+          <div class="mb"><b style="color:#0B5FB0">新しい注文が来たら</b>すぐにお知らせします。承認の見逃し（失注）を防げます。</div>
+          <button class="on">オンにする</button>
+          <div class="hint">※ 次の画面で<b>「許可」</b>を選んでください</div>
+          <button class="later">あとで</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -417,7 +417,18 @@ self.addEventListener('notificationclick', (event) => {
 //   （admin-chat.html / admin/users.html とも m.imageUrls を描画）＋ qrLink は本文に記載。
 //   onAdminChatMessage は type==='withdraw_request' を連絡先マスク対象外に（返金先リンク/名義を潰さない）。
 //   ＝functions のみの修正（hosting 変更なし）だが、旧SW強制更新のため版番号バンプ。
-const CACHE_NAME = 'fishlink-v139';
+// 6/29+6/30 (v140): #185-188 プッシュ通知 設計一式＋レビュー修正＋セキュリティ文書。
+//   #185 functions（配送3ステータスのみpush・prepare_start除外／前払い「お届け」／取引完了レビュー誘導／
+//        問題報告→農家／お支払い未確認／クーポン期限3日前リマインド[新schedule]／辞退返金の遷移先を注文状況へ／
+//        送金完了・成長系の deep-link 見直し）＋ notifMessages/pushOptin/review i18n。
+//   #186 client（登録直後の自動OS許可を廃止→自前ソフト確認[js/push-optin.js 新規]の〔オンにする〕押下時のみ
+//        enablePush・〔あとで〕は初回注文/初回出品後に再度／フォアグラウンド抑制＝開いている会話は出さない）。
+//   #187 レビュー送信完了ボタン 青＋実遷移ラベル／コメントplaceholder中立化。#188 はドキュメント（デプロイ外）。
+// 7/2 (v141): #185-188 の自己プレビュー ロゴ修正を同梱（v140 未デプロイのため v141 に統合）＝
+//   pages/farmer/restaurant.html（レストラン公開ページ）・pages/restaurant/farmer.html（生産者ページ）の
+//   ヘッダーロゴを、閲覧者ロール（currentUserData.role）自身のダッシュボードへ出し分け（自己プレビュー中に
+//   相手アプリのダッシュボードへ飛ぶ不具合の修正・戻る矢印 history.back() は不変）。hosting-only 2ページ。
+const CACHE_NAME = 'fishlink-v141';
 
 const PRECACHE_URLS = [
     '/',
@@ -445,6 +456,7 @@ const PRECACHE_URLS = [
     '/js/faq-display.js',
     '/js/report-window.js',
     '/js/toast.js',
+    '/js/push-optin.js',
     '/locales/ja.json',
     '/locales/en.json',
     '/locales/km.json',

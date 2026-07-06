@@ -1399,6 +1399,8 @@
                     // 5/23 #78: location.replace で履歴を置換（戻るで投稿フォームに戻らせない＝二重投稿防止）。
                     window.location.replace('/pages/farmer/dashboard.html');
                 } else {
+                    // 6/29 #186: 初回出品後に通知ソフト確認を出すため pending フラグを立てる（遷移先 dashboard.html で回収）。
+                    try { localStorage.setItem('fishlink_push_optin_pending', 'farmer'); } catch (e) { /* ignore */ }
                     // 6/21 #161⑩: 新規投稿は完了画面（中央モーダル）を表示。自動で閉じず、タップで投稿一覧へ。
                     //   spinner を消して overlay を前面に。submitBtn は overlay 背面で押せないため finally の再有効化は無害。
                     loading.classList.remove('show');
