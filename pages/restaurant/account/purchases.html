@@ -319,9 +319,20 @@
             snap.forEach(d => {
                 const o = d.data();
                 const t = { id: d.id, ...o };
-                if (['delivered', 'completed'].includes(o.status)) completedTrades.push(t);
-                else if (['declined', 'cancelled'].includes(o.status)) ndTrades.push(t);
-                else return;
+                if (['delivered', 'completed'].includes(o.status)) {
+                    // 7/5 #193③: 確認中（問題報告で未解決）は履歴に出さない＝注文状況の進行中に「確認中」で出ており二重表示になるため。
+                    //   ⚠️ restaurantReportOpen は解決後も消えない write-once マーカー（admin の「保留を解除」は paymentProblemHold のみ下ろす）。
+                    //   そのまま除外すると解決後の注文が履歴から永久に消える＋注文状況の「購入履歴」件数と食い違う。
+                    //   → 「未解決」判定は取引完了/送金済み（isTradeDone＝orders.html と同一述語）でゲート＝解決後は履歴に戻す。
+                    const isRemitted = ['remitted', 'done'].includes(o.adminStatus);
+                    const isTradeDone = o.prepaid === true ? (o.tradeCompleted === true || isRemitted) : (o.paymentStatus === 'paid');
+                    if (o.restaurantReportOpen === true && !isTradeDone) return;
+                    completedTrades.push(t);
+                } else if (['declined', 'cancelled'].includes(o.status)) {
+                    ndTrades.push(t);
+                } else {
+                    return;
+                }
                 if (o.farmerId) fids.add(o.farmerId);
             });
             const farmerMap = {};

@@ -42,6 +42,7 @@
   .badge.confirm { background:#EEF1F4; color:#5A6470; }
   .badge.deliv { background:#EAF2FB; color:#0B5FB0; }
   .badge.arrived { background:#E7F4EC; color:#2E7D32; }
+  .badge.checking { background:#FBE0C8; color:#C2410C; }
   .price { font-size:21px; font-weight:800; margin-top:8px; }
   .warn { display:flex; align-items:center; gap:6px; background:#FDECEA; color:#D14343; font-size:12.5px; font-weight:800; padding:8px 11px; border-radius:9px; margin-top:9px; }
   .note { background:#F7F9FB; border:1px solid #EAEEF2; border-radius:9px; padding:9px 11px; font-size:12px; color:#5A6470; margin-top:9px; line-height:1.5; }
@@ -50,6 +51,7 @@
   .btnrow { display:flex; gap:8px; margin-top:10px; }
   .btnrow .btn { flex:1; margin-top:0; }
   .statusline { display:flex; align-items:center; gap:6px; background:#F0F4F8; color:#42566B; font-size:12px; font-weight:700; padding:8px 11px; border-radius:9px; margin-top:9px; }
+  .statusline.checking { background:#FEF1E6; color:#C2410C; }
   .btn { display:block; text-align:center; font-size:13px; font-weight:800; padding:11px; border-radius:10px; margin-top:10px; }
   .btn.pri { background:#0B5FB0; color:#FFF; }
   .btn.sec { background:#FFF; color:#0B5FB0; border:1.5px solid #0B5FB0; }
@@ -131,7 +133,7 @@
 
 <div class="intro">
   <h1>買い手（レストラン）「注文状況」— 案B 前払い対応</h1>
-  <p>構造＝<b>対応が必要 → 進行中 → 「購入履歴を見る」1行</b>。<b>【案B 前払いで作り直し】</b>① 注文は支払い完了で成立するので「お支払い待ち」カードは廃止 ② 例外で<b>運営が入金を確認できない時だけ「お支払い未確認」</b>カード（〔もう一度支払う〕＋〔運営に問い合わせる〕）③ 農家辞退カードに<b>「✓ ウォレットに返金しました（次回使えます）」</b>を追加（前払い済みなので即返金）。進行中＝<b>お支払い確認中</b>（払った直後・待つだけ）・農家確認中・配達中・<b>お届け済み</b>（配達完了→数時間後に自動で取引完了／問題があれば〔問題を報告〕）。<b>追加3点</b>＝(1)配達中／お届け済みに<b>〔問題を報告〕導線</b>（→問題報告フロー・ウォレットの問題返金の起点）(2)お支払い未確認は<b>運営が照合して解決</b>（自動キャンセルしない＝即農家へ方式で農家が準備中の恐れ＋払ったのに照合できてない場合は金が実在するため。督促・照合はspecで詰める） (3)<b>承認期限切れの自動辞退カード</b>（「農家から返答がなく自動辞退」＋✓返金）。さらに<b>〈農家確認中〉は農家の承認前なので〔注文をキャンセル〕可</b>（前払い済み→押すとウォレットに返金／承認後は不可＝〔問題を報告〕に切替）。<b>CTAは青</b>、緑＝返金済みの安心。</p>
+  <p>構造＝<b>対応が必要 → 進行中 → 「購入履歴を見る」1行</b>。<b>【案B 前払いで作り直し】</b>① 注文は支払い完了で成立するので「お支払い待ち」カードは廃止 ② 例外で<b>運営が入金を確認できない時だけ「お支払い未確認」</b>カード（〔もう一度支払う〕＋〔運営に問い合わせる〕）③ 農家辞退カードに<b>「✓ ウォレットに返金しました（次回使えます）」</b>を追加（前払い済みなので即返金）。進行中＝<b>お支払い確認中</b>（払った直後・待つだけ）・農家確認中・配達中・<b>お届け済み</b>（配達完了→数時間後に自動で取引完了／問題があれば〔問題を報告〕）・<b>確認中</b>（お届け済みで問題を報告した後＝バッジ「確認中」＋「問題を報告しました。運営が確認しています」・"自動完了"の一言は消す・タップで購入詳細の確認中／<b>解決するまで進行中に残り、履歴には出さない</b>）。<b>追加3点</b>＝(1)配達中／お届け済みに<b>〔問題を報告〕導線</b>（→問題報告フロー・ウォレットの問題返金の起点）(2)お支払い未確認は<b>運営が照合して解決</b>（自動キャンセルしない＝即農家へ方式で農家が準備中の恐れ＋払ったのに照合できてない場合は金が実在するため。督促・照合はspecで詰める） (3)<b>承認期限切れの自動辞退カード</b>（「農家から返答がなく自動辞退」＋✓返金）。さらに<b>〈農家確認中〉は農家の承認前なので〔注文をキャンセル〕可</b>（前払い済み→押すとウォレットに返金／承認後は不可＝〔問題を報告〕に切替）。<b>CTAは青</b>、緑＝返金済みの安心。</p>
 </div>
 
 <div class="stage">
@@ -261,6 +263,20 @@
         <button class="btn sec">問題を報告する</button>
       </div>
 
+      <!-- 確認中（問題を報告済み・運営が確認中）＝お届け済みで問題を報告した後の状態 -->
+      <div class="c">
+        <div class="ctop">
+          <div class="th"></div>
+          <div class="ci">
+            <span class="badge checking" style="float:right">確認中</span>
+            <div class="nm">レッドティラピア（5 head/kg）5kg</div>
+            <div class="fl">FL-260704-001</div>
+            <div class="meta">🏠 Ruosuke_farmer5 ・ 7/4（土）16:00–17:00</div>
+          </div>
+        </div>
+        <div class="statusline checking">🚩 問題を報告しました。運営が確認しています</div>
+      </div>
+
       <div class="sh hist">履歴</div>
       <div class="histrow">
         <span class="hi">🧾</span>
@@ -289,7 +305,7 @@
       <div class="sm"><div class="smt">
         <div class="smc"><div class="v amt">512,400<span class="u"> KHR</span></div><div class="l">購入額</div></div>
         <div class="smc"><div class="v">11<span class="u"> 件</span></div><div class="l">取引数</div></div>
-        <div class="smc"><div class="v">46,582<span class="u"> KHR</span></div><div class="l">平均単価</div></div>
+        <div class="smc"><div class="v">46,582<span class="u"> KHR</span></div><div class="l">平均取引額</div></div>
       </div></div>
 
       <div class="lcard"><div class="lth"></div><div class="lci">

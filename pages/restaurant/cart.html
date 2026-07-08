@@ -1784,7 +1784,8 @@
             const input = document.getElementById('wallet-input');
             if (input) {
                 const commit = () => {
-                    let v = Math.round(parseFloat(String(input.value).replace(/[^\d.]/g, '')));
+                    // 2026-07-04 #191: ウォレット充当額も100リエル単位に floor（KHQR残額 khqrAmount を100単位に保つ）。
+                    let v = Math.floor((parseFloat(String(input.value).replace(/[^\d.]/g, '')) || 0) / 100) * 100;
                     if (!Number.isFinite(v) || v < 0) v = 0;
                     if (v > cap) v = cap;
                     walletApplied = v;

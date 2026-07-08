@@ -83,7 +83,7 @@
             <div class="fb">
                 <div class="fb-top">
                     <div class="fb-label"><span data-i18n="post.deliveryRate"></span><span class="badge req" data-i18n="post.required"></span></div>
-                    <div class="fb-iw"><input class="fb-input" id="in-fee" type="number" min="0" inputmode="numeric" data-i18n="[placeholder]post.deliveryRatePlaceholder"><span class="fb-unit">KHR/10km</span></div>
+                    <div class="fb-iw"><input class="fb-input" id="in-fee" type="number" min="0" step="100" inputmode="numeric" data-i18n="[placeholder]post.deliveryRatePlaceholder"><span class="fb-unit">KHR/10km</span></div>
                 </div>
                 <div class="fb-help" data-i18n="post.deliveryRateExample"></div>
                 <div class="field-error" id="err-fee" data-i18n="post.errorDeliveryFee"></div>
@@ -158,7 +158,8 @@
             if (!uid) return;
             const btn = document.getElementById('btn-save');
             const radius = parseFloat(document.getElementById('in-radius').value) || 0;
-            const fee = parseInt(document.getElementById('in-fee').value, 10) || 0;
+            // 2026-07-04 #191: 送料(per10km)は100リエル単位に floor（KHR金額を100単位に統一・payment-spec §4.2）。
+            const fee = Math.floor((parseInt(document.getElementById('in-fee').value, 10) || 0) / 100) * 100;
             const free = parseFloat(document.getElementById('in-free').value) || 0;
 
             // インラインバリデーション（配送可能距離・送料は必須＝0より大／無料距離は任意）

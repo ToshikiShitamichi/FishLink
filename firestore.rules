@@ -203,5 +203,20 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // 7/4 #190: 利用規約・プライバシーポリシー（管理画面で運営が編集・ユーザーは公開版のみ read）。
+    //   doc id = 'terms' | 'privacy'。フィールド：draft{ja,en,km}{title,body} / pub{...同} /
+    //   published(bool) / updatedAt。ユーザーページ（terms.html / privacy.html）は published==true のとき
+    //   pub を読む（未ログインの register 新規タブからも読めるよう published 分岐に auth を課さない＝faq と同型）。
+    match /legal/{docId} {
+      // resource == null＝未作成ドキュメント（運営が未公開の間）を getDoc したときに permission-denied を投げず
+      //   「存在しない」を素直に返す＝ユーザーページはフォールバック表示（register 新規タブの未ログイン読取も静か）。
+      allow read: if resource == null
+        || resource.data.published == true
+        || (request.auth != null
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      allow write: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
   }
 }

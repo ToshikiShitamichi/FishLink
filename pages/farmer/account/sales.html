@@ -44,8 +44,12 @@
         .sm__v.amt { color: var(--color-cta); }
         .sm__v .u { font-size: 10px; color: var(--color-text-sub); font-weight: 600; }
         .sm__l { font-size: 10px; color: var(--color-text-sub); margin-top: 3px; }
-        .sm__pend { margin-top: 11px; padding-top: 10px; border-top: 1px dashed #e2e8ef; font-size: 12px; color: #b36a00; font-weight: 700; text-align: center; }
+        /* 7/5 #192①: 送金待ち（amber）と確認中（濃オレンジ・問題報告で保留）を2行に分割。確認中は"本日入る額"に混ぜない。 */
+        .sm__notes { margin-top: 11px; padding-top: 10px; border-top: 1px dashed #e2e8ef; }
+        .sm__pend { font-size: 12px; color: #b36a00; font-weight: 700; text-align: center; }
         .sm__pend .note { color: #9aa3b0; font-weight: 500; font-size: 11px; }
+        .sm__hold { font-size: 12px; color: #C2410C; font-weight: 700; text-align: center; margin-top: 6px; }
+        .sm__hold .note { color: #d08a6a; font-weight: 500; font-size: 11px; }
 
         /* 成立しなかった注文サマリ */
         .dechead { background: #fff; border: 1px solid var(--color-border); border-radius: 12px; padding: 14px; margin-bottom: 13px; text-align: center; }
@@ -65,6 +69,10 @@
         .lcard__badge--done { background: #eaeff3; color: #42566b; }
         .lcard__badge--dec { background: #fdecea; color: #d14343; }
         .lcard__badge--cancel { background: #eef1f4; color: #7a8593; }
+        /* 7/5 #192①: 確認中（問題報告で送金保留）＝濃オレンジ。 */
+        .lcard__badge--hold { background: #fbe6d4; color: #C2410C; }
+        .lcard__warn { font-size: 11.5px; color: #C2410C; font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+        .lcard__warn .material-symbols-outlined { font-size: 15px; }
         .lcard__date { font-size: 11.5px; color: var(--color-text-sub); }
         .lcard__name { font-size: 14px; font-weight: 800; margin-top: 2px; }
         .lcard__shop { font-size: 11.5px; margin-top: 2px; color: var(--color-text-sub); }
@@ -125,7 +133,10 @@
                     <div class="sm__c"><div class="sm__v" id="sum-count">0</div><div class="sm__l" data-i18n="account.count"></div></div>
                     <div class="sm__c"><div class="sm__v" id="sum-avg">0<span class="u"> KHR</span></div><div class="sm__l" data-i18n="account.avgSales"></div></div>
                 </div>
-                <div class="sm__pend" id="sum-pending" style="display:none;"></div>
+                <div class="sm__notes" id="sum-notes" style="display:none;">
+                    <div class="sm__pend" id="sum-pending" style="display:none;"></div>
+                    <div class="sm__hold" id="sum-holding" style="display:none;"></div>
+                </div>
             </div>
 
             <!-- 成立しなかった注文サマリ -->
@@ -201,6 +212,9 @@
             return i18next.t(`account.period${currentPeriod.charAt(0).toUpperCase()}${currentPeriod.slice(1)}`);
         }
         const isRemitted = (o) => ['remitted', 'done'].includes(o.adminStatus);
+        // 7/5 #192①: 確認中＝問題報告で送金保留中（送金状況 farmer/payment.html と同じ paymentProblemHold を読む）。
+        //   remitted/done は除外＝送金済みなら保留は解消済み。確認中は「送金待ち＝本日入る額」に混ぜない。
+        const isHolding = (o) => o.paymentProblemHold === true && !isRemitted(o);
 
         function filterByPeriod(trades) {
             if (currentPeriod === 'all') return trades;
@@ -290,17 +304,28 @@
             const total = filtered.reduce((s, t) => s + (t.farmerReceiveAmount || 0), 0);
             const count = filtered.length;
             const avg = count > 0 ? Math.round(total / count) : 0;
-            const pending = filtered.filter(t => !isRemitted(t)).reduce((s, t) => s + (t.farmerReceiveAmount || 0), 0);
+            // 7/5 #192①: 送金待ち（本日入る額）と確認中（保留）を分離＝混ぜない。
+            const waiting = filtered.filter(t => !isRemitted(t) && !isHolding(t)).reduce((s, t) => s + (t.farmerReceiveAmount || 0), 0);
+            const holdingAmt = filtered.filter(t => isHolding(t)).reduce((s, t) => s + (t.farmerReceiveAmount || 0), 0);
             document.getElementById('sum-amount').innerHTML = `${Number(total).toLocaleString()}<span class="u"> KHR</span>`;
             document.getElementById('sum-count').textContent = `${count}`;
             document.getElementById('sum-avg').innerHTML = `${Number(avg).toLocaleString()}<span class="u"> KHR</span>`;
             const pendEl = document.getElementById('sum-pending');
-            if (pending > 0) {
+            const holdEl = document.getElementById('sum-holding');
+            if (waiting > 0) {
                 pendEl.style.display = 'block';
-                pendEl.innerHTML = `${i18next.t('account.pendingRemit', { amount: fmtKhr(pending) })} <span class="note">・ ${i18next.t('account.remitTodayNote')}</span>`;
+                pendEl.innerHTML = `${i18next.t('account.pendingRemit', { amount: fmtKhr(waiting) })} <span class="note">・ ${i18next.t('account.remitTodayNote')}</span>`;
             } else {
                 pendEl.style.display = 'none';
             }
+            if (holdingAmt > 0) {
+                holdEl.style.display = 'block';
+                holdEl.innerHTML = `${i18next.t('account.holdingSum', { amount: fmtKhr(holdingAmt) })} <span class="note">・ ${i18next.t('account.holdingNote')}</span>`;
+            } else {
+                holdEl.style.display = 'none';
+            }
+            // 送金待ち／確認中のどちらかがあれば注記ブロックを表示
+            document.getElementById('sum-notes').style.display = (waiting > 0 || holdingAmt > 0) ? 'block' : 'none';
 
             if (filtered.length === 0) {
                 listEl.innerHTML = `<div class="empty-small">${i18next.t('account.emptyHistory')}</div>`;
@@ -310,10 +335,20 @@
             const shown = filtered.slice(0, displayCount);
             listEl.innerHTML = shown.map(t => {
                 const remitted = isRemitted(t);
-                const badge = remitted
-                    ? `<span class="lcard__badge lcard__badge--done">${i18next.t('account.statusCompleted')}</span>`
-                    : `<span class="lcard__badge lcard__badge--paywait">${i18next.t('account.remitWaitBadge')}</span>`;
-                const amtLabel = remitted ? i18next.t('account.receiveAmountSum') : i18next.t('orders.receiveAmount');
+                const holding = isHolding(t);
+                // 7/5 #192①: 確認中（問題報告で保留）＝濃オレンジバッジ＋「受取予定額（保留中）」＋警告1行。
+                let badge, amtLabel, warnLine = '';
+                if (holding) {
+                    badge = `<span class="lcard__badge lcard__badge--hold">${i18next.t('account.holdingBadge')}</span>`;
+                    amtLabel = i18next.t('account.receiveAmountHold');
+                    warnLine = `<div class="lcard__warn"><span class="material-symbols-outlined">warning</span>${i18next.t('account.holdingCardNote')}</div>`;
+                } else if (remitted) {
+                    badge = `<span class="lcard__badge lcard__badge--done">${i18next.t('account.statusCompleted')}</span>`;
+                    amtLabel = i18next.t('account.receiveAmountSum');
+                } else {
+                    badge = `<span class="lcard__badge lcard__badge--paywait">${i18next.t('account.remitWaitBadge')}</span>`;
+                    amtLabel = i18next.t('orders.receiveAmount');
+                }
                 return `
                     <div class="lcard tap" data-id="${t.id}">
                         <div class="lcard__th">${thumbHtml(t)}</div>
@@ -323,6 +358,7 @@
                             <div class="lcard__name">${fishNameWithQty(t)}</div>
                             <div class="lcard__shop">${shopLink(t)}</div>
                             <div class="lcard__amt">${amtLabel} <b>${fmtKhr(t.farmerReceiveAmount)}</b></div>
+                            ${warnLine}
                         </div>
                         <span class="lcard__chev">›</span>
                     </div>`;

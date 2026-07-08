@@ -175,6 +175,8 @@
         .os-badge--confirm { background:#eef1f4; color:#5a6470; }
         .os-badge--deliv { background:var(--color-cta-lt); color:var(--color-cta); }
         .os-badge--arrived { background:#e7f4ec; color:#2e7d32; }
+        /* 7/5 #193③: お届け済みで問題報告済み＝確認中（濃オレンジ・自動完了しない）。 */
+        .os-badge--hold { background:#fbe6d4; color:#C2410C; }
         .os-amt { font-size:21px; font-weight:800; color:var(--color-cta); margin-top:8px; }
         /* 案B #174: 即ウォレット返金の安心行（緑＝返金済み専用） */
         .os-refunded { display:flex; align-items:flex-start; gap:6px; background:#e7f4ec; color:#2e7d32; font-size:12.5px; font-weight:800; padding:9px 11px; border-radius:9px; margin-top:9px; line-height:1.4; }
@@ -186,6 +188,7 @@
         .os-statusline { display:flex; align-items:center; gap:6px; background:#f0f4f8; color:#42566b; font-size:12px; font-weight:700; padding:8px 11px; border-radius:9px; margin-top:9px; }
         .os-statusline .material-symbols-outlined { font-size:16px; }
         .os-statusline--ok { background:#e7f4ec; color:#2e7d32; }
+        .os-statusline--hold { background:#fbe6d4; color:#C2410C; }
         .os-btn { display:block; width:100%; box-sizing:border-box; text-align:center; font-size:13px; font-weight:800; padding:11px; border-radius:10px; margin-top:10px; border:none; cursor:pointer; font-family:inherit; text-decoration:none; }
         .os-btn--pri { background:var(--color-cta); color:#fff; }
         .os-btn--sec { background:var(--color-surface); color:var(--color-cta); border:1.5px solid var(--color-cta); }
@@ -533,21 +536,36 @@
         }
 
         // 案B #174: お届け済み（配送完了→数時間後に自動で取引完了・問題があれば報告）。緑バッジ。
-        //   paymentProblemHold → 報告済み・対応中（renderReportEntry が出す）。
+        //   7/5 #193③: 買い手が問題を報告済み（restaurantReportOpen）＝「確認中」（濃オレンジ）。
+        //     バッジ・一言を差し替え＝自動完了しない旨を明示し、「報告済み・対応中」チップは一言に統合。
+        //     カードタップ→購入詳細（payment.html・確認中）へ（未報告は報告入口ボタンを窓内のみ表示）。
         function renderDeliveredCard(o) {
             const { d, order, fishName, farmerName } = o;
             const orderNo = getOrderNumber({ id: d.id, ...order });
-            return `
-                <div class="os-card" id="order-${d.id}">
+            const reported = order.restaurantReportOpen === true;
+            const badge = reported
+                ? `<span class="os-badge os-badge--hold">${i18next.t('orders.holdingBadge')}</span>`
+                : `<span class="os-badge os-badge--arrived">${i18next.t('orders.deliveredBadge')}</span>`;
+            const head = `
                     <div class="os-card__top">
                         <div class="os-card__th">${thumbHtml(order)}</div>
                         <div class="os-card__ci">
-                            <span class="os-badge os-badge--arrived">${i18next.t('orders.deliveredBadge')}</span>
+                            ${badge}
                             <div class="os-card__nm">${fishName}${multiBadgeHtml(order)}</div>
                             <div class="os-card__fl">${orderNo}</div>
                             <div class="os-card__meta">${metaLineHtml(order, farmerName)}</div>
                         </div>
-                    </div>
+                    </div>`;
+            if (reported) {
+                return `
+                <a class="os-card" href="/pages/restaurant/payment.html?id=${d.id}">
+                    ${head}
+                    <div class="os-statusline os-statusline--hold"><span class="material-symbols-outlined">flag</span>${i18next.t('orders.reportedConfirmingNote')}</div>
+                </a>`;
+            }
+            return `
+                <div class="os-card" id="order-${d.id}">
+                    ${head}
                     <div class="os-statusline os-statusline--ok"><span class="material-symbols-outlined">check_circle</span>${i18next.t('orders.deliveredNote')}</div>
                     ${renderReportEntry(order, d.id)}
                 </div>`;

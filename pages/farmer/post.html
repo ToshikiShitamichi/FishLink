@@ -484,7 +484,7 @@
 
                 <div class="price-row">
                     <div class="price-row__label"><label for="price-unit" data-i18n="post.priceUnit"></label><span class="badge req" data-i18n="post.required"></span></div>
-                    <input type="number" class="price-input" id="price-unit" data-i18n="[placeholder]post.priceUnitPlaceholder" min="0" inputmode="numeric"
+                    <input type="number" class="price-input" id="price-unit" data-i18n="[placeholder]post.priceUnitPlaceholder" min="0" step="100" inputmode="numeric"
                         oninput="updateTotalPrice()">
                     <span class="price-unit">KHR/kg</span>
                 </div>
@@ -492,7 +492,7 @@
 
                 <div class="price-row">
                     <label for="gut-price" data-i18n="post.gutPrice"></label>
-                    <input type="number" class="price-input" id="gut-price" value="500" placeholder="500" min="0" inputmode="numeric"
+                    <input type="number" class="price-input" id="gut-price" value="500" placeholder="500" min="0" step="100" inputmode="numeric"
                         oninput="updateTotalPrice()">
                     <span class="price-unit">KHR/kg</span>
                 </div>
@@ -543,7 +543,7 @@
 
                     <div class="price-row" style="margin-top:12px;">
                         <div class="price-row__label"><label for="delivery-fee-per-10km" data-i18n="post.deliveryRate"></label><span class="badge req" data-i18n="post.required"></span></div>
-                        <input type="number" class="price-input" id="delivery-fee-per-10km" data-i18n="[placeholder]post.deliveryRatePlaceholder" min="0" inputmode="numeric">
+                        <input type="number" class="price-input" id="delivery-fee-per-10km" data-i18n="[placeholder]post.deliveryRatePlaceholder" min="0" step="100" inputmode="numeric">
                         <span class="price-unit">KHR/10km</span>
                     </div>
                     <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliveryRateExample"></p>
@@ -643,7 +643,7 @@
 
             <div class="price-row" style="margin-top:12px;">
                 <label for="sheet-fee" data-i18n="post.deliveryRate"></label>
-                <input type="number" class="price-input" id="sheet-fee" min="0" inputmode="numeric">
+                <input type="number" class="price-input" id="sheet-fee" min="0" step="100" inputmode="numeric">
                 <span class="price-unit">KHR/10km</span>
             </div>
             <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliveryRateExample"></p>
@@ -1106,7 +1106,8 @@
         });
         document.getElementById('sheet-save')?.addEventListener('click', async () => {
             const radius = parseFloat(document.getElementById('sheet-radius').value) || 0;
-            const fee = parseInt(document.getElementById('sheet-fee').value) || 0;
+            // 2026-07-04 #191: 送料(per10km)は100リエル単位に floor（KHR金額を100単位に統一・payment-spec §4.2）。
+            const fee = Math.floor((parseInt(document.getElementById('sheet-fee').value) || 0) / 100) * 100;
             const free = parseFloat(document.getElementById('sheet-free').value) || 0;
             const sheetErr = document.getElementById('sheet-error');
             if (radius <= 0 || fee <= 0) {
@@ -1259,8 +1260,9 @@
                 : fishTypeSelect;
             const fishSize = document.getElementById('fish-size').value.trim();
             const fishStock = parseFloat(document.getElementById('fish-stock').value) || 0;
-            const priceUnit = parseInt(document.getElementById('price-unit').value) || 0;
-            const gutPrice = parseInt(document.getElementById('gut-price').value) || 0;
+            // 2026-07-04 #191: 単価・内臓処理加算は100リエル単位に floor（魚代＝単価×整数kg を100単位に・payment-spec §4.2）。
+            const priceUnit = Math.floor((parseInt(document.getElementById('price-unit').value) || 0) / 100) * 100;
+            const gutPrice = Math.floor((parseInt(document.getElementById('gut-price').value) || 0) / 100) * 100;
             const minOrder = parseFloat(document.getElementById('min-order').value) || 0;
             const description = document.getElementById('description').value.trim();
 
@@ -1276,7 +1278,8 @@
             let deliveryRadius = 0, deliveryFee = 0, deliveryFree = 0;
             if (!farmerDelivery) {
                 deliveryRadius = parseFloat(document.getElementById('deliverable-radius').value) || 0;
-                deliveryFee = parseInt(document.getElementById('delivery-fee-per-10km').value) || 0;
+                // 2026-07-04 #191: 送料(per10km)も100リエル単位に floor。
+                deliveryFee = Math.floor((parseInt(document.getElementById('delivery-fee-per-10km').value) || 0) / 100) * 100;
                 deliveryFree = parseFloat(document.getElementById('free-delivery-km').value) || 0;
             } else if (deliverySeeded) {
                 pendingFarmerDelivery = { ...farmerDelivery };

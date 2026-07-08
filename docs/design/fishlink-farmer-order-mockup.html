@@ -68,6 +68,17 @@
   .oc-paid { font-size:10.5px; color:#2E7D32; font-weight:800; margin-top:3px; }
   .paid-band { display:flex; flex-direction:column; gap:3px; background:#E7F4EC; border:1px solid #BFE3CC; color:#2E7D32; border-radius:10px; padding:10px 13px; margin:14px 0 6px; font-weight:800; font-size:13.5px; }
   .paid-band .pb-sub { font-weight:600; color:#3E7A4E; font-size:11px; line-height:1.5; }
+  .statusbox { border-radius:12px; padding:13px 14px; margin-bottom:12px; }
+  .statusbox .sb-state { font-size:16px; font-weight:800; }
+  .statusbox .sb-desc { font-size:12px; margin-top:5px; line-height:1.55; }
+  .statusbox.wait { background:#EAF2FB; border:1px solid #D5E6F8; } .statusbox.wait .sb-state { color:#0B5FB0; } .statusbox.wait .sb-desc { color:#3E6A98; }
+  .statusbox.check { background:#FFF4E2; border:1px solid #F3D998; } .statusbox.check .sb-state { color:#B36A00; } .statusbox.check .sb-desc { color:#8A6A2E; }
+  .statusbox.sent { background:#E7F4EC; border:1px solid #BFE3CC; } .statusbox.sent .sb-state { color:#2E7D32; } .statusbox.sent .sb-desc { color:#3E7A4E; }
+  .payout-amt { padding:4px 0 10px; border-bottom:1px solid #F2F4F7; margin-bottom:6px; }
+  .payout-amt .pa-l { font-size:12px; color:#5A6470; } .payout-amt .pa-v { font-size:26px; font-weight:800; color:#0B5FB0; margin-top:2px; } .payout-amt .pa-v.hold { color:#9AA3B0; }
+  .payout-note { background:#F7F9FB; border:1px solid #EAEEF2; border-radius:10px; padding:11px 13px; margin-bottom:12px; }
+  .payout-note .pn-t { font-size:12px; font-weight:800; color:#5A6470; margin-bottom:4px; } .payout-note .pn-b { font-size:11.5px; color:#5A6470; line-height:1.55; }
+  .report-limit { font-size:11px; color:#9AA3B0; text-align:center; margin-top:7px; }
   .histrow { display:flex; align-items:center; gap:12px; background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:13px 14px; }
   .histrow .hi { font-size:18px; }
   .histrow .ht { flex:1; }
@@ -592,7 +603,7 @@
           <div class="smt">
             <div class="smc"><div class="v amt">623,676<span class="u"> KHR</span></div><div class="l">受取額</div></div>
             <div class="smc"><div class="v">13<span class="u"> 件</span></div><div class="l">取引数</div></div>
-            <div class="smc"><div class="v">47,975<span class="u"> KHR</span></div><div class="l">平均単価</div></div>
+            <div class="smc"><div class="v">47,975<span class="u"> KHR</span></div><div class="l">平均取引額</div></div>
           </div>
           <div class="pend">
             <div>送金待ち <b>58,838 KHR</b> <span class="note">・本日中に送金予定</span></div>
@@ -714,6 +725,108 @@
           <div class="lreason">辞退理由：<b>配送が難しい</b></div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑧ 送金状況（送金待ち）案B -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑧ 送金状況（送金待ち）<span class="tag">案B・配送完了後</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 👤</span></div>
+      <div class="f-title">送金状況</div>
+      <div class="f-body">
+        <div class="ocard"><div class="oc-top"><div class="oc-main">
+          <div class="oc-date">📅 納品 6/27（土） ・ 🕐 9:00–10:00</div>
+          <div class="oc-name">スポットパンガシウス（3 head/kg）</div>
+          <div class="oc-rest">注文数量 5 kg ・ 内臓処理あり</div>
+          <div class="oc-rest">🏬 test_restaurant5 ・ takeo, Samraong</div>
+          <div class="oc-fl">FL-260627-001</div>
+        </div></div></div>
+        <div class="sec-label">現在の状態</div>
+        <div class="statusbox wait">
+          <div class="sb-state">送金待ち</div>
+          <div class="sb-desc">問題がなければ数時間後に取引完了し、FISHLINKから送金されます。</div>
+        </div>
+        <div class="info-card">
+          <div class="payout-amt"><div class="pa-l">受取予定額</div><div class="pa-v">46,525 KHR</div></div>
+          <div class="amt"><span class="al">魚代</span><span class="av">35,000 KHR</span></div>
+          <div class="amt"><span class="al">手数料（5%）</span><span class="av">−1,750 KHR</span></div>
+          <div class="amt promo"><span class="al">🏷 キャンペーン割引</span><span class="av">+875 KHR</span></div>
+          <div class="amt"><span class="al">送料</span><span class="av">+12,400 KHR</span></div>
+        </div>
+        <div class="payout-note">
+          <div class="pn-t">送金について</div>
+          <div class="pn-b">お支払いは FISHLINK が預かっています（農家への直接支払いではありません）。問題がなければ取引完了後、FISHLINK から農家へ送金されます。</div>
+        </div>
+        <button class="btn danger full">🚩 問題を報告</button>
+        <div class="report-limit">本日 4:07 まで報告できます</div>
+        <div class="report-limit">※ レビューは取引完了後に表示されます</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑧' 送金状況（確認中＝問題報告で送金保留）案B -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑧' 送金状況（確認中）<span class="tag">問題報告で送金保留</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 👤</span></div>
+      <div class="f-title">送金状況</div>
+      <div class="f-body">
+        <div class="ocard"><div class="oc-top"><div class="oc-main">
+          <div class="oc-date">📅 納品 6/27（土） ・ 🕐 9:00–10:00</div>
+          <div class="oc-name">スポットパンガシウス（3 head/kg）</div>
+          <div class="oc-rest">注文数量 5 kg ・ 内臓処理あり</div>
+          <div class="oc-rest">🏬 test_restaurant5 ・ takeo, Samraong</div>
+          <div class="oc-fl">FL-260627-001</div>
+        </div></div></div>
+        <div class="sec-label">現在の状態</div>
+        <div class="statusbox check">
+          <div class="sb-state">確認中（問題が報告されています）</div>
+          <div class="sb-desc">運営が確認しています。確認後、送金または返金されます。</div>
+        </div>
+        <div class="info-card">
+          <div class="payout-amt"><div class="pa-l">受取予定額（保留中）</div><div class="pa-v hold">46,525 KHR</div></div>
+          <div class="amt"><span class="al">魚代</span><span class="av">35,000 KHR</span></div>
+          <div class="amt"><span class="al">手数料（5%）</span><span class="av">−1,750 KHR</span></div>
+          <div class="amt promo"><span class="al">🏷 キャンペーン割引</span><span class="av">+875 KHR</span></div>
+          <div class="amt"><span class="al">送料</span><span class="av">+12,400 KHR</span></div>
+        </div>
+        <div class="payout-note">
+          <div class="pn-t">送金について</div>
+          <div class="pn-b">お支払いは FISHLINK が預かっています。問題の確認が終わるまで送金は保留されます。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑧'' 送金状況（送金済）案B -->
+  <div class="phone-wrap">
+    <div class="phone-label">⑧'' 送金状況（送金済）<span class="tag">完了・レビュー解禁</span></div>
+    <div class="phone">
+      <div class="f-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 👤</span></div>
+      <div class="f-title">送金状況</div>
+      <div class="f-body">
+        <div class="ocard"><div class="oc-top"><div class="oc-main">
+          <div class="oc-date">📅 納品 6/27（土） ・ 🕐 9:00–10:00</div>
+          <div class="oc-name">スポットパンガシウス（3 head/kg）</div>
+          <div class="oc-rest">注文数量 5 kg ・ 内臓処理あり</div>
+          <div class="oc-rest">🏬 test_restaurant5 ・ takeo, Samraong</div>
+          <div class="oc-fl">FL-260627-001</div>
+        </div></div></div>
+        <div class="sec-label">現在の状態</div>
+        <div class="statusbox sent">
+          <div class="sb-state">✓ 送金済</div>
+          <div class="sb-desc">FISHLINK から農家へ送金しました。取引完了です。</div>
+        </div>
+        <div class="info-card">
+          <div class="payout-amt"><div class="pa-l">受取額</div><div class="pa-v">46,525 KHR</div></div>
+          <div class="amt"><span class="al">魚代</span><span class="av">35,000 KHR</span></div>
+          <div class="amt"><span class="al">手数料（5%）</span><span class="av">−1,750 KHR</span></div>
+          <div class="amt promo"><span class="al">🏷 キャンペーン割引</span><span class="av">+875 KHR</span></div>
+          <div class="amt"><span class="al">送料</span><span class="av">+12,400 KHR</span></div>
+        </div>
+        <button class="btn sec full">レビューを送信</button>
       </div>
     </div>
   </div>

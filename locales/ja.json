@@ -1,6 +1,6 @@
 {
     "app": {
-        "name": "FishLink",
+        "name": "FISHLINK",
         "tagline": "農家とレストランをつなぐ"
     },
     "home": {
@@ -87,7 +87,7 @@
         "displayNameHint": "例：ヒレナマズ農場",
         "phone": "電話番号",
         "phonePlaceholder": "例：012345678",
-        "phoneHint": "FishLinkからの連絡や、送金時の確認に使用します",
+        "phoneHint": "FISHLINKからの連絡や、送金時の確認に使用します",
         "otpTitle": "電話番号の確認",
         "otpSub": "{{phone}} 宛に確認コードを送りました",
         "otpCancel": "キャンセル",
@@ -353,16 +353,17 @@
     "legal": {
         "back": "戻る",
         "draftNote": "ドラフト（レビュー中）",
-        "updated": "最終更新：2026年6月"
+        "updated": "最終更新：2026年6月",
+        "updatedPrefix": "最終更新："
     },
     "terms": {
         "title": "利用規約",
         "s1Title": "1. サービスについて",
-        "s1Body": "FishLink は養殖農家とレストランをつなぎ、魚の売買を行うサービスです。本サービスを利用することで、本規約に同意したものとみなされます。",
+        "s1Body": "FISHLINK は養殖農家とレストランをつなぎ、魚の売買を行うサービスです。本サービスを利用することで、本規約に同意したものとみなされます。",
         "s2Title": "2. アカウント",
         "s2Body": "利用者は自身のアカウント情報・パスワードの管理に責任を負います。登録情報は正確かつ真実である必要があります。",
         "s3Title": "3. 決済と中抜きの禁止",
-        "s3Body": "すべての決済は FishLink を通じて行ってください。プラットフォームを介さない取引・場外決済は禁止であり、アカウント制限の対象となる場合があります。",
+        "s3Body": "すべての決済は FISHLINK を通じて行ってください。プラットフォームを介さない取引・場外決済は禁止であり、アカウント制限の対象となる場合があります。",
         "s4Title": "4. レビューと行動規範",
         "s4Body": "適切な表現をご利用ください。虚偽のレビュー・なりすまし・嫌がらせは削除され、アカウント制限の対象となる場合があります。",
         "s5Title": "5. 変更",
@@ -379,7 +380,7 @@
         "s4Title": "4. 保管とセキュリティ",
         "s4Body": "情報は Firebase 上で安全に保管されます。データの保護に努めます。",
         "s5Title": "5. お問い合わせ",
-        "s5Body": "プライバシーに関するご質問は FishLink 運営までご連絡ください。"
+        "s5Body": "プライバシーに関するご質問は FISHLINK 運営までご連絡ください。"
     },
     "restaurant": {
         "title": "魚一覧",
@@ -724,7 +725,9 @@
         "payUnconfirmedBadge": "お支払い未確認",
         "payUnconfirmedNote": "入金を確認できませんでした。もう一度お支払いいただくか、運営にお問い合わせください。",
         "payAgain": "もう一度支払う",
-        "contactSupport": "運営に問い合わせる"
+        "contactSupport": "運営に問い合わせる",
+        "holdingBadge": "確認中",
+        "reportedConfirmingNote": "問題を報告しました。運営が確認しています"
     },
     "fcm": {
         "newOrder": "新しい注文が届きました",
@@ -769,18 +772,18 @@
         "currentStatus": "現在の状態",
         "receiveAmount": "受取予定額",
         "aboutRemittance": "送金について",
-        "remittanceDesc": "レストランがその場で農家に直接支払うわけではありません。支払い確認後、FishLinkから農家へ送金されます。",
+        "remittanceDesc": "レストランがその場で農家に直接支払うわけではありません。支払い確認後、FISHLINKから農家へ送金されます。",
         "reviewAfterConfirm": "※ レビューは支払い確認後に表示されます",
         "receiveAmountHold": "受取予定額（保留中）",
         "statusProblemHold": "確認中",
         "statusProblemHoldDesc": "問題が報告されています。運営が内容を確認しています。確認後に送金または対応のご連絡をします。",
         "remittanceHoldDesc": "問題の確認が済むと、問題がなければ送金されます。内容によっては一部・全額がレストランへ返金される場合があります。",
         "statusWaitingPayment": "支払い確認待ち",
-        "statusWaitingPaymentDesc": "レストランの支払い確認後、FishLinkから送金されます。",
+        "statusWaitingPaymentDesc": "レストランの支払い確認後、FISHLINKから送金されます。",
         "statusPaidByRestaurant": "レストランが支払い完了",
-        "statusPaidByRestaurantDesc": "FishLinkで入金確認後、送金処理を行います。",
+        "statusPaidByRestaurantDesc": "FISHLINKで入金確認後、送金処理を行います。",
         "statusConfirmed": "入金確認済み",
-        "statusConfirmedDesc": "FishLinkからの送金準備中です。",
+        "statusConfirmedDesc": "FISHLINKからの送金準備中です。",
         "statusRemitted": "送金済み",
         "statusRemittedDesc": "あなたの口座への送金が完了しました。",
         "statusDone": "取引完了",
@@ -1238,7 +1241,7 @@
     "report": {
         "title": "問題を報告",
         "troubleTitle": "トラブル報告",
-        "subtitle": "問題があれば FishLink に報告してください",
+        "subtitle": "問題があれば FISHLINK に報告してください",
         "target": "対象の取引",
         "typeLabel": "問題の内容",
         "photoLabel": "写真を追加",
@@ -1248,8 +1251,8 @@
         "detailLabel": "詳細（任意）",
         "restPlaceholder": "例：注文と違う魚が届いた、数量が足りなかった など",
         "farmerPlaceholder": "例：受取が遅かった、連絡がつかなかった など",
-        "submit": "FishLinkへ送信",
-        "processNote": "FishLink が内容を確認し、必要に応じて対応します。",
+        "submit": "FISHLINKへ送信",
+        "processNote": "FISHLINK が内容を確認し、必要に応じて対応します。",
         "submitted": "報告を送信しました",
         "errorType": "問題の内容を選択してください",
         "errorSubmit": "送信に失敗しました",
@@ -1317,8 +1320,8 @@
         "amountSales": "売上金額",
         "amountPurchase": "購入金額",
         "count": "取引数",
-        "avgSales": "平均単価",
-        "avgPurchase": "平均購入単価",
+        "avgSales": "平均取引額",
+        "avgPurchase": "平均取引額",
         "countUnit": "件",
         "viewMore": "もっと見る",
         "activeListings": "出品中の魚",
@@ -1397,11 +1400,16 @@
         "qrGroupHead": "受取用QR",
         "orDivider": "または",
         "wallet": "ウォレット",
-        "walletBalance": "残高 {{amount}} KHR"
+        "walletBalance": "残高 {{amount}} KHR",
+        "holdingSum": "うち確認中 {{amount}}",
+        "holdingNote": "問題報告あり（保留）",
+        "holdingBadge": "確認中",
+        "receiveAmountHold": "受取予定額（保留中）",
+        "holdingCardNote": "問題が報告されています（運営が確認中）"
     },
     "adminChat": {
         "title": "運営チャット",
-        "subtitle": "FishLink 運営にメッセージを送れます",
+        "subtitle": "FISHLINK 運営にメッセージを送れます",
         "loading": "読み込み中...",
         "empty": "まだメッセージはありません。お気軽にどうぞ。",
         "placeholder": "メッセージを入力...",
@@ -1809,6 +1817,23 @@
             "hidePost": "投稿を非表示にする",
             "postHidden": "非表示済み",
             "confirmHidePost": "この投稿を非表示にしますか？（公開からは消えますが、記録としてDBには残ります）"
+        },
+        "navLegal": "規約・ポリシー",
+        "legal": {
+            "title": "利用規約・プライバシーポリシー",
+            "subtitle": "本文を編集し、言語ごとに公開します。ユーザーには公開版のみ表示されます。",
+            "fieldTitle": "タイトル",
+            "fieldBody": "本文",
+            "titlePlaceholder": "例：利用規約",
+            "bodyPlaceholder": "本文を入力…",
+            "hint": "「編集する言語」タブで言語ごとに用意します（運営が外部ツールで下訳→人がレビュー→貼って公開。アプリ側は翻訳しません）。〔公開する〕を押すと、この言語の公開版が更新されアプリに反映されます。",
+            "saveDraft": "下書き保存",
+            "publish": "公開する",
+            "publishedToast": "公開しました",
+            "needContent": "日本語のタイトルと本文を入力してください",
+            "saveFailed": "保存に失敗しました",
+            "badgePublished": "公開中",
+            "badgeDraft": "未公開"
         }
     },
     "wallet": {

@@ -428,7 +428,11 @@ self.addEventListener('notificationclick', (event) => {
 //   pages/farmer/restaurant.html（レストラン公開ページ）・pages/restaurant/farmer.html（生産者ページ）の
 //   ヘッダーロゴを、閲覧者ロール（currentUserData.role）自身のダッシュボードへ出し分け（自己プレビュー中に
 //   相手アプリのダッシュボードへ飛ぶ不具合の修正・戻る矢印 history.back() は不変）。hosting-only 2ページ。
-const CACHE_NAME = 'fishlink-v141';
+// 7/4-5 (v142): #189-193 バッチ＝規約同意フロー導線＋FISHLINK表記統一（#189）／規約・プラポリ管理編集＋
+//   Firestore駆動ページ（#190・js/legal-display.js 新規 PRECACHE 追加・terms/privacy 書き換え・firestore.rules legal）／
+//   KHR 100リエル単位 切り捨て（#191・order-utils.js）／農家 売上・取引 確認中反映（#192）／買い手 注文状況 確認中＋
+//   購入・取引 履歴除外（#193）。locales 3言語に #190/#192/#193 キー追加＋FishLink→FISHLINK。
+const CACHE_NAME = 'fishlink-v142';
 
 const PRECACHE_URLS = [
     '/',
@@ -454,6 +458,7 @@ const PRECACHE_URLS = [
     '/js/chat-timeline.js',
     '/js/review-card.js',
     '/js/faq-display.js',
+    '/js/legal-display.js',
     '/js/report-window.js',
     '/js/toast.js',
     '/js/push-optin.js',

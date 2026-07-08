@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0d6e4c">
     <meta name="google" content="notranslate">
-    <title>FishLink</title>
+    <title>FISHLINK</title>
 
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
@@ -17,45 +17,93 @@
 
     <style>
         .legal { max-width: 560px; margin: 0 auto; padding: 16px 18px 48px; }
-        .legal__back { display: inline-flex; align-items: center; gap: 4px; color: var(--color-text-sub); font-size: 13px; text-decoration: none; margin-bottom: 10px; }
+        .legal__bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+        .legal__back { display: inline-flex; align-items: center; gap: 4px; color: var(--color-text-sub); font-size: 13px; text-decoration: none; flex: 0 0 auto; white-space: nowrap; }
+        /* ⚠️ グローバル select{width:100%}（style.css）に勝つため width:auto を明示＝全幅化で「戻る」が縦潰れするのを防ぐ（#169と同根）。 */
+        .legal__bar #lang-selector { width: auto; flex: 0 0 auto; font-size: 13px; padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 20px; background: var(--color-surface); color: var(--color-text-sub); }
         .legal__title { font-size: 20px; font-weight: 800; margin: 4px 0 4px; }
-        .legal__draft { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: #b45309; background: #fff7e6; border: 1px solid #f3d998; border-radius: 8px; padding: 6px 10px; margin-bottom: 14px; }
+        .legal__updated { font-size: 12px; color: var(--color-text-sub); margin: 2px 0 16px; }
         .legal h2 { font-size: 15px; font-weight: 800; margin: 18px 0 6px; color: var(--color-text); }
         .legal p { font-size: 13.5px; line-height: 1.8; color: var(--color-text); margin: 0 0 8px; }
-        .legal__updated { font-size: 12px; color: var(--color-text-sub); margin-top: 20px; }
+        /* Firestore 公開版の本文＝改行保持のプレーンテキスト（textContent で描画＝XSS安全） */
+        .legal__body { font-size: 13.5px; line-height: 1.85; color: var(--color-text); white-space: pre-wrap; }
     </style>
 </head>
 
 <body>
     <div class="legal">
-        <a href="#" class="legal__back" id="legal-back">
-            <span class="material-symbols-outlined" style="font-size:18px;">arrow_back</span>
-            <span data-i18n="legal.back"></span>
-        </a>
-        <div class="legal__title" data-i18n="terms.title"></div>
-        <div class="legal__draft">
-            <span class="material-symbols-outlined" style="font-size:15px;">edit_note</span>
-            <span data-i18n="legal.draftNote"></span>
+        <div class="legal__bar">
+            <a href="#" class="legal__back" id="legal-back">
+                <span class="material-symbols-outlined" style="font-size:18px;">arrow_back</span>
+                <span data-i18n="legal.back"></span>
+            </a>
+            <select id="lang-selector">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
+            </select>
         </div>
 
-        <h2 data-i18n="terms.s1Title"></h2>
-        <p data-i18n="terms.s1Body"></p>
-        <h2 data-i18n="terms.s2Title"></h2>
-        <p data-i18n="terms.s2Body"></p>
-        <h2 data-i18n="terms.s3Title"></h2>
-        <p data-i18n="terms.s3Body"></p>
-        <h2 data-i18n="terms.s4Title"></h2>
-        <p data-i18n="terms.s4Body"></p>
-        <h2 data-i18n="terms.s5Title"></h2>
-        <p data-i18n="terms.s5Body"></p>
+        <div class="legal__title" id="doc-title"></div>
+        <div class="legal__updated" id="doc-updated"></div>
 
-        <div class="legal__updated" data-i18n="legal.updated"></div>
+        <!-- Firestore 公開版の本文（あれば表示） -->
+        <div class="legal__body" id="doc-body" style="display:none;"></div>
+
+        <!-- フォールバック（運営が未公開＝現行 i18n セクション。draft バッジは出さない＝spec §3） -->
+        <div id="doc-fallback">
+            <h2 data-i18n="terms.s1Title"></h2>
+            <p data-i18n="terms.s1Body"></p>
+            <h2 data-i18n="terms.s2Title"></h2>
+            <p data-i18n="terms.s2Body"></p>
+            <h2 data-i18n="terms.s3Title"></h2>
+            <p data-i18n="terms.s3Body"></p>
+            <h2 data-i18n="terms.s4Title"></h2>
+            <p data-i18n="terms.s4Body"></p>
+            <h2 data-i18n="terms.s5Title"></h2>
+            <p data-i18n="terms.s5Body"></p>
+        </div>
     </div>
 
     <script type="module">
-        import { initI18n } from '/js/i18n.js';
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { loadLegalDoc, legalPubText, formatUpdatedYearMonth } from '/js/legal-display.js';
         await initI18n();
+        initLangSelector();
         document.body.classList.add('app-ready');
+
+        const DOC_TYPE = 'terms';
+        let legalData = null;   // Firestore doc（未取得/未公開なら null 扱い）
+
+        function currentLang() { return (i18next.language || 'km').split('-')[0]; }
+
+        // 公開版があれば Firestore 本文、無ければ現行 i18n セクションにフォールバック（リグレッションなし）。
+        function renderDoc() {
+            const lang = currentLang();
+            const titleEl = document.getElementById('doc-title');
+            const updatedEl = document.getElementById('doc-updated');
+            const bodyEl = document.getElementById('doc-body');
+            const fallbackEl = document.getElementById('doc-fallback');
+
+            const pub = (legalData && legalData.published) ? legalPubText(legalData, lang) : null;
+            if (pub && pub.body) {
+                fallbackEl.style.display = 'none';
+                bodyEl.style.display = 'block';
+                bodyEl.textContent = pub.body;
+                titleEl.textContent = pub.title || i18next.t('terms.title');
+                const ym = formatUpdatedYearMonth(legalData.updatedAt, lang);
+                updatedEl.textContent = ym ? `${i18next.t('legal.updatedPrefix')}${ym}` : i18next.t('legal.updated');
+            } else {
+                bodyEl.style.display = 'none';
+                fallbackEl.style.display = 'block';
+                titleEl.textContent = i18next.t('terms.title');
+                updatedEl.textContent = i18next.t('legal.updated');
+            }
+        }
+
+        renderDoc();
+        loadLegalDoc(DOC_TYPE).then(d => { legalData = d; renderDoc(); });
+        onLanguageChange(() => renderDoc());
 
         // 6/9 #131: register から target="_blank"（新規タブ）で開かれるため、新規タブは履歴が無く
         //   history.back() で戻れない。タブを閉じる → 閉じられない/同タブなら前のページ or register へ。
@@ -64,7 +112,6 @@
             if (window.opener || window.history.length <= 1) {
                 window.close();
             }
-            // フォールバック（close がブロックされた／同タブで開かれた場合）
             setTimeout(() => {
                 if (window.history.length > 1) history.back();
                 else window.location.href = '/register.html';

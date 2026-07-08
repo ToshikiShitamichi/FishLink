@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 規約同意フロー — モック</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:900px; margin-bottom:20px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; } .intro b{color:#0B5FB0;}
+
+  .stage { display:flex; flex-wrap:wrap; gap:26px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; color:#5A6470; max-width:390px; text-align:center; }
+
+  .phone { width:390px; max-width:100%; height:720px; background:#F7F9FB; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+  .header { background:#FFF; padding:12px 14px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:9px; }
+  .header .bk { font-size:19px; color:#5A6470; } .header .logo { font-weight:800; color:#0B5FB0; font-size:15px; } .header .logo::before{content:"🐟 ";}
+  .header .ti { font-weight:800; font-size:15px; }
+  .header .lang { margin-left:auto; font-size:11px; color:#0B5FB0; font-weight:700; border:1px solid #CFE0EE; border-radius:12px; padding:3px 9px; }
+  .title { text-align:center; font-size:17px; font-weight:800; padding:14px 0 4px; }
+  .body { flex:1; overflow-y:auto; padding:10px 16px 16px; }
+
+  .field { margin-bottom:14px; }
+  .field .fl { font-size:12px; font-weight:700; color:#5A6470; margin-bottom:5px; }
+  .field .fi { width:100%; border:1px solid #DDE3E9; border-radius:10px; padding:11px 13px; font-size:14px; color:#33414E; background:#FFF; }
+  .field .fi.ph { color:#AEB6C0; }
+
+  .footer { background:#FFF; border-top:1px solid #EEF1F4; padding:12px 16px 18px; }
+  .btn { width:100%; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; background:#0B5FB0; color:#FFF; }
+  .consent { font-size:11.5px; color:#5A6470; line-height:1.6; text-align:center; margin-bottom:11px; }
+  .consent a { color:#0B5FB0; font-weight:700; text-decoration:underline; text-underline-offset:2px; }
+
+  /* マイページのメニュー行 */
+  .menu { }
+  .menu .grp { font-size:11px; font-weight:800; color:#9AA3B0; margin:14px 4px 7px; }
+  .menu-row { display:flex; align-items:center; gap:12px; background:#FFF; border:1px solid #EEF1F4; border-radius:12px; padding:13px 14px; margin-bottom:9px; }
+  .menu-row .mi { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .menu-row .mt { flex:1; font-size:14px; font-weight:700; }
+  .menu-row .chev { color:#C2CCD6; font-size:19px; font-weight:700; }
+  .menu-row.hl { box-shadow:0 0 0 2px #D5E6F8 inset; }
+  .logout { text-align:center; color:#5A6470; font-size:14px; font-weight:700; padding:16px; }
+
+  /* 規約表示ページ */
+  .doc-meta { font-size:11.5px; color:#9AA3B0; margin:2px 0 14px; }
+  .doc-note { background:#FFF7E6; border:1px solid #F3D998; border-radius:10px; padding:10px 12px; font-size:11.5px; color:#8A6A2A; line-height:1.55; margin-bottom:14px; }
+  .doc-h { font-size:13.5px; font-weight:800; margin:14px 0 6px; }
+  .doc-p { font-size:12.5px; color:#5A6470; line-height:1.7; }
+  .doc-line { height:9px; border-radius:5px; background:#EEF1F4; margin:7px 0; }
+  .doc-line.s { width:60%; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 規約同意フロー — モック</h1>
+  <p>方式＝<b>みなし同意（b・実装済み）</b>：〔登録する〕の上に「登録すると[利用規約]と[プライバシーポリシー]に同意したものとみなされます」＋リンク（チェックボックスは足さない・低リテラシー向き）。</p>
+  <p>表示＝<b>アプリ内の読み取り専用ページ</b>（本文は<b>管理画面で編集</b>＝FAQ同発想・多言語対応）。常時アクセス＝<b>登録画面のリンク＋マイページの行</b>（プラポリ常時アクセスはストア要件）。再同意＝MVPは無し（<b>最終更新日表示＋継続利用でみなし同意</b>）。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① 登録画面（同意して登録） -->
+  <div class="phone-wrap">
+    <div class="phone-label">① 登録画面 ・ 〔同意して登録〕＋リンク</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">アカウント登録</div>
+      <div class="body">
+        <div class="field"><div class="fl">電話番号</div><div class="fi ph">012 345 678</div></div>
+        <div class="field"><div class="fl">表示名</div><div class="fi ph">お店・農園の名前</div></div>
+        <div class="field"><div class="fl">パスワード</div><div class="fi ph">••••••••</div></div>
+        <div class="field"><div class="fl">位置情報</div><div class="fi ph">地図で設定</div></div>
+      </div>
+      <div class="footer">
+        <div class="consent">登録すると <a>利用規約</a> と <a>プライバシーポリシー</a> に同意したものとみなされます。</div>
+        <button class="btn">登録する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② マイページの行 -->
+  <div class="phone-wrap">
+    <div class="phone-label">② マイページ ・ 規約/プラポリの行（常時アクセス）</div>
+    <div class="phone">
+      <div class="header"><span class="logo">FISHLINK</span><span class="lang">🌐 日本語</span></div>
+      <div class="title">マイページ</div>
+      <div class="body">
+        <div class="menu">
+          <div class="grp">お店の情報</div>
+          <div class="menu-row"><div class="mi" style="background:#ECE9FB;">🪪</div><div class="mt">基本情報</div><div class="chev">›</div></div>
+          <div class="menu-row"><div class="mi" style="background:#E6F0FB;">💰</div><div class="mt">ウォレット</div><div class="chev">›</div></div>
+
+          <div class="grp">情報・サポート</div>
+          <div class="menu-row"><div class="mi" style="background:#ECE9FB;">💬</div><div class="mt">運営からのメッセージ</div><div class="chev">›</div></div>
+          <div class="menu-row hl"><div class="mi" style="background:#EEF2F6;">📄</div><div class="mt">利用規約</div><div class="chev">›</div></div>
+          <div class="menu-row hl"><div class="mi" style="background:#EEF2F6;">🔒</div><div class="mt">プライバシーポリシー</div><div class="chev">›</div></div>
+        </div>
+        <div class="logout">ログアウト</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 規約表示ページ（読み取り専用） -->
+  <div class="phone-wrap">
+    <div class="phone-label">③ 利用規約ページ ・ 読み取り専用（本文は管理画面で編集）</div>
+    <div class="phone">
+      <div class="header"><span class="bk">←</span><span class="ti">利用規約</span><span class="lang">🌐 日本語</span></div>
+      <div class="body">
+        <div class="doc-meta">最終更新日：2026年6月29日</div>
+        <div class="doc-note">※ 本文は運営が<b>管理画面で編集</b>します（ここは仮の表示）。多言語（クメール／日本語／英語）に対応。</div>
+
+        <div class="doc-h">1. はじめに</div>
+        <div class="doc-line"></div><div class="doc-line"></div><div class="doc-line s"></div>
+        <div class="doc-h">2. アプリ内決済が原則</div>
+        <div class="doc-p" style="margin-bottom:7px;">お支払いは FISHLINK を通じて行うものとし、農家・レストラン間の直接支払いや連絡先交換によるアプリ外取引は禁止します。</div>
+        <div class="doc-line"></div><div class="doc-line s"></div>
+        <div class="doc-h">3. 禁止事項</div>
+        <div class="doc-line"></div><div class="doc-line"></div><div class="doc-line s"></div>
+        <div class="doc-h">4. 手数料・返金・キャンセル</div>
+        <div class="doc-line"></div><div class="doc-line s"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

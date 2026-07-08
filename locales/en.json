@@ -1,6 +1,6 @@
 {
     "app": {
-        "name": "FishLink",
+        "name": "FISHLINK",
         "tagline": "Connecting Farmers and Restaurants"
     },
     "home": {
@@ -87,7 +87,7 @@
         "displayNameHint": "e.g. Hirena Catfish Farm",
         "phone": "Phone Number",
         "phonePlaceholder": "e.g. 012345678",
-        "phoneHint": "Used for contact from FishLink and remittance verification",
+        "phoneHint": "Used for contact from FISHLINK and remittance verification",
         "otpTitle": "Verify phone number",
         "otpSub": "We sent a verification code to {{phone}}",
         "otpCancel": "Cancel",
@@ -353,16 +353,17 @@
     "legal": {
         "back": "Back",
         "draftNote": "Draft — under review",
-        "updated": "Last updated: June 2026"
+        "updated": "Last updated: June 2026",
+        "updatedPrefix": "Last updated: "
     },
     "terms": {
         "title": "Terms of Use",
         "s1Title": "1. About the service",
-        "s1Body": "FishLink connects fish farmers and restaurants for buying and selling fish. By using the service, you agree to these terms.",
+        "s1Body": "FISHLINK connects fish farmers and restaurants for buying and selling fish. By using the service, you agree to these terms.",
         "s2Title": "2. Accounts",
         "s2Body": "You are responsible for your account information and password. Your information must be true and accurate.",
         "s3Title": "3. Payments and no off-platform dealing",
-        "s3Body": "All payments must go through FishLink. Attempting to bypass the platform or settle off-platform is prohibited and may result in account restrictions.",
+        "s3Body": "All payments must go through FISHLINK. Attempting to bypass the platform or settle off-platform is prohibited and may result in account restrictions.",
         "s4Title": "4. Reviews and conduct",
         "s4Body": "Please use appropriate language. False reviews, impersonation, or harassment may be removed and may lead to account restrictions.",
         "s5Title": "5. Changes",
@@ -379,7 +380,7 @@
         "s4Title": "4. Storage and security",
         "s4Body": "Information is stored securely on Firebase. We strive to protect your data.",
         "s5Title": "5. Contact",
-        "s5Body": "For privacy questions, please contact the FishLink admin."
+        "s5Body": "For privacy questions, please contact the FISHLINK admin."
     },
     "restaurant": {
         "title": "Fish Market",
@@ -724,7 +725,9 @@
         "payUnconfirmedBadge": "Payment unconfirmed",
         "payUnconfirmedNote": "We couldn't confirm your payment. Please pay again or contact support.",
         "payAgain": "Pay again",
-        "contactSupport": "Contact support"
+        "contactSupport": "Contact support",
+        "holdingBadge": "Reviewing",
+        "reportedConfirmingNote": "You reported an issue. We are reviewing it."
     },
     "fcm": {
         "newOrder": "New order received",
@@ -755,7 +758,7 @@
         "reviewAfterPay": "* Review appears after payment",
         "modalCancel": "Cancel",
         "confirmModalTitle": "Have you completed the payment?",
-        "confirmModalBody": "FishLink will verify your payment. After confirmation, the status becomes \"Awaiting payment confirmation\".",
+        "confirmModalBody": "FISHLINK will verify your payment. After confirmation, the status becomes \"Awaiting payment confirmation\".",
         "confirmModalOk": "Yes",
         "alreadyPaid": "Awaiting payment confirmation",
         "paidBanner": "Payment confirmed.",
@@ -769,18 +772,18 @@
         "currentStatus": "Current Status",
         "receiveAmount": "Expected Payout",
         "aboutRemittance": "About Remittance",
-        "remittanceDesc": "The restaurant does not pay the farmer directly. Once payment is confirmed, FishLink transfers the amount to the farmer.",
+        "remittanceDesc": "The restaurant does not pay the farmer directly. Once payment is confirmed, FISHLINK transfers the amount to the farmer.",
         "reviewAfterConfirm": "* Review appears after payment is confirmed",
         "receiveAmountHold": "Expected amount (on hold)",
         "statusProblemHold": "Under review",
-        "statusProblemHoldDesc": "An issue has been reported. FishLink is reviewing it. We will contact you about remittance or next steps after the review.",
+        "statusProblemHoldDesc": "An issue has been reported. FISHLINK is reviewing it. We will contact you about remittance or next steps after the review.",
         "remittanceHoldDesc": "Once the issue is reviewed, the amount is remitted if there is no problem. Depending on the case, part or all may be refunded to the restaurant.",
         "statusWaitingPayment": "Waiting for Payment",
-        "statusWaitingPaymentDesc": "Once the restaurant's payment is confirmed, FishLink will transfer the funds.",
+        "statusWaitingPaymentDesc": "Once the restaurant's payment is confirmed, FISHLINK will transfer the funds.",
         "statusPaidByRestaurant": "Restaurant Paid",
-        "statusPaidByRestaurantDesc": "FishLink will process the remittance after verifying the payment.",
+        "statusPaidByRestaurantDesc": "FISHLINK will process the remittance after verifying the payment.",
         "statusConfirmed": "Payment Verified",
-        "statusConfirmedDesc": "FishLink is preparing to transfer the funds.",
+        "statusConfirmedDesc": "FISHLINK is preparing to transfer the funds.",
         "statusRemitted": "Remitted",
         "statusRemittedDesc": "Funds have been transferred to your account.",
         "statusDone": "Transaction Complete",
@@ -1238,7 +1241,7 @@
     "report": {
         "title": "Report Issue",
         "troubleTitle": "Report Trouble",
-        "subtitle": "Please let FishLink know if there was any issue",
+        "subtitle": "Please let FISHLINK know if there was any issue",
         "target": "Target transaction",
         "typeLabel": "Issue type",
         "photoLabel": "Add photos",
@@ -1248,8 +1251,8 @@
         "detailLabel": "Details (optional)",
         "restPlaceholder": "e.g. Fish was different from the order, quantity was short",
         "farmerPlaceholder": "e.g. Late pickup, unable to reach the restaurant",
-        "submit": "Send to FishLink",
-        "processNote": "FishLink will review and respond as needed.",
+        "submit": "Send to FISHLINK",
+        "processNote": "FISHLINK will review and respond as needed.",
         "submitted": "Report submitted",
         "errorType": "Please select an issue type",
         "errorSubmit": "Failed to submit",
@@ -1317,8 +1320,8 @@
         "amountSales": "Sales amount",
         "amountPurchase": "Purchase amount",
         "count": "Transactions",
-        "avgSales": "Avg. unit price",
-        "avgPurchase": "Avg. unit price",
+        "avgSales": "Avg. per trade",
+        "avgPurchase": "Avg. per trade",
         "countUnit": "",
         "viewMore": "View more",
         "activeListings": "Active listings",
@@ -1397,11 +1400,16 @@
         "qrGroupHead": "Receiving QR",
         "orDivider": "or",
         "wallet": "Wallet",
-        "walletBalance": "Balance {{amount}} KHR"
+        "walletBalance": "Balance {{amount}} KHR",
+        "holdingSum": "Reviewing {{amount}}",
+        "holdingNote": "Issue reported (on hold)",
+        "holdingBadge": "Reviewing",
+        "receiveAmountHold": "Expected payout (on hold)",
+        "holdingCardNote": "An issue has been reported (under review)"
     },
     "adminChat": {
         "title": "Admin Chat",
-        "subtitle": "Send a message to the FishLink admin",
+        "subtitle": "Send a message to the FISHLINK admin",
         "loading": "Loading...",
         "empty": "No messages yet. Feel free to start.",
         "placeholder": "Type a message...",
@@ -1809,6 +1817,23 @@
             "hidePost": "Hide post",
             "postHidden": "Hidden",
             "confirmHidePost": "Hide this post? (It disappears from public view but is kept in the database as a record.)"
+        },
+        "navLegal": "Legal",
+        "legal": {
+            "title": "Terms & Privacy Policy",
+            "subtitle": "Edit the text and publish per language. Users see the published version only.",
+            "fieldTitle": "Title",
+            "fieldBody": "Body",
+            "titlePlaceholder": "e.g. Terms of Service",
+            "bodyPlaceholder": "Enter the text…",
+            "hint": "Prepare each language in its tab (draft with an external tool → human review → paste and publish here; the app does not translate). Publishing updates the published version for that language and reflects it in the app.",
+            "saveDraft": "Save draft",
+            "publish": "Publish",
+            "publishedToast": "Published",
+            "needContent": "Enter the Japanese title and body",
+            "saveFailed": "Failed to save",
+            "badgePublished": "Published",
+            "badgeDraft": "Unpublished"
         }
     },
     "wallet": {

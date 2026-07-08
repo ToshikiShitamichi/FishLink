@@ -165,7 +165,15 @@
       "Bash(git --no-pager show HEAD:js/auth.js)",
       "Bash(git --no-pager diff pages/restaurant/cart.html)",
       "Bash(git --no-pager show HEAD:functions/index.js)",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(node \"C:/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/6bbe9388-c16b-4e4a-9670-de669f33ee8c/scratchpad/locales-745.js\")",
+      "Bash(node -e \"['ja','en','km'].forEach\\(l=>{const d=require\\('./locales/'+l+'.json'\\); console.log\\(l, 'account.avgSales=',d.account.avgSales,'| account.holdingBadge=',d.account.holdingBadge,'| admin.legal.publish=',d.admin.legal.publish,'| admin.navLegal=',d.admin.navLegal\\);}\\)\")",
+      "Bash(grep -nE \"i18next\\\\.t\\\\\\(['\\\\\"\\\\`]delivery\\\\.\" pages/restaurant/orders.html)",
+      "Bash(grep -nE \"i18next\\\\.t\\\\\\(['\\\\\"\\\\`]order\\\\.\\(stock|minOrder\\)\" pages/restaurant/cart.html)",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\('order.stock:',j.order&&j.order.stock\\); console.log\\('order.minOrder:',j.order&&j.order.minOrder\\); console.log\\('delivery keys sample:', j.delivery?Object.keys\\(j.delivery\\).slice\\(0,5\\):'no delivery ns'\\)\")",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\),e=require\\('./locales/en.json'\\),k=require\\('./locales/km.json'\\); for\\(const key of ['orders.deliveredBadge']\\){const g=o=>key.split\\('.'\\).reduce\\(\\(a,x\\)=>a&&a[x],o\\); console.log\\(key,'ja:',JSON.stringify\\(g\\(j\\)\\),'en:',JSON.stringify\\(g\\(e\\)\\),'km:',JSON.stringify\\(g\\(k\\)\\)\\);}\")",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); for\\(const s of ['pending','approved','preparing','delivering','completed','declined','cancelled']\\){console.log\\('delivery.'+s+':', j.delivery&&j.delivery[s]!==undefined?'OK':'MISSING'\\);}\")",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); const g=k=>k.split\\('.'\\).reduce\\(\\(a,x\\)=>a&&a[x],j\\); for\\(const k of ['order.stock','order.minOrder','restaurant.stock','restaurant.minOrder','order.stockLabel','post.minOrder']\\) console.log\\(k,'=>',JSON.stringify\\(g\\(k\\)\\)\\);\")"
     ]
   }
 }

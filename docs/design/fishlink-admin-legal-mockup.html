@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 管理画面 — 利用規約・プライバシーポリシー編集 モック</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#F1F3F6; min-height:100vh; padding:28px 16px 60px; color:#1A1A1A; }
+  .intro { max-width:960px; margin:0 auto 20px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; } .intro b { color:#0B5FB0; }
+
+  .wrap { max-width:960px; margin:0 auto; }
+  .admin-top { font-size:12px; color:#9AA3B0; }
+  .admin-title { font-size:24px; font-weight:800; margin:2px 0 4px; }
+  .admin-sub { font-size:13px; color:#5A6470; margin-bottom:16px; }
+
+  .nav { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:20px; }
+  .nav .n { font-size:13px; font-weight:700; padding:8px 14px; border-radius:18px; border:1px solid #DCE3EA; background:#FFF; color:#33414E; }
+  .nav .n.on { background:#12233A; color:#FFF; border-color:#12233A; }
+  .nav .lang { margin-left:auto; font-size:12px; border:1px solid #CFE0EE; border-radius:16px; padding:6px 12px; color:#0B5FB0; font-weight:700; }
+
+  .panel { background:#FFF; border:1px solid #E6EBF0; border-radius:14px; padding:20px 22px; }
+
+  .chips { display:flex; gap:8px; margin-bottom:16px; }
+  .chip { font-size:13px; font-weight:800; padding:8px 16px; border-radius:10px; border:1px solid #DCE3EA; background:#FFF; color:#5A6470; cursor:pointer; }
+  .chip.on { background:#EAF2FB; color:#0B5FB0; border-color:#BBD3EC; }
+
+  .row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .langtabs { display:flex; gap:6px; }
+  .langtabs .lt { font-size:12.5px; font-weight:700; padding:7px 14px; border-radius:9px 9px 0 0; border:1px solid #E2E8EF; border-bottom:none; background:#F5F8FB; color:#5A6470; cursor:pointer; }
+  .langtabs .lt.on { background:#FFF; color:#0B5FB0; border-color:#BBD3EC; position:relative; top:1px; }
+  .status { margin-left:auto; display:flex; align-items:center; gap:12px; }
+  .badge { font-size:11.5px; font-weight:800; padding:4px 11px; border-radius:11px; }
+  .badge.pub { background:#E7F4EC; color:#2E7D32; } .badge.draft { background:#FFF3DC; color:#B36A00; }
+  .meta { font-size:11.5px; color:#9AA3B0; }
+
+  .editor { border:1px solid #BBD3EC; border-radius:0 10px 10px 10px; background:#FFF; }
+  .editor textarea { width:100%; border:none; border-radius:10px; padding:16px; font-size:13.5px; line-height:1.85; color:#2A2F36; font-family:inherit; min-height:320px; resize:vertical; }
+  .editor textarea:focus { outline:none; }
+
+  .hint { font-size:11.5px; color:#8A6A2A; background:#FFF7E6; border:1px solid #F3D998; border-radius:9px; padding:9px 12px; margin:14px 0; line-height:1.55; }
+  .hint b { color:#7A5A1A; }
+
+  .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+  .btn { border:none; border-radius:10px; padding:11px 20px; font-size:13.5px; font-weight:800; cursor:pointer; font-family:inherit; }
+  .btn.sec { background:#FFF; border:1px solid #C9D0D8; color:#5A6470; }
+  .btn.pri { background:#0B5FB0; color:#FFF; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 管理画面 — 利用規約・プライバシーポリシー編集 モック</h1>
+  <p>運営が本文を編集→アプリに反映（<b>FAQ管理と同じ発想</b>）。<b>ドキュメント選択（利用規約／プライバシーポリシー）＋言語タブ（クメール／日本語／英語）＋ドラフト/公開＋最終更新日</b>。多言語＝<b>機械翻訳で下訳→人がレビュー→公開</b>（その場自動翻訳はしない）。<b>ユーザーには「公開」版だけ表示</b>（draftバッジはユーザー画面に出さない）。</p>
+</div>
+
+<div class="wrap">
+  <div class="admin-top">FISHLINK 管理画面</div>
+  <div class="admin-title">利用規約・プライバシーポリシー</div>
+  <div class="admin-sub">本文を編集し、言語ごとに公開します。ユーザーには公開版のみ表示されます。</div>
+
+  <div class="nav">
+    <span class="n">取引一覧</span>
+    <span class="n">ユーザー</span>
+    <span class="n">料金設定</span>
+    <span class="n">紹介クーポン</span>
+    <span class="n">CAA参考価格</span>
+    <span class="n">トラブル報告</span>
+    <span class="n">FAQ</span>
+    <span class="n on">規約・ポリシー</span>
+    <span class="n">ログアウト</span>
+    <span class="lang">🌐 日本語</span>
+  </div>
+
+  <div class="panel">
+    <div class="chips">
+      <span class="chip on">利用規約</span>
+      <span class="chip">プライバシーポリシー</span>
+    </div>
+
+    <div class="row">
+      <div class="langtabs">
+        <span class="lt on">日本語</span>
+        <span class="lt">English</span>
+        <span class="lt">ភាសាខ្មែរ（クメール）</span>
+      </div>
+      <div class="status">
+        <span class="badge pub">公開中</span>
+        <span class="meta">最終更新：2026年6月29日</span>
+      </div>
+    </div>
+
+    <div class="editor">
+      <textarea>1. サービスについて
+FISHLINK は養殖農家とレストランをつなぎ、魚の売買を行うサービスです。本サービスを利用することで、本規約に同意したものとみなされます。
+
+2. アカウント
+利用者は自身のアカウント情報・パスワードの管理に責任を負います。登録情報は正確かつ真実である必要があります。
+
+3. 決済と中抜きの禁止
+すべての決済は FISHLINK を通じて行ってください。プラットフォームを介さない取引・場外決済は禁止であり、アカウント制限の対象となる場合があります。
+
+4. レビューと行動規範
+適切な表現をご利用ください。虚偽のレビュー・なりすまし・嫌がらせは削除され、アカウント制限の対象となる場合があります。
+
+5. 変更
+本規約は改定されることがあります。最新版はアプリ内に掲示します。</textarea>
+    </div>
+
+    <div class="hint">💡 <b>日本語</b>を編集中。クメール／英語は各タブで用意（<b>運営が外部ツールで下訳→人がレビュー→ここに貼って公開</b>。アプリ側は翻訳しない）。〔公開する〕を押すと、この言語の公開版が更新され、アプリに反映されます。</div>
+
+    <div class="actions">
+      <span class="btn sec">下書き保存</span>
+      <span class="btn pri">公開する</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -2,6 +2,17 @@
 // - items[] スキーマと legacy 単一itemスキーマの両方を扱えるようにする
 // - 料金計算ロジックを一元化
 
+// 2026-07-04 #191: KHR金額は「100リエル単位（100の倍数）」に統一する（payment-spec §4.2）。
+//   端数を生む「手数料・割引（％計算）＝serviceFee / campaignDiscount /
+//   farmerCommissionGross / farmerCampaignDiscount」と、距離×レートで端数が出る「配送料」を、
+//   100リエル未満で切り捨てる（四捨五入でなく floor＝手数料が約束の率〔標準5%〕を絶対に超えないため）。
+//   単価（KHR/kg）・送料(per10km)は入力側（post.html / account/delivery.html）で100刻み＋保存時 floor に揃える
+//   ＝魚代＝単価×整数kg は自動で100単位。よって切り捨てるのはこの数行だけで、subtotal/totalAmount/
+//   farmerReceiveAmount/khqrAmount/ウォレット返金がすべて自動で100リエル単位に揃う。
+export function floor100(n) {
+    return Math.floor((Number(n) || 0) / 100) * 100;
+}
+
 /**
  * 注文ドキュメントから items[] 配列を取得。
  * items[] が存在する新方式ならそのまま返す。
@@ -48,16 +59,17 @@ export function calcItemPrices({
     const unitPrice = gutProcessing ? price + gutPrice : price;
     const fishPrice = unitPrice * quantity;
 
-    const serviceFee = Math.round(fishPrice * (serviceRate || 0));
+    // 2026-07-04 #191: ％計算の端数は100リエル未満切り捨て（floor100・payment-spec §4.2）。
+    const serviceFee = floor100(fishPrice * (serviceRate || 0));
     // 6/21 #163①: 買い手のキャンペーン割引は「魚代」（＝手数料込みの表示価格 fishPrice + serviceFee）ベース。
     //   旧実装は fishPrice（手数料前の農家価格）ベースで、買い手画面の「魚代から2.5%」文言と検算が合わなかった
     //   （例 魚代31,500×2.5%＝788 にすべきところ 30,000×2.5%＝750 になっていた）。
     //   ⚠️ 農家側の farmerCampaignDiscount（手数料の実削減）は fishPrice ベースのまま＝別物なので触らない。
-    const campaignDiscount = campaignActive ? Math.round((fishPrice + serviceFee) * (campaignDiscountRate || 0)) : 0;
+    const campaignDiscount = campaignActive ? floor100((fishPrice + serviceFee) * (campaignDiscountRate || 0)) : 0;
 
-    const farmerCommissionGross = Math.round(fishPrice * (farmerRate || 0));
+    const farmerCommissionGross = floor100(fishPrice * (farmerRate || 0));
     const farmerCampaignDiscount = farmerCampaignActive
-        ? Math.round(fishPrice * (farmerCampaignDiscountRate || 0)) : 0;
+        ? floor100(fishPrice * (farmerCampaignDiscountRate || 0)) : 0;
     const farmerCommission = farmerCommissionGross - farmerCampaignDiscount;
     // item単体の農家受取額（配送料はorderレベルで別途加算）
     const farmerReceiveAmount = fishPrice - farmerCommission;
@@ -77,7 +89,8 @@ export function calcDeliveryFee(deliveryRate, freeDeliveryDistance, distanceKm) 
     const roundedDist = Math.floor((distanceKm || 0) * 10) / 10;
     const freeDist = freeDeliveryDistance || 0;
     if (freeDist > 0 && roundedDist <= freeDist) return 0;
-    return Math.round((deliveryRate || 500) * roundedDist);
+    // 2026-07-04 #191: 距離×レートで出る端数も100リエル未満切り捨て（送料も100リエル単位に揃える）。
+    return floor100((deliveryRate || 500) * roundedDist);
 }
 
 /**
