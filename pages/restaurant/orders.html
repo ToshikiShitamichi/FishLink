@@ -219,6 +219,20 @@
         .os-modal__btn { flex:1; border-radius:10px; padding:12px; font-size:14px; font-weight:800; border:none; cursor:pointer; font-family:inherit; }
         .os-modal__btn--keep { background:#eceef0; color:#5a6470; }
         .os-modal__btn--ok { background:var(--color-cta); color:#fff; }
+        /* #197 レビュー待ち：入口行（★amber アイコン）＋子画面（一覧） */
+        .os-sec--rev { color:#5a6470; font-size:13px; }
+        .os-histrow--rev { border-color:#F0D9B5; }   /* 2026-07-08: モック整合＝レビュー待ち行は amber 枠 */
+        .os-histrow--rev > .material-symbols-outlined { color:#f59e0b; }
+        .os-histrow--rev .os-histrow__t1 { color:var(--color-text); }
+        .os-rev-cnt { color:#C2620E; font-weight:800; }   /* 件数は amber（モック #C2620E） */
+        .rv-head { display:flex; align-items:center; gap:8px; margin:2px 0 10px; }
+        .rv-back { background:none; border:none; padding:4px; cursor:pointer; color:var(--color-text); display:inline-flex; }
+        .rv-back .material-symbols-outlined { font-size:24px; }
+        .rv-head__t { font-size:18px; font-weight:800; }
+        .rv-sub { font-size:12px; color:var(--color-text-sub); margin:0 0 12px; line-height:1.5; }
+        .rv-card__date { font-size:11.5px; color:#C2620E; font-weight:700; margin-bottom:2px; display:flex; align-items:center; gap:4px; }
+        .rv-card__date .material-symbols-outlined { font-size:15px; }
+        .rv-card__name { color:var(--color-cta); font-weight:700; }   /* 2026-07-08 モック整合＝農家名は青太字 */
     </style>
 </head>
 
@@ -258,7 +272,7 @@
             </div>
         </div>
 
-        <div style="text-align:center; font-size:20px; font-weight:700; margin-bottom:16px;" data-i18n="delivery.myOrders"></div>
+        <div id="orders-maintitle" style="text-align:center; font-size:20px; font-weight:700; margin-bottom:16px;" data-i18n="delivery.myOrders"></div>
 
         <div id="orders-list" style="padding:0 16px;"></div>
     </div>
@@ -576,11 +590,83 @@
         let ordersHasMore = false;
         let ordersLoadingMore = false;
         let allOrdersCache = [];
+        // #197: レビュー待ちビュー（?view=reviews）を stale な描画キャッシュで誤って解除しないためのフラグ。
+        //   fresh な loadOrders 完了で true。cached 描画中（false）は reviewView を確定解除しない。
+        let ordersDataLoaded = false;
         // 6/17 #150: 報告受付時間（時間）。お支払い待ちカードの報告入口の締切判定に使う。
         let reportHours = 4;
         const farmerNameCache = new Map();   // #143: farmerId -> 農家表示名（カード「🏬 農家名」用）
         // 6/20: 辞退の「同じ魚を再注文」用＝listingId -> 出品 doc（現在の出品状況を見て、まだ買えるなら商品詳細へ直行）
         const reorderListingCache = {};
+
+        // ── #197 レビュー待ち（買い手が農家を評価）＝入口「⭐レビュー待ちN件」＋子画面（一覧）──
+        //   レビュー解禁＝取引完了後（前払いは tradeCompleted or 送金済／legacy は paymentStatus paid 以降）
+        //   ＝payment.html isPaidOrBeyond と同一述語。直近2週間だけ入口に出す（＝期限ではない）。
+        let reviewView = new URLSearchParams(location.search).get('view') === 'reviews';
+        const REVIEW_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+        function tsToMillis(ts) {
+            if (!ts) return 0;
+            if (typeof ts.toMillis === 'function') return ts.toMillis();
+            if (typeof ts === 'number') return ts;
+            if (typeof ts.seconds === 'number') return ts.seconds * 1000;
+            return 0;
+        }
+        function reviewUnlocked(order) {
+            if (order.prepaid === true) {
+                return order.tradeCompleted === true || ['remitted', 'done'].includes(order.adminStatus);
+            }
+            return order.paymentStatus === 'paid' || ['payment_confirmed', 'remitted', 'done'].includes(order.adminStatus);
+        }
+        function isReviewWaiting(o) {
+            const order = o.order;
+            if (order.status !== 'completed') return false;
+            if (!reviewUnlocked(order)) return false;
+            if (o.hasReview) return false;
+            const ms = tsToMillis(order.completedAt) || tsToMillis(order.createdAt);
+            return ms > 0 && (Date.now() - ms) <= REVIEW_WINDOW_MS;
+        }
+        function toggleMainTitle(show) {
+            const t = document.getElementById('orders-maintitle');
+            if (t) t.style.display = show ? '' : 'none';
+        }
+        function openReviewView() {
+            reviewView = true;
+            try { history.pushState({ reviewView: true }, '', '/pages/restaurant/orders.html?view=reviews'); } catch (e) { /* ignore */ }
+            renderAllOrders();
+            window.scrollTo(0, 0);
+        }
+        function closeReviewView() {
+            if (new URLSearchParams(location.search).get('view') === 'reviews' && window.history.length > 1) {
+                history.back();   // フィードへ（popstate で再描画）
+            } else {
+                reviewView = false;
+                try { history.replaceState({}, '', '/pages/restaurant/orders.html'); } catch (e) { /* ignore */ }
+                renderAllOrders();
+                window.scrollTo(0, 0);
+            }
+        }
+        // 子画面（①' レビュー待ち一覧）＝軽いカード＋各カードに「⭐ レビューを送信」（→ 既存レビュー入力画面）
+        function renderReviewWaitingListView(waiting) {
+            const cards = waiting.map(o => {
+                const { d, order, fishName, farmerName } = o;
+                const dt = [fmtDeliveryDate(order.deliveryDateIso), order.deliveryTime || ''].filter(Boolean).join(' ');
+                // 2026-07-08 モック整合（order-status ①'）：📅日付にアイコン／農家名は青太字（リンク色）／FL番号は出さない／⭐は amber。
+                return `
+                    <div class="os-card">
+                        ${dt ? `<div class="rv-card__date"><span class="material-symbols-outlined">event</span>${escapeHtml(dt)}</div>` : ''}
+                        <div class="os-card__nm">${fishName}${multiBadgeHtml(order)}</div>
+                        ${farmerName ? `<div class="os-card__meta"><span class="material-symbols-outlined">storefront</span> <span class="rv-card__name">${escapeHtml(farmerName)}</span></div>` : ''}
+                        <a class="os-btn os-btn--sec" style="display:flex; align-items:center; justify-content:center; gap:5px;" href="/pages/restaurant/review.html?id=${d.id}"><span class="material-symbols-outlined" style="font-size:16px; color:#f59e0b;">star</span>${i18next.t('orders.reviewSendBtn')}</a>
+                    </div>`;
+            }).join('');
+            return `
+                <div class="rv-head">
+                    <button type="button" class="rv-back" data-act="close-reviews" aria-label="back"><span class="material-symbols-outlined">arrow_back</span></button>
+                    <div class="rv-head__t">${i18next.t('orders.reviewWaitTitle')}</div>
+                </div>
+                <p class="rv-sub">${i18next.t('orders.reviewWaitListSubBuyer')}</p>
+                ${cards}`;
+        }
 
         // 5/25 #91/#92 拡張: 描画ロジックを fetch から分離。cached / fresh 両方から呼ぶ。
         //   allOrdersCache の各要素は { d:{id}, order, fishName, hasReview } 形式（d は Firestore doc snap 互換）
@@ -588,6 +674,21 @@
             const listEl = document.getElementById('orders-list');
             if (!listEl) return;
             const allOrders = allOrdersCache;
+
+            // #197: レビュー待ち（取引完了・自分未レビュー・直近2週間）＝入口件数＋子画面の元データ
+            const reviewWaiting = allOrdersCache.filter(isReviewWaiting).sort(
+                (a, b) => (tsToMillis(b.order.completedAt) || tsToMillis(b.order.createdAt))
+                    - (tsToMillis(a.order.completedAt) || tsToMillis(a.order.createdAt)));
+            if (reviewView) {
+                if (reviewWaiting.length > 0) {
+                    toggleMainTitle(false);
+                    listEl.innerHTML = renderReviewWaitingListView(reviewWaiting);
+                    listEl.querySelector('[data-act="close-reviews"]')?.addEventListener('click', () => closeReviewView());
+                    return;
+                }
+                if (ordersDataLoaded) reviewView = false;   // fresh 確定後のみフィードに戻す（cached stale では戻さない・#197）
+            }
+            toggleMainTitle(true);
 
             if (allOrders.length === 0) {
                 listEl.innerHTML = `
@@ -654,6 +755,22 @@
             if (actionCount === 0 && inProgressCount === 0) {
                 html += `<div class="os-allclear"><span class="material-symbols-outlined">check_circle</span>${i18next.t('orders.allClear')}</div>`;
             }
+            // #197: レビュー待ち入口（履歴の上・N>0のときだけ・空き画面にも出る）
+            if (reviewWaiting.length > 0) {
+                html += `<div class="os-sec os-sec--rev">${i18next.t('orders.reviewSection')}</div>`;
+                // 2026-07-08 モック整合：⭐アイコン＋件数を amber（#C2620E）＋サブ文（2行構成）＝取引履歴行と同体裁。
+                const revEntryTitle = escapeHtml(i18next.t('orders.reviewWaitingEntry', { count: '@@N@@' }))
+                    .replace('@@N@@', `<span class="os-rev-cnt">${reviewWaiting.length}</span>`);
+                html += `
+                    <a class="os-histrow os-histrow--rev" data-act="open-reviews" href="/pages/restaurant/orders.html?view=reviews">
+                        <span class="material-symbols-outlined">star</span>
+                        <div class="os-histrow__t">
+                            <div class="os-histrow__t1">${revEntryTitle}</div>
+                            <div class="os-histrow__t2">${i18next.t('orders.reviewWaitSubBuyer')}</div>
+                        </div>
+                        <span class="os-histrow__g">›</span>
+                    </a>`;
+            }
             if (hasHistory) {
                 html += `<div class="os-sec os-sec--hist">${i18next.t('orders.historyLabel')}</div>`;
                 html += `
@@ -674,6 +791,8 @@
                 btn.addEventListener('click', () => { addDismissedDeclined(btn.dataset.id); renderAllOrders(); }));
             listEl.querySelectorAll('a.os-btn[data-reorder-id]').forEach(a =>
                 a.addEventListener('click', () => addDismissedDeclined(a.dataset.reorderId)));
+            // #197: レビュー待ち入口 → 子画面（JSビュー切替・リロードなし・読み込み済みデータを再利用）
+            listEl.querySelector('[data-act="open-reviews"]')?.addEventListener('click', (e) => { e.preventDefault(); openReviewView(); });
         }
 
         // 注文キャンセル（承認前のみ・競合ロック＝トランザクションで status==pending を確認・先に押した方が成立）
@@ -751,6 +870,7 @@
 
                 if (!append && snap.empty) {
                     allOrdersCache = [];
+                    ordersDataLoaded = true;
                     renderAllOrders();   // #143: 完全新規＝「まだ注文がありません」＋魚を探す導線
                     return;
                 }
@@ -810,6 +930,7 @@
                 const seen = new Set(allOrdersCache.map(o => o.d.id));
                 newOrders.forEach(o => { if (!seen.has(o.d.id)) allOrdersCache.push(o); });
 
+                ordersDataLoaded = true;
                 renderAllOrders();
 
                 // 5/25 #91/#92 拡張: 初回ページのみ render-cache に保存（次回訪問用）
@@ -835,6 +956,12 @@
         }
 
         onLanguageChange(() => loadOrders());
+
+        // #197: ブラウザ戻る/進むでレビュー待ち子画面⇄フィードを同期
+        window.addEventListener('popstate', () => {
+            reviewView = new URLSearchParams(location.search).get('view') === 'reviews';
+            renderAllOrders();
+        });
 
         // 5/25 #91/#92 拡張: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
         let cachedRendered = false;

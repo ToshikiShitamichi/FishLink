@@ -108,6 +108,8 @@
             color: var(--color-text);
             margin: 0;
         }
+        /* 2026-07-08: 内臓処理のラベルレス入力行を他行と同じ右寄せにするスペーサー */
+        .price-row__spacer { flex: 1; }
 
         input.price-input {
             width: 120px;
@@ -357,6 +359,18 @@
         .price-row__label { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
         .price-row .price-row__label label { flex: 0 1 auto; }
 
+        /* 2026-07-05 #194④: 内臓処理 する/しない トグル（淡い青の選択状態＝目立たせすぎない） */
+        /* 2026-07-08: モック整合＝トグルの上に「内臓処理」見出し（魚単価ラベルと同じ体裁）。 */
+        .gut-head { margin: 6px 0 8px; }
+        .seg-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
+        .seg-toggle .seg {
+            flex: 1; text-align: center; padding: 8px; border-radius: 9px;
+            font-size: 13px; font-weight: 600; background: #fff;
+            border: 1px solid #CDD8E3; color: #5A6470;
+            cursor: pointer; font-family: inherit;
+        }
+        .seg-toggle .seg.on { background: var(--color-cta-lt); border-color: var(--color-cta); color: var(--color-cta); font-weight: 800; }
+
         /* 6/21 #161⑩: 投稿成功の完了画面（中央モーダル・暗転＋白カード・緑✓） */
         .success-overlay {
             position: fixed; inset: 0; background: rgba(15, 23, 42, .55);
@@ -488,15 +502,30 @@
                         oninput="updateTotalPrice()">
                     <span class="price-unit">KHR/kg</span>
                 </div>
+                <!-- 2026-07-05 #194②: 100リエル単位の案内 -->
+                <p class="delivery-helper" data-i18n="post.priceUnitHelper"></p>
                 <div class="field-error" id="err-price" data-i18n="post.errorPrice"></div>
+                <div class="field-error" id="err-price-100" data-i18n="post.error100Unit"></div>
 
-                <div class="price-row">
-                    <label for="gut-price" data-i18n="post.gutPrice"></label>
+                <!-- 2026-07-05 #194④: 内臓処理 する/しない（既定=する。しない＝丸魚のみ・料金欄なし） -->
+                <!-- 2026-07-08: モック整合＝「内臓処理」見出しをトグルの上に（トグルが魚単価に見える問題の修正） -->
+                <div class="price-row__label gut-head"><label data-i18n="post.gutSection"></label></div>
+                <div class="seg-toggle" id="gut-toggle" role="group">
+                    <button type="button" class="seg on" id="gut-seg-do" data-i18n="post.gutToggleDo"></button>
+                    <button type="button" class="seg" id="gut-seg-dont" data-i18n="post.gutToggleDont"></button>
+                </div>
+
+                <!-- 2026-07-08 モック整合：内臓処理の入力行はラベルレス（見出し「内臓処理」で既にラベル済み）。
+                     入力は他の価格行と同じ右寄せ（スペーサーで整列）＋aria-labelで支援。 -->
+                <div class="price-row" id="gut-price-row">
+                    <span class="price-row__spacer" aria-hidden="true"></span>
                     <input type="number" class="price-input" id="gut-price" value="500" placeholder="500" min="0" step="100" inputmode="numeric"
-                        oninput="updateTotalPrice()">
+                        data-i18n="[aria-label]post.gutSection" oninput="updateTotalPrice()">
                     <span class="price-unit">KHR/kg</span>
                 </div>
-                <p class="delivery-helper" data-i18n="post.gutPriceHelper"></p>
+                <div class="field-error" id="err-gut-100" data-i18n="post.error100Unit"></div>
+                <!-- 2026-07-05 #194①/④: する＝内臓処理込み注記（−{{gut}}）／しない＝丸魚のみ注記。JSで出し分け -->
+                <p class="delivery-helper" id="gut-helper"></p>
 
                 <div class="price-result">
                     <div>
@@ -508,8 +537,8 @@
                     </div>
                 </div>
 
-                <!-- 5/31 #105: 販売価格の式（手数料・買い手表示価格はここには出さない） -->
-                <div class="price-formula" data-i18n="post.priceFormula"></div>
+                <!-- 5/31 #105: 販売価格の式（手数料・買い手表示価格はここには出さない）。2026-07-05 #194④: する/しないでJS出し分け。 -->
+                <div class="price-formula" id="price-formula"></div>
 
                 <!-- CAA参考価格（販売価格の下に表示・参考用） -->
                 <div class="caa-card caa-card--inline" style="margin-top:14px;">
@@ -548,6 +577,7 @@
                     </div>
                     <p class="delivery-note" style="color:var(--color-text-sub); font-weight:400;" data-i18n="post.deliveryRateExample"></p>
                     <div class="field-error" id="err-fee" data-i18n="post.errorDeliveryFee"></div>
+                    <div class="field-error" id="err-fee-100" data-i18n="post.error100Unit"></div>
 
                     <div class="price-row" style="margin-top:12px;">
                         <div class="price-row__label"><label for="free-delivery-km" data-i18n="post.freeDeliveryDistance"></label><span class="badge opt" data-i18n="post.optional"></span></div>
@@ -696,6 +726,23 @@
         watchAuthState({ requireAuth: true });
         await initI18n();
 
+        // ── 2026-07-05 #194④: 内臓処理 する/しない トグル ──────────────
+        //   gutEnabled=false（しない）＝丸魚のみ。料金欄を隠し、販売価格＝魚単価。保存は gutPrice=null。
+        //   （loadExistingForEdit の非同期コールバックが setGutEnabled を呼ぶため、waitForUserData より前に定義）
+        let gutEnabled = true;
+        function setGutEnabled(enabled) {
+            gutEnabled = enabled;
+            document.getElementById('gut-seg-do').classList.toggle('on', enabled);
+            document.getElementById('gut-seg-dont').classList.toggle('on', !enabled);
+            document.getElementById('gut-price-row').style.display = enabled ? '' : 'none';
+            // しないに切り替えたら内臓処理の100リエルエラーは消す
+            const gutErr = document.getElementById('err-gut-100');
+            if (gutErr && !enabled) gutErr.classList.remove('show');
+            if (typeof window.updateTotalPrice === 'function') window.updateTotalPrice();
+        }
+        document.getElementById('gut-seg-do')?.addEventListener('click', () => setGutEnabled(true));
+        document.getElementById('gut-seg-dont')?.addEventListener('click', () => setGutEnabled(false));
+
         // ── 編集モード判定（?id=...） ──
         const editId = new URLSearchParams(location.search).get('id');
         const isEditMode = !!editId;
@@ -746,7 +793,14 @@
             document.getElementById('fish-size').value = d.size || '';
             document.getElementById('fish-stock').value = d.stock ?? '';
             document.getElementById('price-unit').value = d.price ?? '';
-            document.getElementById('gut-price').value = d.gutPrice ?? 500;
+            // 2026-07-05 #194④: gutPrice === null は「内臓処理しない（丸魚のみ）」。
+            //   null 明示のみ「しない」。数値は「する」＋その値。未定義（旧データ）は「する」＋500。
+            if (d.gutPrice === null) {
+                setGutEnabled(false);
+            } else {
+                setGutEnabled(true);
+                document.getElementById('gut-price').value = d.gutPrice ?? 500;
+            }
             // 5/31 #105: 配送は farmer 単位（farmerDelivery）へ移行。listing 単位の
             //   deliveryRate/freeDeliveryDistance/maxDistance は編集フォームでは扱わない
             //   （配送セクションは initDeliverySection が farmerDelivery を元に描画）。
@@ -993,7 +1047,18 @@
         //   （価格0と誤読されるのを防ぐ。入力後に「魚単価＋内臓処理」を計算表示）
         window.updateTotalPrice = function () {
             const rawUnit = document.getElementById('price-unit').value.trim();
-            const gut = parseInt(document.getElementById('gut-price').value) || 0;
+            const gutRaw = parseInt(document.getElementById('gut-price').value) || 0;
+            const gut = gutEnabled ? gutRaw : 0;
+            // 2026-07-05 #194①/④: 注記と販売価格の式を する/しない で出し分け。
+            const helperEl = document.getElementById('gut-helper');
+            const formulaEl = document.getElementById('price-formula');
+            if (gutEnabled) {
+                if (helperEl) helperEl.textContent = i18next.t('post.gutPriceHelper', { gut: gutRaw.toLocaleString() });
+                if (formulaEl) formulaEl.textContent = i18next.t('post.priceFormula');
+            } else {
+                if (helperEl) helperEl.textContent = i18next.t('post.gutHelperNone');
+                if (formulaEl) formulaEl.textContent = i18next.t('post.priceFormulaNoGut');
+            }
             const valEl = document.getElementById('total-price');
             const unitEl = document.querySelector('.price-result__unit');
             if (rawUnit === '') {
@@ -1106,12 +1171,17 @@
         });
         document.getElementById('sheet-save')?.addEventListener('click', async () => {
             const radius = parseFloat(document.getElementById('sheet-radius').value) || 0;
-            // 2026-07-04 #191: 送料(per10km)は100リエル単位に floor（KHR金額を100単位に統一・payment-spec §4.2）。
-            const fee = Math.floor((parseInt(document.getElementById('sheet-fee').value) || 0) / 100) * 100;
+            // 2026-07-05 #194②: 送料(per10km)は自動で丸めず、100リエル単位でなければインラインエラー。
+            const fee = parseInt(document.getElementById('sheet-fee').value) || 0;
             const free = parseFloat(document.getElementById('sheet-free').value) || 0;
             const sheetErr = document.getElementById('sheet-error');
             if (radius <= 0 || fee <= 0) {
                 sheetErr.textContent = i18next.t('post.errorDelivery');
+                sheetErr.classList.add('show');
+                return;
+            }
+            if (fee % 100 !== 0) {
+                sheetErr.textContent = i18next.t('post.error100Unit');
                 sheetErr.classList.add('show');
                 return;
             }
@@ -1222,8 +1292,9 @@
         [
             ['fish-type', 'err-fish-type'], ['fish-type-other', 'err-fish-type'],
             ['fish-size', 'err-fish-size'], ['fish-stock', 'err-fish-stock'],
-            ['price-unit', 'err-price'],
-            ['deliverable-radius', 'err-radius'], ['delivery-fee-per-10km', 'err-fee'],
+            ['price-unit', 'err-price'], ['price-unit', 'err-price-100'],
+            ['gut-price', 'err-gut-100'],
+            ['deliverable-radius', 'err-radius'], ['delivery-fee-per-10km', 'err-fee'], ['delivery-fee-per-10km', 'err-fee-100'],
         ].forEach(([inputId, errId]) => {
             const el = document.getElementById(inputId);
             if (!el) return;
@@ -1260,9 +1331,9 @@
                 : fishTypeSelect;
             const fishSize = document.getElementById('fish-size').value.trim();
             const fishStock = parseFloat(document.getElementById('fish-stock').value) || 0;
-            // 2026-07-04 #191: 単価・内臓処理加算は100リエル単位に floor（魚代＝単価×整数kg を100単位に・payment-spec §4.2）。
-            const priceUnit = Math.floor((parseInt(document.getElementById('price-unit').value) || 0) / 100) * 100;
-            const gutPrice = Math.floor((parseInt(document.getElementById('gut-price').value) || 0) / 100) * 100;
+            // 2026-07-05 #194②: 単価・内臓処理は自動で丸めない（生値を保存）。100リエル単位は下のバリデーションで担保。
+            const priceUnit = parseInt(document.getElementById('price-unit').value) || 0;
+            const gutPrice = parseInt(document.getElementById('gut-price').value) || 0;
             const minOrder = parseFloat(document.getElementById('min-order').value) || 0;
             const description = document.getElementById('description').value.trim();
 
@@ -1278,8 +1349,8 @@
             let deliveryRadius = 0, deliveryFee = 0, deliveryFree = 0;
             if (!farmerDelivery) {
                 deliveryRadius = parseFloat(document.getElementById('deliverable-radius').value) || 0;
-                // 2026-07-04 #191: 送料(per10km)も100リエル単位に floor。
-                deliveryFee = Math.floor((parseInt(document.getElementById('delivery-fee-per-10km').value) || 0) / 100) * 100;
+                // 2026-07-05 #194②: 送料(per10km)も自動で丸めず生値。100リエル単位は下のバリデーションで担保。
+                deliveryFee = parseInt(document.getElementById('delivery-fee-per-10km').value) || 0;
                 deliveryFree = parseFloat(document.getElementById('free-delivery-km').value) || 0;
             } else if (deliverySeeded) {
                 pendingFarmerDelivery = { ...farmerDelivery };
@@ -1293,9 +1364,14 @@
             if (fishStock <= 0) errors.push({ errId: 'err-fish-stock', inputEl: document.getElementById('fish-stock') });
             if (selectedItems.length === 0) errors.push({ errId: 'err-photo', inputEl: document.getElementById('photo-area') });
             if (priceUnit <= 0) errors.push({ errId: 'err-price', inputEl: document.getElementById('price-unit') });
+            // 2026-07-05 #194②: 100リエル単位の検証（空欄でない＝正の値のときのみ・自動で丸めない）
+            else if (priceUnit % 100 !== 0) errors.push({ errId: 'err-price-100', inputEl: document.getElementById('price-unit') });
+            // 内臓処理「する」のときだけ料金の100リエル単位を検証
+            if (gutEnabled && gutPrice > 0 && gutPrice % 100 !== 0) errors.push({ errId: 'err-gut-100', inputEl: document.getElementById('gut-price') });
             if (!farmerDelivery) {
                 if (deliveryRadius <= 0) errors.push({ errId: 'err-radius', inputEl: document.getElementById('deliverable-radius') });
                 if (deliveryFee <= 0) errors.push({ errId: 'err-fee', inputEl: document.getElementById('delivery-fee-per-10km') });
+                else if (deliveryFee % 100 !== 0) errors.push({ errId: 'err-fee-100', inputEl: document.getElementById('delivery-fee-per-10km') });
             }
 
             if (errors.length > 0) {
@@ -1370,7 +1446,8 @@
                         size: fishSize,
                         stock: fishStock,
                         price: priceUnit,
-                        gutPrice,
+                        // 2026-07-05 #194④: しない＝内臓処理を提供しない → gutPrice=null
+                        gutPrice: gutEnabled ? gutPrice : null,
                         minOrder: minOrder || null,
                         description: description || null,
                         photos: photoUrls,
@@ -1385,7 +1462,8 @@
                         size: fishSize,
                         stock: fishStock,
                         price: priceUnit,
-                        gutPrice,
+                        // 2026-07-05 #194④: しない＝内臓処理を提供しない → gutPrice=null
+                        gutPrice: gutEnabled ? gutPrice : null,
                         minOrder: minOrder || null,
                         description: description || null,
                         photos: photoUrls,

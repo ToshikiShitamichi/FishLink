@@ -432,7 +432,12 @@ self.addEventListener('notificationclick', (event) => {
 //   Firestore駆動ページ（#190・js/legal-display.js 新規 PRECACHE 追加・terms/privacy 書き換え・firestore.rules legal）／
 //   KHR 100リエル単位 切り捨て（#191・order-utils.js）／農家 売上・取引 確認中反映（#192）／買い手 注文状況 確認中＋
 //   購入・取引 履歴除外（#193）。locales 3言語に #190/#192/#193 キー追加＋FishLink→FISHLINK。
-const CACHE_NAME = 'fishlink-v142';
+// 7/8 (v143→v144): #194-198 バッチ＝出品フォーム 内臓処理 する/しないトグル・100リエル検証（#194）／
+//   丸魚のみ（gutPrice=null）波及（#195）／納品日時ルール＋承認期限 注文+1.5h・夜間(21-5時)リセット
+//   （#196・js/approval-deadline.js 新規 PRECACHE 追加・functions deadline ベース化）／レビュー待ち導線（#197）／
+//   プロフィール編集 小修正（#198）。locales 3言語に post.*/order.*/dashboard.*/cart.*/orders.review*/profile.* 追加。
+//   実装 v143 → 実機スクショのモック整合＋クライアント指示反映（内臓処理見出し・レビュー待ち入口2行・入力ラベルレス等）で v144 に再bump。
+const CACHE_NAME = 'fishlink-v144';
 
 const PRECACHE_URLS = [
     '/',
@@ -462,6 +467,7 @@ const PRECACHE_URLS = [
     '/js/report-window.js',
     '/js/toast.js',
     '/js/push-optin.js',
+    '/js/approval-deadline.js',
     '/locales/ja.json',
     '/locales/en.json',
     '/locales/km.json',

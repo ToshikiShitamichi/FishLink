@@ -382,7 +382,7 @@
 
       <!-- ===== 販売中 ===== -->
       <div class="group-head">
-        <span class="gh-dot gh-on"></span>販売中 <span class="gh-count">(3)</span>
+        <span class="gh-dot gh-on"></span>販売中 <span class="gh-count">(4)</span>
       </div>
 
       <!-- 販売中カード1 -->
@@ -397,13 +397,35 @@
               <span class="status on">販売中</span>
             </div>
             <div class="card-sub">10 head/kg ・ 在庫 200 kg</div>
-            <div class="card-price"><span class="num">5,775</span><span class="unit">KHR /kg</span></div>
+            <div class="card-price"><span class="num">5,500</span><span class="unit">KHR /kg</span></div>
             <div class="gut-note">内臓処理 +500 KHR/kg</div>
           </div>
         </div>
         <div class="card-actions">
           <button class="act">✏️ 編集</button>
           <button class="act">💬 質問 <span class="qbadge">2</span></button>
+          <button class="act danger">⏸ 出品停止</button>
+          <button class="act kebab">⋮</button>
+        </div>
+      </div>
+
+      <!-- 販売中カード：内臓処理「しない」（丸魚のみ）＝gutFee=null -->
+      <div class="card">
+        <div class="card-top">
+          <div class="card-img" style="background:linear-gradient(135deg,#5A6B52,#3D4A38)"></div>
+          <div class="card-info">
+            <div class="card-row1">
+              <div class="card-name">パンガシウス</div>
+              <span class="status on">販売中</span>
+            </div>
+            <div class="card-sub">8 head/kg ・ 在庫 120 kg</div>
+            <div class="card-price"><span class="num">6,500</span><span class="unit">KHR /kg</span></div>
+            <div class="gut-note">丸魚のみ（内臓処理なし）</div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="act">✏️ 編集</button>
+          <button class="act">💬 質問</button>
           <button class="act danger">⏸ 出品停止</button>
           <button class="act kebab">⋮</button>
         </div>
@@ -421,7 +443,7 @@
               <span class="status on">販売中</span>
             </div>
             <div class="card-sub">1 head/kg ・ 在庫 40 kg</div>
-            <div class="card-price"><span class="num">6,300</span><span class="unit">KHR /kg</span></div>
+            <div class="card-price"><span class="num">6,000</span><span class="unit">KHR /kg</span></div>
             <div class="gut-note">内臓処理 +500 KHR/kg</div>
           </div>
         </div>
@@ -443,7 +465,7 @@
               <span class="status on">販売中</span>
             </div>
             <div class="card-sub">6-8 head/kg ・ 在庫 25 kg</div>
-            <div class="card-price"><span class="num">42,000</span><span class="unit">KHR /kg</span></div>
+            <div class="card-price"><span class="num">40,000</span><span class="unit">KHR /kg</span></div>
             <div class="gut-note">内臓処理 +500 KHR/kg</div>
           </div>
         </div>
@@ -472,7 +494,7 @@
               <span class="status out">売切れ</span>
             </div>
             <div class="card-sub">1-2 head/kg ・ 在庫 0 kg</div>
-            <div class="card-price"><span class="num">6,300</span><span class="unit">KHR /kg</span></div>
+            <div class="card-price"><span class="num">6,000</span><span class="unit">KHR /kg</span></div>
             <div class="gut-note">内臓処理 +500 KHR/kg</div>
           </div>
         </div>
@@ -499,7 +521,7 @@
               <span class="status stop">停止中</span>
             </div>
             <div class="card-sub">2-3 head/kg ・ 在庫 60 kg</div>
-            <div class="card-price"><span class="num">5,250</span><span class="unit">KHR /kg</span></div>
+            <div class="card-price"><span class="num">5,000</span><span class="unit">KHR /kg</span></div>
             <div class="gut-note">内臓処理 +500 KHR/kg</div>
           </div>
         </div>
@@ -531,12 +553,12 @@
   </div>
 
   <!-- 投稿成功 完了画面（投稿成功→投稿一覧に着地時に中央表示・タップで一覧へ） -->
-  <div class="success-overlay">
-    <div class="success-card">
+  <div class="success-overlay" onclick="this.style.display='none'">
+    <div class="success-card" onclick="event.stopPropagation()">
       <div class="s-check"><span>✓</span></div>
       <div class="s-title">投稿しました</div>
       <div class="s-sub">投稿一覧に表示されます</div>
-      <button class="s-btn">投稿一覧を見る</button>
+      <button class="s-btn" onclick="this.closest('.success-overlay').style.display='none'">投稿一覧を見る</button>
     </div>
   </div>
 

@@ -173,7 +173,22 @@
       "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\('order.stock:',j.order&&j.order.stock\\); console.log\\('order.minOrder:',j.order&&j.order.minOrder\\); console.log\\('delivery keys sample:', j.delivery?Object.keys\\(j.delivery\\).slice\\(0,5\\):'no delivery ns'\\)\")",
       "Bash(node -e \"const j=require\\('./locales/ja.json'\\),e=require\\('./locales/en.json'\\),k=require\\('./locales/km.json'\\); for\\(const key of ['orders.deliveredBadge']\\){const g=o=>key.split\\('.'\\).reduce\\(\\(a,x\\)=>a&&a[x],o\\); console.log\\(key,'ja:',JSON.stringify\\(g\\(j\\)\\),'en:',JSON.stringify\\(g\\(e\\)\\),'km:',JSON.stringify\\(g\\(k\\)\\)\\);}\")",
       "Bash(node -e \"const j=require\\('./locales/ja.json'\\); for\\(const s of ['pending','approved','preparing','delivering','completed','declined','cancelled']\\){console.log\\('delivery.'+s+':', j.delivery&&j.delivery[s]!==undefined?'OK':'MISSING'\\);}\")",
-      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); const g=k=>k.split\\('.'\\).reduce\\(\\(a,x\\)=>a&&a[x],j\\); for\\(const k of ['order.stock','order.minOrder','restaurant.stock','restaurant.minOrder','order.stockLabel','post.minOrder']\\) console.log\\(k,'=>',JSON.stringify\\(g\\(k\\)\\)\\);\")"
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); const g=k=>k.split\\('.'\\).reduce\\(\\(a,x\\)=>a&&a[x],j\\); for\\(const k of ['order.stock','order.minOrder','restaurant.stock','restaurant.minOrder','order.stockLabel','post.minOrder']\\) console.log\\(k,'=>',JSON.stringify\\(g\\(k\\)\\)\\);\")",
+      "Bash(cd \"C:\\\\Users\\\\t_shitamichi\\\\.claude\\\\projects\\\\c--work-FishLink\\\\57e911e5-11e5-46be-a6fa-c5c854168dbb\\\\subagents\\\\workflows\\\\wf_68b9d86d-745\")",
+      "Bash(tail -20 journal.jsonl)",
+      "Bash(git log *)",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\('gutPriceHelper:',JSON.stringify\\(j.post.gutPriceHelper\\)\\); console.log\\('priceFormula:',JSON.stringify\\(j.post.priceFormula\\)\\); console.log\\('priceUnitPlaceholder:',JSON.stringify\\(j.post.priceUnitPlaceholder\\)\\); console.log\\('priceUnit:',JSON.stringify\\(j.post.priceUnit\\)\\); console.log\\('gutPrice:',JSON.stringify\\(j.post.gutPrice\\)\\);\")",
+      "Bash(node --check /tmp/orders_mod.mjs)",
+      "Bash(node --check \"C:/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/57e911e5-11e5-46be-a6fa-c5c854168dbb/scratchpad/orders_mod.mjs\")",
+      "Bash(rm -f \"C:\\\\work\\\\FishLink\\\\scratch_check.js\")",
+      "Bash(node --check /tmp/post-check.mjs)",
+      "Bash(node --check ./scratch-post-check.mjs)",
+      "Bash(rm -f ./scratch-post-check.mjs)",
+      "Bash(node \"C:/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/57e911e5-11e5-46be-a6fa-c5c854168dbb/scratchpad/merge-i18n.js\")",
+      "Bash(python -c *)",
+      "Bash(git diff *)",
+      "Bash(awk 'NR>=1000 && NR<=1076 && /\"[a-zA-Z]+\": ?\\\\{/' locales/ja.json)",
+      "Bash(node --check sw.js)"
     ]
   }
 }

@@ -528,9 +528,11 @@
 
             const stock = Number(d.stock || 0);
             const sub = `${escapeHtml(d.size || '')} head/kg ・ ${i18next.t('dashboard.stock')}${stock} kg`;
-            const gutHtml = d.gutPrice
-                ? `<div class="pl-gut">${i18next.t('dashboard.gutPrice')} +${Number(d.gutPrice).toLocaleString()} KHR/kg</div>`
-                : '';
+            const gutHtml = d.gutPrice == null
+                ? `<div class="pl-gut">${i18next.t('dashboard.gutWholeFishOnly')}</div>`
+                : (d.gutPrice
+                    ? `<div class="pl-gut">${i18next.t('dashboard.gutPrice')} +${Number(d.gutPrice).toLocaleString()} KHR/kg</div>`
+                    : '');
 
             // アクションバー（状態別）。売切れは「✏編集」を「📦在庫を補充」に置換（在庫にフォーカス）
             const editOrRefill = status === 'soldout'

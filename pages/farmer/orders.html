@@ -624,6 +624,22 @@
         .fo-allclear .material-symbols-outlined { color: #2e7d32; font-size: 20px; }
         .fo-back { display: inline-flex; align-items: center; gap: 4px; color: var(--color-cta); font-weight: 700; font-size: 14px; text-decoration: none; margin: 4px 0 12px; }
         .fo-back .material-symbols-outlined { font-size: 18px; }
+        /* #197 レビュー待ち */
+        .fo-sec--rev { color: #5a6470; font-size: 13px; }
+        .fo-histrow--rev { border-color: #F0D9B5; }   /* 2026-07-08 モック整合＝amber 枠 */
+        .fo-histrow--rev .fo-histrow__star { font-size: 22px; color: #f59e0b; }
+        .fo-rev-cnt { color: #c2620e; font-weight: 800; }   /* 件数は amber（モック #C2620E） */
+        .fo-rev-sub { font-size: 12px; color: var(--color-text-sub); margin: 0 2px 14px; line-height: 1.5; }
+        .fo-revcard { background: #fff; border: 1px solid #eef1f4; border-radius: 14px; padding: 13px; margin-bottom: 11px; }
+        .fo-revcard__date { font-size: 11.5px; color: #c2620e; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+        .fo-revcard__date .material-symbols-outlined { font-size: 15px; }
+        .fo-revcard__name { font-size: 14px; font-weight: 800; color: var(--color-text); margin-top: 3px; }
+        .fo-revcard__rest { font-size: 11.5px; color: var(--color-text-sub); margin-top: 3px; display: flex; align-items: center; gap: 4px; }
+        .fo-revcard__rest .material-symbols-outlined { font-size: 14px; }
+        .fo-revcard__restname { color: var(--color-cta); font-weight: 700; }   /* 2026-07-08 モック整合＝レストラン名は青太字 */
+        .fo-revcard__fl { font-size: 11px; color: #9aa4ae; margin-top: 3px; }
+        .fo-revcard__btn { display: flex; align-items: center; justify-content: center; gap: 5px; border: 1.5px solid var(--color-cta); color: var(--color-cta); border-radius: 10px; padding: 9px; font-size: 13px; font-weight: 800; text-decoration: none; margin-top: 10px; }
+        .fo-revcard__btn .material-symbols-outlined { font-size: 17px; color: #f59e0b; }
     </style>
 </head>
 
@@ -706,6 +722,8 @@
             collection, query, where, orderBy, limit, startAfter, getDocs, doc, getDoc, updateDoc, onSnapshot, addDoc, serverTimestamp, runTransaction
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { getOrderNumber } from '/js/order-utils.js';
+        // 7/8 #196: 承認期限の共通ロジック（注文+1.5h・夜間リセット。functions と同一式）
+        import { computeApprovalDeadlineMs, formatKhmHm } from '/js/approval-deadline.js';
         // 6/17 #150: 問題報告の入口出し分け（報告期限＝配送完了＋N時間／1注文1オープン）
         import { getReportWindowHours, computeReportEntry, reportDeadlineText } from '/js/report-window.js';
         // 5/25 #91/#92 拡張: 画面描画状態の永続キャッシュ（stale-while-revalidate）
@@ -738,11 +756,16 @@
             else setTimeout(() => waitForUserData(cb), 300);
         }
 
-        // 承認期限（注文時刻 + 1時間）を超過しているか
+        // 承認期限(ms)＝保存値 approveDeadline 優先／無ければ注文時刻から算出（注文+1.5h・夜間リセット＝#196）
+        function orderDeadlineMs(order) {
+            if (!order.createdAt) return 0;
+            const createdMs = order.createdAt.toMillis ? order.createdAt.toMillis() : 0;
+            return order.approveDeadline?.toMillis?.() ?? computeApprovalDeadlineMs(createdMs);
+        }
+        // 承認期限を超過しているか
         function isOrderExpired(order) {
             if (!order.createdAt) return false;
-            const createdMs = order.createdAt.toMillis ? order.createdAt.toMillis() : 0;
-            return Date.now() > createdMs + 60 * 60 * 1000;
+            return Date.now() > orderDeadlineMs(order);
         }
 
         const ORDERS_PAGE_SIZE = 30;
@@ -1023,10 +1046,8 @@
             let deadlineCardClass = '';
             const isExpiredPending = order.status === 'pending' && isOrderExpired(order);
             if (order.status === 'pending' && order.createdAt && !isExpiredPending) {
-                const createdMs = order.createdAt.toMillis ? order.createdAt.toMillis() : 0;
-                const deadlineMs = createdMs + 60 * 60 * 1000;
-                const deadlineDate = new Date(deadlineMs);
-                const timeStr = `${deadlineDate.getHours()}:${String(deadlineDate.getMinutes()).padStart(2, '0')}`;
+                const deadlineMs = orderDeadlineMs(order);
+                const timeStr = formatKhmHm(deadlineMs);
                 const remainMin = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 60000));
                 let level = 'normal';
                 if (remainMin <= 10) { level = 'danger'; deadlineCardClass = ' deadline-danger'; }
@@ -1311,11 +1332,9 @@
 
         // ── #142 A案フィード 共通ヘルパー ──
         function deadlineInfo(order) {
-            const createdMs = order.createdAt?.toMillis ? order.createdAt.toMillis() : 0;
-            const deadlineMs = createdMs + 60 * 60 * 1000;
+            const deadlineMs = orderDeadlineMs(order);
             const remainMin = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 60000));
-            const d = new Date(deadlineMs);
-            const timeStr = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+            const timeStr = formatKhmHm(deadlineMs);
             const level = remainMin <= 10 ? 'danger' : (remainMin <= 30 ? 'warn' : 'normal');
             return { remainMin, timeStr, level };
         }
@@ -1338,6 +1357,34 @@
             const name = order.restData?.displayName || '';
             const prov = order.restData?.province || '';
             return prov ? `${name}（${prov}）` : name;
+        }
+
+        // ── #197 レビュー待ち（農家 → レストランを評価）──
+        // Timestamp / millis / {seconds} いずれも ms に。
+        function toMs(v) {
+            if (!v) return 0;
+            if (typeof v === 'number') return v;
+            if (typeof v.toMillis === 'function') return v.toMillis();
+            if (typeof v.seconds === 'number') return v.seconds * 1000;
+            return 0;
+        }
+        // レビュー解禁（農家）：前払い＝送金済(remitted/done)／旧＝支払い確認後(payment_confirmed 以降)。
+        //   farmer/payment.html:357-362 と鏡像。
+        function isReviewUnlocked(o) {
+            if (o.prepaid === true) return ['remitted', 'done'].includes(o.adminStatus);
+            return ['payment_confirmed', 'remitted', 'done'].includes(o.adminStatus);
+        }
+        // レビュー待ち＝完了・解禁済み・未レビュー・直近2週間（既ロードデータから算出＝再フェッチしない）。
+        function reviewWaitOrders() {
+            const now = Date.now();
+            const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
+            return allOrders.filter(o => {
+                if (o.status !== 'completed') return false;
+                if (!isReviewUnlocked(o)) return false;
+                if (o.hasReview) return false;
+                const ms = toMs(o.completedAt) || toMs(o.createdAt);
+                return ms > 0 && (now - ms) <= TWO_WEEKS;
+            });
         }
 
         // 承認待ち＝要約カード（全詳細はタップで承認待ち詳細②へ＝?detail=id）
@@ -1420,20 +1467,48 @@
             bindEvents([order], { bindToggle: false });
         }
 
+        // #197 レビュー待ち一覧①'（同ページ内ビュー・戻る矢印で feed へ）。
+        function renderReviewWaitView() {
+            const listEl = document.getElementById('orders-list');
+            const items = reviewWaitOrders();
+            let html = `<a class="fo-back" href="/pages/farmer/orders.html"><span class="material-symbols-outlined">arrow_back</span>${i18next.t('orders.backToList')}</a>`;
+            html += `<p class="fo-rev-sub">${i18next.t('orders.reviewWaitListSubFarmer')}</p>`;
+            html += items.map(renderReviewWaitCard).join('');
+            listEl.innerHTML = html;
+        }
+        // レビュー待ちカード＝軽いカード＋「⭐ レビューを送信」（青枠 副CTA）→ レビュー入力画面。
+        function renderReviewWaitCard(order) {
+            // 2026-07-08 モック整合（farmer-order ①'）：レストラン名は青太字（リンク色）／FL番号は出さない。
+            return `
+                <div class="fo-revcard">
+                    <div class="fo-revcard__date"><span class="material-symbols-outlined">event</span>${foMeta(order)}</div>
+                    <div class="fo-revcard__name">${foFishLabel(order)}</div>
+                    <div class="fo-revcard__rest"><span class="material-symbols-outlined">storefront</span><span class="fo-revcard__restname">${foRest(order)}</span></div>
+                    <a class="fo-revcard__btn" href="/pages/farmer/review.html?id=${order.id}"><span class="material-symbols-outlined">star</span>${i18next.t('orders.reviewSendBtn')}</a>
+                </div>`;
+        }
+
         function renderOrders() {
-            const detailId = new URLSearchParams(location.search).get('detail');
+            const params = new URLSearchParams(location.search);
+            const detailId = params.get('detail');
             const listEl = document.getElementById('orders-list');
             // 6/18 #154 A①: リスト＝「注文確認」(orders.navOrders)／承認待ち詳細②＝「注文内容を確認」(orders.title)。
             const titleEl = document.getElementById('page-title');
+            // #197: レビュー待ち一覧①'＝同ページ内ビュー切替（?view=reviews・戻るは feed へ）。
+            if (params.get('view') === 'reviews') {
+                if (titleEl) titleEl.textContent = i18next.t('orders.reviewWaitTitle');
+                renderReviewWaitView();
+                return;
+            }
             if (titleEl) titleEl.textContent = detailId ? i18next.t('orders.title') : i18next.t('orders.navOrders');
             if (detailId) { renderDetailView(detailId); return; }
 
             const isRemitted = (o) => ['remitted', 'done'].includes(o.adminStatus);
 
-            // 対応が必要＝承認待ち（未期限切れ）。承認期限の近い順＝古い注文が先（注文時刻+1h が早い）。
+            // 対応が必要＝承認待ち（未期限切れ）。承認期限の近い順（#196＝夜間リセット込みの deadlineMs 昇順）。
             const awaiting = allOrders
                 .filter(o => o.status === 'pending' && !isOrderExpired(o))
-                .sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+                .sort((a, b) => orderDeadlineMs(a) - orderDeadlineMs(b));
             // 進行中＝承認済み/準備中/配送中（到着＝配達中のまま）
             const inProgress = allOrders
                 .filter(o => ['approved', 'preparing', 'delivering'].includes(o.status))
@@ -1468,6 +1543,24 @@
             }
             if (actionCount === 0 && inProgress.length === 0) {
                 html += `<div class="fo-allclear"><span class="material-symbols-outlined">check_circle</span>${i18next.t('orders.allClear')}</div>`;
+            }
+            // #197 レビュー待ち入口＝履歴の上・N>0 の時だけ（対応が必要が空でも出す）。0件はセクションごと非表示。
+            const reviewWaitCount = reviewWaitOrders().length;
+            if (reviewWaitCount > 0) {
+                html += `<div class="fo-sec fo-sec--rev">${i18next.t('orders.reviewSection')}</div>`;
+                // 2026-07-08 モック整合：件数を amber（#C2620E）＋サブ文（2行）＝取引履歴行と同体裁。
+                //   件数だけ着色するため sentinel を count に渡して埋め込み位置を確保→色付き span へ置換（locales は信頼済み＝escape不要）。
+                const foRevTitle = i18next.t('orders.reviewWaitingEntry', { count: '@@N@@' })
+                    .replace('@@N@@', `<span class="fo-rev-cnt">${reviewWaitCount}</span>`);
+                html += `
+                    <a class="fo-histrow fo-histrow--rev" href="/pages/farmer/orders.html?view=reviews">
+                        <span class="material-symbols-outlined fo-histrow__star">star</span>
+                        <div class="fo-histrow__t">
+                            <div class="fo-histrow__t1">${foRevTitle}</div>
+                            <div class="fo-histrow__t2">${i18next.t('orders.reviewWaitSubFarmer')}</div>
+                        </div>
+                        <span class="fo-histrow__g">›</span>
+                    </a>`;
             }
             if (hasHistory) {
                 html += `<div class="fo-sec fo-sec--hist">${i18next.t('orders.historyLabel')}</div>`;

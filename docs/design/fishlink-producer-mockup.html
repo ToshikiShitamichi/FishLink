@@ -34,13 +34,14 @@
   .prof .prow { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:8px; flex-wrap:wrap; }
   .prof .rate { background:#FFF3DC; color:#B36A00; font-weight:800; font-size:13px; padding:4px 12px; border-radius:14px; }
   .prof .loc { font-size:13px; color:#5A6470; }
+  .prof .pmeta { font-size:13px; color:#5A6470; margin-top:5px; }
 
   .sec-h { font-size:15px; font-weight:800; margin:18px 0 8px; }
 
   /* 生産者の一言 */
-  .hitokoto { background:#F0F8F1; border:1px solid #C5E3C8; border-radius:12px; padding:12px 14px; }
-  .hitokoto .hk-l { font-size:12px; font-weight:800; color:#2E7D32; }
-  .hitokoto .hk-t { font-size:13px; color:#2A4A2D; margin-top:4px; line-height:1.5; }
+  .hitokoto { background:#F7F9FB; border:1px solid #EEF1F4; border-radius:12px; padding:12px 14px; }
+  .hitokoto .hk-l { font-size:12px; font-weight:800; color:#5A6470; }
+  .hitokoto .hk-t { font-size:13px; color:#2A3340; margin-top:4px; line-height:1.5; }
 
   /* GAqP認証情報ボックス */
   .gaqp-box { background:#F0F8F1; border:1px solid #C5E3C8; border-radius:12px; padding:12px 14px; }
@@ -49,6 +50,13 @@
 
   /* 養殖環境 */
   .env-img { width:100%; height:210px; border-radius:12px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); object-fit:cover; }
+  /* 養殖環境カルーセル（複数写真＝横スワイプ＋ドット） */
+  .env-carousel { display:flex; gap:8px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; }
+  .env-carousel::-webkit-scrollbar { display:none; }
+  .env-slide { flex:0 0 100%; height:210px; border-radius:12px; scroll-snap-align:center; }
+  .env-dots { display:flex; justify-content:center; gap:6px; margin-top:8px; }
+  .env-dot { width:6px; height:6px; border-radius:50%; background:#C5CDD6; transition:all .2s; }
+  .env-dot.active { background:#0B5FB0; width:18px; border-radius:3px; }
 
   /* レビュー（メトリクス） */
   .rev-block { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-top:6px; }
@@ -64,7 +72,7 @@
   .fish-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .fcard { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; overflow:hidden; cursor:pointer; }
   .fcard .fc-img { height:110px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); position:relative; }
-  .fcard .fc-stock { position:absolute; bottom:7px; right:7px; background:rgba(26,34,51,0.78); color:#FFF; font-size:11px; font-weight:700; padding:3px 8px; border-radius:10px; }
+  .fcard .fc-stock { font-size:11px; color:#5A6470; margin-top:5px; }
   .fcard .fc-body { padding:8px 10px 11px; }
   .fcard .fc-name { font-size:13px; font-weight:700; }
   .fcard .fc-size { font-size:11px; color:#5A6470; margin-top:1px; }
@@ -83,6 +91,7 @@
   .rc-thumb { display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:700; padding:3px 9px; border-radius:9px; margin:8px 0 6px; }
   .rc-thumb.good { background:#EAF6EE; color:#2E7D32; }
   .rc-thumb.bad { background:#FDECEA; color:#E5453F; }
+  .rc-thumb .sm { width:14px; height:14px; }
   .rc-text { font-size:13px; line-height:1.5; }
   .rc-more { display:block; text-align:center; font-size:13px; font-weight:700; color:#0B5FB0; cursor:pointer; padding:6px; }
 </style>
@@ -108,9 +117,10 @@
           <div class="ava">🧑‍🌾</div>
           <div class="pname">Ryosuke4</div>
           <div class="prow">
-            <span class="rate">★ 62%（37件）</span>
+            <span class="rate">★ 63%（38件）</span>
             <span class="loc">📍 タケオ州, Samraong</span>
           </div>
+          <div class="pmeta">取引 49件 ・ 2025年12月〜</div>
         </div>
 
         <div class="hitokoto">
@@ -119,16 +129,21 @@
         </div>
 
         <div class="sec-h">養殖環境</div>
-        <div class="env-img"></div>
+        <div class="env-carousel" id="env-carousel" onscroll="updateEnvDots()">
+          <div class="env-slide" style="background:linear-gradient(135deg,#cfe0ee,#aac6dd)"></div>
+          <div class="env-slide" style="background:linear-gradient(135deg,#d6e8d2,#a9c8a0)"></div>
+          <div class="env-slide" style="background:linear-gradient(135deg,#e6ddc6,#c7b78c)"></div>
+        </div>
+        <div class="env-dots" id="env-dots"><span class="env-dot active"></span><span class="env-dot"></span><span class="env-dot"></span></div>
 
-        <div class="sec-h">レビュー（37件）</div>
+        <div class="sec-h">レビュー（38件）</div>
         <div class="rev-block">
           <div class="rev-top">
             <span class="rt-ttl">評価</span>
             <span class="rt-link">レビューを見る</span>
           </div>
           <div class="metrics">
-            <div class="metric"><div class="m-l">取引の満足度<br>良かった率</div><div class="m-v">62%</div></div>
+            <div class="metric"><div class="m-l">取引の満足度<br>良かった率</div><div class="m-v">63%</div></div>
             <div class="metric"><div class="m-l">魚の品質<br>良かった率</div><div class="m-v">96%</div></div>
             <div class="metric"><div class="m-l">配送時間<br>良かった率</div><div class="m-v">100%</div></div>
           </div>
@@ -137,16 +152,16 @@
         <div class="sec-h">出品中の魚</div>
         <div class="fish-grid">
           <div class="fcard">
-            <div class="fc-img"><span class="fc-stock">在庫 100kg</span></div>
-            <div class="fc-body"><div class="fc-name">ヒレナマズ</div><div class="fc-size">10 head/kg</div><div class="fc-price">5,775<span class="u"> KHR/kg</span></div></div>
+            <div class="fc-img"></div>
+            <div class="fc-body"><div class="fc-name">ヒレナマズ</div><div class="fc-size">10 head/kg</div><div class="fc-price">5,775<span class="u"> KHR/kg</span></div><div class="fc-stock">在庫 100kg</div></div>
           </div>
           <div class="fcard">
-            <div class="fc-img"><span class="fc-stock">在庫 50kg</span></div>
-            <div class="fc-body"><div class="fc-name">パンガシウス</div><div class="fc-size">1-2 head/kg</div><div class="fc-price">6,300<span class="u"> KHR/kg</span></div></div>
+            <div class="fc-img"></div>
+            <div class="fc-body"><div class="fc-name">パンガシウス</div><div class="fc-size">1-2 head/kg</div><div class="fc-price">6,300<span class="u"> KHR/kg</span></div><div class="fc-stock">在庫 50kg</div></div>
           </div>
           <div class="fcard">
-            <div class="fc-img"><span class="fc-stock">在庫 80kg</span></div>
-            <div class="fc-body"><div class="fc-name">ヒレナマズ</div><div class="fc-size">6-8 head/kg</div><div class="fc-price">6,300<span class="u"> KHR/kg</span></div></div>
+            <div class="fc-img"></div>
+            <div class="fc-body"><div class="fc-name">ヒレナマズ</div><div class="fc-size">6-8 head/kg</div><div class="fc-price">6,300<span class="u"> KHR/kg</span></div><div class="fc-stock">在庫 80kg</div></div>
           </div>
           <!-- 売切れ＝グレーアウト末尾 -->
           <div class="fcard sold">
@@ -155,23 +170,23 @@
           </div>
         </div>
 
-        <div class="sec-h">レビューコメント（37件）</div>
+        <div class="sec-h">レビューコメント（12件）</div>
         <div class="rc">
           <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">test_restaurant5</span><span class="rc-date">2026/05/13</span></div>
-          <span class="rc-thumb good">👍 良かった</span>
+          <span class="rc-thumb good"><svg class="sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> 良かった</span>
           <div class="rc-text">美味しかったです</div>
         </div>
         <div class="rc">
           <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">test_restaurant5</span><span class="rc-date">2026/05/11</span></div>
-          <span class="rc-thumb good">👍 良かった</span>
+          <span class="rc-thumb good"><svg class="sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> 良かった</span>
           <div class="rc-text">すごく活きの良い魚です。満足です。</div>
         </div>
         <div class="rc">
           <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">RyosukeRestaurant4</span><span class="rc-date">2026/04/25</span></div>
-          <span class="rc-thumb bad">👎 残念だった</span>
+          <span class="rc-thumb bad"><svg class="sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> 残念だった</span>
           <div class="rc-text">配送が遅かったです。</div>
         </div>
-        <span class="rc-more">もっと見る（残り34件）</span>
+        <span class="rc-more">もっと見る（残り9件）</span>
       </div>
     </div>
   </div>
@@ -190,6 +205,7 @@
             <span class="rate">★ 76%（17件）</span>
             <span class="loc">📍 タケオ州, Doun Kaev</span>
           </div>
+          <div class="pmeta">取引 20件 ・ 2026年1月〜</div>
         </div>
 
         <!-- 生産者の一言：未記入→セクションごと非表示（ここには出ない） -->
@@ -218,29 +234,29 @@
         <div class="sec-h">出品中の魚</div>
         <div class="fish-grid">
           <div class="fcard">
-            <div class="fc-img"><span class="fc-stock">在庫 100kg</span></div>
-            <div class="fc-body"><div class="fc-name">レッドティラピア</div><div class="fc-size">3 head/kg</div><div class="fc-price">7,875<span class="u"> KHR/kg</span></div></div>
+            <div class="fc-img"></div>
+            <div class="fc-body"><div class="fc-name">レッドティラピア</div><div class="fc-size">3 head/kg</div><div class="fc-price">7,875<span class="u"> KHR/kg</span></div><div class="fc-stock">在庫 100kg</div></div>
           </div>
           <div class="fcard">
-            <div class="fc-img"><span class="fc-stock">在庫 80kg</span></div>
-            <div class="fc-body"><div class="fc-name">ヒレナマズ</div><div class="fc-size">6-8 head/kg</div><div class="fc-price">6,300<span class="u"> KHR/kg</span></div></div>
+            <div class="fc-img"></div>
+            <div class="fc-body"><div class="fc-name">ヒレナマズ</div><div class="fc-size">6-8 head/kg</div><div class="fc-price">6,300<span class="u"> KHR/kg</span></div><div class="fc-stock">在庫 80kg</div></div>
           </div>
         </div>
 
         <div class="sec-h">レビューコメント（17件）</div>
         <div class="rc">
           <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">test_restaurant5</span><span class="rc-date">2026/05/12</span></div>
-          <span class="rc-thumb good">👍 良かった</span>
+          <span class="rc-thumb good"><svg class="sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> 良かった</span>
           <div class="rc-text">鮮度が良く、品質も安定しています。</div>
         </div>
         <div class="rc">
           <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">RyosukeRestaurant4</span><span class="rc-date">2026/05/08</span></div>
-          <span class="rc-thumb good">👍 良かった</span>
+          <span class="rc-thumb good"><svg class="sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> 良かった</span>
           <div class="rc-text">時間通りに配達してくれました。</div>
         </div>
         <div class="rc">
           <div class="rc-head"><span class="rc-ava">🧑‍🍳</span><span class="rc-name">test_restaurant5</span><span class="rc-date">2026/05/03</span></div>
-          <span class="rc-thumb good">👍 良かった</span>
+          <span class="rc-thumb good"><svg class="sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> 良かった</span>
           <div class="rc-text">活きが良かったです。</div>
         </div>
         <span class="rc-more">もっと見る（残り14件）</span>
@@ -249,6 +265,16 @@
   </div>
 
 </div>
+
+<script>
+  function updateEnvDots(){
+    const c = document.getElementById('env-carousel');
+    const dots = document.querySelectorAll('#env-dots .env-dot');
+    if (!c || !dots.length) return;
+    const i = Math.round(c.scrollLeft / c.clientWidth);
+    dots.forEach((d, n) => d.classList.toggle('active', n === i));
+  }
+</script>
 
 </body>
 </html>

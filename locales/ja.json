@@ -198,7 +198,7 @@
         "errorSubmit": "投稿に失敗しました。もう一度お試しください。",
         "uploadProgress": "写真をアップロード中... ({{current}}/{{total}})",
         "priceFormula": "販売価格 ＝ 魚単価 ＋ 内臓処理",
-        "gutPriceHelper": "内臓処理を希望する注文に加算されます。",
+        "gutPriceHelper": "内臓処理込みの価格です。レストランが不要なら注文時に外せます（−{{gut}} KHR/kg）。「しない」を選ぶと丸魚のみで販売します（買い手は内臓処理を選べません）。",
         "deliveryCommonTag": "レストラン負担・全出品に共通",
         "deliverableRadius": "配送可能距離（km）",
         "deliverableRadiusNote": "ここまで配達します。これより遠いレストランの画面には表示されません。",
@@ -214,7 +214,7 @@
         "deliverySheetCancel": "キャンセル",
         "deliverySheetSave": "保存して全出品に反映",
         "errorDelivery": "配送可能距離と送料を入力してください。",
-        "priceUnitPlaceholder": "例：金額を入力",
+        "priceUnitPlaceholder": "例：7,500",
         "priceEmpty": "魚単価を入力してください",
         "errorPhoto": "写真を追加してください",
         "errorDeliverableRadius": "配送可能距離を入力してください",
@@ -228,7 +228,14 @@
         "freeDeliveryDistancePlaceholder": "例：5",
         "successTitle": "投稿しました",
         "successSub": "投稿一覧に表示されます",
-        "successCta": "投稿一覧を見る"
+        "successCta": "投稿一覧を見る",
+        "priceUnitHelper": "100リエル単位で入力してください（例：7,500）",
+        "gutHelperNone": "内臓処理なし（丸魚のみ）で販売します。買い手は内臓処理を選べません",
+        "error100Unit": "100リエル単位で入力してください",
+        "gutToggleDo": "する",
+        "gutToggleDont": "しない",
+        "priceFormulaNoGut": "販売価格 ＝ 魚単価（内臓処理なし）",
+        "gutSection": "内臓処理"
     },
     "fish": {
         "striped_snakehead": "ライギョ",
@@ -609,7 +616,8 @@
         "minOrderTerm": "最低注文量 {{kg}}kg〜",
         "distanceFromYou": "あなたの店から約 {{km}}km",
         "askQuestion": "この魚について質問する",
-        "viewAllQuestions": "質問をすべて見る（{{count}}件）"
+        "viewAllQuestions": "質問をすべて見る（{{count}}件）",
+        "priceWholeFishOnly": "丸魚のみ（内臓処理なし）"
     },
     "orders": {
         "title": "注文内容を確認",
@@ -727,7 +735,15 @@
         "payAgain": "もう一度支払う",
         "contactSupport": "運営に問い合わせる",
         "holdingBadge": "確認中",
-        "reportedConfirmingNote": "問題を報告しました。運営が確認しています"
+        "reportedConfirmingNote": "問題を報告しました。運営が確認しています",
+        "reviewSection": "レビュー",
+        "reviewWaitingEntry": "レビュー待ち {{count}}件",
+        "reviewWaitTitle": "レビュー待ち",
+        "reviewWaitSubBuyer": "取引した農家を評価しましょう（直近2週間）",
+        "reviewSendBtn": "レビューを送信",
+        "reviewWaitSubFarmer": "取引したレストランを評価しましょう（直近2週間）",
+        "reviewWaitListSubFarmer": "取引したレストランを評価しましょう（直近2週間・任意）",
+        "reviewWaitListSubBuyer": "取引した農家を評価しましょう（直近2週間・任意）"
     },
     "fcm": {
         "newOrder": "新しい注文が届きました",
@@ -862,7 +878,8 @@
         "groupStopped": "出品停止",
         "refillStock": "在庫を補充",
         "question": "質問",
-        "gutPrice": "内臓処理"
+        "gutPrice": "内臓処理",
+        "gutWholeFishOnly": "丸魚のみ（内臓処理なし）"
     },
     "nav": {
         "logout": "ログアウト",
@@ -984,8 +1001,8 @@
         "yearMonth": "{{year}}年{{month}}月",
         "mapTypeMap": "地図",
         "mapTypeSatellite": "航空写真",
-        "selfPreviewNote": "これは農家から見えるあなたのページです（編集はプロフィールから）",
-        "selfPreviewNoteProducer": "これは買い手から見えるあなたのページです（編集はプロフィールから）",
+        "selfPreviewNote": "これは農家から見えるあなたのページです（編集は「レストラン情報」から）",
+        "selfPreviewNoteProducer": "これは買い手から見えるあなたのページです（編集は「生産者ページ」から）",
         "previewPublicPage": "公開ページをプレビュー",
         "shopIcon": "店のアイコン",
         "shopIntroPlaceholder": "お店の紹介を書いてください"
@@ -1055,7 +1072,9 @@
         "errorDelivery": "納品日時を選んでください",
         "errorSubmit": "注文に失敗しました。再度お試しください",
         "navCart": "カート",
-        "distance": "配送距離 {{km}} km"
+        "distance": "配送距離 {{km}} km",
+        "gutWholeFishOnly": "丸魚のみ（この出品は内臓処理を選べません）",
+        "gutAnnoWhole": "（丸魚のみ）"
     },
     "notifMessages": {
         "newOrder": {

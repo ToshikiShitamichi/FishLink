@@ -752,6 +752,8 @@
         import {
             calcItemPrices, calcDeliveryFee, sumItems, calcOrderTotal, resolveDelivery
         } from '/js/order-utils.js';
+        // #196: 納品スロット/承認期限の共通ロジック（承認期限+準備4h/最短8h/最長14日）
+        import { earliestDeliveryMs, latestDeliveryMs, slotStartUtcMs, maxDeliveryDateIso, DELIV_PARAMS } from '/js/approval-deadline.js';
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
         import { formatProvince, formatDistrict } from '/js/province-utils.js';
         // 5/24 #82 Phase 2 Chunk 3: クーポンコード検証
@@ -783,6 +785,9 @@
         let farmerRate = 0.05, farmerCampaignActive = false, farmerCampaignDiscountRate = 0;
         // 6/1 #111: 最短リードタイム（時間・運営値・初期8h）。これ未満の開始時刻スロットは選べない。
         let leadTimeHours = 8;
+        // #196: 納品スロット判定パラメータ（1回だけ構築して全スロット判定で再利用）。
+        //   leadTimeHours が settings で確定したら minLeadHours を更新する（下の settings ブロック）。
+        let delivParams = { ...DELIV_PARAMS, minLeadHours: (leadTimeHours || 8) };
 
         // 5/24 #82 Phase 2 Chunk 3: 適用済みクーポン
         // { code: '...', amountKhr: 5000 } / 未適用なら null
@@ -860,23 +865,25 @@
             return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         }
 
-        // 6/1 #111: 配達リードタイム — スロット開始が now + leadTimeHours 以降のものだけ選択可。
+        // #196: スロット開始(KHM壁時計)が [earliest, latest] の窓に入るものだけ選択可。
+        //   earliest = max(now+最短8h, 承認期限+準備4h) / latest = now+最長14日（approval-deadline.js）。
+        //   旧「当日/未来/過去」分岐はこの窓判定に吸収された。
         function slotStartHour(slot) { return parseInt(String(slot).split(':')[0], 10) || 0; }
         function isSlotSelectable(dateIso, slot) {
-            const todayStr = todayIso();
-            if (dateIso > todayStr) return true;     // 未来日：全て選択可
-            if (dateIso < todayStr) return false;    // 過去日：選択不可
-            const now = new Date();
-            const earliest = now.getHours() + now.getMinutes() / 60 + (leadTimeHours || 0);
-            return slotStartHour(slot) >= earliest;  // 当日：開始時刻が now+lead 以降
+            const now = Date.now();
+            const s = slotStartUtcMs(dateIso, slotStartHour(slot));
+            return s >= earliestDeliveryMs(now, delivParams) && s <= latestDeliveryMs(now, delivParams);
         }
-        // 当日に選べるスロットが無ければ翌日へ繰り上げた既定値を返す。
+        // 今日から最長14日先まで走査し、最初に選べるスロットを既定値に。無ければ当日の先頭スロット。
         function defaultDeliveryPick() {
-            const todayStr = todayIso();
-            const firstToday = DELIVERY_TIME_SLOTS.find(s => isSlotSelectable(todayStr, s));
-            if (firstToday) return { dateIso: todayStr, time: firstToday };
-            const d = new Date(); d.setDate(d.getDate() + 1);
-            return { dateIso: isoFromDate(d), time: DELIVERY_TIME_SLOTS[0] };
+            const start = new Date();
+            for (let i = 0; i <= DELIV_PARAMS.maxLeadDays; i++) {
+                const d = new Date(start); d.setDate(start.getDate() + i);
+                const iso = isoFromDate(d);
+                const slot = DELIVERY_TIME_SLOTS.find(s => isSlotSelectable(iso, s));
+                if (slot) return { dateIso: iso, time: slot };
+            }
+            return { dateIso: todayIso(), time: DELIVERY_TIME_SLOTS[0] };
         }
 
         // 5/23 #69 Phase B: data-cache 経由（同一タブ内の重複取得を抑止）
@@ -930,6 +937,9 @@
                 loading.classList.remove('show');
                 document.body.classList.add('app-ready');
                 cachedRendered = true;
+                // #195: cache 復元は「表示のみ」。ここで bindActions すると cartItems 未ロード中の
+                //   タップが空配列を参照して落ちる/カートが一瞬「空」に化ける（レビュー指摘）ため束ねない。
+                //   操作ハンドラは subscribeCart 初回 render（実データ確定後）で束ねる＝正しい経路。
             }
         } catch (e) { /* ignore */ }
 
@@ -948,6 +958,7 @@
                     farmerCampaignActive = c.farmerCampaignActive === true;
                     farmerCampaignDiscountRate = c.farmerCampaignDiscount ?? 0;
                     leadTimeHours = c.leadTimeHours != null ? c.leadTimeHours : 8;
+                    delivParams = { ...DELIV_PARAMS, minLeadHours: (leadTimeHours || 8) };
                 }
 
                 // 6/7 #134 C → #178: クーポンウォレットを先読み（confirm ステージで自動適用）
@@ -1075,8 +1086,12 @@
                     // 小計も手数料込み（c.prices.fishPrice + c.prices.serviceFee）
                     const lineTotal = (c.prices.fishPrice || 0) + (c.prices.serviceFee || 0);
                     const minOrder = c.listing.minOrder || 1;
-                    // 6/1 #111: 単価に内臓処理あり/なしを併記
-                    const gutAnno = c.raw.gutProcessing ? i18next.t('cart.gutAnnoOn') : i18next.t('cart.gutAnnoOff');
+                    // #195: 丸魚のみ（内臓処理を提供しない出品）＝ gutPrice == null（falsy 判定は不可）。
+                    const wholeFishOnly = c.listing.gutPrice == null;
+                    // 6/1 #111 / #195: 単価に内臓処理あり/なし（丸魚のみは専用ラベル）を併記
+                    const gutAnno = wholeFishOnly
+                        ? i18next.t('cart.gutAnnoWhole')
+                        : (c.raw.gutProcessing ? i18next.t('cart.gutAnnoOn') : i18next.t('cart.gutAnnoOff'));
                     // ヒント（トグル直下）：あり→外すと−／なし→戻すと+
                     const gutHint = gutRemoveKhr > 0
                         ? (c.raw.gutProcessing
@@ -1104,11 +1119,13 @@
                                     <button type="button" data-act="qty-plus" data-idx="${origIndex}">＋</button>
                                 </div>
                                 <div class="gut-group">
-                                    <button class="gut-chip ${c.raw.gutProcessing ? 'active' : ''}" type="button" data-act="toggle-gut" data-idx="${origIndex}">
+                                    ${wholeFishOnly
+                                        ? `<div class="gut-hint">${i18next.t('cart.gutWholeFishOnly')}</div>`
+                                        : `<button class="gut-chip ${c.raw.gutProcessing ? 'active' : ''}" type="button" data-act="toggle-gut" data-idx="${origIndex}">
                                         <span class="material-symbols-outlined">${c.raw.gutProcessing ? 'check_circle' : 'radio_button_unchecked'}</span>
                                         <span>${c.raw.gutProcessing ? i18next.t('cart.gutChipOn') : i18next.t('cart.gutChipOff')}</span>
                                     </button>
-                                    ${gutHint ? `<div class="gut-hint">${gutHint}</div>` : ''}
+                                    ${gutHint ? `<div class="gut-hint">${gutHint}</div>` : ''}`}
                                 </div>
                             </div>
                             ${minOrder > 1 ? `<div class="min-order-note">${i18next.t('cart.minOrderLabel', { kg: minOrder })}</div>` : ''}
@@ -1118,7 +1135,7 @@
                 });
 
                 // 配送日時選択
-                const dateOptions = `<input type="date" data-act="date" data-farmer="${farmerId}" value="${pick.dateIso}" min="${todayIso()}">`;
+                const dateOptions = `<input type="date" data-act="date" data-farmer="${farmerId}" value="${pick.dateIso}" min="${todayIso()}" max="${maxDeliveryDateIso(Date.now())}">`;
                 const timeOptions = DELIVERY_TIME_SLOTS.map(t => {
                     const ok = isSlotSelectable(pick.dateIso, t);
                     return `<option value="${t}" ${t === pick.time ? 'selected' : ''} ${ok ? '' : 'disabled'}>${t}</option>`;
@@ -1209,6 +1226,7 @@
                     altInput: true,
                     altFormat: 'n/j（D）',
                     minDate: inp.min || undefined,
+                    maxDate: inp.max || undefined,
                     defaultDate: inp.value || undefined,
                     disableMobile: true,
                 });
@@ -1264,6 +1282,9 @@
             document.querySelectorAll('[data-act="toggle-gut"]').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const idx = Number(btn.dataset.idx);
+                    // #195: 丸魚のみ（gutPrice == null）はトグル自体を描画しないが、防御的にガード
+                    const listing = listingCache.get(cartItems[idx]?.listingId);
+                    if (listing && listing.gutPrice == null) return;
                     await updateCartItem(uid, idx, { gutProcessing: !cartItems[idx].gutProcessing });
                 });
             });
@@ -1654,7 +1675,10 @@
                     const shortName = fishName.trim();
                     // 6/1 #111: サイズ(head/kg)併記 + 内臓処理あり/なしを全項目に明示
                     const size = c.listing.size ? ` ${escapeHtml(c.listing.size)} head/kg` : '';
-                    const gutAnno = c.item.gutProcessing ? i18next.t('cart.gutAnnoOn') : i18next.t('cart.gutAnnoOff');
+                    // #195: 丸魚のみ（gutPrice == null）は専用ラベル
+                    const gutAnno = (c.listing.gutPrice == null)
+                        ? i18next.t('cart.gutAnnoWhole')
+                        : (c.item.gutProcessing ? i18next.t('cart.gutAnnoOn') : i18next.t('cart.gutAnnoOff'));
                     return `<div class="confirm-group__row"><span>${escapeHtml(shortName)}${size} · ${c.item.quantity}kg ${gutAnno}</span><span class="v">${fmtKhr(c.prices.fishPrice + c.prices.serviceFee)}</span></div>`;
                 }).join('');
 

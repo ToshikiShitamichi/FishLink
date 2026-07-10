@@ -154,12 +154,13 @@
 <body>
 
 <div class="intro">
-  <h1>FISHLINK レストラン側 — カート / 注文確認（モック）</h1>
+  <h1>FISHLINK レストラン側 — カート（モック・案B 注文時前払い対応）</h1>
+  <p><b>【案B/Q1 更新 2026-06-25】割引はカートで確定／支払いは別画面</b>。① カート（クーポンなし＝キャンペーン）／② カート（クーポンを持っている時＝クーポン自動適用・キャンペーン無効）。どちらも〔確認画面へ〕→ <b>前払い支払い画面（ウォレット＋KHQR）＝fishlink-payment-prepay-mockup.html</b>。旧「注文確認（受取時払い）」は廃止＝支払いは前払い画面に集約。</p>
   <p>反映：#11 内臓処理＝<b>「あり ✓／外すと −525」</b>（"+525加算風"を廃止・トグル直下にヒント・削除は右上に分離・価格に（内臓処理あり/なし）併記）・トグルは<b>中立グレー</b>／#9 CTAは<b>青</b>（緑廃止）／配送料に<b>「配達1回分・量で変わりません」</b>注記＋無料圏は<b>「送料無料」</b>緑／明細ラベルは<b>「魚代」</b>（"サービス料込み"は伏せる）／割引は<b>「魚代から{%}」</b>。</p>
   <p>ガード：最低注文量＝ステッパー下限固定＋明示／在庫上限／数量は<b>整数kg</b>・直接入力可／クーポンは<b>キャンペーンと併用不可</b>（クーポン優先・解除可）／注文確認は<b>内臓処理あり・なしを全項目明示</b>。配送料は<b>農家ごと1回の固定額</b>（量・品数で変わらない）。</p>
   <p>配送料節約の提案は<b>いったん非表示</b>（誤誘導回避・後日ネット計算で復活）。</p>
   <p>🗑削除の確認は<b>自前モーダル（中央）</b>＝ブラウザ標準confirm廃止。確定ボタン「<b>削除する</b>」は<b>赤/danger</b>、キャンセルはニュートラル（投稿一覧の削除・確認系と統一）。</p>
-  <p>クーポンは<b>ウォレットから1タップ適用</b>（コード手入力は撤廃・referral決定）。<b>使えるクーポンを持っている時だけ「使えるクーポン」欄が出る</b>／タップで適用・「外す」で解除／<b>キャンペーン割引とは併用不可</b>（クーポン優先・お得な方）。</p>
+  <p>クーポンは<b>期限が近い順に自動適用</b>（コード手入力は撤廃・手動選択もなし・referral決定2026-06-22）。<b>使えるクーポンを持っている時だけ「使えるクーポン」欄が出る</b>／自動で1枚適用・「外す」で次回に取っておける／<b>1注文1枚・キャンペーン割引とは併用不可</b>（クーポン優先・お得な方）。</p>
 </div>
 
 <div class="stage">
@@ -193,7 +194,7 @@
                 <div>
                   <div class="ci-name">レッドティラピア</div>
                   <div class="ci-sub">3 head/kg</div>
-                  <div class="ci-price">7,875 KHR/kg <span class="gut-tag">（内臓処理あり）</span></div>
+                  <div class="ci-price">7,800 KHR/kg <span class="gut-tag">（内臓処理あり）</span></div>
                 </div>
                 <span class="del">🗑 削除</span>
               </div>
@@ -201,13 +202,13 @@
                 <div class="stepper"><button>−</button><input value="5"><button>＋</button></div>
                 <div class="gut-group">
                   <div class="gut on"><span class="gck">✓</span>内臓処理 あり</div>
-                  <div class="gut-hint">外すと −525 KHR/kg</div>
+                  <div class="gut-hint">外すと −500 KHR/kg</div>
                 </div>
               </div>
               <div class="min-note">最低注文量 5kg</div>
             </div>
           </div>
-          <div class="ci-total">39,375 KHR</div>
+          <div class="ci-total">39,000 KHR</div>
 
           <!-- 品2：内臓処理なし（OFF） -->
           <div class="ci" style="border-top:1px solid #F2F4F7;">
@@ -217,7 +218,7 @@
                 <div>
                   <div class="ci-name">ヒレナマズ</div>
                   <div class="ci-sub">6-8 head/kg</div>
-                  <div class="ci-price">5,775 KHR/kg <span class="gut-tag">（内臓処理なし）</span></div>
+                  <div class="ci-price">5,700 KHR/kg <span class="gut-tag">（内臓処理なし）</span></div>
                 </div>
                 <span class="del">🗑 削除</span>
               </div>
@@ -225,23 +226,23 @@
                 <div class="stepper"><button>−</button><input value="4"><button>＋</button></div>
                 <div class="gut-group">
                   <div class="gut"><span class="gck">○</span>内臓処理 なし</div>
-                  <div class="gut-hint">戻すと +525 KHR/kg</div>
+                  <div class="gut-hint">戻すと +500 KHR/kg</div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="ci-total">23,100 KHR</div>
+          <div class="ci-total">22,800 KHR</div>
 
           <div class="deliv-row">
             <div class="deliv-field"><label>納品日</label><div class="box">6/2（火）</div></div>
             <div class="deliv-field"><label>時間帯</label><div class="box">7:00–8:00</div></div>
           </div>
 
-          <div class="amt"><span>魚代</span><span>62,475 KHR</span></div>
-          <div class="amt promo"><span class="pl">🏷 キャンペーン割引（魚代から2.5%）</span><span class="pv">−1,562 KHR</span></div>
+          <div class="amt"><span>魚代</span><span>61,800 KHR</span></div>
+          <div class="amt promo"><span class="pl">🏷 キャンペーン割引（魚代から2.5%）</span><span class="pv">−1,500 KHR</span></div>
           <div class="amt"><span>配送料</span><span>12,400 KHR</span></div>
           <div class="amt-note">配達1回分の固定額です。注文量を増やしても変わりません。</div>
-          <div class="amt sub"><span>この農家への小計</span><span>73,313 KHR</span></div>
+          <div class="amt sub"><span>この農家への小計</span><span>72,700 KHR</span></div>
         </div>
 
         <!-- 農家B：送料無料・1品 -->
@@ -257,7 +258,7 @@
                 <div>
                   <div class="ci-name">ナイルティラピア</div>
                   <div class="ci-sub">5-6 head/kg</div>
-                  <div class="ci-price">5,250 KHR/kg <span class="gut-tag">（内臓処理あり）</span></div>
+                  <div class="ci-price">5,200 KHR/kg <span class="gut-tag">（内臓処理あり）</span></div>
                 </div>
                 <span class="del">🗑 削除</span>
               </div>
@@ -265,38 +266,58 @@
                 <div class="stepper"><button>−</button><input value="6"><button>＋</button></div>
                 <div class="gut-group">
                   <div class="gut on"><span class="gck">✓</span>内臓処理 あり</div>
-                  <div class="gut-hint">外すと −525 KHR/kg</div>
+                  <div class="gut-hint">外すと −500 KHR/kg</div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="ci-total">31,500 KHR</div>
+          <div class="ci-total">31,200 KHR</div>
+
+          <!-- 品2：内臓処理「しない」出品（gutFee=null）＝トグルなし・丸魚のみ -->
+          <div class="ci" style="border-top:1px solid #F2F4F7;">
+            <div class="ci-img"></div>
+            <div class="ci-main">
+              <div class="ci-top">
+                <div>
+                  <div class="ci-name">パンガシウス</div>
+                  <div class="ci-sub">6-8 head/kg</div>
+                  <div class="ci-price">6,000 KHR/kg <span class="gut-tag">（丸魚のみ）</span></div>
+                </div>
+                <span class="del">🗑 削除</span>
+              </div>
+              <div class="ci-controls">
+                <div class="stepper"><button>−</button><input value="3"><button>＋</button></div>
+                <div class="gut-group"><div class="gut-hint">丸魚のみ（この出品は内臓処理を選べません）</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="ci-total">18,000 KHR</div>
 
           <div class="deliv-row">
             <div class="deliv-field"><label>納品日</label><div class="box">6/2（火）</div></div>
             <div class="deliv-field"><label>時間帯</label><div class="box">7:00–8:00</div></div>
           </div>
 
-          <div class="amt"><span>魚代</span><span>31,500 KHR</span></div>
-          <div class="amt promo"><span class="pl">🏷 キャンペーン割引（魚代から2.5%）</span><span class="pv">−788 KHR</span></div>
+          <div class="amt"><span>魚代</span><span>49,200 KHR</span></div>
+          <div class="amt promo"><span class="pl">🏷 キャンペーン割引（魚代から2.5%）</span><span class="pv">−1,200 KHR</span></div>
           <div class="amt"><span>配送料</span><span class="ship-free">送料無料</span></div>
           <div class="amt-note">3.0km は送料無料圏内です。</div>
-          <div class="amt sub"><span>この農家への小計</span><span>30,712 KHR</span></div>
+          <div class="amt sub"><span>この農家への小計</span><span>48,000 KHR</span></div>
         </div>
 
       </div>
       <div class="c-footer">
-        <div class="ft-total"><span class="lbl">合計</span><span class="val">104,025 KHR</span></div>
+        <div class="ft-total"><span class="lbl">合計</span><span class="val">120,700 KHR</span></div>
         <button class="cta">確認画面へ</button>
       </div>
 
       <!-- 自前 削除確認モーダル（🗑削除タップ時・中央・ブラウザ標準confirm廃止） -->
-      <div class="modal-overlay">
-        <div class="modal">
+      <div class="modal-overlay" onclick="this.style.display='none'">
+        <div class="modal" onclick="event.stopPropagation()">
           <div class="m-title">この商品をカートから削除しますか？</div>
           <div class="m-actions">
-            <button class="m-btn m-cancel">キャンセル</button>
-            <button class="m-btn m-delete">削除する</button>
+            <button class="m-btn m-cancel" onclick="this.closest('.modal-overlay').style.display='none'">キャンセル</button>
+            <button class="m-btn m-delete" onclick="this.closest('.modal-overlay').style.display='none'">削除する</button>
           </div>
         </div>
       </div>
@@ -307,7 +328,7 @@
   <!-- ② 注文確認（read-only・内臓処理明示・クーポン適用）              -->
   <!-- ============================================================ -->
   <div class="phone-wrap">
-    <div class="phone-label">② 注文内容の確認 <span class="tag">内臓処理明示・クーポン適用（キャンペーン無効）</span></div>
+    <div class="phone-label">② カート（クーポンを持っている時） <span class="tag">クーポン自動適用・キャンペーン無効・お得な方</span></div>
     <div class="phone">
       <div class="c-header">
         <span class="back">←</span>
@@ -318,8 +339,7 @@
       <div class="c-body">
 
         <div class="confirm-note">
-          <div class="cn-ttl">📋 注文内容の確認</div>
-          この内容で注文を確定します。よろしければ下の「注文を確定する」ボタンを押してください。修正は左上の「←」でカートに戻れます。
+          🎟 クーポンを自動で適用しました（お得な方を選んでいます）。
         </div>
 
         <!-- 農家A -->
@@ -329,16 +349,16 @@
             <span class="fb-dist">配送距離 24.8 km</span>
           </div>
           <div class="ro-item">
-            <div class="ro-head"><div><span class="ro-name">レッドティラピア</span> <span class="ro-size">3 head/kg</span></div><span class="ro-price">39,375 KHR</span></div>
+            <div class="ro-head"><div><span class="ro-name">レッドティラピア</span> <span class="ro-size">3 head/kg</span></div><span class="ro-price">39,000 KHR</span></div>
             <div class="ro-meta">5kg ・ 内臓処理あり</div>
           </div>
           <div class="ro-item">
-            <div class="ro-head"><div><span class="ro-name">ヒレナマズ</span> <span class="ro-size">6-8 head/kg</span></div><span class="ro-price">23,100 KHR</span></div>
+            <div class="ro-head"><div><span class="ro-name">ヒレナマズ</span> <span class="ro-size">6-8 head/kg</span></div><span class="ro-price">22,800 KHR</span></div>
             <div class="ro-meta">4kg ・ 内臓処理なし</div>
           </div>
           <div class="amt"><span>配送料</span><span>12,400 KHR</span></div>
           <div class="amt-note">配達1回分の固定額です。</div>
-          <div class="amt sub"><span>この農家への小計</span><span>74,875 KHR</span></div>
+          <div class="amt sub"><span>この農家への小計</span><span>74,200 KHR</span></div>
           <div class="deliv-confirm">📅 納品 <b>6/2（火）</b> ・ 🕐 <b>7:00–8:00</b></div>
         </div>
 
@@ -349,11 +369,11 @@
             <span class="fb-dist">配送距離 3.0 km</span>
           </div>
           <div class="ro-item">
-            <div class="ro-head"><div><span class="ro-name">ナイルティラピア</span> <span class="ro-size">5-6 head/kg</span></div><span class="ro-price">31,500 KHR</span></div>
+            <div class="ro-head"><div><span class="ro-name">ナイルティラピア</span> <span class="ro-size">5-6 head/kg</span></div><span class="ro-price">31,200 KHR</span></div>
             <div class="ro-meta">6kg ・ 内臓処理あり</div>
           </div>
           <div class="amt"><span>配送料</span><span class="ship-free">送料無料</span></div>
-          <div class="amt sub"><span>この農家への小計</span><span>31,500 KHR</span></div>
+          <div class="amt sub"><span>この農家への小計</span><span>31,200 KHR</span></div>
           <div class="deliv-confirm">📅 納品 <b>6/2（火）</b> ・ 🕐 <b>7:00–8:00</b></div>
         </div>
 
@@ -370,7 +390,7 @@
               <div class="ca-rm">外す</div>
             </div>
           </div>
-          <div class="cp-help">※ お持ちのクーポンをタップで適用（コード入力は不要）。使えるクーポンが無いときはこの欄は出ません。</div>
+          <div class="cp-help">※ 期限が近いクーポンを自動で適用（コード入力・手動選択は不要）。〔外す〕と次回に取っておけます。使えるクーポンが無いときはこの欄は出ません。</div>
         </div>
 
         <div class="warn-note">
@@ -380,8 +400,8 @@
       </div>
       <div class="c-footer">
         <div class="ft-discount"><span>🎟 紹介クーポン割引（vmYP64RH）</span><span>−2,500 KHR</span></div>
-        <div class="ft-total"><span class="lbl">合計</span><span class="val">103,875 KHR</span></div>
-        <button class="cta">注文を確定する</button>
+        <div class="ft-total"><span class="lbl">合計</span><span class="val">102,900 KHR</span></div>
+        <button class="cta">確認画面へ</button>
       </div>
     </div>
   </div>

@@ -1136,7 +1136,7 @@
                     <div class="fish-detail__name">${escapeHtml(fishName)}${size ? `（${escapeHtml(size)} head/kg）` : ''}</div>
                     <!-- ③価格（内臓処理込み単一値＋グレー注記） -->
                     <div class="fish-detail__price">${displayPrice.toLocaleString()} KHR/kg</div>
-                    <div class="fish-detail__price-incl">${i18next.t('order.priceGutIncluded')}</div>
+                    <div class="fish-detail__price-incl">${listingData.gutPrice == null ? i18next.t('order.priceWholeFishOnly') : i18next.t('order.priceGutIncluded')}</div>
                     <!-- ④農家行（タップで生産者ページ・★好評価率%） -->
                     <div class="fish-detail__farmer">
                         <a href="/pages/restaurant/farmer.html?id=${listingData.farmerId}" class="fish-detail__farmer-link">
@@ -1233,7 +1233,7 @@
                 listingId,
                 farmerId: listingData.farmerId,
                 quantity: defaultQty,
-                gutProcessing: true,
+                gutProcessing: listingData.gutPrice == null ? false : true,
             });
         }
 

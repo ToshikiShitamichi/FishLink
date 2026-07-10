@@ -134,6 +134,9 @@
   .unit { font-size: 13px; color: #5A6470; font-weight: 600; flex-shrink: 0; }
   .helper { font-size: 12px; color: #5A6470; margin-top: 6px; line-height: 1.6; }
   .helper.green { color: #2E7D32; }
+  .seg-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
+  .seg-toggle .seg { flex: 1; text-align: center; padding: 8px; border-radius: 9px; font-size: 13px; font-weight: 600; background: #FFF; border: 1px solid #CDD8E3; color: #5A6470; }
+  .seg-toggle .seg.on { background: #EAF2FB; border-color: #0B5FB0; color: #0B5FB0; font-weight: 800; }
 
   /* セクションをカードで区切る */
   .section-card { background: #FFF; border: 1px solid #E7ECF1; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
@@ -325,17 +328,22 @@
         <div class="field">
           <div class="field-label">魚単価 <span class="badge req">必須</span></div>
           <div class="input-row">
-            <input class="input short" placeholder="例：金額を入力">
+            <input class="input short" placeholder="例：7,500">
             <span class="unit">KHR /kg</span>
           </div>
+          <div class="helper">100リエル単位で入力してください（例：7,500）。</div>
         </div>
         <div class="field">
-          <div class="field-label">＋内臓処理</div>
+          <div class="field-label">内臓処理</div>
+          <div class="seg-toggle">
+            <div class="seg on">する</div>
+            <div class="seg">しない</div>
+          </div>
           <div class="input-row">
             <input class="input short" value="500">
             <span class="unit">KHR /kg</span>
           </div>
-          <div class="helper">内臓処理を希望する注文に加算されます。</div>
+          <div class="helper">内臓処理込みの価格です。レストランが不要なら注文時に外せます（−500 KHR/kg）。<br>「しない」を選ぶと丸魚のみで販売（料金欄は消え、販売価格＝魚単価・買い手は内臓処理を選べません）。</div>
         </div>
         <div class="price-calc">
           <span class="pc-label">販売価格</span>
@@ -483,17 +491,22 @@
         <div class="field">
           <div class="field-label">魚単価 <span class="badge req">必須</span></div>
           <div class="input-row">
-            <input class="input short" placeholder="例：金額を入力">
+            <input class="input short" placeholder="例：7,500">
             <span class="unit">KHR /kg</span>
           </div>
+          <div class="helper">100リエル単位で入力してください（例：7,500）。</div>
         </div>
         <div class="field">
-          <div class="field-label">＋内臓処理</div>
+          <div class="field-label">内臓処理</div>
+          <div class="seg-toggle">
+            <div class="seg on">する</div>
+            <div class="seg">しない</div>
+          </div>
           <div class="input-row">
             <input class="input short" value="500">
             <span class="unit">KHR /kg</span>
           </div>
-          <div class="helper">内臓処理を希望する注文に加算されます。</div>
+          <div class="helper">内臓処理込みの価格です。レストランが不要なら注文時に外せます（−500 KHR/kg）。<br>「しない」を選ぶと丸魚のみで販売（料金欄は消え、販売価格＝魚単価・買い手は内臓処理を選べません）。</div>
         </div>
         <div class="price-calc">
           <span class="pc-label">販売価格</span>
@@ -590,9 +603,10 @@
         <div class="field">
           <div class="field-label">魚単価 <span class="badge req">必須</span></div>
           <div class="input-row">
-            <input class="input short" placeholder="例：金額を入力">
+            <input class="input short" placeholder="例：7,500">
             <span class="unit">KHR /kg</span>
           </div>
+          <div class="helper">100リエル単位で入力してください（例：7,500）。</div>
         </div>
         </div>
 
@@ -653,6 +667,47 @@
             <button class="sheet-btn cancel">キャンセル</button>
             <button class="sheet-btn save">保存して全出品に反映</button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ④ 内臓処理「しない」を選んだ状態（丸魚のみ）                    -->
+  <!-- ============================================================ -->
+  <div class="phone-wrap">
+    <div class="phone-label">④ 内臓処理「しない」 <span class="tag">料金欄なし・販売価格＝魚単価・買い手は選べない</span></div>
+    <div class="phone">
+      <div class="form-header">
+        <span class="back">←</span>
+        <span class="ttl">魚を投稿する</span>
+      </div>
+      <div class="form-body">
+        <div class="section-card">
+        <div class="sec-head">販売価格 <span class="sub">CAA参考価格を参考に設定</span></div>
+        <div class="field">
+          <div class="field-label">魚単価 <span class="badge req">必須</span></div>
+          <div class="input-row">
+            <input class="input short" value="7,500">
+            <span class="unit">KHR /kg</span>
+          </div>
+          <div class="helper">100リエル単位で入力してください（例：7,500）。</div>
+        </div>
+        <div class="field">
+          <div class="field-label">内臓処理</div>
+          <div class="seg-toggle">
+            <div class="seg">する</div>
+            <div class="seg on">しない</div>
+          </div>
+          <div class="helper">内臓処理なし（丸魚のみ）で販売します。買い手は内臓処理を選べません。</div>
+        </div>
+        <div class="price-calc">
+          <span class="pc-label">販売価格</span>
+          <span class="pc-val">7,500 KHR/kg</span>
+        </div>
+        <div class="price-note">
+          <b>販売価格 ＝ 魚単価</b>（内臓処理なし）
+        </div>
         </div>
       </div>
     </div>

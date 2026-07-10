@@ -58,8 +58,16 @@
   .intro-box .ib-l { font-size:12px; font-weight:800; color:#5A6470; }
   .intro-box .ib-t { font-size:13px; color:#33414E; margin-top:4px; line-height:1.6; }
 
-  /* お店の様子（風景写真・任意） */
+  /* お店の様子（風景写真・任意／複数枚＝横スワイプカルーセル＋ドット） */
   .scene-img { width:100%; height:190px; border-radius:12px; background:linear-gradient(135deg,#d9c3a6,#c89f76); object-fit:cover; }
+  .scene-carousel { display:flex; gap:8px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; }
+  .scene-carousel::-webkit-scrollbar { display:none; }
+  .scene-slide { flex:0 0 100%; height:190px; border-radius:12px; scroll-snap-align:center; }
+  .scene-dots { display:flex; justify-content:center; gap:6px; margin-top:8px; }
+  .scene-dot { width:6px; height:6px; border-radius:50%; background:#C5CDD6; transition:all .2s; }
+  .scene-dot.active { background:#0B5FB0; width:18px; border-radius:3px; }
+  /* 地図の航空写真（衛星）切替トグル */
+  .map-box .layer-toggle { position:absolute; top:10px; right:10px; background:#FFF; color:#1A2733; font-size:12px; font-weight:700; padding:5px 11px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.2); display:inline-flex; align-items:center; gap:4px; }
 
   /* レビュー（メトリクス・ニュートラル統一） */
   .rev-block { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-top:6px; }
@@ -109,7 +117,7 @@
           <div class="ava shop">🍴</div>
           <div class="pname">レストラン・アンコール</div>
           <div class="rate">★ 93%（43件）</div>
-          <div class="meta-line">📍 タケオ州, Samraong　・　取引 <b>50件</b>　・　2025/12〜</div>
+          <div class="meta-line">📍 タケオ州, Samraong　・　取引 <b>50件</b>　・　2025年12月〜</div>
         </div>
 
         <!-- 地図（農家向け＝配達先・「Google Mapsで開く」） -->
@@ -121,6 +129,7 @@
           <div class="rd h"></div>
           <div class="rd v"></div>
           <div class="pin">📍</div>
+          <div class="layer-toggle">🛰 航空写真</div>
           <div class="gm-btn">Google Mapsで開く</div>
           <div class="attr">地図データ ©2026</div>
         </div>
@@ -132,7 +141,14 @@
         </div>
 
         <div class="sec-h">お店の様子</div>
-        <div class="scene-img"></div>
+        <div class="scene-wrap">
+          <div class="scene-carousel">
+            <div class="scene-slide" style="background:linear-gradient(135deg,#d9c3a6,#c89f76)"></div>
+            <div class="scene-slide" style="background:linear-gradient(135deg,#c7b8d8,#a48fc0)"></div>
+            <div class="scene-slide" style="background:linear-gradient(135deg,#bcd3c4,#8fb59c)"></div>
+          </div>
+          <div class="scene-dots"><span class="scene-dot active"></span><span class="scene-dot"></span><span class="scene-dot"></span></div>
+        </div>
 
         <div class="sec-h">レビュー（43件）</div>
         <div class="rev-block">
@@ -147,7 +163,7 @@
           </div>
         </div>
 
-        <div class="sec-h">レビューコメント（43件）</div>
+        <div class="sec-h">レビューコメント（9件）</div>
         <div class="rc">
           <div class="rc-head"><span class="rc-ava">🧑‍🌾</span><span class="rc-name">大星農場</span><span class="rc-date">2026/05/26</span></div>
           <span class="rc-thumb good"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14.5s1.4 2 4 2 4-2 4-2"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/></svg>良かった</span>
@@ -163,7 +179,7 @@
           <span class="rc-thumb bad"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M16 15.5s-1.4-2-4-2-4 2-4 2"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/></svg>残念だった</span>
           <div class="rc-text">受け取りの時間に少し待たされました。</div>
         </div>
-        <span class="rc-more">もっと見る（残り40件）</span>
+        <span class="rc-more">もっと見る（残り6件）</span>
       </div>
     </div>
   </div>
@@ -179,7 +195,7 @@
           <div class="ava">🍴</div>
           <div class="pname">クメールキッチン</div>
           <div class="rate new">新規</div>
-          <div class="meta-line">📍 プノンペン　・　取引 <b>0件</b>　・　2026/6〜</div>
+          <div class="meta-line">📍 プノンペン　・　取引 <b>0件</b>　・　2026年6月〜</div>
         </div>
 
         <!-- 地図は新規でも表示（場所は登録済み・配達先） -->
@@ -189,6 +205,7 @@
           <div class="rd h"></div>
           <div class="rd v"></div>
           <div class="pin">📍</div>
+          <div class="layer-toggle">🛰 航空写真</div>
           <div class="gm-btn">Google Mapsで開く</div>
           <div class="attr">地図データ ©2026</div>
         </div>
@@ -212,12 +229,12 @@
       <div class="p-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
       <div class="p-title">レストラン情報</div>
       <div class="p-body">
-        <div class="self-note">👁 これは農家から見えるあなたのページです（編集はプロフィールから）</div>
+        <div class="self-note">👁 これは農家から見えるあなたのページです（編集は「レストラン情報」から）</div>
         <div class="prof">
           <div class="ava shop">🍴</div>
           <div class="pname">レストラン・アンコール</div>
           <div class="rate">★ 93%（43件）</div>
-          <div class="meta-line">📍 タケオ州, Samraong　・　取引 <b>50件</b>　・　2025/12〜</div>
+          <div class="meta-line">📍 タケオ州, Samraong　・　取引 <b>50件</b>　・　2025年12月〜</div>
         </div>
 
         <div class="map-box">
@@ -228,6 +245,7 @@
           <div class="rd h"></div>
           <div class="rd v"></div>
           <div class="pin">📍</div>
+          <div class="layer-toggle">🛰 航空写真</div>
           <div class="gm-btn">Google Mapsで開く</div>
           <div class="attr">地図データ ©2026</div>
         </div>
@@ -239,7 +257,14 @@
         </div>
 
         <div class="sec-h">お店の様子</div>
-        <div class="scene-img"></div>
+        <div class="scene-wrap">
+          <div class="scene-carousel">
+            <div class="scene-slide" style="background:linear-gradient(135deg,#d9c3a6,#c89f76)"></div>
+            <div class="scene-slide" style="background:linear-gradient(135deg,#c7b8d8,#a48fc0)"></div>
+            <div class="scene-slide" style="background:linear-gradient(135deg,#bcd3c4,#8fb59c)"></div>
+          </div>
+          <div class="scene-dots"><span class="scene-dot active"></span><span class="scene-dot"></span><span class="scene-dot"></span></div>
+        </div>
 
         <div class="sec-h">レビュー（43件）</div>
         <div class="rev-block">
@@ -254,23 +279,38 @@
           </div>
         </div>
 
-        <div class="sec-h">レビューコメント（43件）</div>
+        <div class="sec-h">レビューコメント（9件）</div>
         <div class="rc">
           <div class="rc-head"><span class="rc-ava">🧑‍🌾</span><span class="rc-name">大星農場</span><span class="rc-date">2026/05/26</span></div>
           <span class="rc-thumb good"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14.5s1.4 2 4 2 4-2 4-2"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/></svg>良かった</span>
           <div class="rc-text">支払いがスムーズで助かりました。またお願いします。</div>
         </div>
         <div class="rc">
+          <div class="rc-head"><span class="rc-ava">🧑‍🌾</span><span class="rc-name">タケオ養殖場</span><span class="rc-date">2026/05/13</span></div>
+          <span class="rc-thumb good"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14.5s1.4 2 4 2 4-2 4-2"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/></svg>良かった</span>
+          <div class="rc-text">受け取りも丁寧で、やり取りもスムーズでした。</div>
+        </div>
+        <div class="rc">
           <div class="rc-head"><span class="rc-ava">🧑‍🌾</span><span class="rc-name">メコン淡水魚</span><span class="rc-date">2026/05/07</span></div>
           <span class="rc-thumb bad"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M16 15.5s-1.4-2-4-2-4 2-4 2"/><line x1="9" y1="9.5" x2="9.01" y2="9.5"/><line x1="15" y1="9.5" x2="15.01" y2="9.5"/></svg>残念だった</span>
           <div class="rc-text">受け取りの時間に少し待たされました。</div>
         </div>
-        <span class="rc-more">もっと見る（残り41件）</span>
+        <span class="rc-more">もっと見る（残り6件）</span>
       </div>
     </div>
   </div>
 
 </div>
+
+<script>
+  document.querySelectorAll('.scene-carousel').forEach(function(c){
+    c.addEventListener('scroll', function(){
+      var dots = c.parentElement.querySelectorAll('.scene-dot');
+      var i = Math.round(c.scrollLeft / c.clientWidth);
+      dots.forEach(function(d, n){ d.classList.toggle('active', n === i); });
+    });
+  });
+</script>
 
 </body>
 </html>

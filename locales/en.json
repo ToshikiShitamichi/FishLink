@@ -198,7 +198,7 @@
         "errorSubmit": "Failed to post. Please try again.",
         "uploadProgress": "Uploading photos... ({{current}}/{{total}})",
         "priceFormula": "Sale price = Fish unit price + Gutting fee",
-        "gutPriceHelper": "Added to orders that request gutting.",
+        "gutPriceHelper": "Price includes gutting. Restaurants can remove it at order time if not needed (−{{gut}} KHR/kg). Choose “Not offered” to sell whole fish only (buyers cannot choose gutting).",
         "deliveryCommonTag": "Paid by restaurant · shared by all listings",
         "deliverableRadius": "Delivery range (km)",
         "deliverableRadiusNote": "You deliver up to here. Restaurants farther than this won't see your listings.",
@@ -214,7 +214,7 @@
         "deliverySheetCancel": "Cancel",
         "deliverySheetSave": "Save & apply to all",
         "errorDelivery": "Please enter delivery range and fee.",
-        "priceUnitPlaceholder": "e.g. enter amount",
+        "priceUnitPlaceholder": "e.g. 7,500",
         "priceEmpty": "Please enter the unit price",
         "errorPhoto": "Please add a photo",
         "errorDeliverableRadius": "Please enter the delivery range",
@@ -228,7 +228,14 @@
         "freeDeliveryDistancePlaceholder": "e.g. 5",
         "successTitle": "Posted",
         "successSub": "It will appear in your listings.",
-        "successCta": "View my listings"
+        "successCta": "View my listings",
+        "priceUnitHelper": "Enter in units of 100 riel (e.g. 7,500).",
+        "gutHelperNone": "Sold as whole fish only (no gutting). Buyers cannot choose gutting.",
+        "error100Unit": "Please enter in units of 100 riel.",
+        "gutToggleDo": "Offer",
+        "gutToggleDont": "Not offered",
+        "priceFormulaNoGut": "Sale price = Fish unit price (no gutting)",
+        "gutSection": "Gutting"
     },
     "fish": {
         "striped_snakehead": "Striped Snakehead",
@@ -609,7 +616,8 @@
         "minOrderTerm": "Minimum order {{kg}}kg+",
         "distanceFromYou": "About {{km}}km from your shop",
         "askQuestion": "Ask about this fish",
-        "viewAllQuestions": "View all questions ({{count}})"
+        "viewAllQuestions": "View all questions ({{count}})",
+        "priceWholeFishOnly": "Whole fish only (no gutting)"
     },
     "orders": {
         "title": "Confirm Order",
@@ -727,7 +735,15 @@
         "payAgain": "Pay again",
         "contactSupport": "Contact support",
         "holdingBadge": "Reviewing",
-        "reportedConfirmingNote": "You reported an issue. We are reviewing it."
+        "reportedConfirmingNote": "You reported an issue. We are reviewing it.",
+        "reviewSection": "Reviews",
+        "reviewWaitingEntry": "Awaiting review · {{count}}",
+        "reviewWaitTitle": "Awaiting review",
+        "reviewWaitSubBuyer": "Rate farmers you traded with (last 2 weeks)",
+        "reviewSendBtn": "Submit review",
+        "reviewWaitSubFarmer": "Rate restaurants you traded with (last 2 weeks)",
+        "reviewWaitListSubFarmer": "Rate restaurants you traded with (last 2 weeks, optional)",
+        "reviewWaitListSubBuyer": "Rate farmers you traded with (last 2 weeks, optional)"
     },
     "fcm": {
         "newOrder": "New order received",
@@ -862,7 +878,8 @@
         "groupStopped": "Paused",
         "refillStock": "Restock",
         "question": "Q&A",
-        "gutPrice": "Gutting Fee"
+        "gutPrice": "Gutting Fee",
+        "gutWholeFishOnly": "Whole fish only (no gutting)"
     },
     "nav": {
         "logout": "Logout",
@@ -984,8 +1001,8 @@
         "yearMonth": "{{year}}/{{month}}",
         "mapTypeMap": "Map",
         "mapTypeSatellite": "Satellite",
-        "selfPreviewNote": "This is your page as farmers see it (edit from your profile)",
-        "selfPreviewNoteProducer": "This is your page as buyers see it (edit from your profile)",
+        "selfPreviewNote": "This is your page as farmers see it (edit from Restaurant Info)",
+        "selfPreviewNoteProducer": "This is your page as buyers see it (edit from Producer Page)",
         "previewPublicPage": "Preview public page",
         "shopIcon": "Shop icon",
         "shopIntroPlaceholder": "Write a short introduction for your shop"
@@ -1055,7 +1072,9 @@
         "errorDelivery": "Please pick a delivery date & time",
         "errorSubmit": "Order failed. Please try again",
         "navCart": "Cart",
-        "distance": "Distance {{km}} km"
+        "distance": "Distance {{km}} km",
+        "gutWholeFishOnly": "Whole fish only (gutting not available for this listing)",
+        "gutAnnoWhole": "(whole fish only)"
     },
     "notifMessages": {
         "newOrder": {
