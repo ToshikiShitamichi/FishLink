@@ -218,6 +218,79 @@
         }
         .admin-nav a { white-space: nowrap; }
 
+        /* 7/10 #204: 案B 入金照合（買い手の控え・照合ガイド・2択アクション・未確認ストリップ・確認モーダル） */
+        .buyer-proof {
+            border: 1px solid #e3e8ee; border-radius: 12px; padding: 12px;
+            margin-top: 14px; margin-bottom: 12px; background: #f7fafe;
+        }
+        .buyer-proof.none { background: #fafbfc; }
+        .buyer-proof__label {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 12px; font-weight: 700; color: #0b5fb0; margin-bottom: 8px;
+        }
+        .buyer-proof__label .material-symbols-outlined { font-size: 18px; }
+        .buyer-proof__img { display: inline-block; }
+        .buyer-proof__img img {
+            width: 150px; max-width: 100%; height: auto; border-radius: 9px;
+            border: 1px solid #dce4ec; display: block; cursor: zoom-in;
+        }
+        .buyer-proof__none {
+            font-size: 12.5px; color: #9aa3b0; text-align: center; padding: 12px 0; line-height: 1.6;
+        }
+        .match-hint {
+            font-size: 12px; color: #5a6470; line-height: 1.6;
+            background: #f7f9fb; border: 1px solid #eef1f4; border-radius: 10px;
+            padding: 10px 12px; margin-bottom: 12px;
+        }
+        .btn-sub { font-size: 11px; color: #64748b; text-align: center; margin-top: 4px; line-height: 1.5; }
+        .unconfirm-btn {
+            width: 100%; border: 1.5px solid #f0c97a; border-radius: 14px;
+            background: #fff7e6; color: #b36a00; font-weight: 600;
+            font-size: 14px; padding: 12px; cursor: pointer; margin-top: 12px;
+            font-family: inherit;
+        }
+        .unconfirm-btn:hover { background: #fdefd4; }
+        .unconfirmed-strip {
+            background: #fff7e6; border: 1px solid #f0c97a; border-radius: 12px;
+            padding: 12px 14px; margin-top: 14px; margin-bottom: 4px;
+        }
+        .unconfirmed-strip__t {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 13px; font-weight: 700; color: #b36a00;
+        }
+        .unconfirmed-strip__t .material-symbols-outlined { font-size: 18px; }
+        .unconfirmed-strip__r { font-size: 12px; color: #7a5a20; margin-top: 5px; line-height: 1.5; word-break: break-word; }
+
+        /* お支払い未確認 確認モーダル（中央） */
+        .uc-modal-ov {
+            position: fixed; inset: 0; background: rgba(15,23,42,.5);
+            display: none; align-items: center; justify-content: center;
+            padding: 20px; z-index: 1200;
+        }
+        .uc-modal {
+            width: 100%; max-width: 440px; background: #fff;
+            border: 1px solid #f0c97a; border-radius: 16px;
+            padding: 20px 22px; box-shadow: 0 10px 30px rgba(0,0,0,.15);
+        }
+        .uc-modal__title { font-size: 16px; font-weight: 800; color: #b36a00; margin-bottom: 8px; }
+        .uc-modal__body { font-size: 12.5px; color: #5a6470; line-height: 1.6; margin-bottom: 14px; }
+        .uc-modal__flabel { font-size: 12px; font-weight: 700; color: #1a2330; margin-bottom: 6px; }
+        .uc-modal__flabel .uc-req { color: #e5453f; margin-left: 4px; }
+        .uc-modal__ta {
+            width: 100%; border: 1px solid #dce4ec; border-radius: 10px;
+            padding: 10px 12px; font-size: 12.5px; font-family: inherit;
+            min-height: 64px; resize: vertical; box-sizing: border-box;
+        }
+        .uc-modal__ta.uc-err { border-color: #e5453f; }
+        .uc-modal__err { font-size: 12px; color: #e5453f; margin-top: 6px; }
+        .uc-modal__actions { display: flex; gap: 10px; margin-top: 14px; }
+        .uc-modal__actions button {
+            flex: 1; border-radius: 10px; padding: 12px; font-size: 13.5px;
+            font-weight: 700; cursor: pointer; font-family: inherit; border: none;
+        }
+        .uc-btn--cancel { background: #eef1f4; color: #5a6470; }
+        .uc-btn--ok { background: #b36a00; color: #fff; }
+
         /* ── タブレット ── */
         @media (max-width: 1024px) {
             .admin-shell { padding: 20px; padding-bottom: 140px; }
@@ -354,7 +427,39 @@
                 <div class="sub-card">
                     <div class="sub-card__label" data-i18n="admin.order.paymentInfo"></div>
                     <div id="payment-info"></div>
+
+                    <!-- 7/10 #204: お支払い未確認ストリップ（前払い・paymentUnconfirmed 時のみ表示） -->
+                    <div class="unconfirmed-strip" id="unconfirmed-strip" style="display:none;">
+                        <div class="unconfirmed-strip__t">
+                            <span class="material-symbols-outlined">warning</span>
+                            <span data-i18n="admin.order.unconfirmedStatusTitle"></span>
+                        </div>
+                        <div class="unconfirmed-strip__r">
+                            <span data-i18n="admin.order.unconfirmedReasonPrefix"></span>
+                            <span id="unconfirmed-reason"></span>
+                        </div>
+                    </div>
+
+                    <!-- 7/10 #204: 買い手が添付した支払い控え（前払いのみ） -->
+                    <div class="buyer-proof" id="buyer-proof-block" style="display:none;">
+                        <div class="buyer-proof__label">
+                            <span class="material-symbols-outlined">attach_file</span>
+                            <span data-i18n="admin.order.buyerProofLabel"></span>
+                        </div>
+                        <div id="buyer-proof-body"></div>
+                    </div>
+
+                    <!-- 7/10 #204: 照合ガイド（前払いのみ・控えの有無で出し分け） -->
+                    <div class="match-hint" id="match-hint" style="display:none;"></div>
+
+                    <!-- 入金確認済にする（青・前払い/旧 共通） -->
                     <button class="primary-btn" id="confirm-payment-btn" data-i18n="admin.order.markPaymentConfirmed"></button>
+                    <div class="btn-sub" id="confirm-payment-sub" data-i18n="admin.order.markPaymentConfirmedSub"></div>
+
+                    <!-- 7/10 #204: お支払い未確認にする（amber・前払いのみ） -->
+                    <button class="unconfirm-btn" id="unconfirm-payment-btn" style="display:none;" data-i18n="admin.order.markPaymentUnconfirmed"></button>
+                    <div class="btn-sub" id="unconfirm-payment-sub" style="display:none;" data-i18n="admin.order.markPaymentUnconfirmedSub"></div>
+
                     <!-- 6/5 #129 ⑥: 入金控え（入金スクショ＋メモ＋振込元名義）＝証拠を毎回残す -->
                     <div class="proof-block">
                         <div class="proof-label" data-i18n="admin.order.depositProofLabel"></div>
@@ -437,13 +542,31 @@
         <button class="finalize-bar__btn" id="done-btn" data-i18n="admin.order.markDone"></button>
     </div>
 
+    <!-- 7/10 #204: お支払い未確認 確認モーダル（理由メモ必須・中央） -->
+    <div class="uc-modal-ov" id="unconfirm-modal">
+        <div class="uc-modal">
+            <div class="uc-modal__title" data-i18n="admin.order.unconfirmModalTitle"></div>
+            <div class="uc-modal__body" data-i18n="admin.order.unconfirmModalBody"></div>
+            <div class="uc-modal__flabel">
+                <span data-i18n="admin.order.unconfirmReasonLabel"></span>
+                <span class="uc-req" data-i18n="admin.order.unconfirmReasonRequired"></span>
+            </div>
+            <textarea class="uc-modal__ta" id="unconfirm-reason-input" data-i18n="[placeholder]admin.order.unconfirmReasonPlaceholder"></textarea>
+            <div class="uc-modal__err" id="unconfirm-reason-err" data-i18n="admin.order.unconfirmReasonEmpty" style="display:none;"></div>
+            <div class="uc-modal__actions">
+                <button class="uc-btn--cancel" id="unconfirm-cancel-btn" data-i18n="admin.order.unconfirmModalCancel"></button>
+                <button class="uc-btn--ok" id="unconfirm-ok-btn" data-i18n="admin.order.unconfirmModalOk"></button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState, logout } from '/js/auth.js';
         import { db, storage } from '/js/firebase-config.js';
         import { initAdminReportBadge } from '/js/admin-report-badge.js';
         import {
-            doc, getDoc, updateDoc, onSnapshot
+            doc, getDoc, updateDoc, onSnapshot, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 6/5 #129 ⑥: 入金/送金スクショの添付（証拠）
         import { ref } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
@@ -720,12 +843,66 @@
             const isRemitted = ['remitted', 'done'].includes(orderData.adminStatus);
             const isDone = orderData.adminStatus === 'done';
 
-            confirmBtn.disabled = !canStartAdmin || isPaymentConfirmed;
-            remitBtn.disabled = !isPaymentConfirmed || isRemitted;
-            doneBtn.disabled = !isRemitted || isDone;
+            // 7/10 #204: 案B（前払い）は depositConfirmed/paymentUnconfirmed で照合。旧（受取時払い）は adminStatus。
+            const isPrepaid = orderData.prepaid === true;
+            const depositConfirmed = orderData.depositConfirmed === true;
+            const paymentUnconfirmed = orderData.paymentUnconfirmed === true;
+            const depositOk = isPrepaid ? depositConfirmed : isPaymentConfirmed;
 
-            if (isPaymentConfirmed) confirmBtn.style.background = '#94a3b8';
-            else confirmBtn.style.background = '#0f172a';
+            const confirmSub = document.getElementById('confirm-payment-sub');
+            const unconfirmBtn = document.getElementById('unconfirm-payment-btn');
+            const unconfirmSub = document.getElementById('unconfirm-payment-sub');
+            const unconfirmedStrip = document.getElementById('unconfirmed-strip');
+            const buyerProofBlock = document.getElementById('buyer-proof-block');
+            const matchHint = document.getElementById('match-hint');
+
+            if (isPrepaid) {
+                // 前払い: 承認前でも照合して押せる（status ゲート撤廃）
+                confirmBtn.disabled = depositConfirmed;
+                confirmBtn.textContent = depositConfirmed
+                    ? i18next.t('admin.order.depositConfirmedBadge')
+                    : i18next.t('admin.order.markPaymentConfirmed');
+                confirmSub.style.display = depositConfirmed ? 'none' : '';
+                // 未確認ボタン: 入金確認前かつ未確認状態でないときのみ（未確認中は strip に集約）
+                const showUnconfirm = !depositConfirmed && !paymentUnconfirmed;
+                unconfirmBtn.style.display = showUnconfirm ? '' : 'none';
+                unconfirmSub.style.display = showUnconfirm ? '' : 'none';
+                // 未確認ストリップ
+                unconfirmedStrip.style.display = paymentUnconfirmed ? '' : 'none';
+                if (paymentUnconfirmed) {
+                    document.getElementById('unconfirmed-reason').textContent = orderData.depositUnconfirmedReason || '-';
+                }
+                // 買い手の控え＋照合ガイド
+                buyerProofBlock.style.display = '';
+                matchHint.style.display = '';
+                const proofUrl = orderData.buyerPaymentProofUrl;
+                const proofBody = document.getElementById('buyer-proof-body');
+                if (proofUrl) {
+                    buyerProofBlock.classList.remove('none');
+                    proofBody.innerHTML = `<a href="${proofUrl}" target="_blank" rel="noopener" class="buyer-proof__img"><img ${asCachedImgAttrs(proofUrl)} alt="proof"></a>`;
+                    matchHint.textContent = i18next.t('admin.order.matchHint');
+                } else {
+                    buyerProofBlock.classList.add('none');
+                    proofBody.innerHTML = `<div class="buyer-proof__none">${i18next.t('admin.order.buyerProofNone')}</div>`;
+                    matchHint.textContent = i18next.t('admin.order.matchHintNoProof');
+                }
+            } else {
+                // 旧（受取時払い）: 従来どおり受取完了後のみ
+                confirmBtn.disabled = !canStartAdmin || isPaymentConfirmed;
+                confirmBtn.textContent = i18next.t('admin.order.markPaymentConfirmed');
+                confirmSub.style.display = '';
+                unconfirmBtn.style.display = 'none';
+                unconfirmSub.style.display = 'none';
+                unconfirmedStrip.style.display = 'none';
+                buyerProofBlock.style.display = 'none';
+                matchHint.style.display = 'none';
+            }
+            // 入金確認ボタンは青（有効時）／グレー（無効・確認済）
+            confirmBtn.style.background = confirmBtn.disabled ? '#94a3b8' : 'var(--color-cta, #0b5fb0)';
+
+            // 農家送金: 配送完了後＆入金OK＆未送金で有効（前払いは depositConfirmed を入金OK判定に）
+            remitBtn.disabled = !(orderData.status === 'completed') || !depositOk || isRemitted;
+            doneBtn.disabled = !isRemitted || isDone;
 
             // 内部メモ
             document.getElementById('admin-memo').value = orderData.adminMemo || '';
@@ -776,7 +953,48 @@
         // ── アクション ─────────────────────────────
         document.getElementById('confirm-payment-btn').addEventListener('click', async () => {
             if (!confirm(i18next.t('admin.order.confirmPaymentConfirmed'))) return;
-            await updateDoc(doc(db, 'orders', orderId), { adminStatus: 'payment_confirmed' });
+            // 7/10 #204: 前払い（案B）は depositConfirmed／旧は adminStatus。
+            if (orderData?.prepaid === true) {
+                await updateDoc(doc(db, 'orders', orderId), { depositConfirmed: true, paymentUnconfirmed: false });
+            } else {
+                await updateDoc(doc(db, 'orders', orderId), { adminStatus: 'payment_confirmed' });
+            }
+        });
+
+        // ── 7/10 #204: お支払い未確認にする（前払いのみ・理由メモ必須・中央モーダル） ──
+        const unconfirmModal = document.getElementById('unconfirm-modal');
+        const unconfirmReasonInput = document.getElementById('unconfirm-reason-input');
+        const unconfirmReasonErr = document.getElementById('unconfirm-reason-err');
+
+        function openUnconfirmModal() {
+            unconfirmReasonInput.value = '';
+            unconfirmReasonErr.style.display = 'none';
+            unconfirmReasonInput.classList.remove('uc-err');
+            unconfirmModal.style.display = 'flex';
+        }
+        function closeUnconfirmModal() {
+            unconfirmModal.style.display = 'none';
+        }
+
+        document.getElementById('unconfirm-payment-btn').addEventListener('click', openUnconfirmModal);
+        document.getElementById('unconfirm-cancel-btn').addEventListener('click', closeUnconfirmModal);
+        unconfirmModal.addEventListener('click', (e) => { if (e.target === unconfirmModal) closeUnconfirmModal(); });
+
+        document.getElementById('unconfirm-ok-btn').addEventListener('click', async () => {
+            const reason = unconfirmReasonInput.value.trim();
+            if (!reason) {
+                unconfirmReasonErr.style.display = 'block';
+                unconfirmReasonInput.classList.add('uc-err');
+                unconfirmReasonInput.focus();
+                return;
+            }
+            await updateDoc(doc(db, 'orders', orderId), {
+                paymentUnconfirmed: true,
+                depositConfirmed: false,
+                depositUnconfirmedReason: reason,
+                depositUnconfirmedAt: serverTimestamp(),
+            });
+            closeUnconfirmModal();
         });
 
         document.getElementById('mark-remit-btn').addEventListener('click', async () => {

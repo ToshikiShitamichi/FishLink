@@ -87,5 +87,17 @@ service firebase.storage {
                 && request.resource.contentType.matches('video/.*')));
     }
 
+    // 💳 7/10 #203/#204: 買い手が前払いKHQR画面で添付する「お支払いの控え」画像
+    //   （cart.html が paymentProofs/{uid}/ へアップロード・任意）。運営が入金照合で参照。
+    //   本人（買い手 uid）のみ write／本人 or admin が read（reports パターン）。画像のみ・5MB上限。
+    match /paymentProofs/{uid}/{allPaths=**} {
+      allow write: if request.auth != null && request.auth.uid == uid
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow read: if request.auth != null
+        && (request.auth.uid == uid
+         || firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
   }
 }

@@ -444,7 +444,13 @@ self.addEventListener('notificationclick', (event) => {
 //   functions（保持N=10 onReelVideoCreated・完全削除の道連れ物理削除 onFishListingDeletedCascade）。
 //   画面＝農家 post/dashboard/reel-post[新規]/reel-videos[新規]・買い手 home/order/producer。タップ再生・先読みなし・端末キャッシュ。
 //   ⚠ v144 は #194-198。v145 実装 → 実機スクショで新規2ページのヘッダー縦書き圧縮（#147同根・flex:1）を修正し v146 に再bump。
-const CACHE_NAME = 'fishlink-v146';
+// 7/10 (v147): #203/#204 案B 前払い決済の実運用化。買い手 前払いKHQR画面（cart.html 受取Joint口座明示・金額なし警告・
+//   ABAアプリ/QR保存の2ボタン・受取名告知・お支払い控え添付[paymentProofs/{uid}/]）／注文状況 orders.html（お支払い未確認カード
+//   2ボタン・確認中キャンセルは即返金と約束しない）／運営 admin/order.html 入金照合UI（入金確認済/お支払い未確認[理由必須]の2択・控え照合）。
+//   backend＝functions（未確認キャンセルは即返金しない・入金確認で deferred 返金／paymentUnconfirmed 通知は既存）＋storage.rules（paymentProofs・Console 手動公開）。
+//   ⚠ v147 実装 → 実機で〔もう一度支払う〕が空カートに飛ぶバグ（注文は発注済み＝カートは空）を修正し v148 に再bump。
+//   〔もう一度支払う〕→ cart.html?repay=<orderId>＝再支払いモード（既存注文の KHQR画面を直接表示・支払いましたで paymentUnconfirmed 解除）。hosting のみ（cart.html/orders.html）。
+const CACHE_NAME = 'fishlink-v148';
 
 const PRECACHE_URLS = [
     '/',

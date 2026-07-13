@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 運営管理画面 注文管理詳細（入金確認）- モック</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#F1F3F6; color:#1A2330; padding:28px 18px 60px; }
+  .intro { max-width:1000px; margin:0 auto 22px; background:#FFF; border-radius:12px; padding:16px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.05); font-size:13.5px; line-height:1.7; }
+  .intro h1 { font-size:16px; color:#0B5FB0; margin-bottom:6px; }
+  .intro b { color:#0B5FB0; }
+  .intro .tag { display:inline-block; background:#FFF3DC; color:#B36A00; font-weight:800; font-size:11px; padding:2px 8px; border-radius:8px; }
+
+  .wrap { max-width:1000px; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
+  .col2 { display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; }
+  .col2 > .colL, .col2 > .colR { flex:1; min-width:300px; }
+
+  .pagehead { }
+  .pagehead .sys { font-size:12px; color:#8A93A0; }
+  .pagehead h2 { font-size:22px; font-weight:800; margin-top:2px; }
+  .pagehead .sub { font-size:12.5px; color:#5A6470; margin-top:4px; }
+  .pagehead .fl { font-size:12.5px; color:#8A93A0; margin-top:4px; }
+  .status-line { display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .pill { background:#EAF2FB; color:#0B5FB0; font-weight:800; font-size:12px; padding:5px 12px; border-radius:14px; }
+  .status-line .ts { font-size:12px; color:#8A93A0; }
+
+  .card { background:#FFF; border-radius:14px; padding:20px 22px; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+  .card .ctitle { font-size:16px; font-weight:800; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; }
+  .card .ctitle .mchip { background:#FFF3DC; color:#B36A00; font-size:11.5px; font-weight:800; padding:6px 12px; border-radius:9px; }
+
+  .subhead { font-size:12px; color:#8A93A0; font-weight:700; margin-bottom:10px; }
+  .kv { display:flex; justify-content:space-between; font-size:13.5px; padding:7px 0; border-bottom:1px dashed #EEF1F4; }
+  .kv .k { color:#5A6470; } .kv .v { font-weight:700; }
+  .kv .v.neg { color:#E5453F; }
+  .kv.total { border-bottom:none; padding-top:11px; }
+  .kv.total .k { font-weight:800; } .kv.total .v { font-weight:800; font-size:16px; }
+
+  /* 買い手の添付控え */
+  .proof { border:1px solid #E3E8EE; border-radius:12px; padding:12px; margin-bottom:16px; background:#F7FAFE; }
+  .proof .plabel { font-size:12px; font-weight:800; color:#0B5FB0; margin-bottom:8px; }
+  .proof-img { width:150px; height:210px; border-radius:9px; border:1px solid #DCE4EC; background:linear-gradient(160deg,#eef4fb,#dfeaf6); position:relative; overflow:hidden; cursor:zoom-in; }
+  .proof-img .aba { position:absolute; top:14px; left:0; right:0; text-align:center; color:#0B5FB0; font-weight:800; font-size:12px; }
+  .proof-img .chk { position:absolute; top:52px; left:50%; transform:translateX(-50%); width:38px; height:38px; border-radius:50%; background:#19A05A; color:#FFF; display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .proof-img .amt { position:absolute; top:104px; left:0; right:0; text-align:center; font-weight:800; font-size:15px; color:#1A2330; }
+  .proof-img .meta { position:absolute; top:132px; left:0; right:0; text-align:center; font-size:9px; color:#5A6470; line-height:1.5; padding:0 8px; }
+  .proof .pzoom { font-size:11.5px; color:#5A6470; margin-top:7px; }
+  .proof.none { background:#FAFBFC; }
+  .proof.none .pnone { font-size:12.5px; color:#9AA3B0; text-align:center; padding:14px 0; }
+
+  .info-row { display:flex; justify-content:space-between; font-size:13px; padding:7px 0; border-bottom:1px dashed #EEF1F4; }
+  .info-row .k { color:#8A93A0; } .info-row .v { color:#1A2330; font-weight:600; }
+  .match-hint { font-size:12px; color:#5A6470; line-height:1.6; background:#F7F9FB; border:1px solid #EEF1F4; border-radius:10px; padding:10px 12px; margin-bottom:6px; }
+  .match-hint b { color:#0B5FB0; }
+
+  .actions { display:flex; flex-direction:column; gap:10px; margin:16px 0 6px; }
+  .abtn { width:100%; text-align:center; border:none; border-radius:11px; padding:13px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; }
+  .abtn.ok { background:#0B5FB0; color:#FFF; }
+  .abtn.unconf { background:#FFF7E6; color:#B36A00; border:1.5px solid #F0C97A; }
+  .abtn .as { display:block; font-size:11px; font-weight:600; opacity:.9; margin-top:2px; }
+
+  .memo { margin-top:16px; padding-top:16px; border-top:1px solid #EEF1F4; }
+  .memo .mlabel { font-size:12px; color:#8A93A0; font-weight:700; margin-bottom:9px; }
+  .memo input, .memo textarea { width:100%; border:1px solid #DCE4EC; border-radius:9px; padding:10px 12px; font-size:12.5px; font-family:inherit; margin-bottom:9px; color:#1A2330; }
+  .memo textarea { min-height:56px; resize:vertical; }
+  .memo .mrow { display:flex; justify-content:space-between; align-items:center; }
+  .memo .attach { border:1px solid #BBD3EC; border-radius:9px; padding:8px 12px; font-size:12px; font-weight:800; color:#0B5FB0; background:#FFF; cursor:pointer; }
+  .memo .save { border:1px solid #DCE4EC; border-radius:9px; padding:8px 14px; font-size:12px; font-weight:800; color:#5A6470; background:#FFF; cursor:pointer; }
+
+  .stub { color:#B7C0CC; font-size:12.5px; text-align:center; padding:22px; border:1px dashed #E3E8EE; border-radius:12px; }
+
+  /* 未確認にした後の状態ストリップ */
+  .pill.unconf { background:#FFF7E6; color:#B36A00; }
+  .ustatus { background:#FFF7E6; border:1px solid #F0C97A; border-radius:11px; padding:12px 14px; margin-bottom:16px; }
+  .ustatus .ut { font-size:13px; font-weight:800; color:#B36A00; }
+  .ustatus .ur { font-size:12px; color:#7A5A20; margin-top:5px; line-height:1.5; }
+  .ustatus .ur b { color:#B36A00; }
+
+  /* 未確認モーダルのデモ */
+  .mdemo-label { font-size:12px; color:#8A93A0; font-weight:700; margin-bottom:12px; }
+  .mmodal { max-width:440px; margin:0 auto; background:#FFF; border:1px solid #F0C97A; border-radius:14px; padding:20px 22px; box-shadow:0 10px 30px rgba(0,0,0,0.08); }
+  .mmodal .mm-title { font-size:16px; font-weight:800; color:#B36A00; margin-bottom:8px; }
+  .mmodal .mm-body { font-size:12.5px; color:#5A6470; line-height:1.6; margin-bottom:14px; }
+  .mmodal .mm-flabel { font-size:12px; font-weight:800; color:#1A2330; margin-bottom:6px; }
+  .mmodal .mm-flabel .req { color:#E5453F; }
+  .mmodal .mm-ta { width:100%; border:1px solid #DCE4EC; border-radius:9px; padding:10px 12px; font-size:12.5px; font-family:inherit; min-height:56px; resize:vertical; margin-bottom:14px; }
+  .mmodal .mm-actions { display:flex; gap:10px; }
+  .mmodal .mm-actions button { flex:1; border-radius:10px; padding:12px; font-size:13.5px; font-weight:800; cursor:pointer; font-family:inherit; border:none; }
+  .mmodal .mm-cancel { background:#EEF1F4; color:#5A6470; }
+  .mmodal .mm-ok { background:#B36A00; color:#FFF; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 運営管理画面 — 注文管理詳細「レストラン入金確認」（簡易モック）</h1>
+  <p>実機（FL-260710-002）の入金確認セクションに、今回の2点を反映：<b>①運営アクションを2択で閉じる</b>（〔入金確認済にする〕青／<span class="tag">新</span>〔お支払い未確認にする（買い手に通知）〕アンバー＝押すと買い手の注文状況に「お支払い未確認」カードが出る）<b>②買い手が添付した支払い控え（スクショ）を表示</b>（照合を速く）。左＝上・右＝下 で①買い手が控えを添付したケース ②控え無しのケース。<b>※これは運営管理画面トラック（別レビュー）の一部・実装UIは本レビューで詰める</b>。</p>
+</div>
+
+<div class="wrap">
+
+  <!-- ページヘッダ -->
+  <div class="pagehead card">
+    <div class="sys">FISHLINK 管理画面</div>
+    <h2>注文管理詳細</h2>
+    <div class="sub">レストラン入金確認 → 農家送金 → 取引完了 の運用を手動で管理</div>
+    <div class="fl">FL-260710-002</div>
+    <div class="status-line"><span class="pill">承認済</span><span class="ts">2026/07/10 09:44</span></div>
+  </div>
+
+  <!-- ① 入金確認（買い手が控えを添付したケース） -->
+  <div class="card">
+    <div class="ctitle">レストラン入金確認 <span class="mchip">Joint口座（ABAアプリ）の入金履歴で手動確認</span></div>
+    <div class="col2">
+      <!-- 左：支払予定額 -->
+      <div class="colL">
+        <div class="subhead">支払予定額</div>
+        <div class="kv"><span class="k">魚代</span><span class="v">75,000 KHR</span></div>
+        <div class="kv"><span class="k">送料</span><span class="v">12,400 KHR</span></div>
+        <div class="kv"><span class="k">サービス料</span><span class="v">3,700 KHR</span></div>
+        <div class="kv"><span class="k">割引</span><span class="v neg">−1,900 KHR</span></div>
+        <div class="kv total"><span class="k">合計</span><span class="v">89,200 KHR</span></div>
+      </div>
+      <!-- 右：買い手の控え＋確認情報＋アクション -->
+      <div class="colR">
+        <div class="proof">
+          <div class="plabel">📎 買い手が添付した支払い控え</div>
+          <div class="proof-img">
+            <div class="aba">ABA ✔ Payment</div>
+            <div class="chk">✓</div>
+            <div class="amt">89,200 KHR</div>
+            <div class="meta">To: TACHIBANAKI R. &amp; OKADA R.<br>2026/07/10 09:40<br>Ref: 98F2A1</div>
+          </div>
+          <div class="pzoom">タップで拡大 ・ 金額/時刻/受取名を照合に使う</div>
+        </div>
+
+        <div class="match-hint">🔍 上の控えと <b>Joint口座（ABAアプリ）の入金履歴</b>を見比べ、<b>金額・時刻・Ref</b>が一致するか目視で確認してください（自動照合・自動読み取りはしません）。補足は下のメモへ。</div>
+
+        <div class="actions">
+          <button class="abtn ok">入金確認済にする<span class="as">Joint口座の入金履歴で金額・時刻が一致したら</span></button>
+          <button class="abtn unconf">お支払い未確認にする（買い手に通知）<span class="as">入金が確認できない時／買い手カードに「お支払い未確認」が出る（理由メモ必須）</span></button>
+        </div>
+
+        <div class="memo">
+          <div class="mlabel">入金控え・メモ（入金スクショ／過不足・振込元の補足）</div>
+          <input placeholder="振込元名義（照合用・任意）">
+          <textarea placeholder="例：入金確認OK。／50,000のみ入金・差額837を督促中。"></textarea>
+          <div class="mrow">
+            <button class="attach">📎 入金スクショを添付</button>
+            <button class="save">内部メモを保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 控え無しのケース -->
+  <div class="card">
+    <div class="ctitle">レストラン入金確認 <span class="mchip">控え添付なし</span></div>
+    <div class="col2">
+      <div class="colL">
+        <div class="subhead">支払予定額</div>
+        <div class="kv total"><span class="k">合計</span><span class="v">89,200 KHR</span></div>
+        <div style="font-size:12px;color:#9AA3B0;margin-top:8px;">（内訳は①と同じ）</div>
+      </div>
+      <div class="colR">
+        <div class="proof none">
+          <div class="plabel">📎 買い手が添付した支払い控え</div>
+          <div class="pnone">控えの添付はありません（任意なので無い場合あり）<br>→ Joint口座（ABAアプリ）の入金履歴で照合</div>
+        </div>
+
+        <div class="match-hint">🔍 控えの添付が無いので、<b>Joint口座（ABAアプリ）の入金履歴</b>で <b>金額・時刻</b>が合う入金を目視で確認してください。補足は下のメモへ。</div>
+
+        <div class="actions">
+          <button class="abtn ok">入金確認済にする</button>
+          <button class="abtn unconf">お支払い未確認にする（買い手に通知）</button>
+        </div>
+
+        <div class="memo">
+          <div class="mlabel">入金控え・メモ（入金スクショ／過不足・振込元の補足）</div>
+          <input placeholder="振込元名義（照合用・任意）">
+          <textarea placeholder="例：入金確認OK。／50,000のみ入金・差額837を督促中。"></textarea>
+          <div class="mrow">
+            <button class="attach">📎 入金スクショを添付</button>
+            <button class="save">内部メモを保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ お支払い未確認にした後（通知済み・解決導線） -->
+  <div class="card">
+    <div class="ctitle">レストラン入金確認 <span class="pill unconf">お支払い未確認・通知済み</span></div>
+    <div class="ustatus">
+      <div class="ut">⚠ お支払い未確認にしました（買い手に通知済み・2026/07/10 09:50）</div>
+      <div class="ur">理由（内部メモ）：<b>Joint口座に該当入金が見当たらない</b>／買い手の注文状況に「お支払い未確認」を表示中（〔運営に相談する〕〔もう一度支払う〕）。自動キャンセルはしない。</div>
+    </div>
+    <div class="col2">
+      <div class="colL">
+        <div class="subhead">支払予定額</div>
+        <div class="kv total"><span class="k">合計</span><span class="v">89,200 KHR</span></div>
+      </div>
+      <div class="colR">
+        <div class="proof">
+          <div class="plabel">📎 買い手が後から送った控え</div>
+          <div class="proof-img">
+            <div class="aba">ABA ✔ Transfer</div>
+            <div class="chk">✓</div>
+            <div class="amt">89,200 KHR</div>
+            <div class="meta">To: 018 532 495<br>Ref: 100FT38262507492<br>Jul 10, 2026 09:48</div>
+          </div>
+          <div class="pzoom">タップで拡大 ・ Ref/金額/時刻をJoint口座と突合</div>
+        </div>
+        <div class="match-hint">🔍 買い手が後から送った控えの <b>Ref・金額・時刻</b>を <b>Joint口座の入金履歴</b>と見比べて確認 → 一致すれば〔入金確認済にする〕で解決。</div>
+        <div class="actions">
+          <button class="abtn ok">入金確認済にする<span class="as">控え/Joint口座で確認できたら＝解決（注文が進む）</span></button>
+        </div>
+        <div class="memo">
+          <div class="mlabel">入金控え・メモ</div>
+          <textarea placeholder="例：買い手が控えを再送。Ref一致・Joint口座で入金確認 → 確認済に。">未確認理由：Joint口座に該当入金なし（09:50）。</textarea>
+          <div class="mrow">
+            <button class="attach">📎 入金スクショを添付</button>
+            <button class="save">内部メモを保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 〔お支払い未確認にする〕の確認モーダル（理由メモ必須） -->
+  <div class="card">
+    <div class="mdemo-label">〔お支払い未確認にする（買い手に通知）〕を押すと ＝ 確認モーダル（理由メモ必須）</div>
+    <div class="mmodal">
+      <div class="mm-title">お支払い未確認にしますか？</div>
+      <div class="mm-body">この注文を「お支払い未確認」にし、買い手に通知します（買い手の注文状況に〔運営に相談する〕〔もう一度支払う〕が出ます）。<b>自動キャンセルはしません</b>。理由は内部メモに残ります（買い手には汎用の通知のみ）。</div>
+      <div class="mm-flabel">理由（内部メモ）<span class="req"> ＊必須</span></div>
+      <textarea class="mm-ta" placeholder="例：Joint口座に該当入金なし／50,000のみ入金・差額未／振込名義が一致しない 等"></textarea>
+      <div class="mm-actions"><button class="mm-cancel">やめる</button><button class="mm-ok">未確認にする（買い手に通知）</button></div>
+    </div>
+  </div>
+
+  <!-- 農家送金・取引完了はこのレビュー対象外（別途） -->
+  <div class="card">
+    <div class="stub">農家送金 / 取引完了 セクションは運営管理画面レビューで別途（本モックは入金確認の2点にフォーカス）</div>
+  </div>
+
+</div>
+
+</body>
+</html>

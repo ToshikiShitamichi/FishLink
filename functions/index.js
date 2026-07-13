@@ -927,6 +927,10 @@ async function runRefundToWallet(orderId, order, reason) {
       const oSnap = await tx.get(orderRef);
       const fresh = oSnap.data() || {};
       if (fresh.refundedToWallet === true) return;       // 二重返金防止
+      // 7/10 #203 B-2: この order で既に「ウォレット充当分の即返金（walletCancelRefunded）」を
+      //   済ませている場合、その額は refundAmount に記録済み＝残額（KHQR分）だけを追加返金する。
+      //   通常フロー（辞退・入金確認済キャンセル）は walletCancelRefunded 無し＝priorPartial=0 で従来と同一挙動。
+      const priorPartial = fresh.walletCancelRefunded === true ? Number(fresh.refundAmount || 0) : 0;
       // グループ各 order を fresh 読み（既返金合計・残数）
       const groupSnaps = await Promise.all(groupRefs.map((r) => tx.get(r)));
       const wSnap = await tx.get(walletRef);
@@ -942,8 +946,10 @@ async function runRefundToWallet(orderId, order, reason) {
         else if (gd.status !== "declined" && gd.status !== "cancelled") othersAllSettled = false;
       }
       const base = Number(fresh.subtotal || fresh.totalAmount || 0);
-      let refund = Math.min(base, paidTotal - alreadyRefunded);
-      if (!isFinite(refund) || refund < 0) refund = 0;
+      let refundTotal = Math.min(base, paidTotal - alreadyRefunded);   // この order の返金総額
+      if (!isFinite(refundTotal) || refundTotal < 0) refundTotal = 0;
+      let refund = refundTotal - priorPartial;                          // 今回クレジットする残額
+      if (refund < 0) refund = 0;
       creditedAmount = refund;
 
       const bal = Number(wSnap.data()?.balance || 0);
@@ -961,13 +967,13 @@ async function runRefundToWallet(orderId, order, reason) {
       }
       tx.update(orderRef, {
         refundedToWallet: true,
-        refundAmount: refund,
+        refundAmount: refundTotal,
         refundedAt: admin.FieldValue.serverTimestamp(),
       });
 
       // グループ全額返金に達した＆クーポン使用済みなら未使用に戻す（payment-spec §4.3「全農家辞退→クーポン未使用」）
       if (couponSnap && couponSnap.exists && othersAllSettled
-          && (alreadyRefunded + refund) >= paidTotal && couponSnap.data().usedOrderId) {
+          && (alreadyRefunded + refundTotal) >= paidTotal && couponSnap.data().usedOrderId) {
         tx.update(couponRef, { usedAt: null, usedOrderId: null });
       }
     });
@@ -977,23 +983,102 @@ async function runRefundToWallet(orderId, order, reason) {
   }
 
   // 買い手へ「ウォレットに返金しました」通知（お金が動いた通知は確実に出す＝案Bの安心の核）
-  try {
-    const restSnap = await db.doc(`users/${buyerId}`).get();
-    const lang = restSnap.data()?.lang || "en";
-    const vars = { farmer: farmerName, amount: creditedAmount.toLocaleString() };
-    const msgKey = reason === "cancelled" ? "cancelledRefund" : "declinedRefund";
-    const { title, body } = getMessage(msgKey, lang, vars);
-    await notifyUser(buyerId, {
-      type: "wallet_refund",
-      title, body,
-      msgKey, vars,
-      // 6/29 #185: 辞退／承認前キャンセルの返金通知は「注文状況の辞退カード」へ（spec §3-1）。
-      url: "/pages/restaurant/orders.html",
-      orderId,
-    });
-  } catch (e) { console.warn("wallet_refund notify failed:", e.message); }
+  //   7/10 #203 B-2: 今回クレジットした残額が 0 の時（例：deferred で既に全額返金済み）は通知しない。
+  if (creditedAmount > 0) {
+    try {
+      const restSnap = await db.doc(`users/${buyerId}`).get();
+      const lang = restSnap.data()?.lang || "en";
+      const vars = { farmer: farmerName, amount: creditedAmount.toLocaleString() };
+      const msgKey = reason === "cancelled" ? "cancelledRefund" : "declinedRefund";
+      const { title, body } = getMessage(msgKey, lang, vars);
+      await notifyUser(buyerId, {
+        type: "wallet_refund",
+        title, body,
+        msgKey, vars,
+        // 6/29 #185: 辞退／承認前キャンセルの返金通知は「注文状況の辞退カード」へ（spec §3-1）。
+        url: "/pages/restaurant/orders.html",
+        orderId,
+      });
+    } catch (e) { console.warn("wallet_refund notify failed:", e.message); }
+  }
 
   console.log("Refunded to wallet:", orderId, reason, "amount:", creditedAmount);
+}
+
+/**
+ * 7/10 #203 B-2: お支払い確認中（入金未確認）で承認前キャンセルされた前払い注文に対し、
+ *   「実際に受け取った分＝ウォレット充当分（作成時に onOrderCreated で実引き落とし済み）」だけを
+ *   即ウォレット返金する。KHQR分は未入金の可能性があるため返金しない（未入金で〔支払いました〕→
+ *   即キャンセルの穴を塞ぐ）。後で運営が入金確認（depositConfirmed）したら runRefundToWallet が
+ *   priorPartial を差し引いて残額（KHQR分）を返金し、そこで初めて refundedToWallet を立てる。
+ *   - walletCancelRefunded マーカーで冪等・refundedToWallet は立てない（残額返金の余地を残す）。
+ *   - ウォレット全額まかない注文（khqrAmount===0）は cart.html で depositConfirmed=true 作成＝
+ *     runRefundToWallet 経路（クーポン un-consume 込み）を通るため、この関数は実質 mixed 注文用。
+ * @param {string} orderId
+ * @param {object} order  cancelled(before pending) になった前払い注文（after）
+ */
+async function refundWalletPortionOnCancel(orderId, order) {
+  const admin = require("firebase-admin/firestore");
+  if (order.prepaid !== true) return;
+  if (!(Number(order.walletApplied || 0) > 0)) return;   // ウォレット充当なし＝返金対象なし（穴ふさぎ）
+  const buyerId = order.restaurantId;
+  if (!buyerId) return;
+  let farmerName = "";
+  try { farmerName = (await db.doc(`users/${order.farmerId}`).get()).data()?.displayName || ""; } catch (_) { /* ignore */ }
+  const walletRef = db.doc(`wallets/${buyerId}`);
+  const orderRef = db.doc(`orders/${orderId}`);
+  const orderNo = order.orderNumber || `FL-${String(orderId).slice(0, 8).toUpperCase()}`;
+
+  let credited = 0;
+  try {
+    await db.runTransaction(async (tx) => {
+      const oSnap = await tx.get(orderRef);
+      const fresh = oSnap.data() || {};
+      // 既に（全額 or ウォレット分）返金済みならスキップ（冪等）
+      if (fresh.refundedToWallet === true || fresh.walletCancelRefunded === true) return;
+      const refund = Number(fresh.walletApplied || 0);
+      if (!(refund > 0)) return;
+      credited = refund;
+      const wSnap = await tx.get(walletRef);
+      const bal = Number(wSnap.data()?.balance || 0);
+      tx.set(walletRef, { buyerId, balance: bal + refund }, { merge: true });
+      const txRef = db.collection(`wallets/${buyerId}/transactions`).doc();
+      tx.set(txRef, {
+        amount: refund,
+        type: "refund_cancelled",
+        counterpart: farmerName,
+        relatedOrderId: orderId,
+        orderNumber: orderNo,
+        createdAt: admin.FieldValue.serverTimestamp(),
+      });
+      // refundedToWallet は立てない（KHQR分の残額を depositConfirmed 後に返金できるように）。
+      tx.update(orderRef, {
+        walletCancelRefunded: true,
+        refundAmount: refund,
+        refundedAt: admin.FieldValue.serverTimestamp(),
+      });
+    });
+  } catch (e) {
+    console.error("refundWalletPortionOnCancel failed:", orderId, e);
+    return;
+  }
+
+  if (credited > 0) {
+    try {
+      const restSnap = await db.doc(`users/${buyerId}`).get();
+      const lang = restSnap.data()?.lang || "en";
+      const vars = { farmer: farmerName, amount: credited.toLocaleString() };
+      const { title, body } = getMessage("cancelledRefund", lang, vars);
+      await notifyUser(buyerId, {
+        type: "wallet_refund",
+        title, body,
+        msgKey: "cancelledRefund", vars,
+        url: "/pages/restaurant/orders.html",
+        orderId,
+      });
+    } catch (e) { console.warn("walletPortion refund notify failed:", e.message); }
+    console.log("Refunded wallet-portion on cancel:", orderId, "amount:", credited);
+  }
 }
 
 /**
@@ -1418,6 +1503,15 @@ exports.onOrderUpdated = onDocumentUpdated(
       } catch (e) { console.warn("paymentUnconfirmed notify failed:", e.message); }
     }
 
+    // 7/10 #203/#204 B-2: 入金確認（depositConfirmed false→true）が「既にキャンセル済み」の前払い注文に
+    //   効いたら deferred ウォレット返金（お支払い確認中でキャンセル→後から入金が確認できたケース）。
+    //   ウォレット充当分は既に refundWalletPortionOnCancel で返金済みなら、runRefundToWallet が
+    //   priorPartial を差し引いて残額（KHQR分）だけ返金する。refundedToWallet で冪等。
+    if (before.depositConfirmed !== true && after.depositConfirmed === true
+        && after.status === "cancelled" && after.prepaid === true && after.refundedToWallet !== true) {
+      await runRefundToWallet(orderId, after, "cancelled");
+    }
+
     if (!statusChanged) return;
 
     // 辞退時：在庫復元（自動辞退は autoDeclineExpiredOrders 内で復元済みのためスキップ）
@@ -1468,7 +1562,16 @@ exports.onOrderUpdated = onDocumentUpdated(
       if (after.status === "declined" && before.status !== "declined") {
         await runRefundToWallet(orderId, after, "declined");
       } else if (after.status === "cancelled" && before.status === "pending") {
-        await runRefundToWallet(orderId, after, "cancelled");
+        // 7/10 #203 B-2:「実際に受け取ったお金だけ返金」。
+        //   入金確認済（depositConfirmed）→ 全額（subtotal・group/coupon 込み）を即返金。
+        //   未確認（お支払い確認中）→ ウォレット充当分（作成時に onOrderCreated で実引き落とし済み）
+        //     だけを即返金し、KHQR分は未入金の可能性があるため返金しない（穴ふさぎ）。
+        //     後で運営が入金確認したら下記 depositConfirmed 遷移で deferred に残額を返金。
+        if (after.depositConfirmed === true) {
+          await runRefundToWallet(orderId, after, "cancelled");
+        } else {
+          await refundWalletPortionOnCancel(orderId, after);
+        }
       }
     }
 

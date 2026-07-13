@@ -420,8 +420,8 @@
                     </div>
                     <div class="os-note">${i18next.t('orders.payUnconfirmedNote')}</div>
                     <div class="btnrow" style="display:flex; gap:8px;">
-                        <a class="os-btn os-btn--pri" style="flex:1; margin-top:0;" href="/pages/restaurant/cart.html">${i18next.t('orders.payAgain')}</a>
-                        <a class="os-btn os-btn--sec" style="flex:1; margin-top:0;" href="/pages/admin-chat.html?view=chat">${i18next.t('orders.contactSupport')}</a>
+                        <a class="os-btn os-btn--sec" style="flex:1; margin-top:0;" href="/pages/admin-chat.html?view=chat">${i18next.t('orders.consultSupport')}</a>
+                        <a class="os-btn os-btn--sec" style="flex:1; margin-top:0;" href="/pages/restaurant/cart.html?repay=${d.id}">${i18next.t('orders.payAgain')}</a>
                     </div>
                 </div>`;
         }
@@ -518,7 +518,7 @@
                     <div class="os-card" id="order-${d.id}">
                         ${head}
                         <div class="os-statusline"><span class="material-symbols-outlined">hourglass_top</span>${i18next.t(statusKey)}</div>
-                        <button type="button" class="os-cancel" data-act="cancel-order" data-id="${d.id}">${order.prepaid === true ? i18next.t('orders.cancelWithRefund') : i18next.t('orders.cancelOrder')}</button>
+                        <button type="button" class="os-cancel" data-act="cancel-order" data-id="${d.id}">${order.prepaid === true ? (order.depositConfirmed === true ? i18next.t('orders.cancelWithRefund') : i18next.t('orders.cancelOrder')) : i18next.t('orders.cancelOrder')}</button>
                     </div>`;
             }
             // 配達中＝〔配送状況を確認〕＋〔問題を報告〕（窓内のみ・report-window が制御）。承認済/準備中＝〔配送状況を確認〕のみ。
@@ -814,9 +814,13 @@
             const o = allOrdersCache.find(x => x.d.id === orderId);
             const order = o?.order;
             if (bodyEl) {
-                if (order && order.prepaid === true) {
+                if (order && order.prepaid === true && order.depositConfirmed === true) {
+                    // 農家確認中（入金確認済）＝即ウォレット返金を約束（金額入り）。
                     const amt = Number(order.refundAmount ?? order.subtotal ?? order.totalAmount ?? 0);
                     bodyEl.innerHTML = i18next.t('orders.cancelRefundModalBody', { amount: amt.toLocaleString() });
+                } else if (order && order.prepaid === true) {
+                    // お支払い確認中（入金未確認）＝即返金と約束しない（未入金→即キャンセルの穴を塞ぐ・金額を出さない）。
+                    bodyEl.textContent = i18next.t('orders.cancelConfirmingModalBody');
                 } else {
                     bodyEl.textContent = i18next.t('orders.cancelModalBody');
                 }

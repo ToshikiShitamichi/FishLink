@@ -208,7 +208,16 @@
       "Bash(node --check \"$\\(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\"\\)/flcheck.mjs\")",
       "Bash(node --check \"C:/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/3878b840-670d-45a6-8570-ffdf9cd6369c/scratchpad/reel-check.mjs\")",
       "Bash(node --check /tmp/dash_script.mjs)",
-      "Bash(node \"C:/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/3878b840-670d-45a6-8570-ffdf9cd6369c/scratchpad/verify-reels.js\")"
+      "Bash(node \"C:/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/3878b840-670d-45a6-8570-ffdf9cd6369c/scratchpad/verify-reels.js\")",
+      "Bash(node --check /tmp/orders-check.mjs)",
+      "Bash(node --check /tmp/cart_mod.mjs)",
+      "Bash(node --check /tmp/order-check.mjs)",
+      "Bash(node --check order-check.mjs)",
+      "Bash(node -e 'const j=JSON.parse\\(require\\(\"fs\"\\).readFileSync\\(\"locales/ja.json\",\"utf8\"\\)\\);console.log\\(\"ja:\",j.admin.order.confirmPaymentConfirmed\\);')",
+      "Bash(awk '/async function runRefundToWallet|function runRefundToWallet/{f=1} f{print NR\": \"$0} f&&/^}/{c++; if\\(c>=1 && /^}/\\) {exit}}' functions/index.js)",
+      "Bash(node -e \"['ja','en','km'].forEach\\(l=>{JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/'+l+'.json','utf8'\\)\\);console.log\\(l,'JSON OK'\\)}\\)\")",
+      "Bash(git -c core.quotepath=false status --short)",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\('payment.title=',j.payment&&j.payment.title\\); console.log\\('cart.title=',j.cart&&j.cart.title\\);\")"
     ]
   }
 }

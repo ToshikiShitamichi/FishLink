@@ -543,13 +543,14 @@
         .khqr-amt__label { font-size: 12px; color: var(--color-text-sub); }
         .khqr-amt__row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 2px; }
         .khqr-amt__value { font-size: 26px; font-weight: 800; color: var(--color-cta); }
+        /* 7/10 #203 A-2: 静的QR＝金額なし＝手入力必須になったため〔金額をコピー〕を目立つ塗りボタン風に強調 */
         .copy-chip {
-            display: inline-flex; align-items: center; gap: 3px;
-            font-size: 10.5px; font-weight: 800; color: var(--color-cta);
-            border: 1px solid #bbd3ec; border-radius: 7px; padding: 4px 8px;
-            cursor: pointer; font-family: inherit; background: #fff;
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 12px; font-weight: 800; color: var(--color-cta);
+            border: 1px solid #bbd3ec; border-radius: 9px; padding: 7px 13px;
+            cursor: pointer; font-family: inherit; background: #eaf2fb;
         }
-        .copy-chip .material-symbols-outlined { font-size: 13px; }
+        .copy-chip .material-symbols-outlined { font-size: 15px; }
         .khqr-sub { text-align: center; font-size: 11px; color: var(--color-text-sub); margin: -4px 0 14px; }
         .khqr-sub b { color: var(--color-text); font-weight: 700; }
         .qr-card {
@@ -557,8 +558,13 @@
             border-radius: 16px; padding: 18px; text-align: center;
         }
         .qr-card__brand { font-size: 13px; font-weight: 800; color: var(--color-cta); margin-bottom: 8px; }
+        /* 7/10 #203 A-1: Joint口座（受取名＋口座番号・口座番号は表示のみ／コピーボタン無し） */
+        .qr-card__payee { font-size: 13px; font-weight: 800; color: var(--color-text); margin-top: 2px; }
+        .qr-card__acct { font-size: 11.5px; color: var(--color-text-sub); margin-top: 3px; }
         .qr-card__img { width: 200px; height: 200px; object-fit: contain; margin: 4px auto; display: block; }
         .qr-card__tag { font-size: 11px; color: var(--color-text-sub); margin-top: 4px; }
+        /* 7/10 #203 A-2: 静的QR＝金額が入らない警告（amber） */
+        .qr-card__tag.warn { color: #b36a00; font-weight: 700; margin-top: 8px; line-height: 1.5; }
         .qr-actions { margin-top: 12px; }
         .qr-open {
             display: block; width: 100%; text-align: center; text-decoration: none;
@@ -573,6 +579,26 @@
             color: var(--color-cta); background: #fff;
         }
         .qr-help { font-size: 12px; color: var(--color-text-sub); line-height: 1.6; margin: 14px 2px 0; }
+        .qr-help b { color: var(--color-cta); font-weight: 700; }
+        /* 7/10 #203 A-4: 受取名の先回り告知（中立グレー note） */
+        .qr-note { font-size: 11px; color: var(--color-text-sub); line-height: 1.55; background: #f7f9fb; border: 1px solid var(--color-border); border-radius: 10px; padding: 9px 11px; margin: 12px 2px 0; }
+        .qr-note b { color: var(--color-text); font-weight: 700; }
+        /* 7/10 #203 A-3: 〔QR画像を保存〕のサブ文言 */
+        .qr-sbtn__sub { display: block; font-size: 10.5px; font-weight: 600; color: var(--color-text-sub); margin-top: 1px; }
+        /* 7/10 #203 A-5: お支払いの控えを添付（任意・点線枠） */
+        .attach-row {
+            display: flex; align-items: center; gap: 10px;
+            margin: 14px 2px 0; padding: 11px 12px;
+            border: 1px dashed #bbd3ec; border-radius: 11px;
+            background: #f7fafe; cursor: pointer;
+        }
+        .attach-row .material-symbols-outlined { font-size: 18px; color: var(--color-cta); flex-shrink: 0; }
+        .attach-row__t { font-size: 12.5px; font-weight: 800; color: var(--color-cta); }
+        .attach-row__s { font-size: 11px; color: var(--color-text-sub); font-weight: 600; margin-top: 1px; }
+        .attach-row.done { border-style: solid; border-color: #a7d8b4; background: #f0faf3; }
+        .attach-row.done .material-symbols-outlined { color: #2e7d32; }
+        .attach-row.done .attach-row__t { color: #2e7d32; }
+        .attach-row__thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
     </style>
 </head>
 
@@ -655,7 +681,7 @@
         </div>
     </div>
 
-    <!-- #172: KHQR ステージ（FISHLINK受取QR・金額入り） -->
+    <!-- #172 / 7/10 #203 A: KHQR ステージ（FISHLINK受取＝Joint口座・静的QR＝金額なし・買い手が手入力） -->
     <div class="stage-page" id="khqr-page">
         <div class="khqr-amt">
             <div class="khqr-amt__label" data-i18n="payment.payAmount"></div>
@@ -668,23 +694,41 @@
             </div>
         </div>
         <div class="khqr-sub" id="khqr-sub"></div>
+        <!-- 7/10 #203 A-1: Joint口座を明示（受取名＋口座番号・口座番号は表示のみ・コピーボタン無し） -->
         <div class="qr-card">
             <div class="qr-card__brand" data-i18n="payment.khqrBrand"></div>
+            <div class="qr-card__payee" data-i18n="payment.khqrPayeeName"></div>
+            <div class="qr-card__acct"><span data-i18n="payment.khqrAccountLabel"></span> 018 532 495</div>
             <img class="qr-card__img" src="/images/fishlink-qr.png" alt="FISHLINK QR">
-            <div class="qr-card__tag" id="khqr-tag"></div>
+            <!-- 7/10 #203 A-2: 静的QR＝金額なし警告（amber） -->
+            <div class="qr-card__tag warn" id="khqr-tag" data-i18n="payment.khqrNoAmountWarn"></div>
         </div>
+        <!-- 7/10 #203 A-4: 受取名の先回り告知 -->
+        <div class="qr-note" data-i18n="payment.khqrPayeeNotice"></div>
+        <!-- 7/10 #203 A-3: 支払いボタン2役（ABAアプリ／QR画像を保存） -->
         <div class="qr-actions">
-            <a class="qr-open" href="https://link.payway.com.kh/ABAPAYsh433547o" target="_blank" rel="noopener">
+            <a class="qr-open" href="https://pay.ababank.com/oRF8/ghmf3dn7" target="_blank" rel="noopener">
                 <span class="material-symbols-outlined" style="font-size:18px; vertical-align:-4px;">account_balance</span>
-                <span data-i18n="payment.openBank"></span>
-                <span class="qr-open__sub" data-i18n="payment.openBankSub"></span>
+                <span data-i18n="payment.openBankAba"></span>
+                <span class="qr-open__sub" data-i18n="payment.openBankAbaSub"></span>
             </a>
             <a class="qr-sbtn" href="/images/fishlink-qr.png" download="fishlink-qr.png">
                 <span class="material-symbols-outlined" style="font-size:16px; vertical-align:-3px;">image</span>
                 <span data-i18n="payment.saveQr"></span>
+                <span class="qr-sbtn__sub" data-i18n="payment.saveQrSub"></span>
             </a>
         </div>
         <div class="qr-help" data-i18n="payment.khqrHelp"></div>
+        <!-- 7/10 #203 A-5: お支払いの控えを添付（任意・確認が早くなる） -->
+        <label class="attach-row" id="khqr-attach-row">
+            <span class="material-symbols-outlined" id="khqr-attach-icon">attach_file</span>
+            <div style="flex:1; min-width:0;">
+                <div class="attach-row__t" id="khqr-attach-title" data-i18n="payment.attachProof"></div>
+                <div class="attach-row__s" data-i18n="payment.attachProofSub"></div>
+            </div>
+            <img class="attach-row__thumb" id="khqr-attach-thumb" alt="" style="display:none;">
+            <input type="file" accept="image/*" id="khqr-proof-input" hidden>
+        </label>
     </div>
 
     <!-- 出品詳細モーダル -->
@@ -741,11 +785,14 @@
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
-        import { db } from '/js/firebase-config.js';
+        import { db, storage } from '/js/firebase-config.js';
         import {
-            doc, getDoc, collection, writeBatch, serverTimestamp,
+            doc, getDoc, updateDoc, collection, writeBatch, serverTimestamp,
             query, where, getDocs
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        // 7/10 #203 A-5: 支払い控え画像を Storage(paymentProofs/{uid}/) へアップロード（admin/order.html と同方式）
+        import { ref } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
+        import { uploadImageResized } from '/js/image-resize.js';
         import {
             subscribeCart, updateCartItem, removeCartItem, clearCart, groupByFarmer
         } from '/js/cart.js';
@@ -802,6 +849,14 @@
         let walletUserSet = false;  // ユーザーが〔変更〕で明示指定したか（true なら自動再充当しない）
         let walletEditOpen = false; // 〔変更〕の入力欄を開いているか
         let confirmGrandTotal = 0;  // renderConfirm が算出したクーポン適用後の合計（=充当前お支払い額）
+        // 7/10 #203 A-5: 買い手が KHQR画面で添付した支払い控え画像URL（任意）。placeOrders で paymentGroup 内 全 order にセット。
+        let buyerProofUrl = null;
+
+        // 7/10 #203 B-1: 「もう一度支払う」＝既存の未確認注文を KHQR で再支払い（?repay=<orderId>）。
+        //   カートを経由せず（注文はもう存在＝カートは空）khqr ステージを直接表示し、
+        //   〔支払いました〕で新規注文は作らず paymentUnconfirmed を下ろして「お支払い確認中」に戻す。
+        const repayOrderId = new URLSearchParams(location.search).get('repay');
+        let repayOrder = null;
 
         // ── Google Maps ready 待ち ──
         function waitForGoogleMaps() {
@@ -946,6 +1001,8 @@
         // カート購読開始
         waitForUserData(async () => {
             if (!cachedRendered) loading.classList.add('show');
+            // 7/10 #203 B-1: 再支払いモードはカートを経由しない（注文は既存）。別処理して return。
+            if (repayOrderId) { await initRepay(); return; }
             try {
                 // 料率取得
                 const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
@@ -1200,6 +1257,8 @@
         // 5/27: 動的描画されたカート本体（chip 文言・農家名以外のラベル等）も再描画しないと
         //   旧言語のままなので render() を呼び直す。initDatepickers は render() 内で呼ばれる。
         onLanguageChange(() => {
+            // 7/10 #203 B-1: 再支払いモードはカート描画を回さず khqr の再描画のみ（カートは空・無関係）。
+            if (repayOrderId) { renderKhqr(khqrPayAmount); updateFooter(); return; }
             render().catch(() => {});
             // 6/7 #134 C → #178: 確認画面のクーポン・お支払い明細も言語に追従（紹介元名の語順含め再構築）
             if (stage === 'confirm') {
@@ -1988,10 +2047,16 @@
                     subtotal: draft.subtotal,
                     walletApplied: draft.walletApplied,
                     khqrAmount: draft.khqrAmount,
-                    depositConfirmed: false,
+                    // 7/10 #203 B-2: KHQR支払いが不要（ウォレットで全額まかなった）注文は、確認すべき
+                    //   銀行入金が存在しない＝作成時点で「入金確認済」扱い。これで(1)買い手は「お支払い確認中」
+                    //   ではなく「農家確認中」に進み(2)承認前キャンセルでウォレット充当分（onOrderCreated で
+                    //   実引き落とし済み）が即返金される。KHQR分がある注文だけ false（運営照合が要る）。
+                    depositConfirmed: draft.khqrAmount === 0,
                     paymentUnconfirmed: false,
                     tradeCompleted: false,
                     refundedToWallet: false,
+                    // 7/10 #203 A-5: 買い手が添付した支払い控えURL（paymentGroup 内 全 order 同一・任意なので null 可）
+                    buyerPaymentProofUrl: buyerProofUrl || null,
                     // legacy: 先頭item由来（既存表示・通知向け）
                     listingId: first.listingId,
                     quantity: first.quantity,
@@ -2172,6 +2237,9 @@
                     // #172: お支払い額>0 → KHQR画面へ。==0（ウォレット全額）→ 直接注文確定。
                     const payAmount = Math.max(0, confirmGrandTotal - walletApplied);
                     if (payAmount > 0) {
+                        // 7/10 #203 A-5: khqr へ「新規に進入」する時だけ控え添付をリセット
+                        //   （renderKhqr は言語切替でも呼ばれる＝そこでリセットすると添付が消える）。
+                        resetProofAttach();
                         renderKhqr(payAmount);
                         setStage('khqr');
                     } else {
@@ -2194,7 +2262,10 @@
         // ── #172: KHQR画面の描画（お支払い額・差引リキャップ・タグ）──
         function renderKhqr(payAmount) {
             document.getElementById('khqr-amt-value').textContent = fmtKhr(payAmount);
-            document.getElementById('khqr-tag').textContent = i18next.t('payment.khqrTag', { amount: payAmount.toLocaleString() });
+            // 7/10 #203 A-2: 「金額が入っていない」警告は #khqr-tag の data-i18n（payment.khqrNoAmountWarn）が
+            //   init/言語切替で適用するため JS 側での上書きは不要（静的QR＝金額補間なし）。
+            // 7/10 #203 A-5: 控え添付のリセットは「新規に khqr へ進入する時だけ」行う（confirm→khqr 遷移側で呼ぶ）。
+            //   renderKhqr は言語切替でも呼ばれるため、ここでリセットすると添付済みの控えが消えてしまう。
             const sub = document.getElementById('khqr-sub');
             if (walletApplied > 0) {
                 sub.innerHTML = i18next.t('payment.khqrDeducted', {
@@ -2210,6 +2281,46 @@
         }
         let khqrPayAmount = 0;
 
+        // 7/10 #203 B-1: 再支払いモードの初期化。既存の未確認注文を読み、khqr ステージを直接表示。
+        async function initRepay() {
+            try {
+                const snap = await getDoc(doc(db, 'orders', repayOrderId));
+                if (!snap.exists()) { location.replace('/pages/restaurant/orders.html'); return; }
+                const order = snap.data();
+                // 本人・前払い・承認前（pending）・未確認扱い（depositConfirmed でない）だけ再支払い可
+                if (order.restaurantId !== window.currentUser.uid
+                    || order.prepaid !== true
+                    || order.status !== 'pending'
+                    || order.depositConfirmed === true) {
+                    location.replace('/pages/restaurant/orders.html'); return;
+                }
+                repayOrder = order;
+                // ヘッダータイトルを「お支払い」に（言語切替でも維持されるよう data-i18n も付け替え）
+                const pt = document.getElementById('page-title');
+                if (pt) { pt.setAttribute('data-i18n', 'payment.title'); pt.textContent = i18next.t('payment.title'); }
+                resetProofAttach();
+                renderKhqr(Math.max(0, Number(order.khqrAmount || 0)));
+                // 再支払いでは「合計−ウォレット」の差引サブ行は出さない（元注文で充当済み）。
+                const sub = document.getElementById('khqr-sub');
+                if (sub) sub.style.display = 'none';
+                setStage('khqr');
+            } catch (e) {
+                console.error('repay init failed', e);
+                location.replace('/pages/restaurant/orders.html');
+            } finally {
+                loading.classList.remove('show'); document.body.classList.add('app-ready');
+            }
+        }
+
+        // 7/10 #203 B-1: 再支払いの〔支払いました〕＝新規注文は作らず、その注文を「お支払い確認中」に戻す
+        //   （paymentUnconfirmed を下ろす）。控えを付け直していれば buyerPaymentProofUrl も更新。
+        async function submitRepay() {
+            const upd = { paymentUnconfirmed: false };
+            if (buyerProofUrl) upd.buyerPaymentProofUrl = buyerProofUrl;
+            await updateDoc(doc(db, 'orders', repayOrderId), upd);
+            location.replace('/pages/restaurant/orders.html');
+        }
+
         // #172: 金額をコピー（KHQRは金額手入力＝誤入力防止）。数字のみコピー。
         document.getElementById('khqr-copy-btn').addEventListener('click', async () => {
             const btn = document.getElementById('khqr-copy-btn');
@@ -2218,6 +2329,51 @@
                 await navigator.clipboard.writeText(String(khqrPayAmount));
                 if (label) { label.textContent = i18next.t('payment.copied'); setTimeout(() => { label.textContent = i18next.t('payment.copyAmount'); }, 1500); }
             } catch (e) { console.warn('clipboard failed:', e); }
+        });
+
+        // 7/10 #203 A-5: お支払いの控えを添付（任意）。控え行を初期状態へ戻す。
+        function resetProofAttach() {
+            buyerProofUrl = null;
+            const row = document.getElementById('khqr-attach-row');
+            const icon = document.getElementById('khqr-attach-icon');
+            const title = document.getElementById('khqr-attach-title');
+            const thumb = document.getElementById('khqr-attach-thumb');
+            const input = document.getElementById('khqr-proof-input');
+            if (row) row.classList.remove('done');
+            if (icon) icon.textContent = 'attach_file';
+            if (title) title.textContent = i18next.t('payment.attachProof');
+            if (thumb) { thumb.style.display = 'none'; thumb.removeAttribute('src'); }
+            if (input) input.value = '';
+        }
+
+        // 7/10 #203 A-5: 選択 → paymentProofs/{uid}/ へ即アップロード → buyerProofUrl に保持 → 「控えを添付しました」表示。
+        document.getElementById('khqr-proof-input').addEventListener('change', async (e) => {
+            const input = e.target;
+            const file = input.files && input.files[0];
+            if (!file) return;
+            const uid = window.currentUser?.uid;
+            if (!uid) return;
+            loading.classList.add('show');
+            try {
+                const storageRef = ref(storage, `paymentProofs/${uid}/${Date.now()}.jpg`);
+                const url = await uploadImageResized(storageRef, file);
+                buyerProofUrl = url;
+                // 添付済み表示（チェックアイコン＋文言＋サムネ）
+                const icon = document.getElementById('khqr-attach-icon');
+                const title = document.getElementById('khqr-attach-title');
+                const thumb = document.getElementById('khqr-attach-thumb');
+                const row = document.getElementById('khqr-attach-row');
+                if (icon) icon.textContent = 'check_circle';
+                if (title) title.textContent = i18next.t('payment.attachProofDone');
+                if (row) row.classList.add('done');
+                if (thumb) { thumb.src = url; thumb.style.display = 'block'; }
+            } catch (err) {
+                console.warn('proof upload failed:', err);
+                // 失敗しても支払い自体は進められる（控えは任意）。行は初期状態に戻す。
+                resetProofAttach();
+            } finally {
+                loading.classList.remove('show');
+            }
         });
 
         // #172: 〔支払いました〕中央確認モーダル → placeOrders
@@ -2233,7 +2389,9 @@
             loading.classList.add('show');
             errEl.classList.remove('show');
             try {
-                await placeOrders();
+                // 7/10 #203 B-1: 再支払いモードは新規注文でなく既存注文の未確認解除。
+                if (repayOrderId) { await submitRepay(); }
+                else { await placeOrders(); }
             } catch (err) {
                 console.error(err);
                 errEl.textContent = err.message || i18next.t('cart.errorSubmit');
@@ -2248,6 +2406,8 @@
         const backLink = document.querySelector('.page-header__back');
         if (backLink) {
             backLink.addEventListener('click', (e) => {
+                // 7/10 #203 B-1: 再支払いモードは confirm ステージが存在しない＝既定の history.back()（注文状況へ）。
+                if (repayOrderId) return;
                 // 6/1 #111 (diff10): 提案ステージは廃止。確認画面からはカートへ直接戻す。
                 // #172: KHQR画面からは確認画面へ（クーポン行・お支払い明細を再描画）。
                 if (stage === 'khqr') {
@@ -2261,8 +2421,8 @@
             });
         }
 
-        // 初期化：ボタンラベルをセット
-        setStage('cart');
+        // 初期化：ボタンラベルをセット（再支払いモードは initRepay が khqr ステージを直接セット）
+        if (!repayOrderId) setStage('cart');
     </script>
 </body>
 
