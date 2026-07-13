@@ -251,6 +251,9 @@
         .pcard__rt .material-symbols-outlined { font-size: 12px; color: #f59e0b; font-variation-settings: 'FILL' 1; }
         .pcard__rt span { color: var(--color-text-sub); font-weight: 600; }
 
+        /* 🎬 #201: 商品カードの動画バッジ（reel-ui の .rui-vbadge は左上）。GAqPバッジ(左上)と共存する場合のみ下にずらす＝重なり回避 */
+        .pcard__img.has-gaqp .rui-vbadge { top: 32px; }
+
         /* ── ⑤ 農家カード（240px・モック .fcard） ── */
         .fcard {
             scroll-snap-align: start; flex: 0 0 240px;
@@ -368,6 +371,22 @@
             </button>
         </div>
 
+        <!-- 🎬 #201: Home 新着リール（検索バーの直下・Home最上部・「魚から探す」の上。0本ならセクションごと非表示・reels-spec §3）
+             カルーセルは写真サムネ＋▶のみ（自動再生しない）＝タップで全画面フィード（§4）で読み込み/再生。 -->
+        <div class="section" id="sec-reels" style="display:none;">
+            <div class="section__head">
+                <span class="section__title">
+                    <span class="material-symbols-outlined">movie</span>
+                    <span data-i18n="reel.sectionTitle"></span>
+                </span>
+                <a class="section__more" href="#" id="reels-more" role="button">
+                    <span data-i18n="reel.more"></span>
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </a>
+            </div>
+            <div class="hscroll" id="reels-row"></div>
+        </div>
+
         <!-- ① 進行中の注文（進行中ゼロならセクションごと非表示） -->
         <div class="section" id="sec-orders" style="display:none;">
             <div class="section__head">
@@ -483,6 +502,9 @@
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
         import { getCachedDistance, setCachedDistance } from '/js/distance-cache.js';
         import { formatProvince } from '/js/province-utils.js';
+        // 🎬 #201: リール（新着リール カルーセル＋全画面フィード＋商品カード動画バッジ）
+        import { getRecentReels, dedupeFeaturedByListing, postedMillis } from '/js/reel-utils.js';
+        import { reelCardHtml, reelVideoBadge, openReelFeed } from '/js/reel-ui.js';
 
         const loading = document.getElementById('loading');
         watchAuthState({ requireAuth: true });
@@ -575,6 +597,70 @@
             return on
                 ? `<span class="gaqp-badge"><span class="material-symbols-outlined">verified</span>${i18next.t('gaqp.badge')}</span>`
                 : '';
+        }
+
+        // 🎬 #201: 新着リール（カルーセル＋全画面フィード＋商品カードの🎬バッジ）
+        //   母集団＝getRecentReels（新着順）を「配達圏内×在庫×販売中」eligible listing に絞り listingId ごと featured 1本へ dedupe。
+        //   raw vm は言語非依存＋JSON安全（postedAt=millis／province/fishType は raw・描画時に翻訳）＝render-cache round-trip 可。
+        let featuredReelIds = new Set();   // featured 動画を持つ listingId（商品カードの🎬バッジ判定）
+        let reelVmsState = [];             // 新着リールの raw vm（言語切替・全画面フィードで再利用）
+
+        function isReelNew(postedAtMs) {
+            const ms = postedMillis(postedAtMs);
+            if (!ms) return false;
+            return (Date.now() - ms) < 24 * 60 * 60 * 1000;   // 直近24時間＝「新着」ピル
+        }
+        // raw（言語非依存）→ reel-ui が要求する display vm（fishName/province/isNew を現在言語・現在時刻で生成）
+        function toReelDisplayVm(r) {
+            return {
+                ...r,
+                fishName: fishName(r.fishType || ''),
+                province: r.provinceRaw ? formatProvince(r.provinceRaw) : '',
+                isNew: isReelNew(r.postedAt),
+            };
+        }
+        function buildReelRaw(reel, listing, farmer, distanceKm, serviceRate) {
+            // 価格は productCard と同式（内臓処理込みの買い手表示価格）。gutPrice==null＝丸魚のみ（内臓処理なし）
+            const unitPrice = Math.round(((listing.price || 0) + (listing.gutPrice || 0)) * (1 + serviceRate));
+            return {
+                videoUrl: reel.videoUrl || '',
+                thumbUrl: reel.thumbUrl || listing.photoUrl || (listing.photos?.[0]) || '',
+                durationSec: Number(reel.durationSec || 0),
+                postedAt: postedMillis(reel.postedAt),   // millis（Timestamp は JSON 不可・全消費者が millis 対応）
+                listingId: listing.id,
+                farmerId: listing.farmerId || '',
+                farmerName: farmer?.displayName || '',
+                avatarUrl: farmer ? (getReviewerAvatarUrl(farmer) || null) : null,
+                ratingPct: Number(farmer?.avgRating || 0),
+                ratingCount: Number(farmer?.reviewCount || 0),
+                provinceRaw: farmer?.province || '',
+                distanceKm: Number.isFinite(distanceKm) ? distanceKm : null,
+                fishType: listing.fishType || '',
+                sizeLabel: listing.size || '',
+                stockKg: Number(listing.stock || 0),
+                gutIncluded: (listing.gutPrice != null),
+                priceKhr: unitPrice,
+                buyable: true,   // Home カルーセルは buyable（配達圏内×在庫×販売中）のみ＝全画面で常に「販売中」
+            };
+        }
+        function renderReels(rawVms) {
+            reelVmsState = Array.isArray(rawVms) ? rawVms : [];
+            featuredReelIds = new Set(reelVmsState.map(v => v.listingId));   // ⚠ 商品カードの🎬バッジより前に確定させる
+            const sec = document.getElementById('sec-reels');
+            const row = document.getElementById('reels-row');
+            if (!sec || !row) return;
+            if (reelVmsState.length === 0) { sec.style.display = 'none'; row.innerHTML = ''; return; }
+            sec.style.display = 'block';
+            row.innerHTML = reelVmsState.map((r, i) => reelCardHtml(toReelDisplayVm(r), i, i18next.t)).join('');
+        }
+        function openReelsFeedAt(idx) {
+            if (!reelVmsState.length) return;
+            openReelFeed(reelVmsState.map(toReelDisplayVm), idx, {
+                t: i18next.t,
+                onViewFish: (id) => { location.href = '/pages/restaurant/order.html?id=' + encodeURIComponent(id); },
+                onAddToCart: (vm) => { location.href = '/pages/restaurant/order.html?id=' + encodeURIComponent(vm.listingId); },
+                onViewFarmer: (fid) => { location.href = '/pages/restaurant/farmer.html?id=' + encodeURIComponent(fid); },
+            });
         }
 
         // ── 距離計算（#85: 道路距離を fish-list / order / cart と統一） ──
@@ -680,16 +766,18 @@
             const reviewCount = Number(farmer?.reviewCount || 0);
             const farmerAvatar = farmer ? getReviewerAvatarUrl(farmer) : null;
             const gaqp = farmer?.gaqpCertified === true;
+            const hasReel = featuredReelIds.has(listing.id);   // #201: featured 動画あり＝🎬 動画バッジ
             const distText = Number.isFinite(distanceKm) ? `${distanceKm.toFixed(1)} km` : '';
             const imgAttrs = asCachedImgAttrs(photo, isPriority ? { priority: 'high' } : {});
             const loadAttr = isPriority ? '' : 'loading="lazy"';
             return `
                 <a class="pcard" href="/pages/restaurant/order.html?id=${listing.id}">
-                    <div class="pcard__img">
+                    <div class="pcard__img${gaqp && hasReel ? ' has-gaqp' : ''}">
                         ${photo
                             ? `<img ${imgAttrs} alt="${escapeHtml(name)}" ${loadAttr}>`
                             : `<span class="material-symbols-outlined">set_meal</span>`}
                         ${gaqpBadge(gaqp)}
+                        ${hasReel ? reelVideoBadge(i18next.t) : ''}
                     </div>
                     <div class="pcard__body">
                         <div class="pcard__nm">${escapeHtml(name)}</div>
@@ -943,6 +1031,9 @@
                 }
             } catch (e) { /* ignore */ }
 
+            // 🎬 #201: 新着リールの母集団を先読み（距離計算と並行＝待ち時間を隠す・失敗しても既存Homeは壊さない）
+            const reelsPromise = getRecentReels(60).catch(() => []);
+
             const baseQ = query(
                 collection(db, 'fishListings'),
                 where('isActive', '==', true),
@@ -972,6 +1063,20 @@
             // 在庫>0 の商品のみ Home の棚に出す（売切れは魚一覧で末尾表示）
             const inStock = eligible.filter(l => Number(l.stock || 0) > 0);
 
+            // 🎬 #201: 新着リール vm を組む（配達圏内×在庫×販売中の出品に紐づく featured 動画・新着順）。
+            //   listing/farmer/距離 は既存ロード済みデータを流用＝行ごとの追加クエリはしない。
+            const reelRawVms = [];
+            try {
+                const recentReels = await reelsPromise;                        // getRecentReels(60)（postedAt desc）
+                const featuredReels = dedupeFeaturedByListing(recentReels);    // listingId ごと最新1本
+                const inStockById = new Map(inStock.map(l => [l.id, l]));
+                for (const r of featuredReels) {
+                    const l = inStockById.get(r.listingId);
+                    if (!l) continue;   // 配達圏外/売切れ/非アクティブ/上位60外＝Home には出さない
+                    reelRawVms.push(buildReelRaw(r, l, farmerMap.get(l.farmerId) || null, distanceMap.get(l.farmerId), serviceRate));
+                }
+            } catch (e) { /* リール取得失敗は無視＝既存Homeは壊さない */ }
+
             // ③ 近くの農家の魚（道路距離 昇順）
             const nearby = [...inStock]
                 .filter(l => Number.isFinite(distanceMap.get(l.farmerId)))
@@ -998,6 +1103,7 @@
                 })
                 .slice(0, 10);
 
+            renderReels(reelRawVms);   // #201: ⚠ 商品カードより先に描画＝featuredReelIds を確定させてから🎬バッジ付き商品カードを出す
             renderProductRow('row-nearby', nearby, farmerMap, distanceMap, serviceRate, true);
             renderProductRow('row-newest', newest, farmerMap, distanceMap, serviceRate, false);
             renderFarmerRow(farmers, distanceMap, farmerTagArr);
@@ -1010,6 +1116,7 @@
                     farmerMap: Object.fromEntries(farmerMap),
                     distances: Object.fromEntries(distanceMap),
                     serviceRate,
+                    reelVms: reelRawVms,   // #201: raw vm（JSON安全＝postedAt millis / fishType・province は raw）
                 });
             } catch (e) { /* ignore */ }
         }
@@ -1018,6 +1125,16 @@
         document.getElementById('search-form').addEventListener('submit', (e) => {
             const q = document.getElementById('search-input').value.trim();
             if (!q) e.preventDefault();
+        });
+
+        // 🎬 #201: 新着リール カード / 「もっと見る」→ 全画面フィード（container 委譲＝innerHTML 差し替えでも生存）
+        document.getElementById('reels-row').addEventListener('click', (e) => {
+            const card = e.target.closest('[data-reel-idx]');
+            if (card) openReelsFeedAt(+card.dataset.reelIdx);
+        });
+        document.getElementById('reels-more').addEventListener('click', (e) => {
+            e.preventDefault();
+            openReelsFeedAt(0);
         });
 
         // ── 農家ブロックタップ（商品カード内）→ 生産者ページ ──
@@ -1076,6 +1193,7 @@
                 const fmap = new Map(Object.entries(cat.farmerMap || {}));
                 const dmap = new Map(Object.entries(cat.distances || {}));
                 const sRate = cat.serviceRate ?? 0.05;
+                renderReels(cat.reelVms || []);   // #201: 商品カードより先（featuredReelIds を確定・fishName/province を現在言語で再生成）
                 renderProductRow('row-nearby', cat.nearby || [], fmap, dmap, sRate, true);
                 renderProductRow('row-newest', cat.newest || [], fmap, dmap, sRate, false);
                 renderFarmerRow(cat.farmers || [], dmap, cat.farmerTagArr || {});
@@ -1094,6 +1212,7 @@
                 const fmap = new Map(Object.entries(cat.farmerMap || {}));
                 const dmap = new Map(Object.entries(cat.distances || {}));
                 const sRate = cat.serviceRate ?? 0.05;
+                renderReels(cat.reelVms || []);   // #201: 商品カードより先＝featuredReelIds を確定させてから🎬バッジ付きカードを描画
                 renderProductRow('row-nearby', cat.nearby || [], fmap, dmap, sRate, true);
                 renderProductRow('row-newest', cat.newest || [], fmap, dmap, sRate, false);
                 renderFarmerRow(cat.farmers || [], dmap, cat.farmerTagArr || {});

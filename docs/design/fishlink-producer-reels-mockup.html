@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FISHLINK 生産者ページ 動画ポートフォリオ - モック</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif; background:#ECEEF0; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 60px; color:#1A1A1A; }
+  .intro { max-width:900px; margin-bottom:24px; background:#FFF; padding:16px 18px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); font-size:14px; line-height:1.7; }
+  .intro h1 { margin:0 0 8px; font-size:17px; color:#0B5FB0; }
+  .intro p { margin:4px 0; color:#4A4A4A; }
+  .intro b { color:#0B5FB0; }
+
+  .stage { display:flex; flex-wrap:wrap; gap:28px; justify-content:center; align-items:flex-start; }
+  .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .phone-label { font-size:13px; font-weight:700; background:#FFF; padding:7px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:center; }
+  .phone-label .tag { color:#5A6470; font-weight:500; }
+
+  .phone { width:390px; max-width:100%; height:780px; background:#F7F9FB; border-radius:36px; overflow:hidden; position:relative; box-shadow:0 12px 36px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+
+  .p-header { flex:0 0 auto; background:#FFF; padding:12px 16px; border-bottom:1px solid #EEF1F4; display:flex; align-items:center; gap:8px; z-index:2; }
+  .p-header .logo { font-weight:800; color:#0B5FB0; font-size:15px; }
+  .p-header .sp { margin-left:auto; font-size:12px; border:1px solid #DDE3E9; border-radius:14px; padding:3px 10px; }
+  .p-title { text-align:center; font-size:17px; font-weight:800; padding:10px 0 4px; }
+
+  .p-body { flex:1 1 auto; overflow-y:auto; padding:6px 16px 30px; }
+
+  /* プロフィールヘッダー */
+  .prof { text-align:center; padding:14px 0 6px; }
+  .prof .ava { width:96px; height:96px; border-radius:50%; margin:0 auto; background:#D8E2EC; display:flex; align-items:center; justify-content:center; font-size:42px; color:#9AAFC2; overflow:hidden; }
+  .prof .pname { font-size:24px; font-weight:800; margin-top:12px; }
+  .prof .prow { display:flex; align-items:center; justify-content:center; gap:14px; margin-top:8px; flex-wrap:wrap; }
+  .prof .rate { background:#FFF3DC; color:#B36A00; font-weight:800; font-size:13px; padding:4px 12px; border-radius:14px; }
+  .prof .loc { font-size:13px; color:#5A6470; }
+  .prof .pmeta { font-size:13px; color:#5A6470; margin-top:5px; }
+
+  .sec-h { font-size:15px; font-weight:800; margin:18px 0 8px; }
+  .sec-h .cnt { color:#5A6470; font-weight:700; font-size:13px; }
+  .sec-h .more { float:right; font-size:13px; font-weight:700; color:#0B5FB0; cursor:pointer; }
+
+  /* 生産者の一言 */
+  .hitokoto { background:#F7F9FB; border:1px solid #EEF1F4; border-radius:12px; padding:12px 14px; }
+  .hitokoto .hk-l { font-size:12px; font-weight:800; color:#5A6470; }
+  .hitokoto .hk-t { font-size:13px; color:#2A3340; margin-top:4px; line-height:1.5; }
+
+  /* 養殖環境 */
+  .env-carousel { display:flex; gap:8px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; }
+  .env-carousel::-webkit-scrollbar { display:none; }
+  .env-slide { flex:0 0 100%; height:210px; border-radius:12px; scroll-snap-align:center; }
+  .env-dots { display:flex; justify-content:center; gap:6px; margin-top:8px; }
+  .env-dot { width:6px; height:6px; border-radius:50%; background:#C5CDD6; transition:all .2s; }
+  .env-dot.active { background:#0B5FB0; width:18px; border-radius:3px; }
+
+  /* ▼▼▼ 新規：動画（過去リール）ポートフォリオ ▼▼▼ */
+  .reel-carousel { display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; }
+  .reel-carousel::-webkit-scrollbar { display:none; }
+  .reel-thumb { flex:0 0 auto; width:118px; cursor:pointer; }
+  .reel-thumb .rt-media { width:118px; height:196px; border-radius:12px; position:relative; overflow:hidden; }
+  .reel-thumb .rt-media .rt-fish { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:46px; opacity:0.9; }
+  .reel-thumb .rt-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:34px; height:34px; border-radius:50%; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; }
+  .reel-thumb .rt-play svg { width:16px; height:16px; margin-left:2px; }
+  .reel-thumb .rt-dur { position:absolute; bottom:6px; right:6px; background:rgba(0,0,0,0.6); color:#FFF; font-size:10px; font-weight:700; padding:1px 5px; border-radius:6px; }
+  .reel-thumb .rt-live { position:absolute; top:6px; left:6px; background:#0B5FB0; color:#FFF; font-size:10px; font-weight:800; padding:2px 7px; border-radius:8px; }
+  .reel-thumb .rt-cap { font-size:12px; font-weight:700; margin-top:6px; line-height:1.3; }
+  .reel-thumb .rt-when { font-size:11px; color:#9AA3B0; margin-top:1px; }
+
+  /* すべての動画グリッド（②） */
+  .reel-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .reel-g { cursor:pointer; }
+  .reel-g .rg-media { width:100%; aspect-ratio:9/16; border-radius:10px; position:relative; overflow:hidden; }
+  .reel-g .rg-fish { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:38px; opacity:0.9; }
+  .reel-g .rg-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:28px; height:28px; border-radius:50%; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; }
+  .reel-g .rg-play svg { width:13px; height:13px; margin-left:2px; }
+  .reel-g .rg-dur { position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.6); color:#FFF; font-size:9px; font-weight:700; padding:1px 4px; border-radius:5px; }
+  .reel-g .rg-live { position:absolute; top:5px; left:5px; background:#0B5FB0; color:#FFF; font-size:9px; font-weight:800; padding:1px 5px; border-radius:6px; }
+  .reel-g .rg-cap { font-size:11px; font-weight:700; margin-top:4px; }
+  .reel-g .rg-when { font-size:10px; color:#9AA3B0; }
+
+  /* レビュー（メトリクス） */
+  .rev-block { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-top:6px; }
+  .rev-top { display:flex; align-items:center; justify-content:space-between; }
+  .rev-top .rt-ttl { font-size:15px; font-weight:800; }
+  .rev-top .rt-link { font-size:13px; font-weight:700; color:#0B5FB0; cursor:pointer; }
+  .metrics { display:flex; gap:10px; margin-top:12px; }
+  .metric { flex:1; background:#F7F9FB; border-radius:10px; padding:12px 8px; text-align:center; }
+  .metric .m-l { font-size:11px; color:#5A6470; line-height:1.4; }
+  .metric .m-v { font-size:22px; font-weight:800; margin-top:6px; }
+
+  /* 出品中の魚 */
+  .fish-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .fcard { background:#FFF; border:1px solid #EEF1F4; border-radius:12px; overflow:hidden; cursor:pointer; }
+  .fcard .fc-img { height:110px; background:linear-gradient(135deg,#cfe0ee,#aac6dd); position:relative; }
+  .fcard .fc-vbadge { position:absolute; bottom:6px; right:6px; background:rgba(0,0,0,0.55); color:#FFF; font-size:11px; font-weight:700; padding:2px 7px; border-radius:8px; }
+  .fcard .fc-stock { font-size:11px; color:#5A6470; margin-top:5px; }
+  .fcard .fc-body { padding:8px 10px 11px; }
+  .fcard .fc-name { font-size:13px; font-weight:700; }
+  .fcard .fc-size { font-size:11px; color:#5A6470; margin-top:1px; }
+  .fcard .fc-price { font-size:17px; font-weight:800; color:#0B5FB0; margin-top:6px; }
+  .fcard .fc-price .u { font-size:10px; color:#5A6470; font-weight:600; }
+
+  /* ②ヘッダー戻る付き */
+  .p-subhead { display:flex; align-items:center; gap:8px; padding:10px 0 4px; font-size:17px; font-weight:800; }
+  .p-subhead .bk { font-weight:400; }
+  .grid-note { font-size:12px; color:#5A6470; margin:2px 0 12px; line-height:1.5; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>FISHLINK 生産者ページ — 動画ポートフォリオ（案A）モック</h1>
+  <p><b>置き場所＝生産者ページ（買い手が見る公開ページ）</b>。既存の「養殖環境（写真）」の下に <b>🎬 動画</b> セクションを新設。過去リールが<b>縦サムネの横カルーセル</b>で溜まる＝この農家の"実績アーカイブ"。Homeリール＝今日の売り込み（最新1本）／生産者ページ動画＝この農家の全動画、と役割分担。</p>
+  <p><b>青「販売中」バッジ</b>＝紐づく出品がまだ買える動画（タップ→全画面再生→商品へ）。バッジ無し＝過去の動画（アーカイブ・タップ→全画面再生のみ）。<b>動画0本の農家＝セクションごと非表示</b>（養殖環境と同じ空状態ルール）。「すべて見る」→②の全動画グリッド。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① 生産者ページ本体（動画セクション入り） -->
+  <div class="phone-wrap">
+    <div class="phone-label">① 生産者ページ <span class="tag">養殖環境の下に「🎬 動画」カルーセルを新設</span></div>
+    <div class="phone">
+      <div class="p-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="p-title">生産者ページ</div>
+      <div class="p-body">
+        <div class="prof">
+          <div class="ava">🧑‍🌾</div>
+          <div class="pname">Ryosuke4</div>
+          <div class="prow">
+            <span class="rate">★ 63%（38件）</span>
+            <span class="loc">📍 タケオ州, Samraong</span>
+          </div>
+          <div class="pmeta">取引 49件 ・ 2025年12月〜</div>
+        </div>
+
+        <div class="hitokoto">
+          <div class="hk-l">生産者の一言</div>
+          <div class="hk-t">こだわってつくってます！</div>
+        </div>
+
+        <div class="sec-h">養殖環境</div>
+        <div class="env-carousel" id="env-carousel" onscroll="updateEnvDots()">
+          <div class="env-slide" style="background:linear-gradient(135deg,#cfe0ee,#aac6dd)"></div>
+          <div class="env-slide" style="background:linear-gradient(135deg,#d6e8d2,#a9c8a0)"></div>
+          <div class="env-slide" style="background:linear-gradient(135deg,#e6ddc6,#c7b78c)"></div>
+        </div>
+        <div class="env-dots" id="env-dots"><span class="env-dot active"></span><span class="env-dot"></span><span class="env-dot"></span></div>
+
+        <!-- ▼ 新規：動画（過去リール）ポートフォリオ ▼ -->
+        <div class="sec-h">🎬 動画 <span class="cnt">（8本）</span><span class="more">すべて見る</span></div>
+        <div class="reel-carousel">
+          <div class="reel-thumb">
+            <div class="rt-media" style="background:linear-gradient(160deg,#2b5876,#4e4376)">
+              <div class="rt-fish">🐟</div>
+              <span class="rt-live">販売中</span>
+              <div class="rt-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div>
+              <span class="rt-dur">0:12</span>
+            </div>
+            <div class="rt-cap">ヒレナマズ</div>
+            <div class="rt-when">3時間前</div>
+          </div>
+          <div class="reel-thumb">
+            <div class="rt-media" style="background:linear-gradient(160deg,#134e5e,#71b280)">
+              <div class="rt-fish">🐠</div>
+              <span class="rt-live">販売中</span>
+              <div class="rt-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div>
+              <span class="rt-dur">0:08</span>
+            </div>
+            <div class="rt-cap">パンガシウス</div>
+            <div class="rt-when">2日前</div>
+          </div>
+          <div class="reel-thumb">
+            <div class="rt-media" style="background:linear-gradient(160deg,#3a6073,#16222a)">
+              <div class="rt-fish">🐡</div>
+              <div class="rt-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div>
+              <span class="rt-dur">0:15</span>
+            </div>
+            <div class="rt-cap">レッドティラピア</div>
+            <div class="rt-when">6日前</div>
+          </div>
+          <div class="reel-thumb">
+            <div class="rt-media" style="background:linear-gradient(160deg,#4b6cb7,#182848)">
+              <div class="rt-fish">🐟</div>
+              <div class="rt-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div>
+              <span class="rt-dur">0:10</span>
+            </div>
+            <div class="rt-cap">ライギョ</div>
+            <div class="rt-when">先週</div>
+          </div>
+        </div>
+
+        <div class="sec-h">レビュー <span class="cnt">（38件）</span></div>
+        <div class="rev-block">
+          <div class="rev-top">
+            <span class="rt-ttl">評価</span>
+            <span class="rt-link">レビューを見る</span>
+          </div>
+          <div class="metrics">
+            <div class="metric"><div class="m-l">取引の満足度<br>良かった率</div><div class="m-v">63%</div></div>
+            <div class="metric"><div class="m-l">魚の品質<br>良かった率</div><div class="m-v">96%</div></div>
+            <div class="metric"><div class="m-l">配送時間<br>良かった率</div><div class="m-v">100%</div></div>
+          </div>
+        </div>
+
+        <div class="sec-h">出品中の魚</div>
+        <div class="fish-grid">
+          <div class="fcard">
+            <div class="fc-img"><span class="fc-vbadge">🎬 動画</span></div>
+            <div class="fc-body"><div class="fc-name">ヒレナマズ</div><div class="fc-size">10 head/kg</div><div class="fc-price">5,700<span class="u"> KHR/kg</span></div><div class="fc-stock">在庫 100kg</div></div>
+          </div>
+          <div class="fcard">
+            <div class="fc-img"><span class="fc-vbadge">🎬 動画</span></div>
+            <div class="fc-body"><div class="fc-name">パンガシウス</div><div class="fc-size">1-2 head/kg</div><div class="fc-price">6,300<span class="u"> KHR/kg</span></div><div class="fc-stock">在庫 50kg</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② すべての動画グリッド -->
+  <div class="phone-wrap">
+    <div class="phone-label">② すべての動画 <span class="tag">「すべて見る」→ 縦3列グリッド（新しい順）</span></div>
+    <div class="phone">
+      <div class="p-header"><span>←</span><span class="logo">🐟 FISHLINK</span><span class="sp">🌐 日本語</span></div>
+      <div class="p-body">
+        <div class="p-subhead"><span class="bk">←</span> Ryosuke4 の動画</div>
+        <div class="grid-note">この農家が投稿した動画（新しい順）。<b>青「販売中」</b>＝いま買える魚。タップで全画面再生。</div>
+        <div class="reel-grid">
+          <div class="reel-g">
+            <div class="rg-media" style="background:linear-gradient(160deg,#2b5876,#4e4376)"><div class="rg-fish">🐟</div><span class="rg-live">販売中</span><div class="rg-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rg-dur">0:12</span></div>
+            <div class="rg-cap">ヒレナマズ</div><div class="rg-when">3時間前</div>
+          </div>
+          <div class="reel-g">
+            <div class="rg-media" style="background:linear-gradient(160deg,#134e5e,#71b280)"><div class="rg-fish">🐠</div><span class="rg-live">販売中</span><div class="rg-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rg-dur">0:08</span></div>
+            <div class="rg-cap">パンガシウス</div><div class="rg-when">2日前</div>
+          </div>
+          <div class="reel-g">
+            <div class="rg-media" style="background:linear-gradient(160deg,#3a6073,#16222a)"><div class="rg-fish">🐡</div><div class="rg-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rg-dur">0:15</span></div>
+            <div class="rg-cap">レッドティラピア</div><div class="rg-when">6日前</div>
+          </div>
+          <div class="reel-g">
+            <div class="rg-media" style="background:linear-gradient(160deg,#4b6cb7,#182848)"><div class="rg-fish">🐟</div><div class="rg-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rg-dur">0:10</span></div>
+            <div class="rg-cap">ライギョ</div><div class="rg-when">先週</div>
+          </div>
+          <div class="reel-g">
+            <div class="rg-media" style="background:linear-gradient(160deg,#355c7d,#6c5b7b)"><div class="rg-fish">🐟</div><div class="rg-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rg-dur">0:09</span></div>
+            <div class="rg-cap">シルバーバーブ</div><div class="rg-when">先週</div>
+          </div>
+          <div class="reel-g">
+            <div class="rg-media" style="background:linear-gradient(160deg,#0f2027,#2c5364)"><div class="rg-fish">🐠</div><div class="rg-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rg-dur">0:14</span></div>
+            <div class="rg-cap">ナイルティラピア</div><div class="rg-when">2週間前</div>
+          </div>
+          <div class="reel-g">
+            <div class="rg-media" style="background:linear-gradient(160deg,#41295a,#2f0743)"><div class="rg-fish">🐡</div><div class="rg-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rg-dur">0:11</span></div>
+            <div class="rg-cap">キノボリウオ</div><div class="rg-when">3週間前</div>
+          </div>
+          <div class="reel-g">
+            <div class="rg-media" style="background:linear-gradient(160deg,#1c92d2,#0a3d62)"><div class="rg-fish">🐸</div><div class="rg-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rg-dur">0:07</span></div>
+            <div class="rg-cap">カエル</div><div class="rg-when">先月</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function updateEnvDots(){
+    const c = document.getElementById('env-carousel');
+    const dots = document.querySelectorAll('#env-dots .env-dot');
+    if (!c || !dots.length) return;
+    const i = Math.round(c.scrollLeft / c.clientWidth);
+    dots.forEach((d, n) => d.classList.toggle('active', n === i));
+  }
+</script>
+
+</body>
+</html>

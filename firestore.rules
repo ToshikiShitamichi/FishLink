@@ -218,5 +218,21 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // 🎬 7/9 #199: リール動画メタ（reel_videos／ポートフォリオ＝1出品に最大N本）。
+    //   read:   認証ユーザー（買い手が Home/商品詳細/生産者ページで視聴）。動画実体は Storage 公開read。
+    //   create: 本人（農家）が自分の動画だけ作れる（farmerId==uid）。
+    //   update: クライアントは不可（setDoc は1回のみ・更新しない）。
+    //   delete: 本人（農家）が自分の動画だけ削除可（④の個別🗑）。
+    //   ※保持N上限（最古の物理削除）と出品完全削除の道連れは functions（admin SDK＝ルールをバイパス）が担う。
+    //   ※per-listing / per-farmer 照会は equality のみ＋クライアントソート＝複合インデックス不要。Home は orderBy postedAt（単一フィールド）。
+    match /reel_videos/{videoId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.farmerId == request.auth.uid;
+      allow update: if false;
+      allow delete: if request.auth != null
+        && resource.data.farmerId == request.auth.uid;
+    }
+
   }
 }

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
+    <title>FISHLINK</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        /* 🎬 7/9 #200 ④: 「この魚の動画」（出品ごとの動画リスト＝ポートフォリオ・個別削除つき）。
+           reels-spec v2.1 §6/§7・mock fishlink-reel-post-mockup.html ④ に準拠。
+           新しい順・各行=サムネ＋相対日付＋🗑個別削除・下部〔↻ 新しい動画を投稿〕・最大N本。
+           featured/「最新」バッジや場所ラベルは付けない（代表＝常に最新＝システム自動決定）。 */
+        .rv-body { max-width: 480px; margin: 0 auto; padding: 0 16px 96px; }
+
+        /* 出品コンテキスト（魚名・在庫・単価） */
+        .rv-head { padding: 14px 2px 4px; }
+        .rv-head__name { font-size: 15px; font-weight: 800; color: var(--color-text); }
+        .rv-head__sub { font-size: 12px; color: var(--color-text-sub); margin-top: 3px; }
+
+        /* セクション見出し・説明 */
+        .rv-sec { font-size: 14px; font-weight: 800; color: var(--color-text); margin: 16px 0 4px; }
+        .rv-hint { font-size: 12px; color: var(--color-text-sub); line-height: 1.6; margin-bottom: 12px; }
+
+        /* 動画リスト行 */
+        .rv-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 13px; margin-bottom: 10px; background: var(--color-surface); }
+        .rv-thumb { width: 44px; height: 66px; border-radius: 9px; flex: 0 0 44px; position: relative; overflow: hidden; background: linear-gradient(160deg, #2b5876, #16222a); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .rv-thumb__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+        .rv-thumb__play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 20px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.5)); pointer-events: none; }
+        .rv-info { flex: 1; min-width: 0; }
+        .rv-info__t { font-size: 13.5px; font-weight: 800; color: var(--color-text); }
+        .rv-del { flex: 0 0 auto; background: none; border: none; color: #D14343; padding: 8px; cursor: pointer; display: inline-flex; align-items: center; font-family: inherit; }
+        .rv-del .material-symbols-outlined { font-size: 20px; }
+
+        /* 空状態 */
+        .rv-empty { text-align: center; padding: 34px 14px; border: 1.5px dashed var(--color-border); border-radius: 13px; color: var(--color-text-sub); font-size: 13px; background: var(--color-surface); }
+        .rv-empty .material-symbols-outlined { font-size: 34px; display: block; margin: 0 auto 8px; opacity: .5; }
+
+        /* 固定フッター CTA（↻ 新しい動画を投稿） */
+        .rv-footer { position: fixed; left: 0; right: 0; bottom: 0; max-width: 480px; margin: 0 auto; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--color-surface); border-top: 1px solid var(--color-border); z-index: 50; }
+        .rv-cta { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; background: var(--color-cta); color: #fff; border: none; border-radius: 13px; padding: 15px; font-size: 15px; font-weight: 800; cursor: pointer; font-family: inherit; }
+        .rv-cta:disabled { opacity: .6; cursor: default; }
+        .rv-cta .material-symbols-outlined { font-size: 19px; }
+        .rv-uperr { display: none; color: var(--color-danger); font-size: 12.5px; font-weight: 700; text-align: center; padding: 0 4px 8px; }
+        .rv-uperr.show { display: block; }
+
+        /* 削除確認＝中央モーダル（dashboard #157② と同型・ブラウザ confirm 置換） */
+        .del-modal-ov { position: fixed; inset: 0; background: rgba(20, 28, 38, .45); display: none; align-items: center; justify-content: center; z-index: 300; padding: 20px; }
+        .del-modal-ov.show { display: flex; }
+        .del-modal { background: var(--color-surface); border-radius: 20px; padding: 22px 20px 18px; max-width: 400px; width: 100%; box-shadow: 0 12px 40px rgba(0, 0, 0, .2); }
+        .del-modal__title { font-size: 17px; font-weight: 800; color: var(--color-text); margin-bottom: 10px; }
+        .del-modal__body { font-size: 13.5px; color: var(--color-text-sub); line-height: 1.7; margin-bottom: 18px; }
+        .del-modal__actions { display: flex; gap: 10px; }
+        .del-modal__btn { flex: 1; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 800; cursor: pointer; font-family: inherit; }
+        .del-modal__btn--cancel { background: #eceef0; color: var(--color-text-sub); }
+        .del-modal__btn--ok { background: #E5453F; color: #fff; }
+
+        /* アップロード進捗の状態テキスト（loading-overlay 内） */
+        .up-status { margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--color-text); }
+
+        /* 動画プレビュー（サムネタップ・農家の確認用） */
+        .pv-modal { position: fixed; inset: 0; background: #0b1a22; display: none; align-items: center; justify-content: center; z-index: 500; }
+        .pv-modal.show { display: flex; }
+        .pv-video { max-width: 100%; max-height: 100%; width: auto; height: auto; background: #0b1a22; }
+        .pv-close { position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); right: 14px; background: rgba(0, 0, 0, .5); color: #fff; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 22px; line-height: 1; cursor: pointer; z-index: 2; }
+
+        .rv-error { max-width: 480px; margin: 40px auto; padding: 0 24px; text-align: center; color: var(--color-text-sub); }
+        .rv-error .material-symbols-outlined { font-size: 40px; opacity: .5; display: block; margin: 0 auto 10px; }
+        .rv-error a { display: inline-block; margin-top: 16px; color: var(--color-cta); font-weight: 700; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loading">
+        <div style="text-align:center;">
+            <div class="spinner" style="margin:0 auto;"></div>
+            <div class="up-status" id="up-status"></div>
+        </div>
+    </div>
+
+    <div class="page">
+        <div class="page-header" style="align-items:center;">
+            <button type="button" id="btn-back" class="page-header__back" style="background:none; border:none; color:var(--color-text-sub); padding-right:8px; cursor:pointer; display:inline-flex; align-items:center;" aria-label="back"><span class="material-symbols-outlined">arrow_back</span></button>
+            <div class="page-header__title" style="flex:0 0 auto; white-space:nowrap; font-size:16px; font-weight:800;" data-i18n="reel.videoListTitle"></div>
+            <select id="lang-selector"
+                style="margin-left:auto; font-size:13px; padding:6px 10px; border:1px solid var(--color-border); border-radius:20px; background:var(--color-surface); color:var(--color-text-sub);">
+                <option value="km">ខ្មែរ</option>
+                <option value="en">ENGLISH</option>
+                <option value="ja">日本語</option>
+            </select>
+        </div>
+
+        <!-- 通常ビュー -->
+        <div class="rv-body" id="rv-main" hidden>
+            <div class="rv-head">
+                <div class="rv-head__name" id="rv-fish-name"></div>
+                <div class="rv-head__sub" id="rv-fish-sub"></div>
+            </div>
+
+            <div class="rv-sec" id="rv-count"></div>
+            <div class="rv-hint" data-i18n="reel.videoListHint"></div>
+
+            <div id="rv-list"></div>
+
+            <div class="rv-empty" id="rv-empty" hidden>
+                <span class="material-symbols-outlined">movie</span>
+                <span data-i18n="reel.empty"></span>
+            </div>
+        </div>
+
+        <!-- エラービュー（listingId 無し／存在しない／本人でない） -->
+        <div class="rv-error" id="rv-error" hidden>
+            <span class="material-symbols-outlined">error_outline</span>
+            <div data-i18n="reel.empty"></div>
+            <a href="/pages/farmer/dashboard.html" data-i18n="dashboard.listings"></a>
+        </div>
+    </div>
+
+    <!-- 固定フッター CTA -->
+    <div class="rv-footer" id="rv-footer" hidden>
+        <div class="rv-uperr" id="up-error"></div>
+        <button type="button" class="rv-cta" id="btn-post">
+            <span class="material-symbols-outlined">refresh</span>
+            <span data-i18n="reel.postNewVideo"></span>
+        </button>
+    </div>
+    <input type="file" id="video-input" accept="video/*" hidden>
+
+    <!-- 削除確認モーダル -->
+    <div class="del-modal-ov" id="del-modal">
+        <div class="del-modal">
+            <div class="del-modal__title" data-i18n="reel.deleteVideoTitle"></div>
+            <div class="del-modal__body" data-i18n="reel.deleteVideoBody"></div>
+            <div class="del-modal__actions">
+                <button type="button" class="del-modal__btn del-modal__btn--cancel" id="del-modal-cancel" data-i18n="reel.cancel"></button>
+                <button type="button" class="del-modal__btn del-modal__btn--ok" id="del-modal-ok" data-i18n="reel.deleteVideoOk"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 動画プレビュー（タップ再生・農家の確認用） -->
+    <div class="pv-modal" id="pv-modal">
+        <button type="button" class="pv-close" id="pv-close" aria-label="close"><span class="material-symbols-outlined">close</span></button>
+        <div class="spinner" id="pv-spin" style="border-color:rgba(255,255,255,.3); border-top-color:#fff;" hidden></div>
+        <video class="pv-video" id="pv-video" controls playsinline webkit-playsinline preload="metadata" hidden></video>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+        import { asCachedImgAttrs } from '/js/image-cache.js';
+        import { getReelsForListing, uploadReelVideo, deleteReelVideo, relativePostedText } from '/js/reel-utils.js';
+        import { loadVideoObjectUrl } from '/js/video-cache.js';
+        import { showToast } from '/js/toast.js';
+
+        const loading = document.getElementById('loading');
+        const upStatus = document.getElementById('up-status');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+
+        const params = new URLSearchParams(location.search);
+        const listingId = params.get('listingId') || '';
+
+        let listing = null;   // { fishType, size, stock, price, photoUrl, farmerId }
+        let reels = [];        // getReelsForListing の結果（postedAt 降順・最大 N 本）
+
+        // 戻る：来た画面（投稿一覧カード／出品編集）に戻す。履歴が無ければ投稿一覧へ。
+        document.getElementById('btn-back').addEventListener('click', () => {
+            if (window.history.length > 1) window.history.back();
+            else location.href = '/pages/farmer/dashboard.html';
+        });
+
+        function waitForUser(cb) {
+            if (window.currentUser && window.currentUser.uid) cb();
+            else setTimeout(() => waitForUser(cb), 150);
+        }
+
+        function fishNameOf(ft) {
+            return i18next.exists(`fish.${ft}`) ? i18next.t(`fish.${ft}`) : (ft || '');
+        }
+
+        // 出品コンテキスト（魚名（size head/kg）／在庫 ・ 単価）
+        function renderHead() {
+            if (!listing) return;
+            const size = listing.size ? `（${listing.size} head/kg）` : '';
+            document.getElementById('rv-fish-name').textContent = fishNameOf(listing.fishType) + size;
+            const stock = i18next.t('reel.stockKg', { kg: Math.round(Number(listing.stock) || 0) });
+            const price = `${Number(listing.price || 0).toLocaleString()} KHR/kg`;
+            document.getElementById('rv-fish-sub').textContent = `${stock} ・ ${price}`;
+        }
+
+        // 動画リスト（新しい順・各行=サムネ＋相対日付＋🗑）＋件数見出し＋空状態
+        function renderList() {
+            const listEl = document.getElementById('rv-list');
+            const emptyEl = document.getElementById('rv-empty');
+            document.getElementById('rv-count').textContent = i18next.t('reel.videoCount', { n: reels.length });
+
+            if (!reels.length) {
+                listEl.innerHTML = '';
+                emptyEl.hidden = false;
+                return;
+            }
+            emptyEl.hidden = true;
+            listEl.innerHTML = reels.map((r) => {
+                const rel = relativePostedText(r.postedAt, i18next.t);
+                const thumb = r.thumbUrl
+                    ? `<img class="rv-thumb__img" ${asCachedImgAttrs(r.thumbUrl)} alt="">`
+                    : '';
+                return `
+                    <div class="rv-row" data-reel-id="${r.id}">
+                        <div class="rv-thumb" data-play="${r.id}" role="button" tabindex="0" aria-label="play">
+                            ${thumb}
+                            <span class="rv-thumb__play material-symbols-outlined" aria-hidden="true">play_arrow</span>
+                        </div>
+                        <div class="rv-info"><div class="rv-info__t">${rel}</div></div>
+                        <button type="button" class="rv-del" data-del="${r.id}" aria-label="delete">
+                            <span class="material-symbols-outlined">delete</span>
+                        </button>
+                    </div>`;
+            }).join('');
+        }
+
+        function render() {
+            renderHead();
+            renderList();
+        }
+
+        onLanguageChange(() => render());
+
+        // ── 削除確認モーダル（true=削除する / false=キャンセル を resolve） ──
+        const delModalEl = document.getElementById('del-modal');
+        let delResolve = null;
+        function closeDelModal(result) {
+            delModalEl.classList.remove('show');
+            if (delResolve) { delResolve(result); delResolve = null; }
+        }
+        document.getElementById('del-modal-ok').addEventListener('click', () => closeDelModal(true));
+        document.getElementById('del-modal-cancel').addEventListener('click', () => closeDelModal(false));
+        delModalEl.addEventListener('click', (e) => { if (e.target === delModalEl) closeDelModal(false); });
+        function showDeleteModal() {
+            delModalEl.classList.add('show');
+            return new Promise((resolve) => { delResolve = resolve; });
+        }
+
+        // ── 動画プレビュー（サムネタップ・農家の確認用） ──
+        //   reel-ui（買い手 全画面）と同様に video-cache（全取得 Blob）で再生＝SW の 206/Range 問題を回避。
+        const pvModal = document.getElementById('pv-modal');
+        const pvVideo = document.getElementById('pv-video');
+        const pvSpin = document.getElementById('pv-spin');
+        async function openPreview(url) {
+            if (!url) return;
+            pvModal.classList.add('show');
+            pvSpin.hidden = false; pvVideo.hidden = true;
+            try {
+                const blobUrl = await loadVideoObjectUrl(url);
+                pvVideo.src = blobUrl;
+            } catch (e) {
+                pvVideo.src = url;   // フォールバック＝直接URL（best-effort）
+            } finally {
+                pvSpin.hidden = true; pvVideo.hidden = false;
+                pvVideo.play().catch(() => { /* controls で手動再生 */ });
+            }
+        }
+        function closePreview() {
+            try { pvVideo.pause(); } catch (e) { /* ignore */ }
+            // Blob URL のライフサイクルは video-cache が管理＝ここでは revoke しない（src 解放のみ）
+            pvVideo.removeAttribute('src');
+            pvVideo.load();
+            pvModal.classList.remove('show');
+        }
+        document.getElementById('pv-close').addEventListener('click', closePreview);
+        pvModal.addEventListener('click', (e) => { if (e.target === pvModal) closePreview(); });
+
+        // ── リスト操作（削除・プレビュー）＝イベント委譲 ──
+        document.getElementById('rv-list').addEventListener('click', async (e) => {
+            const delBtn = e.target.closest('[data-del]');
+            if (delBtn) {
+                const id = delBtn.dataset.del;
+                const reel = reels.find((r) => r.id === id);
+                if (!reel) return;
+                if (!(await showDeleteModal())) return;
+                loading.classList.add('show'); upStatus.textContent = '';
+                try {
+                    await deleteReelVideo(reel);
+                    reels = reels.filter((r) => r.id !== id);
+                    render();
+                    showToast(i18next.t('reel.videoDeleted'));
+                } catch (err) {
+                    console.error('deleteReelVideo failed:', err);
+                    showUploadError(i18next.t('reel.uploadFailed'));
+                } finally {
+                    loading.classList.remove('show');
+                }
+                return;
+            }
+            const playEl = e.target.closest('[data-play]');
+            if (playEl) {
+                const reel = reels.find((r) => r.id === playEl.dataset.play);
+                if (reel) openPreview(reel.videoUrl);
+            }
+        });
+
+        // ── 新しい動画を投稿（↻） ──
+        const upError = document.getElementById('up-error');
+        function showUploadError(msg) {
+            upError.textContent = msg;
+            upError.classList.add('show');
+        }
+        function clearUploadError() {
+            upError.textContent = '';
+            upError.classList.remove('show');
+        }
+        function reasonToMessage(reason) {
+            switch (reason) {
+                case 'type': return i18next.t('reel.errType');
+                case 'size': return i18next.t('reel.errSize');
+                case 'duration': return i18next.t('reel.errDuration');
+                case 'toolarge': return i18next.t('reel.errTooLarge');
+                default: return i18next.t('reel.uploadFailed');
+            }
+        }
+
+        const videoInput = document.getElementById('video-input');
+        const btnPost = document.getElementById('btn-post');
+        btnPost.addEventListener('click', () => { clearUploadError(); videoInput.value = ''; videoInput.click(); });
+
+        videoInput.addEventListener('change', async () => {
+            const file = videoInput.files && videoInput.files[0];
+            if (!file || !listing) return;
+            clearUploadError();
+            btnPost.disabled = true;
+            loading.classList.add('show');
+            upStatus.textContent = i18next.t('reel.compressing');
+            try {
+                await uploadReelVideo({
+                    file,
+                    listingId,
+                    farmerId: window.currentUser.uid,
+                    fishType: listing.fishType || '',
+                    thumbUrl: (listing.photos && listing.photos[0]) || listing.photoUrl || '',
+                    onCompressProgress: () => { upStatus.textContent = i18next.t('reel.compressing'); },
+                    onProgress: () => { upStatus.textContent = i18next.t('reel.uploading'); },
+                });
+                // 保持N上限の物理削除は functions が担う＝クライアントは最新順で再取得（最大 N 本）
+                reels = await getReelsForListing(listingId);
+                render();
+                showToast(i18next.t('reel.videoPosted'));
+            } catch (err) {
+                console.error('uploadReelVideo failed:', err);
+                showUploadError(reasonToMessage(err && err.reason));
+            } finally {
+                upStatus.textContent = '';
+                btnPost.disabled = false;
+                loading.classList.remove('show');
+                videoInput.value = '';
+            }
+        });
+
+        function showError() {
+            document.getElementById('rv-main').hidden = true;
+            document.getElementById('rv-footer').hidden = true;
+            document.getElementById('rv-error').hidden = false;
+        }
+
+        // ── 初期化 ──
+        waitForUser(async () => {
+            try {
+                if (!listingId) { showError(); return; }
+                const snap = await getDoc(doc(db, 'fishListings', listingId));
+                if (!snap.exists()) { showError(); return; }
+                const d = snap.data();
+                // 本人（出品オーナー）確認＝他人の出品の動画は触らせない
+                if (d.farmerId !== window.currentUser.uid) { showError(); return; }
+                listing = d;
+                reels = await getReelsForListing(listingId);
+                document.getElementById('rv-main').hidden = false;
+                document.getElementById('rv-footer').hidden = false;
+                render();
+            } catch (err) {
+                console.error('load reel-videos failed:', err);
+                showError();
+            } finally {
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+            }
+        });
+    </script>
+</body>
+</html>

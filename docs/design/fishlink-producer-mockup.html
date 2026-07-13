@@ -58,6 +58,21 @@
   .env-dot { width:6px; height:6px; border-radius:50%; background:#C5CDD6; transition:all .2s; }
   .env-dot.active { background:#0B5FB0; width:18px; border-radius:3px; }
 
+  /* 動画（過去リール）ポートフォリオ＝農家の全動画・新しい順の横カルーセル */
+  .sec-h .more { float:right; font-size:13px; font-weight:700; color:#0B5FB0; cursor:pointer; }
+  .sec-h .cnt { color:#5A6470; font-weight:700; font-size:13px; }
+  .reel-carousel { display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; }
+  .reel-carousel::-webkit-scrollbar { display:none; }
+  .reel-thumb { flex:0 0 auto; width:118px; cursor:pointer; }
+  .reel-thumb .rt-media { width:118px; height:196px; border-radius:12px; position:relative; overflow:hidden; }
+  .reel-thumb .rt-media .rt-fish { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:46px; opacity:0.9; }
+  .reel-thumb .rt-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:34px; height:34px; border-radius:50%; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; }
+  .reel-thumb .rt-play svg { width:16px; height:16px; margin-left:2px; }
+  .reel-thumb .rt-dur { position:absolute; bottom:6px; right:6px; background:rgba(0,0,0,0.6); color:#FFF; font-size:10px; font-weight:700; padding:1px 5px; border-radius:6px; }
+  .reel-thumb .rt-live { position:absolute; top:6px; left:6px; background:#0B5FB0; color:#FFF; font-size:10px; font-weight:800; padding:2px 7px; border-radius:8px; }
+  .reel-thumb .rt-cap { font-size:12px; font-weight:700; margin-top:6px; line-height:1.3; }
+  .reel-thumb .rt-when { font-size:11px; color:#9AA3B0; margin-top:1px; }
+
   /* レビュー（メトリクス） */
   .rev-block { background:#FFF; border:1px solid #EEF1F4; border-radius:14px; padding:14px; margin-top:6px; }
   .rev-top { display:flex; align-items:center; justify-content:space-between; }
@@ -135,6 +150,27 @@
           <div class="env-slide" style="background:linear-gradient(135deg,#e6ddc6,#c7b78c)"></div>
         </div>
         <div class="env-dots" id="env-dots"><span class="env-dot active"></span><span class="env-dot"></span><span class="env-dot"></span></div>
+
+        <!-- 動画（過去リール）ポートフォリオ＝農家の全動画・新しい順。0本なら非表示 -->
+        <div class="sec-h">🎬 動画 <span class="cnt">（8本）</span><span class="more">すべて見る</span></div>
+        <div class="reel-carousel">
+          <div class="reel-thumb">
+            <div class="rt-media" style="background:linear-gradient(160deg,#2b5876,#4e4376)"><div class="rt-fish">🐟</div><span class="rt-live">販売中</span><div class="rt-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rt-dur">0:12</span></div>
+            <div class="rt-cap">ヒレナマズ</div><div class="rt-when">3時間前</div>
+          </div>
+          <div class="reel-thumb">
+            <div class="rt-media" style="background:linear-gradient(160deg,#134e5e,#71b280)"><div class="rt-fish">🐠</div><span class="rt-live">販売中</span><div class="rt-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rt-dur">0:08</span></div>
+            <div class="rt-cap">パンガシウス</div><div class="rt-when">2日前</div>
+          </div>
+          <div class="reel-thumb">
+            <div class="rt-media" style="background:linear-gradient(160deg,#3a6073,#16222a)"><div class="rt-fish">🐡</div><div class="rt-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rt-dur">0:15</span></div>
+            <div class="rt-cap">レッドティラピア</div><div class="rt-when">6日前</div>
+          </div>
+          <div class="reel-thumb">
+            <div class="rt-media" style="background:linear-gradient(160deg,#4b6cb7,#182848)"><div class="rt-fish">🐟</div><div class="rt-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="rt-dur">0:10</span></div>
+            <div class="rt-cap">ライギョ</div><div class="rt-when">先週</div>
+          </div>
+        </div>
 
         <div class="sec-h">レビュー（38件）</div>
         <div class="rev-block">

@@ -188,7 +188,27 @@
       "Bash(python -c *)",
       "Bash(git diff *)",
       "Bash(awk 'NR>=1000 && NR<=1076 && /\"[a-zA-Z]+\": ?\\\\{/' locales/ja.json)",
-      "Bash(node --check sw.js)"
+      "Bash(node --check sw.js)",
+      "WebSearch",
+      "WebFetch(domain:developers.cloudflare.com)",
+      "WebFetch(domain:www.mux.com)",
+      "WebFetch(domain:firebase.google.com)",
+      "Skill(artifact-design)",
+      "Skill(artifact-design:*)",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\(JSON.stringify\\(j.reel,null,1\\)\\);\")",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\(JSON.stringify\\(j.reel||'NO reel namespace', null, 2\\)\\)\")",
+      "Bash(node -e \"const d=require\\('./locales/ja.json'\\); console.log\\('ja sectionTitle:', d.reel.sectionTitle\\); console.log\\('ja more:', d.reel.more\\); console.log\\('km sectionTitle:', require\\('./locales/km.json'\\).reel.sectionTitle\\);\")",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\('dashboard.navHome =', j.dashboard && j.dashboard.navHome\\); console.log\\('reel.empty =', j.reel && j.reel.empty\\);\")",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); for\\(const ns of Object.keys\\(j\\)\\){ if\\(j[ns] && typeof j[ns]==='object' && j[ns].navHome\\){ console.log\\(ns+'.navHome =', j[ns].navHome\\); } } console.log\\('---'\\); console.log\\('reel.postNewVideo=', j.reel.postNewVideo\\); console.log\\('reel.checkUpdate=', j.reel.checkUpdate\\); console.log\\('restaurant.navHome=', j.restaurant&&j.restaurant.navHome\\);\")",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); const d=j.dashboard||{}; console.log\\(Object.entries\\(d\\).filter\\(\\([k,v]\\)=>/nav|title|home|list|back|投稿|一覧|戻/.test\\(k\\)||/一覧|戻る|ホーム|投稿一覧/.test\\(String\\(v\\)\\)\\).map\\(\\([k,v]\\)=>k+' = '+v\\).join\\('\\\\n'\\)\\);\")",
+      "Bash(node --check \"C:/Users/T_SHIT~1/AppData/Local/Temp/fl_order_check.mjs\")",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(node --check /tmp/reel-check.mjs)",
+      "Bash(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\")",
+      "Bash(node --check \"$\\(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\"\\)/flcheck.mjs\")",
+      "Bash(node --check \"C:/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/3878b840-670d-45a6-8570-ffdf9cd6369c/scratchpad/reel-check.mjs\")",
+      "Bash(node --check /tmp/dash_script.mjs)",
+      "Bash(node \"C:/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/3878b840-670d-45a6-8570-ffdf9cd6369c/scratchpad/verify-reels.js\")"
     ]
   }
 }

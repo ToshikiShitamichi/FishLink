@@ -163,6 +163,19 @@
     font-size: 16px; font-weight: 800;
   }
   .sec-head::before { content: ""; width: 4px; height: 16px; background: #0B5FB0; border-radius: 2px; }
+  .sec-head .cnt { color:#5A6470; font-weight:700; font-size:13px; }
+
+  /* この魚の動画＝この出品スコープの動画・新しい順の横カルーセル（0本なら非表示） */
+  .pd-reels { display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; }
+  .pd-reels::-webkit-scrollbar { display:none; }
+  .pd-reel { flex:0 0 auto; width:112px; cursor:pointer; }
+  .pd-reel .pr-media { width:112px; height:186px; border-radius:12px; position:relative; overflow:hidden; }
+  .pd-reel .pr-fish { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:44px; opacity:0.9; }
+  .pd-reel .pr-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:32px; height:32px; border-radius:50%; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; }
+  .pd-reel .pr-play svg { width:15px; height:15px; margin-left:2px; }
+  .pd-reel .pr-dur { position:absolute; bottom:6px; right:6px; background:rgba(0,0,0,0.6); color:#FFF; font-size:10px; font-weight:700; padding:1px 5px; border-radius:6px; }
+  .pd-reel .pr-latest { position:absolute; top:6px; left:6px; background:#0B5FB0; color:#FFF; font-size:10px; font-weight:800; padding:2px 7px; border-radius:8px; }
+  .pd-reel .pr-when { font-size:11px; color:#9AA3B0; margin-top:5px; }
 
   /* ⑦Q&A teaser（#8） */
   .qa-thread {
@@ -308,6 +321,23 @@
               <div>
                 <div class="tmain">在庫 80kg</div>
               </div>
+            </div>
+          </div>
+
+          <!-- この魚の動画（この出品スコープ・新しい順・最大N本＝出品ごと上限）。先頭=最新（カード/Homeに出る1本）。0本なら非表示 -->
+          <div class="sec-head">🎬 この魚の動画 <span class="cnt">（3本）</span></div>
+          <div class="pd-reels">
+            <div class="pd-reel">
+              <div class="pr-media" style="background:linear-gradient(160deg,#2b5876,#4e4376)"><div class="pr-fish">🐟</div><div class="pr-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="pr-dur">0:12</span></div>
+              <div class="pr-when">2時間前</div>
+            </div>
+            <div class="pd-reel">
+              <div class="pr-media" style="background:linear-gradient(160deg,#3a6073,#16222a)"><div class="pr-fish">🐟</div><div class="pr-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="pr-dur">0:09</span></div>
+              <div class="pr-when">2日前</div>
+            </div>
+            <div class="pd-reel">
+              <div class="pr-media" style="background:linear-gradient(160deg,#4b6cb7,#182848)"><div class="pr-fish">🐟</div><div class="pr-play"><svg viewBox="0 0 24 24" fill="#FFF"><path d="M8 5v14l11-7z"/></svg></div><span class="pr-dur">0:11</span></div>
+              <div class="pr-when">5日前</div>
             </div>
           </div>
 

@@ -363,6 +363,54 @@
             background: #E5453F; color: #fff; font-size: 11px; font-weight: 700;
             line-height: 1; border-radius: 9px;
         }
+
+        /* 🎬 7/9 #200: 「動画」チップ（カード本体・価格/内臓の下）。
+           動画あり＝青（確認・更新）／動画なし＝amber（追加）＝posting-list-mockup の .manage-video/.add-video。
+           タップで /pages/farmer/reel-videos.html?listingId=<id>（④ 動画リスト）へ。 */
+        .pl-video-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            margin-top: 8px;
+            font-size: 11.5px; font-weight: 700;
+            padding: 5px 9px; border-radius: 8px;
+            text-decoration: none;
+        }
+        .pl-video-chip.has { color: var(--color-cta); background: var(--color-cta-lt); border: 1px solid #cfe0ee; }
+        .pl-video-chip.none { color: #c2410c; background: #fff7e6; border: 1px solid #f0d9b5; }
+        .pl-video-chip .material-symbols-outlined { font-size: 15px; }
+
+        /* 🎬 7/9 #200: 「出品する（＋）」の2択ボトムシート（reel-post-mockup ①）。
+           確認系でなく「選択」なのでボトムシートでOK（6/19 訂正ルール）。 */
+        .pc-sheet-ov {
+            position: fixed; inset: 0; background: rgba(20,28,38,.35);
+            z-index: 1200; display: none;
+        }
+        .pc-sheet-ov.show { display: block; }
+        .pc-sheet {
+            position: absolute; left: 0; right: 0; bottom: 0;
+            background: var(--color-surface); border-radius: 20px 20px 0 0;
+            padding: 10px 16px calc(22px + env(safe-area-inset-bottom, 0px));
+            box-shadow: 0 -8px 32px rgba(0,0,0,.16);
+        }
+        .pc-grip { width: 40px; height: 4px; border-radius: 4px; background: #d5dce3; margin: 4px auto 14px; }
+        .pc-title { font-size: 14px; font-weight: 800; margin-bottom: 12px; color: var(--color-text); }
+        .pc-opt {
+            display: flex; align-items: center; gap: 13px;
+            padding: 14px; border: 1px solid var(--color-border); border-radius: 14px;
+            margin-bottom: 11px; text-decoration: none; color: inherit;
+        }
+        .pc-opt:last-child { margin-bottom: 0; }
+        .pc-opt:active { background: var(--color-bg); }
+        .pc-opt__ic {
+            width: 46px; height: 46px; border-radius: 12px; flex: 0 0 46px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pc-opt__ic .material-symbols-outlined { font-size: 24px; }
+        .pc-opt__ic--fish { background: #eaf2fb; color: var(--color-cta); }
+        .pc-opt__ic--reel { background: #fdecef; color: #d14343; }
+        .pc-opt__tx { flex: 1; min-width: 0; }
+        .pc-opt__t1 { display: block; font-size: 15px; font-weight: 800; color: var(--color-text); }
+        .pc-opt__t2 { display: block; font-size: 11.5px; color: var(--color-text-sub); margin-top: 3px; line-height: 1.4; }
+        .pc-opt__chev { color: #9aa3b0; font-size: 20px; flex-shrink: 0; }
     </style>
 </head>
 
@@ -442,11 +490,37 @@
         <div class="del-modal">
             <div class="del-modal__title" data-i18n="dashboard.deleteModalTitle"></div>
             <div class="del-modal__body" data-i18n="dashboard.deleteModalBody"></div>
+            <!-- 🎬 7/9 #200: 動画も道連れ削除される旨（reels-spec §6・posting-list-mockup 反映）。 -->
+            <div class="del-modal__body" data-i18n="reel.deleteCascadeLine"></div>
             <div class="del-modal__note" data-i18n="dashboard.deleteModalNote"></div>
             <div class="del-modal__actions">
                 <button type="button" class="del-modal__btn del-modal__btn--cancel" id="del-modal-cancel" data-i18n="dashboard.cancel"></button>
                 <button type="button" class="del-modal__btn del-modal__btn--ok" id="del-modal-ok" data-i18n="dashboard.deleteConfirm"></button>
             </div>
+        </div>
+    </div>
+
+    <!-- 🎬 7/9 #200: 「出品する（＋）」→ 2択（魚を出品する／リールを投稿する）＝reel-post-mockup ①。 -->
+    <div class="pc-sheet-ov" id="post-choice-sheet">
+        <div class="pc-sheet">
+            <div class="pc-grip"></div>
+            <div class="pc-title" data-i18n="reel.chooseWhat"></div>
+            <a class="pc-opt" href="/pages/farmer/post.html">
+                <span class="pc-opt__ic pc-opt__ic--fish"><span class="material-symbols-outlined">set_meal</span></span>
+                <span class="pc-opt__tx">
+                    <span class="pc-opt__t1" data-i18n="reel.postFishOpt1"></span>
+                    <span class="pc-opt__t2" data-i18n="reel.postFishOpt2"></span>
+                </span>
+                <span class="pc-opt__chev material-symbols-outlined">chevron_right</span>
+            </a>
+            <a class="pc-opt" href="/pages/farmer/reel-post.html">
+                <span class="pc-opt__ic pc-opt__ic--reel"><span class="material-symbols-outlined">movie</span></span>
+                <span class="pc-opt__tx">
+                    <span class="pc-opt__t1" data-i18n="reel.postReelOpt1"></span>
+                    <span class="pc-opt__t2" data-i18n="reel.postReelOpt2"></span>
+                </span>
+                <span class="pc-opt__chev material-symbols-outlined">chevron_right</span>
+            </a>
         </div>
     </div>
 
@@ -465,6 +539,8 @@
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase J: 画面描画状態の永続キャッシュ
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // 🎬 7/9 #200: リール動画（カードの「動画」チップ＝出品ごとの動画有無を1回のバッチ照会で判定）
+        import { getFarmerPortfolio } from '/js/reel-utils.js';
 
         const loading = document.getElementById('loading');
 
@@ -490,6 +566,10 @@
         const renderedListings = []; // {id, data}
         // 6/19 #157③: listingId → 未回答（要返信）件数。renderAll() 跨ぎでバッジを保持。
         const qaCountByListing = {};
+        // 🎬 7/9 #200: 動画を持つ listingId 集合（renderAll() 跨ぎで保持・カードチップの文言/色を決める）。
+        //   コスト配慮＝カード各行で個別照会せず getFarmerPortfolio(uid) の1回バッチで全出品ぶんまとめて取得。
+        const reelListingIds = new Set();
+        let reelsLoaded = false;
 
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({
@@ -534,6 +614,14 @@
                     ? `<div class="pl-gut">${i18next.t('dashboard.gutPrice')} +${Number(d.gutPrice).toLocaleString()} KHR/kg</div>`
                     : '');
 
+            // 🎬 7/9 #200: 「動画」チップ（動画あり＝青「確認・更新」／なし＝amber「追加」）。
+            //   有無は reelListingIds（updateReelButtons のバッチ照会で確定）。未確定時は「追加」既定＝確定後に in-place 更新。
+            const hasReel = reelListingIds.has(id);
+            const reelChip = `<a class="pl-video-chip ${hasReel ? 'has' : 'none'}" href="/pages/farmer/reel-videos.html?listingId=${id}" data-reel-chip="${id}">
+                    <span class="material-symbols-outlined">movie</span>
+                    <span data-reel-label>${hasReel ? i18next.t('reel.checkUpdate') : i18next.t('reel.addVideo')}</span>
+                </a>`;
+
             // アクションバー（状態別）。売切れは「✏編集」を「📦在庫を補充」に置換（在庫にフォーカス）
             const editOrRefill = status === 'soldout'
                 ? `<a class="pl-act primary" href="/pages/farmer/post.html?id=${id}&focus=stock"><span class="material-symbols-outlined">inventory_2</span>${i18next.t('dashboard.refillStock')}</a>`
@@ -568,6 +656,7 @@
                             <div class="pl-sub">${sub}</div>
                             <div class="pl-price"><span class="num">${Number(d.price || 0).toLocaleString()}</span><span class="unit">KHR /kg</span></div>
                             ${gutHtml}
+                            ${reelChip}
                         </div>
                     </div>
                     <div class="pl-actions">
@@ -654,6 +743,8 @@
                 renderAll();
                 // 6/19 #157③: 描画後に未回答（要返信）件数バッジを更新（todos で未回答 listing に絞って comments を読む）
                 updateQuestionBadges();
+                // 🎬 7/9 #200: 描画後に「動画」チップの有無を確定（1回だけバッチ照会）
+                updateReelButtons();
 
                 // 5/23 #69 Phase J: 1ページ目（!append）のみ render-cache に保存
                 //   - Timestamp 等は toMillis 化して JSON 化可能に
@@ -715,6 +806,21 @@
             return new Promise((resolve) => { delModalResolve = resolve; });
         }
 
+        // 🎬 7/9 #200: 「出品する（＋）」→ 2択ボトムシート（魚を出品する／リールを投稿する）。
+        //   ナビの直リンク（post.html）は JS 未読み込み時のフォールバックとして残し、JS が click を横取りしてシートを開く。
+        const postChoiceSheet = document.getElementById('post-choice-sheet');
+        const navPost = document.querySelector('.nav-post');
+        if (navPost) {
+            navPost.addEventListener('click', (e) => {
+                e.preventDefault();
+                postChoiceSheet.classList.add('show');
+            });
+        }
+        // 背景タップで閉じる（選択肢の <a> はそのまま遷移）
+        postChoiceSheet.addEventListener('click', (e) => {
+            if (e.target === postChoiceSheet) postChoiceSheet.classList.remove('show');
+        });
+
         // 6/19 #157③: 「💬質問」未回答（要返信）件数バッジ。
         //   要返信＝農家がまだ一度も返信していない root 質問（買い手の番）＝functions listingHasUnansweredQuestions と同定義。
         //   未読フォロー（回答後の追加投稿）は per-thread 既読マーカーが Q&A データに無いため次フェーズ（spec の Code 判断＝要返信のみ・hosting-only）。
@@ -748,6 +854,29 @@
                     } catch (e) { /* ignore per-listing */ }
                 }));
             } catch (e) { console.warn('updateQuestionBadges failed:', e); }
+        }
+
+        // 🎬 7/9 #200: 「動画」チップの有無を確定。
+        //   コスト配慮＝出品ごとに個別照会せず、その農家の全リールを1回のバッチ（getFarmerPortfolio＝farmerId equality）で取得し
+        //   listingId 集合を作る。1回取れれば以降の renderAll（言語切替/停止再開）は集合を読むだけ＝再照会しない。
+        async function updateReelButtons() {
+            const uid = window.currentUser?.uid;
+            if (!uid || reelsLoaded) return;
+            try {
+                const reels = await getFarmerPortfolio(uid);
+                reelListingIds.clear();
+                reels.forEach(r => { if (r.listingId) reelListingIds.add(r.listingId); });
+                reelsLoaded = true;
+                // 描画済みチップを in-place で更新（未確定時の「追加」既定を確定値に）
+                document.querySelectorAll('[data-reel-chip]').forEach(a => {
+                    const id = a.getAttribute('data-reel-chip');
+                    const has = reelListingIds.has(id);
+                    a.classList.toggle('has', has);
+                    a.classList.toggle('none', !has);
+                    const label = a.querySelector('[data-reel-label]');
+                    if (label) label.textContent = has ? i18next.t('reel.checkUpdate') : i18next.t('reel.addVideo');
+                });
+            } catch (e) { console.warn('updateReelButtons failed:', e); }
         }
 
         // 5/7 #53: ケバブメニュー＆削除のイベント委譲

@@ -437,7 +437,14 @@ self.addEventListener('notificationclick', (event) => {
 //   （#196・js/approval-deadline.js 新規 PRECACHE 追加・functions deadline ベース化）／レビュー待ち導線（#197）／
 //   プロフィール編集 小修正（#198）。locales 3言語に post.*/order.*/dashboard.*/cart.*/orders.review*/profile.* 追加。
 //   実装 v143 → 実機スクショのモック整合＋クライアント指示反映（内臓処理見出し・レビュー待ち入口2行・入力ラベルレス等）で v144 に再bump。
-const CACHE_NAME = 'fishlink-v144';
+// 7/9-13 (v146): #199-202 動画・リール機能（案C一括）。基盤＝reel_videos データモデル／firestore.rules+storage.rules
+//   （reel_videos + reels/{uid}/**・Console 手動公開）／js/video-cache.js（206/Range 対策＝Blob全取得+IDB）・
+//   js/reel-utils.js（SPEC準拠 クライアント自動圧縮 mp4 + アップロード/検証/照会/削除/鮮度表記）・
+//   js/reel-ui.js（共有カード/全画面プレーヤー/🎬バッジ・CSS自己注入）＝新規3 PRECACHE 追加／
+//   functions（保持N=10 onReelVideoCreated・完全削除の道連れ物理削除 onFishListingDeletedCascade）。
+//   画面＝農家 post/dashboard/reel-post[新規]/reel-videos[新規]・買い手 home/order/producer。タップ再生・先読みなし・端末キャッシュ。
+//   ⚠ v144 は #194-198。v145 実装 → 実機スクショで新規2ページのヘッダー縦書き圧縮（#147同根・flex:1）を修正し v146 に再bump。
+const CACHE_NAME = 'fishlink-v146';
 
 const PRECACHE_URLS = [
     '/',
@@ -468,6 +475,9 @@ const PRECACHE_URLS = [
     '/js/toast.js',
     '/js/push-optin.js',
     '/js/approval-deadline.js',
+    '/js/video-cache.js',
+    '/js/reel-utils.js',
+    '/js/reel-ui.js',
     '/locales/ja.json',
     '/locales/en.json',
     '/locales/km.json',

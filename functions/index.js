@@ -2555,6 +2555,78 @@ exports.resetPasswordWithPhone = onCall(
   }
 );
 
+// ── 🎬 7/9 #199: リール動画 保持N上限（出品ごと最新10本・古いものから物理削除） ──
+//   ポートフォリオ化（差し替えても消さない）と両立するストレージ有界化。
+//   「最新10本を残して超過分（最古）だけ物理削除」＝収束的＝onDocumentCreated の at-least-once 再配信でも
+//   ≤10 のときは no-op で安全（冪等）。反例＝絶対数 SET 系ではないので二重計上リスクなし。
+const MAX_REELS_PER_LISTING = 10;
+exports.onReelVideoCreated = onDocumentCreated(
+  {
+    document: "reel_videos/{videoId}",
+    region: "asia-southeast1",
+    database: "(default)",
+  },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+    const listingId = snap.data()?.listingId;
+    if (!listingId) return;
+
+    // その出品の全リールを取得（equality のみ＝複合インデックス不要・並べ替えはコード側）。
+    const qs = await db.collection("reel_videos").where("listingId", "==", listingId).get();
+    if (qs.size <= MAX_REELS_PER_LISTING) return;
+
+    const docs = qs.docs.slice().sort((a, b) => {
+      const ta = a.data().postedAt?.toMillis ? a.data().postedAt.toMillis() : 0;
+      const tb = b.data().postedAt?.toMillis ? b.data().postedAt.toMillis() : 0;
+      return ta - tb; // 古い順
+    });
+    const toDelete = docs.slice(0, docs.length - MAX_REELS_PER_LISTING); // 最古の超過分
+    const bucket = getStorage().bucket();
+    for (const d of toDelete) {
+      const sp = d.data().storagePath;
+      if (sp) {
+        try { await bucket.file(sp).delete(); }
+        catch (e) { /* 404 等は無視 */ }
+      }
+      try { await d.ref.delete(); } catch (e) { /* ignore */ }
+    }
+    console.log(`[reel-retention] listing=${listingId} kept=${MAX_REELS_PER_LISTING} deleted=${toDelete.length}`);
+  }
+);
+
+// ── 🎬 7/9 #199: 出品「完全削除」で動画を道連れ物理削除（orphan を作らない） ──
+//   投稿一覧の「完全削除」は実体はソフトデリート（deletedAt セット＋isActive:false・出品docは残す）。
+//   ＝deletedAt が null→set に遷移したときだけ、その出品の全リールを Storage 実体ごと物理削除。
+//   「停止」（isActive:false のみ・deletedAt なし）は遷移条件に当たらない＝動画は保持（アーカイブに残す）＝spec §6。
+exports.onFishListingDeletedCascade = onDocumentUpdated(
+  {
+    document: "fishListings/{listingId}",
+    region: "asia-southeast1",
+    database: "(default)",
+  },
+  async (event) => {
+    const before = event.data.before.data() || {};
+    const after = event.data.after.data() || {};
+    if (before.deletedAt || !after.deletedAt) return; // null→set 遷移以外は何もしない
+
+    const listingId = event.params.listingId;
+    const qs = await db.collection("reel_videos").where("listingId", "==", listingId).get();
+    if (qs.empty) return;
+
+    const bucket = getStorage().bucket();
+    for (const d of qs.docs) {
+      const sp = d.data().storagePath;
+      if (sp) {
+        try { await bucket.file(sp).delete(); }
+        catch (e) { /* 404 等は無視 */ }
+      }
+      try { await d.ref.delete(); } catch (e) { /* ignore */ }
+    }
+    console.log(`[reel-cascade] listing=${listingId} deletedReels=${qs.size} (owner deleted listing)`);
+  }
+);
+
 // ── 6/22 #166: 電話番号の自己変更（合成メール口座のログイン番号＝メールを移行つきで更新） ──
 //   識別子は {phone}@fishlink.local（合成メール）なので、電話番号を変える＝Auth のメールを変える。
 //   オーケストレーションの肝：クライアントは「合成メールの本人」と「Phone Auth の新番号ユーザー」に

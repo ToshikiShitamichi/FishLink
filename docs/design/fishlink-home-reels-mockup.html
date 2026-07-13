@@ -1,0 +1,174 @@
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", sans-serif; background: #EEF1F4; color: #1A1A1A; padding: 30px 16px; -webkit-font-smoothing: antialiased; }
+  .stage { display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .lab { font-size: 13px; font-weight: 700; background: #FFF; padding: 7px 16px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); max-width: 380px; text-align: center; }
+  .lab .t { color: #5A6470; font-weight: 500; }
+  .phone { width: 390px; background: #F7F9FB; border-radius: 30px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
+
+  /* header */
+  .hd { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px; background: #FFF; }
+  .hd .lg { font-size: 17px; font-weight: 800; color: #0B5FB0; display: flex; align-items: center; gap: 4px; }
+  .hd .rt { display: flex; align-items: center; gap: 13px; font-size: 15px; color: #5A6470; }
+  .search { margin: 12px 16px; background: #EEF1F4; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; color: #9AA3B0; }
+
+  .sec-h { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px 10px; }
+  .sec-h .st { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 7px; }
+  .sec-h .more { font-size: 12.5px; color: #0B5FB0; font-weight: 700; }
+
+  /* reels row */
+  .reels { display: flex; gap: 11px; overflow-x: auto; padding: 0 16px 8px; }
+  .reel { flex: 0 0 138px; height: 240px; border-radius: 14px; position: relative; overflow: hidden; background: linear-gradient(160deg,#1c3b4a,#0e2029); }
+  .reel.r2 { background: linear-gradient(160deg,#25404e,#122a2f); }
+  .reel.r3 { background: linear-gradient(160deg,#2a3a2c,#16241a); }
+  .reel.r4 { background: linear-gradient(160deg,#3a2f24,#241a12); }
+  .reel .fishbg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 60px; opacity: 0.5; }
+  .reel .play { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 42px; height: 42px; border-radius: 50%; background: rgba(255,255,255,0.28); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; }
+  .reel .play::after { content: "▶"; color: #FFF; font-size: 15px; margin-left: 2px; }
+  .reel .dur { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.55); color: #FFF; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 7px; }
+  .reel .newpill { position: absolute; top: 8px; left: 8px; background: #E5453F; color: #FFF; font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 7px; letter-spacing: .3px; }
+  .reel .ov { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 9px 9px; background: linear-gradient(transparent, rgba(0,0,0,0.82)); color: #FFF; }
+  .reel .rf { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; margin-bottom: 3px; }
+  .reel .rf .av { width: 16px; height: 16px; border-radius: 50%; background: #6b8; flex: 0 0 16px; }
+  .reel .rn { font-size: 12.5px; font-weight: 800; line-height: 1.25; }
+  .reel .rp { font-size: 13px; font-weight: 800; color: #7FD4FF; margin-top: 2px; }
+
+  /* fish-from tiles */
+  .tiles { display: flex; gap: 12px; overflow-x: auto; padding: 0 16px 6px; }
+  .tile { flex: 0 0 auto; text-align: center; width: 64px; }
+  .tile .ci { width: 64px; height: 64px; border-radius: 50%; background: #D6E6F2; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+  .tile .cn { font-size: 10.5px; margin-top: 5px; color: #33414E; line-height: 1.2; }
+
+  /* product card row (existing) */
+  .pcards { display: flex; gap: 12px; overflow-x: auto; padding: 0 16px 6px; }
+  .pcard { flex: 0 0 168px; background: #FFF; border: 1px solid #EEF1F4; border-radius: 14px; overflow: hidden; }
+  .pcard .pimg { height: 108px; background: linear-gradient(135deg,#3a5a72,#22384a); position: relative; }
+  .pcard .pimg .vbadge { position: absolute; top: 7px; left: 7px; background: rgba(0,0,0,0.6); color:#FFF; font-size: 9.5px; font-weight:700; padding: 2px 6px; border-radius: 6px; display:flex; align-items:center; gap:3px; }
+  .pcard .pb { padding: 9px 10px 11px; }
+  .pcard .pn { font-size: 13px; font-weight: 800; }
+  .pcard .ps { font-size: 10.5px; color: #5A6470; margin-top: 2px; }
+  .pcard .pp { font-size: 15px; font-weight: 800; color: #0B5FB0; margin-top: 5px; }
+  .pcard .pp span { font-size: 10px; color: #5A6470; font-weight: 600; }
+
+  .nav { display: flex; background: #FFF; border-top: 1px solid #EEF1F4; padding: 8px 0; margin-top: 8px; }
+  .nav .it { flex: 1; text-align: center; font-size: 10px; color: #9AA3B0; }
+  .nav .it.on { color: #0B5FB0; font-weight: 800; }
+  .nav .it .ic { font-size: 17px; display: block; margin-bottom: 1px; }
+
+  /* full-screen reel */
+  .rfull { width: 390px; height: 720px; background: #0b1a22; border-radius: 30px; overflow: hidden; position: relative; box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
+  .rfull .vid { position: absolute; inset: 0; background: linear-gradient(165deg,#1c3b4a,#0a171e); display: flex; align-items: center; justify-content: center; }
+  .rfull .vid .fishbg { font-size: 150px; opacity: 0.42; }
+  .rfull .vid .play { width: 66px; height: 66px; border-radius: 50%; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; position: absolute; }
+  .rfull .vid .play::after { content: "▶"; color: #FFF; font-size: 24px; margin-left: 3px; }
+  .rfull .top { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px; color: #FFF; }
+  .rfull .top .bk { font-size: 20px; }
+  .rfull .top .dur { background: rgba(0,0,0,0.5); font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 8px; }
+  .rfull .dots { position: absolute; top: 52px; left: 16px; right: 16px; display: flex; gap: 4px; }
+  .rfull .dots i { flex: 1; height: 3px; border-radius: 3px; background: rgba(255,255,255,0.35); }
+  .rfull .dots i.on { background: #FFF; }
+  .rfull .side { position: absolute; right: 12px; bottom: 190px; display: flex; flex-direction: column; gap: 18px; align-items: center; color: #FFF; }
+  .rfull .side .si { text-align: center; font-size: 10.5px; font-weight: 700; }
+  .rfull .side .si .ic { font-size: 26px; display: block; }
+  .rfull .btm { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 16px 16px; background: linear-gradient(transparent, rgba(0,0,0,0.85)); color: #FFF; }
+  .rfull .btm .rf { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .rfull .btm .rf .av { width: 30px; height: 30px; border-radius: 50%; background: #6b8; }
+  .rfull .btm .rf .star { color: #FFC53D; font-weight: 800; font-size: 12px; }
+  .rfull .btm .rn { font-size: 20px; font-weight: 800; }
+  .rfull .btm .rmeta { font-size: 12.5px; opacity: 0.85; margin-top: 3px; }
+  .rfull .btm .rp { font-size: 24px; font-weight: 800; color: #7FD4FF; margin-top: 8px; }
+  .rfull .btm .rp span { font-size: 13px; opacity: 0.9; font-weight: 600; }
+  .rfull .btm .cta { display: flex; gap: 10px; margin-top: 14px; }
+  .rfull .btm .cta .b { flex: 1; text-align: center; padding: 13px; border-radius: 12px; font-size: 14px; font-weight: 800; }
+  .rfull .btm .cta .b.pri { background: #0B5FB0; color: #FFF; }
+  .rfull .btm .cta .b.sec { background: rgba(255,255,255,0.16); color: #FFF; border: 1.5px solid rgba(255,255,255,0.6); }
+
+  .intro { max-width: 720px; margin: 0 auto 24px; background: #FFF; border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+  .intro h1 { font-size: 17px; color: #0B5FB0; margin-bottom: 8px; }
+  .intro p { font-size: 13px; color: #33414E; line-height: 1.7; }
+  .intro b { color: #1A1A1A; }
+</style>
+
+<div class="intro">
+  <h1>🎬 FISHLINK Home — 新着リール（動画）モック</h1>
+  <p>定例発「魚×動画」の本実装案。<b>「魚は動き」＝跳ねてる/活きてる短尺動画で鮮度を証明</b>（写真は盛れるが動画は盛れない＝リモートB2Bの信頼ギャップを崩す）。①Homeに <b>🎬新着リール</b> セクション（横スクロール・FB型）②開くと<b>リール全画面</b>（縦動画＋商品情報＋注文）。既存カードには<b>動画バッジ</b>。※静的モックなので動画は「サムネ＋▶＋秒数＋リール調」で表現。実装可否（帯域/圧縮/保存/再生）は下道さんへ並行相談。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① Home with reels -->
+  <div class="col">
+    <div class="lab">① Home（最上部に「新着リール」） <span class="t">既存はそのまま・上にリール追加</span></div>
+    <div class="phone">
+      <div class="hd"><span class="lg">🐟 FISHLINK</span><span class="rt">🌐 🔔 ✓✓ 👤</span></div>
+      <div class="search">🔍 魚種・農家を探す</div>
+
+      <div class="sec-h"><span class="st">🎬 新着リール</span><span class="more">もっと見る ›</span></div>
+      <div class="reels">
+        <div class="reel r1">
+          <div class="fishbg">🐟</div><div class="play"></div>
+          <span class="newpill">新着</span><span class="dur">0:12</span>
+          <div class="ov"><div class="rf"><span class="av"></span>Ruosuke_farmer5</div><div class="rn">ヒレナマズ</div><div class="rp">7,800<span style="font-size:9px"> /kg</span></div></div>
+        </div>
+        <div class="reel r2">
+          <div class="fishbg">🐠</div><div class="play"></div>
+          <span class="newpill">新着</span><span class="dur">0:08</span>
+          <div class="ov"><div class="rf"><span class="av"></span>大星農場</div><div class="rn">レッドティラピア</div><div class="rp">7,800<span style="font-size:9px"> /kg</span></div></div>
+        </div>
+        <div class="reel r3">
+          <div class="fishbg">🐟</div><div class="play"></div>
+          <span class="dur">0:15</span>
+          <div class="ov"><div class="rf"><span class="av"></span>メコン淡水魚</div><div class="rn">ライギョ</div><div class="rp">8,000<span style="font-size:9px"> /kg</span></div></div>
+        </div>
+        <div class="reel r4">
+          <div class="fishbg">🦐</div><div class="play"></div>
+          <span class="dur">0:10</span>
+          <div class="ov"><div class="rf"><span class="av"></span>タケオ養殖場</div><div class="rn">オニテナガエビ</div><div class="rp">40,000<span style="font-size:9px"> /kg</span></div></div>
+        </div>
+      </div>
+
+      <div class="sec-h"><span class="st">🐟 魚から探す</span></div>
+      <div class="tiles">
+        <div class="tile"><div class="ci">🐟</div><div class="cn">ライギョ</div></div>
+        <div class="tile"><div class="ci">🐟</div><div class="cn">ヒレナマズ</div></div>
+        <div class="tile"><div class="ci">🐠</div><div class="cn">レッドティラピア</div></div>
+        <div class="tile"><div class="ci">🐟</div><div class="cn">ナイルティラピア</div></div>
+        <div class="tile"><div class="ci">🐟</div><div class="cn">シルバーバーブ</div></div>
+      </div>
+
+      <div class="sec-h"><span class="st">📍 近くの農家の魚</span><span class="more">もっと見る ›</span></div>
+      <div class="pcards">
+        <div class="pcard"><div class="pimg"><span class="vbadge">🎬 動画</span></div><div class="pb"><div class="pn">ヒレナマズ</div><div class="ps">10 head/kg ・ 5.5 km</div><div class="pp">6,825 <span>KHR/kg</span></div></div></div>
+        <div class="pcard"><div class="pimg"></div><div class="pb"><div class="pn">ヒレナマズ</div><div class="ps">10 head/kg ・ 5.5 km</div><div class="pp">5,775 <span>KHR/kg</span></div></div></div>
+      </div>
+
+      <div class="nav">
+        <div class="it on"><span class="ic">🏠</span>ホーム</div>
+        <div class="it"><span class="ic">🐟</span>魚一覧</div>
+        <div class="it"><span class="ic">🛒</span>カート</div>
+        <div class="it"><span class="ic">🚚</span>注文状況</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② full-screen reel -->
+  <div class="col">
+    <div class="lab">② リール全画面フィード <span class="t">「もっと見る」/カードタップの着地・縦スクロール（最新から）・上下スワイプで次の魚</span></div>
+    <div class="rfull">
+      <div class="vid"><span class="fishbg">🐟</span><div class="play"></div></div>
+      <div class="dots"><i class="on"></i><i></i><i></i><i></i></div>
+      <div class="top"><span class="bk">←</span><span class="dur">0:12</span></div>
+      <div style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:rgba(255,255,255,0.7); font-size:11px; font-weight:700; text-align:center; line-height:1.3;">↑<br><span style="font-size:9px; opacity:.85;">次の魚</span><br>↓</div>
+      <div class="btm">
+        <div class="rf"><span class="av"></span>Ruosuke_farmer5 <span class="star">★82%</span> <span style="opacity:.7">・タケオ州 5.5km &nbsp;›</span></div>
+        <div class="rn">ヒレナマズ（10 head/kg） &nbsp;<span style="font-size:12px;opacity:.7;font-weight:600">詳細 ›</span></div>
+        <div class="rmeta">在庫 90kg ・ 内臓処理込み ・ 2時間前に投稿</div>
+        <div class="rp">7,800 <span>KHR/kg</span></div>
+        <div class="cta"><span class="b sec">🛒 カートに入れる</span><span class="b pri">⚡ 今すぐ注文</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>

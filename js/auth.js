@@ -235,6 +235,12 @@ async function logout() {
         await mod.clearAll();
     } catch (e) { /* image-cache 未配置でも logout は止めない */ }
 
+    // 7/9 #199：IndexedDB の永続動画キャッシュ（リール）もクリア（プライバシー保護）
+    try {
+        const mod = await import('/js/video-cache.js');
+        await mod.clearAllVideos();
+    } catch (e) { /* video-cache 未配置でも logout は止めない */ }
+
     // 5/23 #69 Phase J：sessionStorage の画面描画キャッシュもクリア
     try {
         const mod = await import('/js/render-cache.js');

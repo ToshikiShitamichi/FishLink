@@ -73,5 +73,19 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // 🎬 7/9 #199: リール動画（reels/{uid}/{listingId}/{videoId}.ext）。
+    //   公開 read（買い手が視聴）／本人（農家）のみ write（自分の動画のみ アップロード/個別削除）。
+    //   ⚠ ルール欠落は #170(FAQ)/#179(QR) と同じ「無言のアップロード失敗」を招くため、動画パスを明示する。
+    //   サイズ上限 50MB＝節約構成の安全網（アプリ側は ~25MB/30秒 で弾く・ここは緩い最終防波堤）。動画のみ許可。
+    //   delete は request.resource が null なので、null 許容で本人削除を通す。
+    match /reels/{uid}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && (request.resource == null
+            || (request.resource.size < 50 * 1024 * 1024
+                && request.resource.contentType.matches('video/.*')));
+    }
+
   }
 }

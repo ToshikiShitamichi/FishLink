@@ -610,6 +610,21 @@
         .gaqp-detail-box__icon .material-symbols-outlined { font-size: 20px; }
         .gaqp-detail-box__title { font-size: 13px; font-weight: 800; color: var(--color-primary); }
         .gaqp-detail-box__txt { font-size: 12px; color: var(--color-primary-dk); margin-top: 3px; line-height: 1.5; }
+
+        /* 🎬 7/9 #202: この魚の動画（この出品スコープ・新しい順の横カルーセル・0本なら非表示） */
+        .pd-reels { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+        .pd-reels::-webkit-scrollbar { display: none; }
+        .pd-reel { flex: 0 0 auto; width: 112px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .pd-reel .pr-media { width: 112px; height: 186px; border-radius: 12px; position: relative; overflow: hidden;
+            background: linear-gradient(160deg, #1c3b4a, #0e2029); }
+        .pd-reel .pr-thumb { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+        .pd-reel .pr-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 34px; height: 34px; border-radius: 50%; background: rgba(0,0,0,0.42);
+            display: flex; align-items: center; justify-content: center; }
+        .pd-reel .pr-play .material-symbols-outlined { font-size: 22px; color: #fff; }
+        .pd-reel .pr-dur { position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.6); color: #fff;
+            font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 6px; }
+        .pd-reel .pr-when { font-size: 11px; color: var(--color-text-sub); margin-top: 5px; }
         /* 6/1 #110: 価格の内臓処理込み注記 */
         .fish-detail__price-incl { font-size: 12px; color: var(--color-text-sub); margin-top: 2px; }
         .fish-detail__farmer-link { display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; }
@@ -780,6 +795,9 @@
         import { getCachedUser, getCachedListing } from '/js/data-cache.js';
         // 5/23 #69 Phase J: 画面描画状態の永続キャッシュ
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // 🎬 7/9 #202: この魚の動画（リール）＝この出品スコープの保持動画・新しい順の横カルーセル→全画面フィード
+        import { getReelsForListing, formatDuration, relativePostedText } from '/js/reel-utils.js';
+        import { openReelFeed } from '/js/reel-ui.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -829,6 +847,8 @@
         let listingData = null;
         let farmerData = null;
         let distanceKm = 0;
+        // 🎬 7/9 #202: この出品の保持動画（新しい順）。1回だけ取得し言語切替では再取得しない。
+        let listingReels = null;
         // 5/12 #68: 数量・内臓処理・納品日時は カート画面側で入力するため、
         //   ここでは「カート追加時のデフォルト値」のみ持つ。
         let serviceRate = 0.05;          // デフォルト5%、settings/campaignから取得（単価表示用）
@@ -931,6 +951,8 @@
                 loadQuestionPreview();
                 // 同一農家の他商品（配送料節約のヒント）
                 loadMoreFromFarmer();
+                // 🎬 #202: この魚の動画（保持動画を1回取得→カルーセル描画）
+                loadListingReels();
                 // 5/5 #3: カート状態の購読
                 startCartWatch();
                 // 5/23 #69 Phase J: 次回訪問用に cache 保存
@@ -953,6 +975,8 @@
                 renderFishDetail();
                 loadQuestionPreview();
                 loadMoreFromFarmer();
+                // 🎬 #202: 言語切替では再取得せず、取得済みリールの相対日付・件数だけ再描画
+                renderReelSection();
             }
         });
 
@@ -1182,6 +1206,8 @@
                             <div><div class="term__main">${i18next.t('restaurant.stock', { kg: stock })}</div></div>
                         </div>
                     </div>
+                    <!-- 🎬 #202 この魚の動画（この出品スコープ・新しい順・0本なら中身なし＝非表示）。renderReelSection が埋める -->
+                    <div id="pd-reels-wrap"></div>
                     <!-- ⑦商品の説明（未記入ならセクションごと非表示・Q&Aより上） -->
                     ${listingData.description ? `
                         <div class="sec-head">${i18next.t('order.descriptionLabel')}</div>
@@ -1219,6 +1245,111 @@
                 });
             }
         }
+
+        // ── 🎬 7/9 #202: この魚の動画（リール） ──
+        //   この出品スコープの保持動画を新しい順に横カルーセル表示（reels-spec §7・「最新」バッジは付けない）。
+        //   1回だけ取得（loadListingReels）し、言語切替では renderReelSection で相対日付・件数だけ再翻訳する。
+
+        // その出品の保持動画を1回だけ取得 → セクション描画。
+        async function loadListingReels() {
+            try {
+                listingReels = await getReelsForListing(listingId); // postedAt 降順・最大N本
+            } catch (e) {
+                console.warn('loadListingReels failed:', e.message);
+                listingReels = [];
+            }
+            renderReelSection();
+        }
+
+        // #pd-reels-wrap（renderFishDetail が毎回作る空プレースホルダ）へ描画。0本ならセクションごと非表示。
+        function renderReelSection() {
+            const wrap = document.getElementById('pd-reels-wrap');
+            if (!wrap) return;
+            if (!listingReels || listingReels.length === 0) { wrap.innerHTML = ''; return; }
+            const t = i18next.t.bind(i18next);
+            const firstPhoto = (listingData.photos?.length ? listingData.photos[0] : listingData.photoUrl) || '';
+            const cards = listingReels.map((r, i) => {
+                const thumbUrl = r.thumbUrl || firstPhoto;
+                const thumb = thumbUrl ? `<img class="pr-thumb" ${asCachedImgAttrs(thumbUrl)} alt="">` : '';
+                const dur = r.durationSec ? `<span class="pr-dur">${escapeHtml(formatDuration(r.durationSec))}</span>` : '';
+                const when = escapeHtml(relativePostedText(r.postedAt, t));
+                return `<div class="pd-reel" data-reel-idx="${i}" role="button" tabindex="0" aria-label="${escapeHtml(t('reel.play'))}">
+                    <div class="pr-media">${thumb}<div class="pr-play"><span class="material-symbols-outlined">play_arrow</span></div>${dur}</div>
+                    <div class="pr-when">${when}</div>
+                </div>`;
+            }).join('');
+            wrap.innerHTML = `
+                <div class="sec-head">${escapeHtml(t('reel.videoCount', { n: listingReels.length }))}</div>
+                <div class="pd-reels">${cards}</div>`;
+        }
+
+        // 全画面フィード用の view model（この出品の全リールで共通の buyable / 価格・農家メタ）。
+        function buildReelVms() {
+            const fishName = i18next.exists(`fish.${listingData.fishType}`)
+                ? i18next.t(`fish.${listingData.fishType}`)
+                : listingData.fishType;
+            const firstPhoto = (listingData.photos?.length ? listingData.photos[0] : listingData.photoUrl) || '';
+            const size = listingData.size || '';
+            const stock = Number(listingData.stock) || 0;
+            // 販売中×在庫あり＝buyable（配達圏内は無視・spec §7）。停止/売切れ/削除はアーカイブ表示。
+            const buyable = listingData.isActive === true && stock > 0 && !listingData.deletedAt;
+            const displayPrice = Math.round(((listingData.price || 0) + (listingData.gutPrice || 0)) * (1 + serviceRate));
+            return (listingReels || []).map(r => ({
+                videoUrl: r.videoUrl,
+                thumbUrl: r.thumbUrl || firstPhoto,
+                durationSec: r.durationSec,
+                postedAt: r.postedAt,
+                listingId,
+                farmerId: listingData.farmerId,
+                farmerName: farmerData.displayName || '',
+                avatarUrl: farmerData.avatarUrl || '',
+                ratingPct: Math.round(farmerData.avgRating || 0),
+                ratingCount: farmerData.reviewCount || 0,
+                province: formatProvince(farmerData.province || ''),
+                distanceKm: (typeof distanceKm === 'number' && distanceKm > 0) ? distanceKm : null,
+                fishName,
+                sizeLabel: size ? `${size} head/kg` : '',
+                stockKg: stock,
+                gutIncluded: listingData.gutPrice != null,
+                priceKhr: displayPrice,
+                buyable,
+            }));
+        }
+
+        // カルーセルのカードタップ → 全画面フィード（そのリールから開始）。
+        function openReelAt(idx) {
+            const vms = buildReelVms();
+            if (!vms.length) return;
+            let feedClose = null;
+            feedClose = openReelFeed(vms, idx, {
+                t: i18next.t.bind(i18next),
+                // 既にこの出品の商品詳細にいるので「この魚を見る」はフィードを閉じるだけ
+                onViewFish: () => { if (feedClose) feedClose(); },
+                onViewFarmer: (fid) => { location.href = `/pages/restaurant/farmer.html?id=${encodeURIComponent(fid)}`; },
+                onAddToCart: async () => {
+                    if (feedClose) feedClose();
+                    try {
+                        await addThisToCart();
+                        document.getElementById('cart-added-modal').classList.add('show');
+                    } catch (e) { console.error('reel addToCart failed:', e); }
+                },
+            });
+        }
+
+        // カルーセルのタップ／キーボード操作は #fish-detail に委譲（renderFishDetail が中身を作り直しても生き残る）。
+        (function bindReelTaps() {
+            const host = document.getElementById('fish-detail');
+            if (!host) return;
+            host.addEventListener('click', (e) => {
+                const card = e.target.closest('.pd-reel[data-reel-idx]');
+                if (card) openReelAt(parseInt(card.dataset.reelIdx, 10) || 0);
+            });
+            host.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                const card = e.target.closest('.pd-reel[data-reel-idx]');
+                if (card) { e.preventDefault(); openReelAt(parseInt(card.dataset.reelIdx, 10) || 0); }
+            });
+        })();
 
         // ── 5/12 #68: カート追加共通処理 ──
         // 数量・内臓処理・納品日時はカート画面で入力する。

@@ -203,6 +203,20 @@
         /* 6/3 #118: レビューコメント「もっと見る」 */
         .reviews-more { display: block; text-align: center; font-size: 13px; font-weight: 700; color: var(--color-cta); cursor: pointer; padding: 8px; background: none; border: none; width: 100%; font-family: inherit; }
 
+        /* 🎬 7/9 #202: 動画ポートフォリオ（その農家の全出品の全保持動画・新しい順）。
+           カード描画は js/reel-ui.js（.rui-card＝自己注入CSS）を流用。既定は横カルーセル、
+           「すべて見る」で縦3列グリッドに切替（同じカードを並べ替えるだけ・再描画しない）。 */
+        .reel-portfolio-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .reel-portfolio-head__l { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+        .reel-portfolio-head__l .material-symbols-outlined { font-size: 19px; line-height: 1; color: var(--color-text); }
+        .reel-portfolio-head__cnt { font-size: 13px; font-weight: 700; color: var(--color-text-sub); }
+        .reel-seeall { flex: 0 0 auto; background: none; border: none; font-family: inherit; font-size: 13px; font-weight: 700; color: var(--color-cta); cursor: pointer; padding: 2px 0; }
+        .reel-carousel { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+        .reel-carousel::-webkit-scrollbar { display: none; }
+        .reel-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        /* グリッド時は固定幅カード（.rui-card＝flex:0 0 138px;height:240px）を列幅・縦長比に上書き（詳細度で勝つ） */
+        .reel-grid .rui-card { flex: none; width: 100%; height: auto; aspect-ratio: 9 / 16; }
+
         .empty-small { text-align: center; padding: 20px; color: var(--color-text-sub); font-size: 13px; }
         .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
     </style>
@@ -276,6 +290,21 @@
             <div id="pond-photos"></div>
         </div>
 
+        <!-- 🎬 7/9 #202: 動画ポートフォリオ（養殖環境の下・レビューの上）。
+             その農家の全出品の全保持動画を新しい順に。0本ならセクションごと非表示。
+             既定＝横カルーセル／「すべて見る」で縦3列グリッドに切替。 -->
+        <div class="section" id="reel-section" style="display:none;">
+            <div class="section__title reel-portfolio-head">
+                <span class="reel-portfolio-head__l">
+                    <span class="material-symbols-outlined">movie</span>
+                    <span data-i18n="reel.videosTitle"></span>
+                    <span class="reel-portfolio-head__cnt" id="reel-count"></span>
+                </span>
+                <button type="button" class="reel-seeall" id="reel-seeall"></button>
+            </div>
+            <div class="reel-carousel" id="reel-portfolio"></div>
+        </div>
+
         <div class="subrating-wrap">
             <div class="subrating-head">
                 <!-- 5/25 #84: タイトルに件数を含める形に変更（renderFarmerPage で動的セット） -->
@@ -330,6 +359,9 @@
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
         // 6/10 #138: レビューコメントの共通描画（線画スマイリー・#137と共通化）
         import { renderReviewComments } from '/js/review-card.js';
+        // 🎬 7/9 #202: 動画ポートフォリオ（データ層＋共有UI＝Home/商品詳細と統一）
+        import { getFarmerPortfolio } from '/js/reel-utils.js';
+        import { reelCardHtml, openReelFeed } from '/js/reel-ui.js';
 
         const loading = document.getElementById('loading');
         // 6/3 #118: 出品中の魚の買い手向け価格（手数料込み）算出用。settings/campaign から取得（既定5%）。
@@ -549,6 +581,84 @@
             renderReviewComments(document.getElementById('reviews-list'), reviewsWithComment, reviewerMap, 3);
         }
 
+        // 🎬 7/9 #202: 1リールの view model を農家(user)＋紐づく出品(listing)から組む。
+        //   buyable＝出品が販売中×在庫あり（配達圏内は無視＝spec §7）。距離は本ページでは出さない（null）。
+        function buildReelVm(reel, listing, user) {
+            const buyable = !!(listing && listing.isActive === true && Number(listing.stock || 0) > 0);
+            const ft = (listing && listing.fishType) || reel.fishType || '';
+            const fishName = ft ? (i18next.exists(`fish.${ft}`) ? i18next.t(`fish.${ft}`) : ft) : '';
+            // 買い手向け単一の正：(price + gutPrice) × (1 + serviceRate)（出品カードと同式）
+            const priceKhr = listing ? Math.round(((listing.price || 0) + (listing.gutPrice || 0)) * (1 + serviceRate)) : 0;
+            return {
+                videoUrl: reel.videoUrl,
+                thumbUrl: reel.thumbUrl || (listing && listing.photoUrl) || '',
+                durationSec: reel.durationSec || 0,
+                postedAt: reel.postedAt || null,
+                listingId: reel.listingId,
+                farmerId: targetUid,
+                farmerName: user.displayName || '',
+                avatarUrl: user.avatarUrl || '',
+                ratingPct: Number(user.avgRating || 0),
+                ratingCount: Number(user.reviewCount || 0),
+                province: formatProvince(user.province),
+                distanceKm: null,
+                fishName,
+                sizeLabel: (listing && listing.size) ? `${listing.size} head/kg` : '',
+                stockKg: listing ? Number(listing.stock || 0) : 0,
+                gutIncluded: !!(listing && listing.gutPrice != null),
+                priceKhr,
+                isNew: false,
+                buyable,
+            };
+        }
+
+        // 🎬 7/9 #202: 動画ポートフォリオの描画。0本ならセクション非表示。
+        //   共有カード（reelCardHtml）を横カルーセルで並べ、「すべて見る」で3列グリッドに切替（並べ替えのみ）。
+        //   タップ→全画面フィード（openReelFeed）で該当リールから再生。
+        function renderReelPortfolio(reels, listingMap, user) {
+            const section = document.getElementById('reel-section');
+            const wrap = document.getElementById('reel-portfolio');
+            if (!section || !wrap) return;
+            if (!reels || reels.length === 0) { section.style.display = 'none'; return; }
+
+            const t = (k, o) => i18next.t(k, o);
+            const vms = reels.map(r => buildReelVm(r, listingMap[r.listingId], user));
+
+            const countEl = document.getElementById('reel-count');
+            if (countEl) countEl.textContent = `(${vms.length})`;
+
+            wrap.className = 'reel-carousel';
+            wrap.innerHTML = vms.map((vm, i) => reelCardHtml(vm, i, t)).join('');
+            section.style.display = 'block';
+
+            // 「すべて見る」↔「折りたたむ」＝カルーセル↔3列グリッドの表示切替（同じカードを並べ替えるだけ）
+            const seeAllBtn = document.getElementById('reel-seeall');
+            if (seeAllBtn) {
+                let expanded = false;
+                const setLabel = () => { seeAllBtn.textContent = t(expanded ? 'reel.collapse' : 'reel.seeAll'); };
+                setLabel();
+                seeAllBtn.onclick = () => {
+                    expanded = !expanded;
+                    wrap.className = expanded ? 'reel-grid' : 'reel-carousel';
+                    setLabel();
+                };
+            }
+
+            // タップ→全画面フィード（該当リールから）。この農家のページなので「農家を見る」は全画面を閉じるだけ。
+            wrap.onclick = (e) => {
+                const card = e.target.closest('[data-reel-idx]');
+                if (!card) return;
+                const idx = parseInt(card.dataset.reelIdx, 10) || 0;
+                let closeFeed = null;
+                closeFeed = openReelFeed(vms, idx, {
+                    t,
+                    onViewFish: (listingId) => { location.href = `/pages/restaurant/order.html?id=${encodeURIComponent(listingId)}`; },
+                    onAddToCart: (vm) => { location.href = `/pages/restaurant/order.html?id=${encodeURIComponent(vm.listingId)}`; },
+                    onViewFarmer: () => { if (typeof closeFeed === 'function') closeFeed(); },
+                });
+            };
+        }
+
         async function load({ silent = false } = {}) {
             if (!silent) loading.classList.add('show');
             try {
@@ -595,6 +705,29 @@
                 }
 
                 renderFarmerPage(user, listings, reviewsWithComment, reviewerMap);
+
+                // 🎬 7/9 #202: 動画ポートフォリオ（その農家の全出品の全保持動画・新しい順）。
+                //   0本なら getFarmerPortfolio だけで終了（追加読み取りなし）。
+                //   listing マップは既取得の active 一覧を再利用し、そこに無い listingId（停止など）だけ個別補完。
+                try {
+                    const reels = await getFarmerPortfolio(targetUid);
+                    if (reels.length) {
+                        const listingMap = {};
+                        listings.forEach(l => { listingMap[l.id] = l; });
+                        const missing = [...new Set(reels.map(r => r.listingId).filter(id => id && !listingMap[id]))];
+                        await Promise.all(missing.map(async (id) => {
+                            try {
+                                const s = await getDoc(doc(db, 'fishListings', id));
+                                if (s.exists()) listingMap[id] = { id: s.id, ...s.data() };
+                            } catch (e) { /* ignore */ }
+                        }));
+                        renderReelPortfolio(reels, listingMap, user);
+                    } else {
+                        renderReelPortfolio([], {}, user);
+                    }
+                } catch (e) {
+                    console.warn('reel portfolio load failed:', e);
+                }
 
                 // 5/23 #69 Phase J: 次回訪問用に cache 保存
                 try {

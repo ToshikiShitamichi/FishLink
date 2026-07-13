@@ -1,0 +1,196 @@
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", sans-serif; background: #EEF1F4; color: #1A1A1A; padding: 30px 16px; -webkit-font-smoothing: antialiased; }
+  .stage { display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .lab { font-size: 13px; font-weight: 700; background: #FFF; padding: 7px 16px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); max-width: 380px; text-align: center; }
+  .lab .t { color: #5A6470; font-weight: 500; }
+  .phone { width: 390px; min-height: 720px; background: #F7F9FB; border-radius: 30px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.12); position: relative; }
+
+  .hd { display: flex; align-items: center; gap: 12px; padding: 15px 16px 12px; background: #FFF; border-bottom: 1px solid #EEF1F4; }
+  .hd .bk { font-size: 19px; }
+  .hd .tt { font-size: 16px; font-weight: 800; }
+  .body { padding: 16px; }
+
+  /* choice sheet */
+  .sheet-dim { position: absolute; inset: 0; background: rgba(20,28,38,0.35); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #FFF; border-radius: 20px 20px 0 0; padding: 10px 16px 22px; }
+  .sheet .grip { width: 40px; height: 4px; border-radius: 4px; background: #D5DCE3; margin: 4px auto 14px; }
+  .sheet .sh-t { font-size: 14px; font-weight: 800; margin-bottom: 12px; }
+  .opt { display: flex; align-items: center; gap: 13px; padding: 15px 14px; border: 1px solid #E7ECF1; border-radius: 14px; margin-bottom: 11px; }
+  .opt .oi { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex: 0 0 46px; }
+  .opt.fish .oi { background: #EAF2FB; }
+  .opt.reel .oi { background: #FDECEF; }
+  .opt .ot { flex: 1; }
+  .opt .ot .o1 { font-size: 15px; font-weight: 800; }
+  .opt .ot .o2 { font-size: 11.5px; color: #5A6470; margin-top: 3px; line-height: 1.4; }
+  .opt .chev { color: #9AA3B0; font-weight: 800; }
+
+  /* reel post */
+  .vprev { position: relative; height: 300px; border-radius: 14px; overflow: hidden; background: linear-gradient(160deg,#1c3b4a,#0a171e); display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+  .vprev .fishbg { font-size: 96px; opacity: 0.45; }
+  .vprev .play { width: 54px; height: 54px; border-radius: 50%; background: rgba(255,255,255,0.24); position: absolute; display: flex; align-items: center; justify-content: center; }
+  .vprev .play::after { content: "▶"; color: #FFF; font-size: 20px; margin-left: 2px; }
+  .vprev .dur { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.55); color: #FFF; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 8px; }
+  .vprev .redo { position: absolute; bottom: 10px; right: 10px; background: rgba(255,255,255,0.92); color: #0B5FB0; font-size: 12px; font-weight: 800; padding: 7px 12px; border-radius: 9px; }
+  .qlabel { font-size: 14px; font-weight: 800; margin: 16px 0 4px; }
+  .qsub { font-size: 12px; color: #5A6470; margin-bottom: 12px; }
+  .lrow { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border: 1.5px solid #E7ECF1; border-radius: 13px; margin-bottom: 10px; background: #FFF; }
+  .lrow.sel { border-color: #0B5FB0; background: #F5FAFF; }
+  .lrow .rd { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #C7D0DA; flex: 0 0 20px; }
+  .lrow.sel .rd { border-color: #0B5FB0; background: #0B5FB0; box-shadow: inset 0 0 0 3px #FFF; }
+  .lrow .lthumb { width: 44px; height: 44px; border-radius: 9px; background: linear-gradient(135deg,#3a5a72,#22384a); flex: 0 0 44px; }
+  .lrow .li { flex: 1; }
+  .lrow .li .l1 { font-size: 14px; font-weight: 800; }
+  .lrow .li .l2 { font-size: 11.5px; color: #5A6470; margin-top: 2px; }
+  .addnew { display: flex; align-items: center; gap: 8px; color: #0B5FB0; font-size: 13px; font-weight: 700; padding: 12px 4px; }
+  .empty-box { text-align: center; padding: 26px 14px; border: 1.5px dashed #E7ECF1; border-radius: 13px; color: #9AA3B0; font-size: 13px; background: #FFF; }
+  .empty-box .ei { font-size: 30px; display: block; margin-bottom: 6px; opacity: 0.55; }
+  .footer { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px 16px; background: #FFF; border-top: 1px solid #EEF1F4; }
+  .cta { display: block; text-align: center; background: #0B5FB0; color: #FFF; font-size: 15px; font-weight: 800; padding: 15px; border-radius: 13px; }
+
+  .intro { max-width: 760px; margin: 0 auto 24px; background: #FFF; border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+  .intro h1 { font-size: 17px; color: #0B5FB0; margin-bottom: 8px; }
+  .intro p { font-size: 13px; color: #33414E; line-height: 1.7; }
+  .intro b { color: #1A1A1A; }
+</style>
+
+<div class="intro">
+  <h1>🎬 リールを投稿（案イ＝いつでも投稿・出品作成と切り離す）</h1>
+  <p><b>出品を作らなくても、動画だけいつでも投稿できる</b>ようにする（フィードを生かす）。ただしFISHLINKは商売なので<b>リールは必ず"買える出品"に紐づく</b>（見て→買う）。①農家の「出品する（＋）」を押すと <b>魚を出品する／リールを投稿する</b> の2択 ②リール投稿＝<b>動画＋「どの魚（在庫がある出品）か」を選ぶ</b>だけ。同じ出品に日を跨いで再投稿OK（最新1本がカード/Homeに出る）。<b>【ポートフォリオ化】古い動画は消えず"アーカイブ"として残る</b>＝生産者ページに農家の全動画・商品詳細にその出品の動画が溜まる。出品ごと最大10本（古いものから物理削除）。④はその出品の動画リスト（個別削除つき）。※実装可否は下道さんへ（帯域/保存/再生）。</p>
+</div>
+
+<div class="stage">
+
+  <!-- ① 出品する（＋）→ 2択 -->
+  <div class="col">
+    <div class="lab">① 「出品する（＋）」を押すと2択 <span class="t">魚を出品する／リールを投稿する</span></div>
+    <div class="phone">
+      <div class="hd"><span class="tt" style="margin:0 auto; font-size:17px;">投稿一覧</span></div>
+      <div class="body" style="opacity:.35;">
+        <div style="height:70px; background:#FFF; border-radius:12px; margin-bottom:10px;"></div>
+        <div style="height:70px; background:#FFF; border-radius:12px; margin-bottom:10px;"></div>
+        <div style="height:70px; background:#FFF; border-radius:12px;"></div>
+      </div>
+      <div class="sheet-dim"></div>
+      <div class="sheet">
+        <div class="grip"></div>
+        <div class="sh-t">なにを投稿する？</div>
+        <div class="opt fish">
+          <div class="oi">🐟</div>
+          <div class="ot"><div class="o1">魚を出品する</div><div class="o2">新しい在庫を登録（魚種・在庫・価格・写真）</div></div>
+          <span class="chev">›</span>
+        </div>
+        <div class="opt reel">
+          <div class="oi">🎬</div>
+          <div class="ot"><div class="o1">リールを投稿する</div><div class="o2">動画だけ・いま出品中の魚に紐づけて投稿</div></div>
+          <span class="chev">›</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② リール投稿画面 -->
+  <div class="col">
+    <div class="lab">② リール投稿画面 <span class="t">動画＋「どの魚か」選ぶだけ</span></div>
+    <div class="phone">
+      <div class="hd"><span class="bk">←</span><span class="tt">リールを投稿</span></div>
+      <div class="body" style="padding-bottom: 90px;">
+        <div class="vprev">
+          <span class="fishbg">🐟</span><div class="play"></div>
+          <span class="dur">0:11</span><span class="redo">↻ 動画を変更</span>
+        </div>
+
+        <div class="qlabel">どの魚の動画？</div>
+        <div class="qsub">いま在庫がある出品から選ぶ（見た買い手はこの魚を注文できます）</div>
+
+        <div class="lrow sel">
+          <span class="rd"></span>
+          <span class="lthumb"></span>
+          <div class="li"><div class="l1">ヒレナマズ（10 head/kg）</div><div class="l2">在庫 90kg ・ 7,500 KHR/kg</div></div>
+        </div>
+        <div class="lrow">
+          <span class="rd"></span>
+          <span class="lthumb"></span>
+          <div class="li"><div class="l1">レッドティラピア（5 head/kg）</div><div class="l2">在庫 37kg ・ 7,000 KHR/kg</div></div>
+        </div>
+        <div class="lrow">
+          <span class="rd"></span>
+          <span class="lthumb"></span>
+          <div class="li"><div class="l1">スポットパンガシウス（3 head/kg）</div><div class="l2">在庫 87kg ・ 6,500 KHR/kg</div></div>
+        </div>
+        <div class="addnew">＋ この動画で新しく魚を出品する</div>
+      </div>
+      <div class="footer"><span class="cta">🎬 リールを投稿する</span></div>
+    </div>
+  </div>
+
+  <!-- ③ 出品ゼロ＝この動画で出品に化ける -->
+  <div class="col">
+    <div class="lab">③ 出品がまだ無い時 <span class="t">紐づけ先が無い → この動画を持って出品へ</span></div>
+    <div class="phone">
+      <div class="hd"><span class="bk">←</span><span class="tt">リールを投稿</span></div>
+      <div class="body" style="padding-bottom: 90px;">
+        <div class="vprev">
+          <span class="fishbg">🐟</span><div class="play"></div>
+          <span class="dur">0:11</span><span class="redo">↻ 動画を変更</span>
+        </div>
+
+        <div class="qlabel">どの魚の動画？</div>
+        <div class="qsub">いま在庫がある出品から選ぶ（見た買い手はこの魚を注文できます）</div>
+
+        <div class="empty-box">
+          <span class="ei">🐟</span>
+          出品中の魚がありません
+        </div>
+      </div>
+      <div class="footer"><span class="cta">🐟 この動画で魚を出品する</span></div>
+    </div>
+  </div>
+
+  <!-- ④ この魚の動画（出品ごとの動画リスト＝ポートフォリオ・個別削除つき） -->
+  <div class="col">
+    <div class="lab">④ この魚の動画 <span class="t">⋮「動画を確認・更新」/編集 の着地・出品ごとの動画リスト → 新規投稿/個別削除</span></div>
+    <div class="phone">
+      <div class="hd"><span class="bk">←</span><span class="tt">この魚の動画</span></div>
+      <div class="body" style="padding-bottom: 90px;">
+        <div style="font-size:15px; font-weight:800;">ヒレナマズ（10 head/kg）</div>
+        <div style="font-size:12px; color:#5A6470; margin:2px 0 14px;">在庫 90kg ・ 7,500 KHR/kg</div>
+
+        <div class="qlabel" style="margin-top:0;">この魚の動画（3本）</div>
+        <div class="qsub">新しい順。一番新しい動画が、自動で買い手に一番見せられます。古い動画も消えずに残ります（最大10本・超えると古いものから自動で消えます）。</div>
+
+        <div class="vrow">
+          <div class="vthumb" style="background:linear-gradient(160deg,#2b5876,#4e4376)"><span class="vp">▶</span></div>
+          <div class="vinfo"><div class="vt1">2時間前</div></div>
+          <span class="vdel">🗑</span>
+        </div>
+        <div class="vrow">
+          <div class="vthumb" style="background:linear-gradient(160deg,#3a6073,#16222a)"><span class="vp">▶</span></div>
+          <div class="vinfo"><div class="vt1">2日前</div></div>
+          <span class="vdel">🗑</span>
+        </div>
+        <div class="vrow">
+          <div class="vthumb" style="background:linear-gradient(160deg,#4b6cb7,#182848)"><span class="vp">▶</span></div>
+          <div class="vinfo"><div class="vt1">6日前</div></div>
+          <span class="vdel">🗑</span>
+        </div>
+      </div>
+      <div class="footer"><span class="cta">↻ 新しい動画を投稿</span></div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  /* ④ 動画リスト行 */
+  .vrow { display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid #E7ECF1; border-radius:13px; margin-bottom:10px; background:#FFF; }
+  .vthumb { width:44px; height:66px; border-radius:9px; flex:0 0 44px; position:relative; }
+  .vthumb .vp { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#FFF; font-size:13px; opacity:0.9; }
+  .vinfo { flex:1; }
+  .vinfo .vt1 { font-size:13.5px; font-weight:800; display:flex; align-items:center; gap:7px; }
+  .vinfo .vt2 { font-size:11.5px; color:#5A6470; margin-top:3px; }
+  .vbadge { background:#0B5FB0; color:#FFF; font-size:10px; font-weight:800; padding:2px 7px; border-radius:8px; }
+  .vdel { color:#D14343; font-size:15px; padding:6px; }
+</style>
