@@ -47,6 +47,9 @@ function ensureStyle() {
   font-weight:700;padding:2px 6px;border-radius:7px}
 .rui-card__new{position:absolute;top:8px;left:8px;background:#0B5FB0;color:#fff;font-size:9.5px;font-weight:800;
   padding:2px 7px;border-radius:7px;letter-spacing:.3px}
+/* 生産者ポートフォリオ カードの「販売中」バッジ（#207⑫・青） */
+.rui-card__sale{position:absolute;top:8px;left:8px;background:#0B5FB0;color:#fff;font-size:9.5px;font-weight:800;
+  padding:2px 7px;border-radius:7px;letter-spacing:.3px}
 .rui-card__ov{position:absolute;left:0;right:0;bottom:0;padding:22px 9px 9px;
   background:linear-gradient(transparent,rgba(0,0,0,.82));color:#fff}
 .rui-card__rf{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;margin-bottom:3px}
@@ -84,10 +87,15 @@ function ensureStyle() {
 .rui-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;
   padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;color:#fff;z-index:4}
 .rui-top__bk{font-size:22px;line-height:1;background:none;border:none;color:#fff;cursor:pointer;padding:4px 8px;font-family:inherit}
+.rui-top__right{display:flex;align-items:center;gap:10px}
 .rui-top__dur{background:rgba(0,0,0,.5);font-size:11px;font-weight:700;padding:3px 9px;border-radius:8px}
-.rui-dots{position:absolute;top:calc(46px + env(safe-area-inset-top,0px));left:16px;right:16px;display:flex;gap:4px;z-index:4}
-.rui-dots i{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.35)}
-.rui-dots i.on{background:#fff}
+/* 🔇 ミュートトグル（#205②・デフォルト無音・タップで音） */
+.rui-top__mute{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.45);border:none;color:#fff;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-family:inherit}
+.rui-top__mute .material-symbols-outlined{font-size:19px}
+/* 進捗＝細い再生バー1本（#206⑤・ストーリーズ型セグメントは廃止） */
+.rui-pbar{position:absolute;top:0;left:0;right:0;height:2px;background:rgba(255,255,255,.28);z-index:5}
+.rui-pbar i{display:block;height:100%;width:0;background:rgba(255,255,255,.9)}
 .rui-btm{position:absolute;left:0;right:0;bottom:0;padding:44px 16px calc(18px + env(safe-area-inset-bottom,0px));
   background:linear-gradient(transparent,rgba(0,0,0,.88));color:#fff;z-index:4}
 .rui-badge{position:absolute;top:calc(50px + env(safe-area-inset-top,0px));left:16px;font-size:11px;font-weight:800;
@@ -121,23 +129,29 @@ function ensureStyle() {
     document.head.appendChild(style);
 }
 
-// ── カルーセル カード（Home 新着リール） ──
-export function reelCardHtml(vm, idx, t) {
+// ── カルーセル カード（Home 新着リール／生産者ポートフォリオ） ──
+//   opts.hideFarmer=true（生産者ページ #207⑫）＝自ページなので農家名を出さず、代わりに買える動画へ青「販売中」バッジ。
+export function reelCardHtml(vm, idx, t, opts = {}) {
     ensureStyle();
+    const hideFarmer = !!opts.hideFarmer;
     const dur = vm.durationSec ? `<span class="rui-card__dur">${esc(formatDuration(vm.durationSec))}</span>` : '';
-    const nw = vm.isNew ? `<span class="rui-card__new">${esc(t('reel.newBadge'))}</span>` : '';
+    const nw = (!hideFarmer && vm.isNew) ? `<span class="rui-card__new">${esc(t('reel.newBadge'))}</span>` : '';
+    const sale = (hideFarmer && vm.buyable) ? `<span class="rui-card__sale">${esc(t('reel.onSale'))}</span>` : '';
     const thumb = vm.thumbUrl
         ? `<img class="rui-card__thumb" ${asCachedImgAttrs(vm.thumbUrl)} alt="">`
         : '';
     const av = vm.avatarUrl
         ? `<img class="rui-card__av" ${asCachedImgAttrs(vm.avatarUrl)} alt="">`
         : `<span class="rui-card__av"></span>`;
+    const rf = hideFarmer
+        ? ''
+        : `<div class="rui-card__rf">${av}<span class="rui-card__name">${esc(vm.farmerName || '')}</span></div>`;
     return `<div class="rui-card" data-reel-idx="${idx}" role="button" tabindex="0" aria-label="${esc(vm.fishName || '')}">
       ${thumb}
       <div class="rui-card__play" aria-hidden="true"></div>
-      ${nw}${dur}
+      ${nw}${sale}${dur}
       <div class="rui-card__ov">
-        <div class="rui-card__rf">${av}<span class="rui-card__name">${esc(vm.farmerName || '')}</span></div>
+        ${rf}
         <div class="rui-card__fn">${esc(vm.fishName || '')}</div>
         <div class="rui-card__pp">${esc(fmtKhr(vm.priceKhr))}<span> /kg</span></div>
       </div>
@@ -159,15 +173,25 @@ export function openReelFeed(items, startIndex, opts = {}) {
 
     const ov = document.createElement('div');
     ov.className = 'rui-overlay';
-    const dots = items.map((_, i) => `<i${i === start ? ' class="on"' : ''}></i>`).join('');
 
-    ov.innerHTML = `<div class="rui-track">${items.map((vm, i) => itemHtml(vm, i, dots, t)).join('')}</div>`;
+    ov.innerHTML = `<div class="rui-track">${items.map((vm, i) => itemHtml(vm, i, t)).join('')}</div>`;
     document.body.appendChild(ov);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     const track = ov.querySelector('.rui-track');
     const itemEls = [...ov.querySelectorAll('.rui-item')];
+
+    // #205②: フィード全体で共有するミュート状態（デフォルト無音・タップで音）。
+    const state = { muted: true };
+    const applyMute = () => {
+        itemEls.forEach(el => { const v = el.querySelector('.rui-video'); if (v) v.muted = state.muted; });
+        ov.querySelectorAll('.rui-top__mute').forEach(b => {
+            const ic = b.querySelector('.material-symbols-outlined');
+            if (ic) ic.textContent = state.muted ? 'volume_off' : 'volume_up';
+            b.setAttribute('aria-label', state.muted ? t('reel.unmute') : t('reel.mute'));
+        });
+    };
 
     const close = () => {
         itemEls.forEach(el => { const v = el.querySelector('.rui-video'); if (v) { try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {} } });
@@ -178,8 +202,8 @@ export function openReelFeed(items, startIndex, opts = {}) {
     const onKey = (e) => { if (e.key === 'Escape') close(); };
     window.addEventListener('keydown', onKey);
 
-    // 各アイテムのバインド（タップ再生・ボタン）
-    itemEls.forEach((el, i) => bindItem(el, items[i], { t, close, opts }));
+    // 各アイテムのバインド（タップ再生・ボタン・ミュート・再生バー）
+    itemEls.forEach((el, i) => bindItem(el, items[i], { t, close, opts, state, applyMute }));
 
     // 起点にスクロール（レイアウト確定後）
     requestAnimationFrame(() => {
@@ -187,18 +211,14 @@ export function openReelFeed(items, startIndex, opts = {}) {
         if (target) track.scrollTop = target.offsetTop;
     });
 
-    // 現在表示中の判定＝ドット更新＋画面外の動画を停止（先読みはしない）
+    // 画面外の動画を停止（先読みはしない・#206⑤でセグメントドットは廃止＝停止処理のみ）
     if ('IntersectionObserver' in window) {
         const io = new IntersectionObserver((entries) => {
             entries.forEach(en => {
+                if (en.isIntersecting && en.intersectionRatio > 0.6) return;
                 const el = en.target;
-                const idx = itemEls.indexOf(el);
-                if (en.isIntersecting && en.intersectionRatio > 0.6) {
-                    ov.querySelectorAll('.rui-dots i').forEach((d, di) => d.classList.toggle('on', di === idx));
-                } else {
-                    const v = el.querySelector('.rui-video');
-                    if (v && !v.paused) { v.pause(); const pb = el.querySelector('.rui-item__play'); if (pb && v.dataset.loaded === '1') pb.hidden = false; }
-                }
+                const v = el.querySelector('.rui-video');
+                if (v && !v.paused) { v.pause(); const pb = el.querySelector('.rui-item__play'); if (pb && v.dataset.loaded === '1') pb.hidden = false; }
             });
         }, { root: track, threshold: [0, 0.6, 1] });
         itemEls.forEach(el => io.observe(el));
@@ -206,7 +226,7 @@ export function openReelFeed(items, startIndex, opts = {}) {
     return close;
 }
 
-function itemHtml(vm, i, dots, t) {
+function itemHtml(vm, i, t) {
     const rating = vm.ratingCount > 0
         ? `<span class="rui-btm__star">★${Math.round(vm.ratingPct || 0)}%</span>`
         : `<span class="rui-btm__star">${esc(t('fishlist.newFarmer'))}</span>`;
@@ -214,7 +234,7 @@ function itemHtml(vm, i, dots, t) {
         ? `${esc(vm.province || '')} ${Number(vm.distanceKm).toFixed(1)}km`
         : esc(vm.province || '');
     const av = vm.avatarUrl ? `<img class="rui-btm__av" src="${esc(getCachedImageUrl(vm.avatarUrl))}" alt="">` : `<span class="rui-btm__av"></span>`;
-    const dur = vm.durationSec ? `<span class="rui-top__dur">${esc(formatDuration(vm.durationSec))}</span>` : '<span></span>';
+    const dur = vm.durationSec ? `<span class="rui-top__dur">${esc(formatDuration(vm.durationSec))}</span>` : '';
     const rel = relativePostedText(vm.postedAt, t);
 
     let badge, meta, priceCta;
@@ -223,10 +243,10 @@ function itemHtml(vm, i, dots, t) {
         const stock = `${esc(t('reel.stockKg', { kg: Math.round(vm.stockKg || 0) }))}`;
         const gut = vm.gutIncluded ? ` ・ ${esc(t('reel.gutIncluded'))}` : '';
         meta = `<div class="rui-btm__meta">${stock}${gut} ・ ${esc(t('reel.postedAgo', { rel }))}</div>`;
+        // #206⑧: 商品詳細への入口は〔👁 この魚を見る〕1本のみ（詳細›・カート・今すぐ注文は置かない）。
         priceCta = `<div class="rui-btm__rp">${esc(fmtKhr(vm.priceKhr))} <span>KHR/kg</span></div>
           <div class="rui-btm__cta">
-            <button type="button" class="sec" data-act="view"><span class="material-symbols-outlined">visibility</span>${esc(t('reel.viewFish'))}</button>
-            <button type="button" class="pri" data-act="cart"><span class="material-symbols-outlined">shopping_cart</span>${esc(t('reel.addToCart'))}</button>
+            <button type="button" class="pri" data-act="view" style="flex:1"><span class="material-symbols-outlined">visibility</span>${esc(t('reel.viewFish'))}</button>
           </div>`;
     } else {
         badge = `<span class="rui-badge rui-badge--arch">${esc(t('reel.archived'))}</span>`;
@@ -234,10 +254,9 @@ function itemHtml(vm, i, dots, t) {
         priceCta = `<div class="rui-btm__sold"><span class="material-symbols-outlined">block</span>${esc(t('reel.soldOut'))}</div>`;
     }
 
+    // 農家名の「距離 ›」→生産者ページ は残す（#206⑧）。魚名の「詳細›」は削除（下部ボタンに一本化）。
     const rfTap = vm.buyable ? ' tap' : '';
-    const rnTap = vm.buyable ? ' tap' : '';
     const chevF = vm.buyable ? ' <span style="opacity:.7">›</span>' : '';
-    const det = vm.buyable ? `<span class="det">${esc(t('reel.detail'))} ›</span>` : '';
     const sizePart = vm.sizeLabel ? `（${esc(vm.sizeLabel)}）` : '';
 
     const poster = vm.thumbUrl ? `<img class="rui-poster" src="${esc(getCachedImageUrl(vm.thumbUrl))}" alt="">` : '';
@@ -249,12 +268,18 @@ function itemHtml(vm, i, dots, t) {
         <button type="button" class="rui-item__play" aria-label="${esc(t('reel.play') || 'play')}"></button>
         <div class="rui-spin" hidden></div>
       </div>
-      <div class="rui-top"><button type="button" class="rui-top__bk" data-act="back" aria-label="back">←</button>${dur}</div>
-      <div class="rui-dots">${dots}</div>
+      <div class="rui-pbar"><i></i></div>
+      <div class="rui-top">
+        <button type="button" class="rui-top__bk" data-act="back" aria-label="back">←</button>
+        <span class="rui-top__right">
+          <button type="button" class="rui-top__mute" data-act="mute" aria-label="${esc(t('reel.unmute'))}"><span class="material-symbols-outlined">volume_off</span></button>
+          ${dur}
+        </span>
+      </div>
       ${badge}
       <div class="rui-btm">
         <div class="rui-btm__rf${rfTap}" data-act="${vm.buyable ? 'farmer' : ''}">${av}<span>${esc(vm.farmerName || '')}</span>${rating} <span class="rui-btm__loc">・ ${distTxt}${chevF}</span></div>
-        <div class="rui-btm__rn${rnTap}" data-act="${vm.buyable ? 'view' : ''}">${esc(vm.fishName || '')}${sizePart}${det}</div>
+        <div class="rui-btm__rn">${esc(vm.fishName || '')}${sizePart}</div>
         ${meta}
         ${priceCta}
       </div>
@@ -262,15 +287,16 @@ function itemHtml(vm, i, dots, t) {
 }
 
 function bindItem(el, vm, ctx) {
-    const { close, opts } = ctx;
+    const { close, opts, state, applyMute } = ctx;
     const video = el.querySelector('.rui-video');
     const playBtn = el.querySelector('.rui-item__play');
     const spin = el.querySelector('.rui-spin');
     const poster = el.querySelector('.rui-poster');
+    const bar = el.querySelector('.rui-pbar > i');
 
     const play = async () => {
         if (video.dataset.loaded === '1') {
-            if (video.paused) { playBtn.hidden = true; try { await video.play(); } catch (e) {} }
+            if (video.paused) { video.muted = state.muted; playBtn.hidden = true; try { await video.play(); } catch (e) {} }
             else { video.pause(); playBtn.hidden = false; }
             return;
         }
@@ -279,6 +305,7 @@ function bindItem(el, vm, ctx) {
             const blobUrl = await loadVideoObjectUrl(vm.videoUrl);
             video.src = blobUrl;
             video.dataset.loaded = '1';
+            video.muted = state.muted;       // #205②: 共有ミュート状態を反映（デフォルト無音）
             await video.play();
             if (poster) poster.style.display = 'none';
         } catch (e) {
@@ -288,12 +315,13 @@ function bindItem(el, vm, ctx) {
         }
     };
     playBtn.addEventListener('click', (e) => { e.stopPropagation(); play(); });
-    video.addEventListener('click', () => {
-        if (video.dataset.loaded === '1') { if (video.paused) { video.play(); playBtn.hidden = true; } else { video.pause(); playBtn.hidden = false; } }
-        else play();
-    });
+    video.addEventListener('click', () => play());
     video.addEventListener('pause', () => { if (video.dataset.loaded === '1') playBtn.hidden = false; });
     video.addEventListener('play', () => { playBtn.hidden = true; });
+    // #206⑤: 細い再生バー1本＝再生位置を反映（loop で currentTime が戻れば自動リセット）
+    video.addEventListener('timeupdate', () => {
+        if (bar && video.duration) bar.style.width = Math.min(100, (video.currentTime / video.duration) * 100) + '%';
+    });
 
     el.querySelectorAll('[data-act]').forEach(node => {
         const act = node.dataset.act;
@@ -301,6 +329,7 @@ function bindItem(el, vm, ctx) {
         node.addEventListener('click', (e) => {
             e.stopPropagation();
             if (act === 'back') { close(); return; }
+            if (act === 'mute') { state.muted = !state.muted; if (typeof applyMute === 'function') applyMute(); return; }
             if (act === 'view') {
                 if (typeof opts.onViewFish === 'function') opts.onViewFish(vm.listingId, vm);
                 else location.href = `/pages/restaurant/order.html?id=${encodeURIComponent(vm.listingId)}`;

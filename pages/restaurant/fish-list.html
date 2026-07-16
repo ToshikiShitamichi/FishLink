@@ -439,7 +439,7 @@
         import { asCachedImgAttrs } from '/js/image-cache.js';
         import { getCachedUser } from '/js/data-cache.js';
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
-        import { resolveDelivery } from '/js/order-utils.js';
+        import { resolveDelivery, buyerDisplayUnitPrice } from '/js/order-utils.js';
 
         const loading = document.getElementById('loading');
         let cartListingIds = new Set();
@@ -698,7 +698,7 @@
                         deliverableRadiusKm: dlv.radiusKm,
                         freeDeliveryKm: dlv.freeKm,
                         deliveryFeePer10km: Math.round(dlv.ratePerKm * 10),
-                        displayPrice: Math.round(rawUnit * (1 + serviceRate)),
+                        displayPrice: buyerDisplayUnitPrice(rawUnit, serviceRate),
                         createdAtMs: data.createdAt?.toMillis?.() || 0,
                     };
                 });

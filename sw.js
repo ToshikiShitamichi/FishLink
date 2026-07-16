@@ -450,7 +450,19 @@ self.addEventListener('notificationclick', (event) => {
 //   backend＝functions（未確認キャンセルは即返金しない・入金確認で deferred 返金／paymentUnconfirmed 通知は既存）＋storage.rules（paymentProofs・Console 手動公開）。
 //   ⚠ v147 実装 → 実機で〔もう一度支払う〕が空カートに飛ぶバグ（注文は発注済み＝カートは空）を修正し v148 に再bump。
 //   〔もう一度支払う〕→ cart.html?repay=<orderId>＝再支払いモード（既存注文の KHQR画面を直接表示・支払いましたで paymentUnconfirmed 解除）。hosting のみ（cart.html/orders.html）。
-const CACHE_NAME = 'fishlink-v148';
+// 7/15 (v149): #205-208 リール実機レビュー改善（hosting＋storage.rules）。
+//   #205 動画1コマ サムネ＆poster（reel-utils.captureVideoThumbnail→reels/{uid}/{listingId}/{id}_thumb.jpg・
+//        storage.rules で reels/ に image 許可・Console 手動公開要）／🔇ミュートトグル・上限30秒表記／投稿の進捗％。
+//   #206 全画面リール＝ストーリーズ型セグメント廃止→細い再生バー1本／下部ボタン〔👁この魚を見る〕1本に集約
+//        （詳細›・カート削除・農家の距離›は残す）／新着ピル=24h／0本 空状態を短く（reel-ui.js・reel-videos.html）。
+//   #207 生産者ポートフォリオ カードは農家名を外し青「販売中」バッジ（reelCardHtml hideFarmer）／〔すべて見る〕→
+//        別グリッド画面（farmer.html #reel-grid-view）／出品フォーム nudge 文言（i18n）。
+//   #208 買い手表示価格の 100リエル切り捨てを共通関数 buyerDisplayUnitPrice（order-utils.js）で全カードに統一
+//        （dashboard/fish-list/order/farmer/comments/cart）＋PC オーバーレイ最大幅（低）。
+//   locales 3言語に reel.mute/unmute/emptySub/farmerVideosTitle/gridNote 追加＋videoTapAdd(30秒)/nudge 改。
+//   ⚠ storage.rules（reels/ の image 許可）を Console 手動公開。functions も変更あり（レビュー指摘＝サムネ _thumb.jpg の
+//   道連れ物理削除＝reel doc に thumbStoragePath 保存＋保持N超過/道連れ削除の2経路で thumb も削除）。Firestore Rules/インデックス変更なし。
+const CACHE_NAME = 'fishlink-v149';
 
 const PRECACHE_URLS = [
     '/',

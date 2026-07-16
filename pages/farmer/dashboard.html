@@ -387,6 +387,8 @@
         .pc-sheet-ov.show { display: block; }
         .pc-sheet {
             position: absolute; left: 0; right: 0; bottom: 0;
+            /* #208(低): PC など広い画面ではボトムシートを本体と同じ最大幅に収めて中央寄せ（横いっぱいに伸ばさない） */
+            max-width: 480px; margin: 0 auto;
             background: var(--color-surface); border-radius: 20px 20px 0 0;
             padding: 10px 16px calc(22px + env(safe-area-inset-bottom, 0px));
             box-shadow: 0 -8px 32px rgba(0,0,0,.16);

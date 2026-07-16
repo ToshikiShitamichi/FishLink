@@ -496,7 +496,7 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { subscribeCart } from '/js/cart.js';
         import { getCachedUser, getCachedDoc } from '/js/data-cache.js';
-        import { resolveDelivery } from '/js/order-utils.js';
+        import { resolveDelivery, buyerDisplayUnitPrice } from '/js/order-utils.js';
         import { getReviewerAvatarUrl } from '/js/profile-utils.js';
         import { asCachedImgAttrs } from '/js/image-cache.js';
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
@@ -621,7 +621,7 @@
         }
         function buildReelRaw(reel, listing, farmer, distanceKm, serviceRate) {
             // 価格は productCard と同式（内臓処理込みの買い手表示価格）。gutPrice==null＝丸魚のみ（内臓処理なし）
-            const unitPrice = Math.round(((listing.price || 0) + (listing.gutPrice || 0)) * (1 + serviceRate));
+            const unitPrice = buyerDisplayUnitPrice((listing.price || 0) + (listing.gutPrice || 0), serviceRate);
             return {
                 videoUrl: reel.videoUrl || '',
                 thumbUrl: reel.thumbUrl || listing.photoUrl || (listing.photos?.[0]) || '',
@@ -758,7 +758,7 @@
         // ── ③④ 商品カード（220px） ──
         function productCard(listing, farmer, distanceKm, serviceRate, isPriority = false) {
             const name = fishName(listing.fishType || '');
-            const unitPrice = Math.round(((listing.price || 0) + (listing.gutPrice || 0)) * (1 + serviceRate));
+            const unitPrice = buyerDisplayUnitPrice((listing.price || 0) + (listing.gutPrice || 0), serviceRate);
             const photo = listing.photoUrl || (listing.photos?.[0]);
             const stock = Number(listing.stock || 0);
             const farmerName = farmer?.displayName || '';

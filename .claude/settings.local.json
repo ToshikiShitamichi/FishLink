@@ -217,7 +217,18 @@
       "Bash(awk '/async function runRefundToWallet|function runRefundToWallet/{f=1} f{print NR\": \"$0} f&&/^}/{c++; if\\(c>=1 && /^}/\\) {exit}}' functions/index.js)",
       "Bash(node -e \"['ja','en','km'].forEach\\(l=>{JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/'+l+'.json','utf8'\\)\\);console.log\\(l,'JSON OK'\\)}\\)\")",
       "Bash(git -c core.quotepath=false status --short)",
-      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\('payment.title=',j.payment&&j.payment.title\\); console.log\\('cart.title=',j.cart&&j.cart.title\\);\")"
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\('payment.title=',j.payment&&j.payment.title\\); console.log\\('cart.title=',j.cart&&j.cart.title\\);\")",
+      "Bash(git --no-pager diff -- js/reel-ui.js)",
+      "Bash(git --no-pager diff -- pages/restaurant/cart.html pages/restaurant/order.html pages/restaurant/fish-list.html pages/restaurant/comments.html pages/restaurant/dashboard.html pages/restaurant/farmer.html)",
+      "Bash(git --no-pager diff -- js/reel-utils.js storage.rules)",
+      "Bash(git --no-pager diff -- pages/restaurant/farmer.html)",
+      "Bash(git --no-pager diff -- pages/farmer/reel-videos.html)",
+      "Bash(git --no-pager diff -- pages/farmer/reel-post.html pages/farmer/dashboard.html)",
+      "Bash(git --no-pager diff -- js/reel-utils.js)",
+      "Bash(git --no-pager diff js/reel-utils.js)",
+      "Bash(git --no-pager diff -- pages/restaurant/dashboard.html)",
+      "Bash(git --no-pager diff -- storage.rules sw.js pages/farmer/reel-post.html pages/farmer/dashboard.html)",
+      "Read(//tmp/**)"
     ]
   }
 }

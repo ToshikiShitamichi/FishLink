@@ -20,9 +20,9 @@
         "nextFish": "Next fish",
         "empty": "No videos yet",
         "videoField": "Video",
-        "videoTapAdd": "Tap to add a video (5–15 sec)",
+        "videoTapAdd": "Tap to add a video (up to 30 sec)",
         "videoSource": "Record or choose from gallery",
-        "nudge": "Videos of swimming or freshly-killed fish sell better. You can reuse videos you shot for Facebook.",
+        "nudge": "Videos of swimming fish or a fresh catch catch buyers' interest.",
         "changeVideo": "Change video",
         "compressing": "Processing video…",
         "uploading": "Uploading…",
@@ -62,7 +62,12 @@
         "more": "See more",
         "videosTitle": "Videos",
         "seeAll": "See all",
-        "collapse": "Collapse"
+        "collapse": "Collapse",
+        "mute": "Mute",
+        "unmute": "Unmute",
+        "emptySub": "Once you post a video, your newest one is shown to buyers.",
+        "farmerVideosTitle": "{{name}}'s videos",
+        "gridNote": "Videos this farmer posted (newest first). Blue \"On sale\" = fish you can buy now. Tap to play full screen."
     },
     "app": {
         "name": "FISHLINK",

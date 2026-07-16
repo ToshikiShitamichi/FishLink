@@ -20,9 +20,9 @@
         "nextFish": "次の魚",
         "empty": "まだ動画がありません",
         "videoField": "動画",
-        "videoTapAdd": "タップして動画を追加（5〜15秒）",
+        "videoTapAdd": "タップして動画を追加（30秒まで）",
         "videoSource": "撮影 または ギャラリーから選ぶ",
-        "nudge": "泳いでる魚・活〆の動画があると売れやすい。FB用に撮った動画もそのまま使えます。",
+        "nudge": "泳いでる魚・とれたての動画は、興味をひきます。",
         "changeVideo": "動画を変更",
         "compressing": "動画を処理中…",
         "uploading": "アップロード中…",
@@ -62,7 +62,12 @@
         "more": "もっと見る",
         "videosTitle": "動画",
         "seeAll": "すべて見る",
-        "collapse": "折りたたむ"
+        "collapse": "折りたたむ",
+        "mute": "ミュート",
+        "unmute": "音を出す",
+        "emptySub": "動画を投稿すると、いちばん新しい1本が買い手に見せられます。",
+        "farmerVideosTitle": "{{name}} の動画",
+        "gridNote": "この農家が投稿した動画（新しい順）。青「販売中」＝いま買える魚。タップで全画面再生。"
     },
     "app": {
         "name": "FISHLINK",

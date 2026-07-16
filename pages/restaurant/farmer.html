@@ -217,6 +217,16 @@
         /* グリッド時は固定幅カード（.rui-card＝flex:0 0 138px;height:240px）を列幅・縦長比に上書き（詳細度で勝つ） */
         .reel-grid .rui-card { flex: none; width: 100%; height: auto; aspect-ratio: 9 / 16; }
 
+        /* 🎬 7/15 #207⑬: 「すべて見る」→ 別グリッド画面（縦3列・新しい順・青「販売中」バッジ）。
+           インライン展開を廃止し、独立した全画面ビューに切替（下の要素を押し下げない）。 */
+        .reel-grid-view { position: fixed; inset: 0; z-index: 1000; background: var(--color-bg); display: none; flex-direction: column; overflow: hidden; }
+        .reel-grid-view.show { display: flex; }
+        .rgv-header { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+        .rgv-back { background: none; border: none; color: var(--color-text-sub); cursor: pointer; display: inline-flex; align-items: center; padding: 0; }
+        .rgv-title { font-size: 16px; font-weight: 800; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rgv-body { flex: 1 1 auto; overflow-y: auto; max-width: 480px; width: 100%; margin: 0 auto; padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+        .rgv-note { font-size: 12px; color: var(--color-text-sub); line-height: 1.5; margin-bottom: 12px; }
+
         .empty-small { text-align: center; padding: 20px; color: var(--color-text-sub); font-size: 13px; }
         .sub-page__title { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 16px; }
     </style>
@@ -342,6 +352,18 @@
         </div>
     </div>
 
+    <!-- 🎬 7/15 #207⑬: 「すべて見る」→ 別グリッド画面（縦3列・新しい順・青「販売中」バッジ・タップで全画面再生）。 -->
+    <div class="reel-grid-view" id="reel-grid-view" hidden>
+        <div class="rgv-header">
+            <button type="button" class="rgv-back" id="rgv-back" aria-label="back"><span class="material-symbols-outlined">arrow_back</span></button>
+            <span class="rgv-title" id="rgv-title"></span>
+        </div>
+        <div class="rgv-body">
+            <div class="rgv-note" data-i18n="reel.gridNote"></div>
+            <div class="reel-grid" id="reel-grid-list"></div>
+        </div>
+    </div>
+
     <script type="module">
         import { initI18n, initLangSelector } from '/js/i18n.js';
         import { watchAuthState } from '/js/auth.js';
@@ -362,6 +384,7 @@
         // 🎬 7/9 #202: 動画ポートフォリオ（データ層＋共有UI＝Home/商品詳細と統一）
         import { getFarmerPortfolio } from '/js/reel-utils.js';
         import { reelCardHtml, openReelFeed } from '/js/reel-ui.js';
+        import { buyerDisplayUnitPrice } from '/js/order-utils.js';
 
         const loading = document.getElementById('loading');
         // 6/3 #118: 出品中の魚の買い手向け価格（手数料込み）算出用。settings/campaign から取得（既定5%）。
@@ -555,8 +578,8 @@
                     const img = data.photoUrl
                         ? `<img ${asCachedImgAttrs(data.photoUrl)} alt="${shortName}">`
                         : `<div style="display:flex; align-items:center; justify-content:center; height:100%;"><span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span></div>`;
-                    // 買い手向け単一の正：(price + gutPrice) × (1 + serviceRate)
-                    const unit = Math.round(((data.price || 0) + (data.gutPrice || 0)) * (1 + serviceRate));
+                    // 買い手向け単一の正：#208 共通関数（floor100）
+                    const unit = buyerDisplayUnitPrice((data.price || 0) + (data.gutPrice || 0), serviceRate);
                     const isSold = (data.stock || 0) <= 0;
                     return `
                         <a class="listing-mini${isSold ? ' sold' : ''}" href="/pages/restaurant/order.html?id=${data.id}">
@@ -587,8 +610,8 @@
             const buyable = !!(listing && listing.isActive === true && Number(listing.stock || 0) > 0);
             const ft = (listing && listing.fishType) || reel.fishType || '';
             const fishName = ft ? (i18next.exists(`fish.${ft}`) ? i18next.t(`fish.${ft}`) : ft) : '';
-            // 買い手向け単一の正：(price + gutPrice) × (1 + serviceRate)（出品カードと同式）
-            const priceKhr = listing ? Math.round(((listing.price || 0) + (listing.gutPrice || 0)) * (1 + serviceRate)) : 0;
+            // 買い手向け単一の正：#208 共通関数（floor100・出品カードと同式）
+            const priceKhr = listing ? buyerDisplayUnitPrice((listing.price || 0) + (listing.gutPrice || 0), serviceRate) : 0;
             return {
                 videoUrl: reel.videoUrl,
                 thumbUrl: reel.thumbUrl || (listing && listing.photoUrl) || '',
@@ -627,36 +650,46 @@
             const countEl = document.getElementById('reel-count');
             if (countEl) countEl.textContent = `(${vms.length})`;
 
+            // #207⑫: 生産者ページのポートフォリオ カードは農家名を出さない（自ページなので冗長）＝hideFarmer。
+            const cardsHtml = vms.map((vm, i) => reelCardHtml(vm, i, t, { hideFarmer: true })).join('');
+
             wrap.className = 'reel-carousel';
-            wrap.innerHTML = vms.map((vm, i) => reelCardHtml(vm, i, t)).join('');
+            wrap.innerHTML = cardsHtml;
             section.style.display = 'block';
 
-            // 「すべて見る」↔「折りたたむ」＝カルーセル↔3列グリッドの表示切替（同じカードを並べ替えるだけ）
-            const seeAllBtn = document.getElementById('reel-seeall');
-            if (seeAllBtn) {
-                let expanded = false;
-                const setLabel = () => { seeAllBtn.textContent = t(expanded ? 'reel.collapse' : 'reel.seeAll'); };
-                setLabel();
-                seeAllBtn.onclick = () => {
-                    expanded = !expanded;
-                    wrap.className = expanded ? 'reel-grid' : 'reel-carousel';
-                    setLabel();
-                };
-            }
-
             // タップ→全画面フィード（該当リールから）。この農家のページなので「農家を見る」は全画面を閉じるだけ。
-            wrap.onclick = (e) => {
-                const card = e.target.closest('[data-reel-idx]');
-                if (!card) return;
-                const idx = parseInt(card.dataset.reelIdx, 10) || 0;
+            const openFeedAt = (idx) => {
                 let closeFeed = null;
                 closeFeed = openReelFeed(vms, idx, {
                     t,
                     onViewFish: (listingId) => { location.href = `/pages/restaurant/order.html?id=${encodeURIComponent(listingId)}`; },
-                    onAddToCart: (vm) => { location.href = `/pages/restaurant/order.html?id=${encodeURIComponent(vm.listingId)}`; },
                     onViewFarmer: () => { if (typeof closeFeed === 'function') closeFeed(); },
                 });
             };
+            wrap.onclick = (e) => {
+                const card = e.target.closest('[data-reel-idx]');
+                if (!card) return;
+                openFeedAt(parseInt(card.dataset.reelIdx, 10) || 0);
+            };
+
+            // 「すべて見る」→ 別グリッド画面（#207⑬・縦3列・新しい順・青販売中バッジ）。インライン展開は廃止。
+            const gridView = document.getElementById('reel-grid-view');
+            const gridList = document.getElementById('reel-grid-list');
+            const gridTitle = document.getElementById('rgv-title');
+            const seeAllBtn = document.getElementById('reel-seeall');
+            if (seeAllBtn && gridView && gridList) {
+                seeAllBtn.textContent = t('reel.seeAll');
+                if (gridTitle) gridTitle.textContent = t('reel.farmerVideosTitle', { name: user.displayName || '' });
+                gridList.innerHTML = cardsHtml;
+                gridList.onclick = (e) => {
+                    const card = e.target.closest('[data-reel-idx]');
+                    if (!card) return;
+                    openFeedAt(parseInt(card.dataset.reelIdx, 10) || 0);
+                };
+                seeAllBtn.onclick = () => { gridView.hidden = false; gridView.classList.add('show'); document.body.style.overflow = 'hidden'; };
+                const backBtn = document.getElementById('rgv-back');
+                if (backBtn) backBtn.onclick = () => { gridView.classList.remove('show'); gridView.hidden = true; document.body.style.overflow = ''; };
+            }
         }
 
         async function load({ silent = false } = {}) {

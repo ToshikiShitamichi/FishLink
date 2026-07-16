@@ -2692,6 +2692,12 @@ exports.onReelVideoCreated = onDocumentCreated(
         try { await bucket.file(sp).delete(); }
         catch (e) { /* 404 等は無視 */ }
       }
+      // 7/15 #205: 動画1コマ サムネ（_thumb.jpg）も道連れ物理削除（orphan を作らない）。旧データは未設定＝skip。
+      const tp = d.data().thumbStoragePath;
+      if (tp) {
+        try { await bucket.file(tp).delete(); }
+        catch (e) { /* 404 等は無視 */ }
+      }
       try { await d.ref.delete(); } catch (e) { /* ignore */ }
     }
     console.log(`[reel-retention] listing=${listingId} kept=${MAX_REELS_PER_LISTING} deleted=${toDelete.length}`);
@@ -2722,6 +2728,12 @@ exports.onFishListingDeletedCascade = onDocumentUpdated(
       const sp = d.data().storagePath;
       if (sp) {
         try { await bucket.file(sp).delete(); }
+        catch (e) { /* 404 等は無視 */ }
+      }
+      // 7/15 #205: 動画1コマ サムネ（_thumb.jpg）も道連れ物理削除（orphan を作らない）。旧データは未設定＝skip。
+      const tp = d.data().thumbStoragePath;
+      if (tp) {
+        try { await bucket.file(tp).delete(); }
         catch (e) { /* 404 等は無視 */ }
       }
       try { await d.ref.delete(); } catch (e) { /* ignore */ }

@@ -15,11 +15,12 @@ import {
     collection, doc, setDoc, deleteDoc, getDocs, query, where, orderBy, limit, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
 import {
-    ref, uploadBytesResumable, getDownloadURL, deleteObject
+    ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject
 } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
 
 export const MAX_REELS_PER_LISTING = 10;   // 出品ごと保持上限（reels-spec §6 確定・N=10）
-export const MAX_VIDEO_DURATION_SEC = 30;  // 目安5〜15秒・上限30秒（＝再エンコード時間の上限も兼ねる）
+export const MAX_VIDEO_DURATION_SEC = 30;  // 上限30秒（＝再エンコード時間の上限も兼ねる・2026-07-12）
+const THUMB_MAX_DIM = 720;                 // 2026-07-15 #205: 動画1コマ サムネ／poster の最大辺（カード/全画面に十分）
 
 const ORIGINAL_MAX_BYTES = 120 * 1024 * 1024; // 原本の受け入れ上限（sanity・巨大4Kのdecode OOM回避）
 const UPLOAD_MAX_BYTES = 48 * 1024 * 1024;    // アップロード後（圧縮後 or 原本）の上限（Storageルール50MBに余裕）
@@ -184,6 +185,52 @@ export async function compressReelVideo(file, opts = {}) {
 }
 
 /**
+ * 2026-07-15 #205①④: 動画の1コマを canvas でキャプチャして小さい JPEG サムネを作る（サーバ変換なし）。
+ *   ＝新着カルーセルのサムネ＋全画面を開いた瞬間の poster（黒画面解消）に兼用（reels-spec §8）。
+ *   序盤（真っ黒になりがちな0秒を避けた位置）の1フレームを 720p 以内に縮小して JPEG 化。
+ *   失敗（デコード不可・toBlob 非対応・OOM 等）は null を返す＝呼び出し側は写真サムネにフォールバック。
+ * @returns {Promise<Blob|null>}
+ */
+export async function captureVideoThumbnail(source) {
+    if (!source || typeof document === 'undefined') return null;
+    let url = null, video = null;
+    try {
+        video = document.createElement('video');
+        video.muted = true; video.playsInline = true; video.preload = 'auto';
+        url = URL.createObjectURL(source);
+        video.src = url;
+        await onceEvent(video, 'loadeddata', 8000);
+        const w = video.videoWidth, h = video.videoHeight;
+        if (!w || !h) return null;
+        const dur = video.duration || 0;
+        // 0秒は真っ黒になりがち＝少し進めた位置（0.1〜1秒 or 尺の10%）へシーク
+        const target = dur > 0 ? Math.min(Math.max(0.1, dur * 0.1), Math.min(1, dur)) : 0;
+        if (target > 0) {
+            try { video.currentTime = target; await onceEvent(video, 'seeked', 8000); }
+            catch (e) { /* シーク不可なら現フレームで続行 */ }
+        }
+        const scale = Math.min(1, THUMB_MAX_DIM / Math.max(w, h));
+        const cw = Math.max(2, Math.round(w * scale));
+        const ch = Math.max(2, Math.round(h * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = cw; canvas.height = ch;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+        ctx.drawImage(video, 0, 0, cw, ch);
+        const blob = await new Promise((resolve) => {
+            try { canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.8); }
+            catch (e) { resolve(null); }
+        });
+        return (blob && blob.size) ? blob : null;
+    } catch (e) {
+        return null;
+    } finally {
+        try { if (video) { video.removeAttribute('src'); video.load(); } } catch (e) { /* ignore */ }
+        if (url) URL.revokeObjectURL(url);
+    }
+}
+
+/**
  * リール動画を「検証 → クライアント自動圧縮 → resumable アップロード → setDoc」で投稿する（＝その出品の最新1本）。
  * 完了後にだけ doc を作る（半端を表示しない）。保持N上限の物理削除は functions onReelVideoCreated が自動で行う。
  * @param {{file:File, listingId:string, farmerId:string, fishType?:string, thumbUrl?:string,
@@ -229,17 +276,35 @@ export async function uploadReelVideo(args) {
     });
 
     const videoUrl = await getDownloadURL(sref);
+
+    // 2026-07-15 #205①④: 動画の1コマをサムネにする（新着カルーセル＋全画面 poster 兼用）。
+    //   ⚠ サムネ生成/アップロード失敗でリール作成を止めない＝写真（thumbUrl 引数）にフォールバック。
+    //   thumbStoragePath を doc に保存＝削除時（個別/保持N超過/道連れ）にサムネも物理削除＝orphan を作らない。
+    let finalThumbUrl = thumbUrl || '';
+    let thumbStoragePath = '';
+    try {
+        const thumbBlob = await captureVideoThumbnail(outBlob);
+        if (thumbBlob) {
+            const tp = `reels/${farmerId}/${listingId}/${id}_thumb.jpg`;
+            const tref = ref(storage, tp);
+            await uploadBytes(tref, thumbBlob, { contentType: 'image/jpeg', cacheControl: 'public, max-age=31536000' });
+            finalThumbUrl = await getDownloadURL(tref);
+            thumbStoragePath = tp;
+        }
+    } catch (e) { /* サムネ失敗＝写真フォールバック（reel は成立させる） */ }
+
     await setDoc(docRef, {
         listingId,
         farmerId,
         fishType: fishType || '',
         videoUrl,
         storagePath,
-        thumbUrl: thumbUrl || '',
+        thumbUrl: finalThumbUrl,
+        thumbStoragePath,
         durationSec: Math.round(durationSec || 0),
         postedAt: serverTimestamp(),
     });
-    return { id, videoUrl, storagePath, compressed };
+    return { id, videoUrl, storagePath, thumbStoragePath, compressed };
 }
 
 /** 個別削除（④の🗑・撮り直しミス等）。Storage 実体 → doc の順で消す（本人のみ・rules で担保）。 */
@@ -248,6 +313,11 @@ export async function deleteReelVideo(reel) {
     if (reel.storagePath) {
         try { await deleteObject(ref(storage, reel.storagePath)); }
         catch (e) { /* 既に無い(404)等は無視 */ }
+    }
+    // #205: 動画1コマ サムネ（_thumb.jpg）も道連れ物理削除（orphan を作らない）。
+    if (reel.thumbStoragePath) {
+        try { await deleteObject(ref(storage, reel.thumbStoragePath)); }
+        catch (e) { /* 404 等は無視 */ }
     }
     if (reel.id) {
         try { await deleteDoc(doc(db, COL, reel.id)); } catch (e) { /* ignore */ }

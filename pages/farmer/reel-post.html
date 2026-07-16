@@ -338,8 +338,8 @@
                     farmerId: uid,
                     fishType: listing.data.fishType || '',
                     thumbUrl: (Array.isArray(listing.data.photos) && listing.data.photos[0]) || listing.data.photoUrl || '',
-                    onCompressProgress: () => { loadStatus.textContent = t('reel.compressing'); },
-                    onProgress: () => { loadStatus.textContent = t('reel.uploading'); },
+                    onCompressProgress: (r) => { loadStatus.textContent = t('reel.compressing') + (r ? ' ' + Math.round(r * 100) + '%' : ''); },
+                    onProgress: (r) => { loadStatus.textContent = t('reel.uploading') + (r ? ' ' + Math.round(r * 100) + '%' : ''); },
                 });
                 showToast(t('reel.videoPosted'));
                 location.href = '/pages/farmer/dashboard.html';

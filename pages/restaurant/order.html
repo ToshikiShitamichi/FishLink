@@ -798,6 +798,7 @@
         // 🎬 7/9 #202: この魚の動画（リール）＝この出品スコープの保持動画・新しい順の横カルーセル→全画面フィード
         import { getReelsForListing, formatDuration, relativePostedText } from '/js/reel-utils.js';
         import { openReelFeed } from '/js/reel-ui.js';
+        import { buyerDisplayUnitPrice } from '/js/order-utils.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -1000,7 +1001,7 @@
                     const x = d.data();
                     const fName = i18next.exists(`fish.${x.fishType}`) ? i18next.t(`fish.${x.fishType}`) : x.fishType;
                     const shortName = String(fName).trim();
-                    const unit = Math.round(((x.price || 0) + (x.gutPrice || 0)) * (1 + serviceRate));
+                    const unit = buyerDisplayUnitPrice((x.price || 0) + (x.gutPrice || 0), serviceRate);
                     const sz = x.size || '';
                     const img = x.photoUrl
                         ? `<img ${asCachedImgAttrs(x.photoUrl)} alt="" loading="lazy" style="width:100%; height:96px; object-fit:cover; border-radius:10px 10px 0 0;">`
@@ -1151,7 +1152,7 @@
             }
 
             // 6/1 #110: 価格は内臓処理込みの単一値（手数料込み）＋グレー注記（常時）。単一の正(§7)。
-            const displayPrice = Math.round(((listingData.price || 0) + (listingData.gutPrice || 0)) * (1 + serviceRate));
+            const displayPrice = buyerDisplayUnitPrice((listingData.price || 0) + (listingData.gutPrice || 0), serviceRate);
 
             document.getElementById('fish-detail').innerHTML = `
                 <div class="fish-detail__carousel">${carouselHtml}</div>
@@ -1293,7 +1294,7 @@
             const stock = Number(listingData.stock) || 0;
             // 販売中×在庫あり＝buyable（配達圏内は無視・spec §7）。停止/売切れ/削除はアーカイブ表示。
             const buyable = listingData.isActive === true && stock > 0 && !listingData.deletedAt;
-            const displayPrice = Math.round(((listingData.price || 0) + (listingData.gutPrice || 0)) * (1 + serviceRate));
+            const displayPrice = buyerDisplayUnitPrice((listingData.price || 0) + (listingData.gutPrice || 0), serviceRate);
             return (listingReels || []).map(r => ({
                 videoUrl: r.videoUrl,
                 thumbUrl: r.thumbUrl || firstPhoto,

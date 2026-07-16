@@ -13,6 +13,17 @@ export function floor100(n) {
     return Math.floor((Number(n) || 0) / 100) * 100;
 }
 
+// 2026-07-15 #208: 買い手が見る「表示単価」（KHR/kg）を出す唯一の共通関数。
+//   買い手表示価格 = 農家価格 ×(1 + 手数料率) を 100リエル未満で切り捨て（#191 の表示レイヤー適用）。
+//   例: 7,500×1.05=7,875 → 7,800 ／ 7,000×1.05=7,350 → 7,300。
+//   ⚠ Home新着カード／魚一覧／新着リール・全画面リール／商品詳細／生産者ページ／カート表示 の
+//     すべてでこの関数を使い、画面ごとに素の Math.round(... ×(1+rate)) を出さない（表示の不一致を無くす）。
+//     引数 baseFarmerKhr は既に (price + gutPrice) 等に合算済みの農家価格を渡す。
+//   ※ 農家側の表示（投稿一覧等・手数料をかけない）は対象外。注文の実課金は calcItemPrices（floor 済）が正。
+export function buyerDisplayUnitPrice(baseFarmerKhr, serviceRate) {
+    return floor100((Number(baseFarmerKhr) || 0) * (1 + (Number(serviceRate) || 0)));
+}
+
 /**
  * 注文ドキュメントから items[] 配列を取得。
  * items[] が存在する新方式ならそのまま返す。

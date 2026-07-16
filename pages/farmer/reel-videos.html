@@ -39,9 +39,11 @@
         .rv-del { flex: 0 0 auto; background: none; border: none; color: #D14343; padding: 8px; cursor: pointer; display: inline-flex; align-items: center; font-family: inherit; }
         .rv-del .material-symbols-outlined { font-size: 20px; }
 
-        /* 空状態 */
+        /* 空状態（#205⑨: 管理説明は出さず短い空状態＝見出し＋一言） */
         .rv-empty { text-align: center; padding: 34px 14px; border: 1.5px dashed var(--color-border); border-radius: 13px; color: var(--color-text-sub); font-size: 13px; background: var(--color-surface); }
         .rv-empty .material-symbols-outlined { font-size: 34px; display: block; margin: 0 auto 8px; opacity: .5; }
+        .rv-empty__t { font-weight: 800; color: var(--color-text); }
+        .rv-empty__s { font-size: 12.5px; color: var(--color-text-sub); line-height: 1.55; margin-top: 5px; }
 
         /* 固定フッター CTA（↻ 新しい動画を投稿） */
         .rv-footer { position: fixed; left: 0; right: 0; bottom: 0; max-width: 480px; margin: 0 auto; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--color-surface); border-top: 1px solid var(--color-border); z-index: 50; }
@@ -104,13 +106,14 @@
             </div>
 
             <div class="rv-sec" id="rv-count"></div>
-            <div class="rv-hint" data-i18n="reel.videoListHint"></div>
+            <div class="rv-hint" id="rv-hint" data-i18n="reel.videoListHint"></div>
 
             <div id="rv-list"></div>
 
             <div class="rv-empty" id="rv-empty" hidden>
                 <span class="material-symbols-outlined">movie</span>
-                <span data-i18n="reel.empty"></span>
+                <div class="rv-empty__t" data-i18n="reel.empty"></div>
+                <div class="rv-empty__s" data-i18n="reel.emptySub"></div>
             </div>
         </div>
 
@@ -172,6 +175,7 @@
 
         let listing = null;   // { fishType, size, stock, price, photoUrl, farmerId }
         let reels = [];        // getReelsForListing の結果（postedAt 降順・最大 N 本）
+        let uploading = false; // #205⑩: アップロード中（非ブロッキング＝画面は固めず、削除操作だけ抑止）
 
         // 戻る：来た画面（投稿一覧カード／出品編集）に戻す。履歴が無ければ投稿一覧へ。
         document.getElementById('btn-back').addEventListener('click', () => {
@@ -202,9 +206,15 @@
         function renderList() {
             const listEl = document.getElementById('rv-list');
             const emptyEl = document.getElementById('rv-empty');
-            document.getElementById('rv-count').textContent = i18next.t('reel.videoCount', { n: reels.length });
+            const countEl = document.getElementById('rv-count');
+            const hintEl = document.getElementById('rv-hint');
+            const has = reels.length > 0;
+            countEl.textContent = i18next.t('reel.videoCount', { n: reels.length });
+            // #205⑨: 管理説明（件数見出し＋ヒント）は 1本以上のときだけ。0本は短い空状態のみ。
+            countEl.hidden = !has;
+            hintEl.hidden = !has;
 
-            if (!reels.length) {
+            if (!has) {
                 listEl.innerHTML = '';
                 emptyEl.hidden = false;
                 return;
@@ -284,6 +294,7 @@
         document.getElementById('rv-list').addEventListener('click', async (e) => {
             const delBtn = e.target.closest('[data-del]');
             if (delBtn) {
+                if (uploading) return;   // #205⑩: アップロード中は削除を抑止（再取得とのレース回避）
                 const id = delBtn.dataset.del;
                 const reel = reels.find((r) => r.id === id);
                 if (!reel) return;
@@ -331,15 +342,28 @@
 
         const videoInput = document.getElementById('video-input');
         const btnPost = document.getElementById('btn-post');
-        btnPost.addEventListener('click', () => { clearUploadError(); videoInput.value = ''; videoInput.click(); });
+        const btnIcon = btnPost.querySelector('.material-symbols-outlined');
+        const btnLabel = btnPost.querySelector('span:not(.material-symbols-outlined)');
+        btnPost.addEventListener('click', () => { if (uploading) return; clearUploadError(); videoInput.value = ''; videoInput.click(); });
+
+        // #205⑩: ノンブロッキング＝全画面オーバーレイで固めず、投稿ボタンに進捗％を出す（画面は操作可能なまま）。
+        function setBtnProgress(label, r) {
+            if (btnIcon) btnIcon.textContent = 'hourglass_top';
+            const pct = (typeof r === 'number' && r > 0) ? ' ' + Math.round(r * 100) + '%' : '';
+            if (btnLabel) btnLabel.textContent = label + pct;
+        }
+        function restoreBtn() {
+            if (btnIcon) btnIcon.textContent = 'refresh';
+            if (btnLabel) btnLabel.textContent = i18next.t('reel.postNewVideo');
+        }
 
         videoInput.addEventListener('change', async () => {
             const file = videoInput.files && videoInput.files[0];
             if (!file || !listing) return;
             clearUploadError();
+            uploading = true;
             btnPost.disabled = true;
-            loading.classList.add('show');
-            upStatus.textContent = i18next.t('reel.compressing');
+            setBtnProgress(i18next.t('reel.compressing'));
             try {
                 await uploadReelVideo({
                     file,
@@ -347,8 +371,8 @@
                     farmerId: window.currentUser.uid,
                     fishType: listing.fishType || '',
                     thumbUrl: (listing.photos && listing.photos[0]) || listing.photoUrl || '',
-                    onCompressProgress: () => { upStatus.textContent = i18next.t('reel.compressing'); },
-                    onProgress: () => { upStatus.textContent = i18next.t('reel.uploading'); },
+                    onCompressProgress: (r) => setBtnProgress(i18next.t('reel.compressing'), r),
+                    onProgress: (r) => setBtnProgress(i18next.t('reel.uploading'), r),
                 });
                 // 保持N上限の物理削除は functions が担う＝クライアントは最新順で再取得（最大 N 本）
                 reels = await getReelsForListing(listingId);
@@ -358,9 +382,9 @@
                 console.error('uploadReelVideo failed:', err);
                 showUploadError(reasonToMessage(err && err.reason));
             } finally {
-                upStatus.textContent = '';
+                uploading = false;
+                restoreBtn();
                 btnPost.disabled = false;
-                loading.classList.remove('show');
                 videoInput.value = '';
             }
         });

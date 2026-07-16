@@ -23,7 +23,12 @@
   .rfull .vid .play::after { content: "▶"; color: #FFF; font-size: 24px; margin-left: 3px; }
   .rfull .top { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px; color: #FFF; z-index: 2; }
   .rfull .top .bk { font-size: 20px; }
+  .rfull .top .right { display:flex; align-items:center; gap:10px; }
   .rfull .top .dur { background: rgba(0,0,0,0.5); font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 8px; }
+  .rfull .top .mute { width:34px; height:34px; border-radius:50%; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; font-size:16px; }
+  /* 進捗＝細い再生バー1本（ストーリーズ型セグメントは使わない） */
+  .rfull .pbar { position:absolute; top:0; left:0; right:0; height:2px; background:rgba(255,255,255,0.28); z-index:3; }
+  .rfull .pbar i { display:block; height:100%; width:40%; background:rgba(255,255,255,0.9); }
   .rfull .btm { position: absolute; left: 0; right: 0; bottom: 0; padding: 44px 16px 18px; background: linear-gradient(transparent, rgba(0,0,0,0.88)); color: #FFF; }
   .rfull .btm .rf { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
   .rfull .btm .rf .av { width: 30px; height: 30px; border-radius: 50%; background: #6b8; flex: 0 0 30px; }
@@ -48,24 +53,25 @@
 
 <div class="intro">
   <h1>FISHLINK 動画 全画面再生 — ポートフォリオからの着地（モック）</h1>
-  <p>生産者ページ／商品詳細／「すべて見る」グリッドで動画をタップした着地。<b>販売中</b>＝購入導線あり（既存Homeリール全画面と同じ）／<b>アーカイブ（売切れ・停止）</b>＝<b>購入ボタン・価格なし＋「この魚は現在販売されていません」</b>（買えないので商品詳細へ飛ばさない）。判定＝出品が販売中×在庫あり（配達圏内は無視）。※静的モックなので動画は「サムネ＋▶＋秒数」で表現。</p>
+  <p>生産者ページ／商品詳細／「すべて見る」グリッドで動画をタップした着地。<b>販売中</b>＝購入導線あり（既存Homeリール全画面と同じ）／<b>アーカイブ（売切れ・停止）</b>＝<b>購入ボタン・価格なし＋「この魚は現在販売されていません」</b>（買えないので商品詳細へ飛ばさない）。判定＝出品が販売中×在庫あり（配達圏内は無視）。<b>【2026-07-12改善】右上に🔇ミュートトグル（デフォルト無音・タップで音）</b>／開いた瞬間は<b>動画の1コマ静止画(poster)を敷いて黒画面を消す</b>／サムネも動画の1コマ。※静的モックなので動画は「サムネ＋▶＋秒数」で表現。</p>
 </div>
 
 <div class="stage">
 
   <!-- ① 販売中（購入できる動画） -->
   <div class="col">
-    <div class="lab">① 販売中の動画 <span class="t">＝Homeリール全画面と同じ・購入できる</span></div>
+    <div class="lab">① 販売中の動画 <span class="t">下部は〔👁この魚を見る〕1本→商品詳細（詳細›・カート・今すぐ注文は置かない＝商品詳細へ一本化）</span></div>
     <div class="rfull">
       <div class="vid" style="background:linear-gradient(165deg,#2b5876,#4e4376)"><span class="fishbg">🐟</span><div class="play"></div></div>
-      <div class="top"><span class="bk">←</span><span class="dur">0:12</span></div>
+      <div class="pbar"><i></i></div>
+      <div class="top"><span class="bk">←</span><span class="right"><span class="mute">🔇</span><span class="dur">0:12</span></span></div>
       <span class="onsale">販売中</span>
       <div class="btm">
         <div class="rf"><span class="av"></span>Ryosuke4 <span class="star">★96%</span> <span style="opacity:.7">・タケオ州 5.5km &nbsp;›</span></div>
-        <div class="rn">ヒレナマズ（10 head/kg） &nbsp;<span style="font-size:12px;opacity:.7;font-weight:600">詳細 ›</span></div>
+        <div class="rn">ヒレナマズ（10 head/kg）</div>
         <div class="rmeta">在庫 90kg ・ 内臓処理込み ・ 3時間前に投稿</div>
         <div class="rp">5,700 <span>KHR/kg</span></div>
-        <div class="cta"><span class="b sec">👁 この魚を見る</span><span class="b pri">🛒 カートに入れる</span></div>
+        <div class="cta"><span class="b pri" style="flex:1;">👁 この魚を見る</span></div>
       </div>
     </div>
   </div>
@@ -75,7 +81,8 @@
     <div class="lab">② アーカイブの動画 <span class="t">＝売切れ/停止・購入ボタンと価格なし</span></div>
     <div class="rfull">
       <div class="vid" style="background:linear-gradient(165deg,#3a6073,#16222a)"><span class="fishbg">🐡</span><div class="play"></div></div>
-      <div class="top"><span class="bk">←</span><span class="dur">0:15</span></div>
+      <div class="pbar"><i></i></div>
+      <div class="top"><span class="bk">←</span><span class="right"><span class="mute">🔇</span><span class="dur">0:15</span></span></div>
       <span class="archived-ghost">アーカイブ</span>
       <div class="btm">
         <div class="rf"><span class="av"></span>Ryosuke4 <span class="star">★96%</span> <span style="opacity:.7">・タケオ州 5.5km</span></div>
