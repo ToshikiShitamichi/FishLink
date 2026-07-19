@@ -322,8 +322,9 @@
                 );
                 const issued = issuedSnap.data().count;
                 const used = usedSnap.data().count;
-                document.getElementById('stats-issued').textContent = issued.toLocaleString();
-                document.getElementById('stats-used').textContent = used.toLocaleString();
+                // 2026-07-17 #210③: 桁区切りは 'en-US' 明示（引数なしだと端末ロケール依存で「1.234」に化ける＝件数も統一）
+                document.getElementById('stats-issued').textContent = issued.toLocaleString('en-US');
+                document.getElementById('stats-used').textContent = used.toLocaleString('en-US');
                 const rate = issued > 0 ? Math.round((used / issued) * 100) : 0;
                 document.getElementById('stats-usage-rate').textContent = `${rate} %`;
             } catch (err) {

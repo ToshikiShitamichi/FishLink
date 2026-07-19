@@ -384,7 +384,7 @@
         // 🎬 7/9 #202: 動画ポートフォリオ（データ層＋共有UI＝Home/商品詳細と統一）
         import { getFarmerPortfolio } from '/js/reel-utils.js';
         import { reelCardHtml, openReelFeed } from '/js/reel-ui.js';
-        import { buyerDisplayUnitPrice } from '/js/order-utils.js';
+        import { buyerUnitPrice } from '/js/order-utils.js';
 
         const loading = document.getElementById('loading');
         // 6/3 #118: 出品中の魚の買い手向け価格（手数料込み）算出用。settings/campaign から取得（既定5%）。
@@ -425,7 +425,9 @@
         // 6/10 #138: レビューカードの描画（線画スマイリー・もっと見る）は js/review-card.js に共通化。
         //   旧 fmtDate / verdictBadge(thumb_up/down) / legacyToVerdict はそちらへ移設（#137 と統一）。
 
-        function fmtKhr(n) { return `${Number(n || 0).toLocaleString()} KHR`; }
+        // 2026-07-17 #210③: 桁区切りは 'en-US' 明示。引数なしの toLocaleString() は端末の既定ロケールに
+        //   従うため、区切りが「.」になる端末で「41.000 KHR」に化ける（アプリの言語設定とは無関係）。
+        function fmtKhr(n) { return `${Number(n || 0).toLocaleString('en-US')} KHR`; }
 
         // 5/7 #56: コメントを innerHTML に流し込むので XSS 防止のためエスケープ
         function escapeHtml(s) {
@@ -579,7 +581,9 @@
                         ? `<img ${asCachedImgAttrs(data.photoUrl)} alt="${shortName}">`
                         : `<div style="display:flex; align-items:center; justify-content:center; height:100%;"><span class="material-symbols-outlined" style="font-size:36px; color:#94a3b8;">set_meal</span></div>`;
                     // 買い手向け単一の正：#208 共通関数（floor100）
-                    const unit = buyerDisplayUnitPrice((data.price || 0) + (data.gutPrice || 0), serviceRate);
+                    // 2026-07-17 #210①-2: 魚単価と内臓処理は「別々の行」＝行ごとに100リエル切り捨て（payment-spec §4.2）。
+                    //   合算してから1回切り捨てると外す差額が -600 になりモック（-500）と食い違うため buyerUnitPrice に集約。
+                    const unit = buyerUnitPrice(data.price || 0, data.gutPrice || 0, true, serviceRate);
                     const isSold = (data.stock || 0) <= 0;
                     return `
                         <a class="listing-mini${isSold ? ' sold' : ''}" href="/pages/restaurant/order.html?id=${data.id}">
@@ -592,7 +596,7 @@
                             <div class="listing-mini__body">
                                 <div class="listing-mini__name">${shortName}</div>
                                 <div class="listing-mini__meta">${data.size || ''} head/kg</div>
-                                <div class="listing-mini__price">${unit.toLocaleString()}<span class="u"> KHR/kg</span></div>
+                                <div class="listing-mini__price">${unit.toLocaleString('en-US')}<span class="u"> KHR/kg</span></div>
                                 ${isSold ? '' : `<div class="listing-mini__stockline">${i18next.t('restaurant.stock', { kg: data.stock })}</div>`}
                             </div>
                         </a>
@@ -611,7 +615,8 @@
             const ft = (listing && listing.fishType) || reel.fishType || '';
             const fishName = ft ? (i18next.exists(`fish.${ft}`) ? i18next.t(`fish.${ft}`) : ft) : '';
             // 買い手向け単一の正：#208 共通関数（floor100・出品カードと同式）
-            const priceKhr = listing ? buyerDisplayUnitPrice((listing.price || 0) + (listing.gutPrice || 0), serviceRate) : 0;
+            // 2026-07-17 #210①-2: 行ごと切り捨て（魚単価／内臓処理を別行で floor100）＝出品ミニカードと同じ値になる。
+            const priceKhr = listing ? buyerUnitPrice(listing.price || 0, listing.gutPrice || 0, true, serviceRate) : 0;
             return {
                 videoUrl: reel.videoUrl,
                 thumbUrl: reel.thumbUrl || (listing && listing.photoUrl) || '',

@@ -496,7 +496,7 @@
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { subscribeCart } from '/js/cart.js';
         import { getCachedUser, getCachedDoc } from '/js/data-cache.js';
-        import { resolveDelivery, buyerDisplayUnitPrice } from '/js/order-utils.js';
+        import { resolveDelivery, buyerUnitPrice } from '/js/order-utils.js';
         import { getReviewerAvatarUrl } from '/js/profile-utils.js';
         import { asCachedImgAttrs } from '/js/image-cache.js';
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
@@ -610,6 +610,15 @@
             if (!ms) return false;
             return (Date.now() - ms) < 24 * 60 * 60 * 1000;   // 直近24時間＝「新着」ピル
         }
+        // #209⑯ サイズは単位付きで見せる（全画面リールの魚名＝「○ head/kg」・farmer.html / order.html と同形）。
+        // ⚠ 単位は raw ではなく表示変換側で付ける＝render-cache に焼き付くのは素の値のまま＝
+        //    既存キャッシュを持つ端末でも次のフェッチを待たずに単位が出る（この画面の 784/919 行と同じ「素の値＋描画時に head/kg」の流儀）。
+        // ⚠ size は出品フォームが自由入力（post.html #fish-size）なので、既に単位が入っていれば二重に付けない。
+        function sizeWithUnit(size) {
+            const s = String(size || '').trim();
+            if (!s) return '';                                          // 未設定＝「head/kg」だけが出ないようガード
+            return /head\s*\/\s*kg/i.test(s) ? s : `${s} head/kg`;
+        }
         // raw（言語非依存）→ reel-ui が要求する display vm（fishName/province/isNew を現在言語・現在時刻で生成）
         function toReelDisplayVm(r) {
             return {
@@ -617,11 +626,13 @@
                 fishName: fishName(r.fishType || ''),
                 province: r.provinceRaw ? formatProvince(r.provinceRaw) : '',
                 isNew: isReelNew(r.postedAt),
+                sizeLabel: sizeWithUnit(r.sizeLabel),   // #209⑯ 全画面リールは単位付き（カルーセルのカードは sizeLabel を描画しない＝spec §8）
             };
         }
         function buildReelRaw(reel, listing, farmer, distanceKm, serviceRate) {
             // 価格は productCard と同式（内臓処理込みの買い手表示価格）。gutPrice==null＝丸魚のみ（内臓処理なし）
-            const unitPrice = buyerDisplayUnitPrice((listing.price || 0) + (listing.gutPrice || 0), serviceRate);
+            // #210①-2: 魚の単価と内臓処理は【別々の行】＝行ごとに 100リエル切り捨ててから足す（合算して1回切り捨てない）
+            const unitPrice = buyerUnitPrice(listing.price || 0, listing.gutPrice || 0, true, serviceRate);
             return {
                 videoUrl: reel.videoUrl || '',
                 thumbUrl: reel.thumbUrl || listing.photoUrl || (listing.photos?.[0]) || '',
@@ -636,7 +647,7 @@
                 provinceRaw: farmer?.province || '',
                 distanceKm: Number.isFinite(distanceKm) ? distanceKm : null,
                 fishType: listing.fishType || '',
-                sizeLabel: listing.size || '',
+                sizeLabel: listing.size || '',   // #209⑯ raw は素の値のまま（単位は toReelDisplayVm で付与＝既存キャッシュにも効かせるため。ここで付けると二重になる）
                 stockKg: Number(listing.stock || 0),
                 gutIncluded: (listing.gutPrice != null),
                 priceKhr: unitPrice,
@@ -758,7 +769,8 @@
         // ── ③④ 商品カード（220px） ──
         function productCard(listing, farmer, distanceKm, serviceRate, isPriority = false) {
             const name = fishName(listing.fishType || '');
-            const unitPrice = buyerDisplayUnitPrice((listing.price || 0) + (listing.gutPrice || 0), serviceRate);
+            // #210①-2: 魚の単価と内臓処理は【別々の行】＝行ごとに 100リエル切り捨ててから足す（合算して1回切り捨てない）
+            const unitPrice = buyerUnitPrice(listing.price || 0, listing.gutPrice || 0, true, serviceRate);
             const photo = listing.photoUrl || (listing.photos?.[0]);
             const stock = Number(listing.stock || 0);
             const farmerName = farmer?.displayName || '';
@@ -782,7 +794,7 @@
                     <div class="pcard__body">
                         <div class="pcard__nm">${escapeHtml(name)}</div>
                         <div class="pcard__sz">${escapeHtml(listing.size || '')} head/kg</div>
-                        <div class="pcard__price"><b>${unitPrice.toLocaleString()}</b><span>KHR/kg</span></div>
+                        <div class="pcard__price"><b>${unitPrice.toLocaleString('en-US')}</b><span>KHR/kg</span></div>
                         <div class="pcard__meta">
                             <div class="d">${stock > 0 ? i18next.t('restaurant.stock', { kg: stock }) : i18next.t('order.stockUnavailable')}</div>
                             ${distText ? `<div class="d"><span class="material-symbols-outlined">location_on</span>${escapeHtml(distText)}</div>` : ''}
@@ -886,7 +898,8 @@
             const moreItems = itemCount > 1 ? ` +${itemCount - 1}` : '';
             const photo = it.snapPhotoUrl || null;
             const qty = orderQty(order);
-            const total = (order.totalAmount || 0).toLocaleString();
+            // 2026-07-17 #210③: 桁区切りは 'en-US' 明示（引数なしは端末の既定ロケール依存＝「41.000」に化ける）。
+            const total = (order.totalAmount || 0).toLocaleString('en-US');
             const states = stepStates(status);
             const isDeclined = status === 'declined';
 

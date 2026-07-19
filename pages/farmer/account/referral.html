@@ -180,13 +180,14 @@
             const body = document.getElementById('bonus-body');
             if (!body || !bonusState) return;
             const { count, amount, total } = bonusState;
-            const amountStr = amount ? amount.toLocaleString() : '';
+            // 2026-07-17 #210③: 桁区切りは 'en-US' 明示（引数なしだと端末ロケール依存で「5.000」に化ける）
+            const amountStr = amount ? amount.toLocaleString('en-US') : '';
             if (count > 0) {
                 body.innerHTML = `
                     <div class="bonus-box">
                         <div class="bonus-box__amt">${i18next.t('referral.bonusRemaining', { n: count, amount: amountStr })}</div>
                         <div class="bonus-box__st">${i18next.t('referral.bonusPending')}</div>
-                        <div class="bonus-box__tot">${i18next.t('referral.bonusTotal', { amount: total.toLocaleString() })}</div>
+                        <div class="bonus-box__tot">${i18next.t('referral.bonusTotal', { amount: total.toLocaleString('en-US') })}</div>
                     </div>
                     <div class="reward-hint">${i18next.t('referral.amountDynamicHint')}</div>`;
             } else {

@@ -439,7 +439,7 @@
         import { asCachedImgAttrs } from '/js/image-cache.js';
         import { getCachedUser } from '/js/data-cache.js';
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
-        import { resolveDelivery, buyerDisplayUnitPrice } from '/js/order-utils.js';
+        import { resolveDelivery, buyerUnitPrice } from '/js/order-utils.js';
 
         const loading = document.getElementById('loading');
         let cartListingIds = new Set();
@@ -683,7 +683,6 @@
 
                 const newItems = itemsRaw.map((it, i) => {
                     const data = it.data, farmer = it.farmer;
-                    const rawUnit = (data.price || 0) + (data.gutPrice || 0);
                     // 5/31 #105/#107: 配送設定は farmer 単位（farmerDelivery）を正・旧 listing fallback
                     const dlv = resolveDelivery(farmer, data);
                     return {
@@ -698,7 +697,10 @@
                         deliverableRadiusKm: dlv.radiusKm,
                         freeDeliveryKm: dlv.freeKm,
                         deliveryFeePer10km: Math.round(dlv.ratePerKm * 10),
-                        displayPrice: buyerDisplayUnitPrice(rawUnit, serviceRate),
+                        // 2026-07-19 #210①-2: 魚の単価と内臓処理は【別々の行】＝行ごとに100リエル切り捨ててから足す。
+                        //   合算してから1回だけ切り捨てると 8,300 が 8,400 になり、商品詳細・カートの単価とズレる。
+                        //   一覧カードの既定表示は他画面と同じく内臓処理込み＝gutIncluded は true 固定。
+                        displayPrice: buyerUnitPrice(data.price || 0, data.gutPrice || 0, true, serviceRate),
                         createdAtMs: data.createdAt?.toMillis?.() || 0,
                     };
                 });
@@ -811,7 +813,7 @@
                         <div class="fl-card__body">
                             <div class="fl-card__name">${escapeHtml(name)}</div>
                             <div class="fl-card__sz">${escapeHtml(item.size || '')} head/kg</div>
-                            <div class="fl-card__price"><b>${item.displayPrice.toLocaleString()}</b><span>KHR/kg</span></div>
+                            <div class="fl-card__price"><b>${item.displayPrice.toLocaleString('en-US')}</b><span>KHR/kg</span></div>
                             <div class="fl-card__meta">${escapeHtml(metaText)}</div>
                             ${freeDelivery ? `<div class="fl-card__free">${i18next.t('fishlist.freeDelivery')}</div>` : ''}
                         </div>
@@ -848,7 +850,8 @@
             }
             // 価格帯＝上限のみ可動の単一ハンドル。最上端（上限なし）はフィルタ扱いせずチップ無し。
             if (state.priceMax < PRICE_MAX) {
-                chips.push(activeFilterChip('price', 'price', '〜' + Number(state.priceMax).toLocaleString(), false));
+                // 2026-07-17 #210③: 桁区切りは 'en-US' 明示（引数なしは端末の既定ロケール依存＝「12.000」に化ける）。
+                chips.push(activeFilterChip('price', 'price', '〜' + Number(state.priceMax).toLocaleString('en-US'), false));
             }
             if (state.favOnly) chips.push(activeFilterChip('fav', 'fav', i18next.t('fishlist.favorite'), true));
             if (state.historyOnly) chips.push(activeFilterChip('history', 'history', i18next.t('fishlist.pastOrders'), false));
@@ -958,7 +961,7 @@
         }
         function updatePriceLabel() {
             const v = Number(document.getElementById('price-range').value);
-            document.getElementById('price-val').textContent = v >= PRICE_MAX ? i18next.t('fishlist.noLimit') : i18next.t('fishlist.priceUnder', { price: v.toLocaleString() });
+            document.getElementById('price-val').textContent = v >= PRICE_MAX ? i18next.t('fishlist.noLimit') : i18next.t('fishlist.priceUnder', { price: v.toLocaleString('en-US') });
         }
         function openSheet() {
             syncSheetControls();

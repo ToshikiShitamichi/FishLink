@@ -190,7 +190,9 @@
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
-        const fmtKhr = n => `${Number(n || 0).toLocaleString()} KHR`;
+        // 2026-07-17 #210③: 桁区切りは 'en-US' 明示。引数なしの toLocaleString() は端末の既定ロケールに
+        //   従うため、区切りが「.」になる端末で「41.000 KHR」に化ける（アプリの言語設定とは無関係）。
+        const fmtKhr = n => `${Number(n || 0).toLocaleString('en-US')} KHR`;
         function fmtDate(ts) {
             const d = ts?.toDate ? ts.toDate() : (typeof ts === 'number' ? new Date(ts) : (ts?.seconds ? new Date(ts.seconds * 1000) : null));
             if (!d) return '';
@@ -236,7 +238,7 @@
                 const meta = TX_META[tx.type] || { dir: (Number(tx.amount) >= 0 ? 'in' : 'out'), icon: 'sync_alt', reason: 'wallet.txOther' };
                 const amt = Number(tx.amount || 0);
                 const plus = amt >= 0;
-                const amtStr = `${plus ? '+' : '−'}${Math.abs(amt).toLocaleString()} KHR`;
+                const amtStr = `${plus ? '+' : '−'}${Math.abs(amt).toLocaleString('en-US')} KHR`;
                 const cp = counterpartHtml(tx);
                 return `
                     <div class="hist-row">

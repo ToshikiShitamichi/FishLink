@@ -369,7 +369,8 @@
             const el = document.getElementById('referral-sub');
             if (!el) return;
             const s = referralState || { enabled: false, amount: 0, count: 0 };
-            const amountStr = s.amount ? s.amount.toLocaleString() : '';
+            // 2026-07-17 #210③: 桁区切りは 'en-US' 明示（引数なしだと端末ロケール依存で「5.000」に化ける）
+            const amountStr = s.amount ? s.amount.toLocaleString('en-US') : '';
             if (s.enabled && s.count > 0) {
                 el.textContent = i18next.t('account.referralSubFarmerActive', { count: s.count, amount: amountStr });
             } else if (s.enabled) {

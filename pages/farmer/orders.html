@@ -768,6 +768,15 @@
             return Date.now() > orderDeadlineMs(order);
         }
 
+        // 2026-07-17 #210③: 桁区切りは必ず 'en-US' を明示する。
+        //   ロケール引数なしの toLocaleString() は端末の既定ロケールに従うため、
+        //   区切りが「.」になる端末（de-DE/id-ID/vi-VN 等）で「41.000 KHR」のように化ける。
+        //   アプリの言語設定とは無関係に端末次第で化けるので、金額表示はこのページ内すべて 'en-US' に統一
+        //   （買い手カート cart.html・js/reel-ui.js が既に 'en-US' 固定＝そちらが正）。
+        //   ⚠ 宣言はキャッシュ復元（下の renderOrders() 即時呼び出し）より前に置くこと。
+        //     後ろに置くと TDZ で ReferenceError になり、try/catch に飲まれて即時描画が黙って死ぬ。
+        const KHR_LOCALE = 'en-US';
+
         const ORDERS_PAGE_SIZE = 30;
         let ordersLastDoc = null;
         let ordersHasMore = false;
@@ -1199,20 +1208,20 @@
                         <!-- 6/4 #124: 金額ブロック（魚代の内訳ラベル／手数料／割引amber／送料／受取予定額=青） -->
                         <div class="od-sec-label">${i18next.t('orders.sectionAmount')}</div>
                         <div class="od-card">
-                            <div class="od-amt"><span class="od-amt__l">${i18next.t('orders.fishTotal')}${(!(Array.isArray(order.items) && order.items.length > 1)) ? ` <span class="od-subnote">${order.gutProcessing && gutFee > 0 ? `（${basePrice.toLocaleString()} ＋ ${i18next.t('orders.gutProcessing')} ${gutFee.toLocaleString()} ×${order.quantity}kg）` : `（${basePrice.toLocaleString()} ×${order.quantity}kg）`}</span>` : ''}</span><span class="od-amt__v">${fishTotal.toLocaleString()} KHR</span></div>
-                            <div class="od-amt"><span class="od-amt__l">${i18next.t('orders.commission', { rate: commissionRate })}</span><span class="od-amt__v">-${grossCommission.toLocaleString()} KHR</span></div>
+                            <div class="od-amt"><span class="od-amt__l">${i18next.t('orders.fishTotal')}${(!(Array.isArray(order.items) && order.items.length > 1)) ? ` <span class="od-subnote">${order.gutProcessing && gutFee > 0 ? `（${basePrice.toLocaleString(KHR_LOCALE)} ＋ ${i18next.t('orders.gutProcessing')} ${gutFee.toLocaleString(KHR_LOCALE)} ×${order.quantity}kg）` : `（${basePrice.toLocaleString(KHR_LOCALE)} ×${order.quantity}kg）`}</span>` : ''}</span><span class="od-amt__v">${fishTotal.toLocaleString(KHR_LOCALE)} KHR</span></div>
+                            <div class="od-amt"><span class="od-amt__l">${i18next.t('orders.commission', { rate: commissionRate })}</span><span class="od-amt__v">-${grossCommission.toLocaleString(KHR_LOCALE)} KHR</span></div>
                             ${farmerCampaignDiscount > 0 ? `
                                 <div class="od-amt od-amt--discount">
                                     <span class="od-amt__l"><span class="material-symbols-outlined">local_offer</span>${i18next.t('orders.farmerCampaignDiscount')}</span>
-                                    <span class="od-amt__v">${i18next.t('orders.farmerCampaignDiscountValue', { amount: farmerCampaignDiscount.toLocaleString() })}</span>
+                                    <span class="od-amt__v">${i18next.t('orders.farmerCampaignDiscountValue', { amount: farmerCampaignDiscount.toLocaleString(KHR_LOCALE) })}</span>
                                 </div>` : ''}
                             ${(awardedBonus > 0 || previewBonus > 0) ? `
                                 <div class="od-amt od-amt--discount">
                                     <span class="od-amt__l"><span class="material-symbols-outlined">redeem</span>${i18next.t('order.referralBonus')}${previewBonus > 0 ? ` <span class="od-subnote">${i18next.t('orders.bonusOnComplete')}</span>` : ''}</span>
-                                    <span class="od-amt__v">+${(awardedBonus > 0 ? awardedBonus : previewBonus).toLocaleString()} KHR</span>
+                                    <span class="od-amt__v">+${(awardedBonus > 0 ? awardedBonus : previewBonus).toLocaleString(KHR_LOCALE)} KHR</span>
                                 </div>` : ''}
-                            <div class="od-amt"><span class="od-amt__l">${i18next.t('orders.deliveryFee')} <span class="od-subnote">（${i18next.t('orders.deliveryNote')}）</span></span><span class="od-amt__v">+${deliveryFee.toLocaleString()} KHR</span></div>
-                            <div class="od-receive"><span class="od-receive__l">${i18next.t('orders.receiveAmount')}</span><span class="od-receive__v">${displayReceive.toLocaleString()} KHR</span></div>
+                            <div class="od-amt"><span class="od-amt__l">${i18next.t('orders.deliveryFee')} <span class="od-subnote">（${i18next.t('orders.deliveryNote')}）</span></span><span class="od-amt__v">+${deliveryFee.toLocaleString(KHR_LOCALE)} KHR</span></div>
+                            <div class="od-receive"><span class="od-receive__l">${i18next.t('orders.receiveAmount')}</span><span class="od-receive__v">${displayReceive.toLocaleString(KHR_LOCALE)} KHR</span></div>
                         </div>
                         <!-- 5/4: 配送管理／送金状況／レビュー／報告 ボタンは外側の order-card__quick-actions に移動済み -->
                     </div>`;
@@ -1714,8 +1723,8 @@
                     ...fishLines,
                     `${i18next.t('orders.deliveryLabel')} ${[(order.deliveryDateIso || order.deliveryDate) ? fmtDeliveryDate(order.deliveryDateIso || order.deliveryDate) : '', order.deliveryTime || ''].filter(Boolean).join(' ')}`,
                     `${i18next.t('orders.restaurantLabel')}: ${restName}`,
-                    ...(modalPreviewBonus > 0 ? [`${i18next.t('order.referralBonus')} +${modalPreviewBonus.toLocaleString()} KHR ${i18next.t('orders.bonusOnComplete')}`] : []),
-                    `${i18next.t('orders.receiveAmount')} ${receiveAmount.toLocaleString()} KHR`,
+                    ...(modalPreviewBonus > 0 ? [`${i18next.t('order.referralBonus')} +${modalPreviewBonus.toLocaleString(KHR_LOCALE)} KHR ${i18next.t('orders.bonusOnComplete')}`] : []),
+                    `${i18next.t('orders.receiveAmount')} ${receiveAmount.toLocaleString(KHR_LOCALE)} KHR`,
                 ];
                 summaryEl.textContent = lines.join('\n');
             }

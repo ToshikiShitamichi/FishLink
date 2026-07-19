@@ -160,7 +160,9 @@
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
-        const fmtKhr = n => `${Number(n || 0).toLocaleString()} KHR`;
+        // 2026-07-17 #210③: 桁区切りは 'en-US' 明示。引数なしの toLocaleString() は端末の既定ロケールに
+        //   従うため、区切りが「.」になる端末で「41.000 KHR」に化ける（アプリの言語設定とは無関係）。
+        const fmtKhr = n => `${Number(n || 0).toLocaleString('en-US')} KHR`;
         const WEEKDAY_SHORT = {
             ja: ['日', '月', '火', '水', '木', '金', '土'],
             en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -275,9 +277,9 @@
             const total = filtered.reduce((s, t) => s + (t.totalAmount || 0), 0);
             const count = filtered.length;
             const avg = count > 0 ? Math.round(total / count) : 0;
-            document.getElementById('sum-amount').innerHTML = `${Number(total).toLocaleString()}<span class="u"> KHR</span>`;
+            document.getElementById('sum-amount').innerHTML = `${Number(total).toLocaleString('en-US')}<span class="u"> KHR</span>`;
             document.getElementById('sum-count').textContent = `${count}`;
-            document.getElementById('sum-avg').innerHTML = `${Number(avg).toLocaleString()}<span class="u"> KHR</span>`;
+            document.getElementById('sum-avg').innerHTML = `${Number(avg).toLocaleString('en-US')}<span class="u"> KHR</span>`;
 
             if (filtered.length === 0) {
                 listEl.innerHTML = `<div class="empty-small">${i18next.t('account.emptyHistory')}</div>`;

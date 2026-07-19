@@ -11,12 +11,23 @@
 //   ・クリップは 2〜6MB と小さいので全取得で問題ない（reels-spec §9）。
 //   ・動画は画像の ~10 倍サイズ＝専用の小さい LRU 予算（メモリ 20 / IDB 40）を別建てにして
 //     画像キャッシュ（500件・#69 の LCP 最適化）を圧迫しない。
-//   ・spec は「先読みしない」＝タップ時に loadVideoObjectUrl() を呼ぶ pull 型のみ（prefetch は用意しない）。
+//
+// ⚠ #209⑦-3（2026-07-19）: 「いま見る1本」は全取得しない＝役割を2つに分けた。
+//   ・全取得（loadVideoObjectUrl）＝【先読み】専用。次の1本を裏で丸ごと落として IDB に置く
+//     ＝スワイプした瞬間に blobURL で即再生できる（reels-spec §4 のカクつき防止）。
+//   ・いま見る1本＝reel-ui が getCachedVideoObjectUrl() で「キャッシュにあるか」だけ聞き、
+//     無ければネットワークURLを直接 <video src> に渡す（progressive＝ブラウザのネイティブ Range/206）。
+//   理由：全取得は「落とし切るまで1フレームも出ない」＝4〜12MB を弱電波で待つ間ずっと黒画面。
+//   実機（iPhone・モバイル回線）で「動画がなかなか出てこない」の直接原因だった（⑦の最有力）。
+//   ＝SW 側（sw.js）が動画リクエストを素通しするようになったので、ネイティブ Range に任せられる。
 //
 // 使い方：
-//   import { loadVideoObjectUrl } from '/js/video-cache.js';
-//   videoEl.src = await loadVideoObjectUrl(videoUrl);  // キャッシュ or 全取得
+//   import { getCachedVideoObjectUrl, loadVideoObjectUrl } from '/js/video-cache.js';
+//   // いま見る1本（progressive・ネットワークには行かない）
+//   videoEl.src = (await getCachedVideoObjectUrl(videoUrl)) || videoUrl;
 //   videoEl.play();
+//   // 次の1本の先読み（全取得→IDB）
+//   loadVideoObjectUrl(nextUrl).catch(() => {});
 //   // ログアウト時（プライバシー・auth.js から）：
 //   import { clearAllVideos } from '/js/video-cache.js';
 //   await clearAllVideos();
@@ -31,7 +42,7 @@ const IDB_MAX_ENTRIES = 40;          // 永続層の上限件数（20〜40クリ
 const IDB_EVICT_BATCH = 8;
 
 const cache = new Map();      // url -> { blobUrl, fetchedAt, lastUsedAt }
-const inflight = new Map();   // url -> Promise<blobUrl>
+const inflight = new Map();   // url -> { p: Promise<blobUrl>, abort: () => void }（#209⑦: 先読みは中断可能）
 
 /**
  * 動画URLを「端末キャッシュ or 全取得」で object URL にして返す（非同期）。
@@ -39,6 +50,9 @@ const inflight = new Map();   // url -> Promise<blobUrl>
  * - IDB ヒット → Blob から blobUrl を復元
  * - ミス → fetch(url)（全体・200）→ Blob → blobUrl（＋IDB永続化）
  * 失敗時は throw（呼び出し側で「タップで再生/リトライ」導線を出す）。
+ *
+ * ⚠ #209⑦-3: これは【先読み】用（＝落とし切るまで再生できないので「いま見る1本」には使わない）。
+ *   いま見る1本は getCachedVideoObjectUrl() ＋ ネットワークURL直挿し（progressive）。
  */
 export async function loadVideoObjectUrl(url) {
     if (!url || typeof url !== 'string') return url;
@@ -49,26 +63,24 @@ export async function loadVideoObjectUrl(url) {
         hit.lastUsedAt = Date.now();
         return hit.blobUrl;
     }
-    if (inflight.has(url)) return inflight.get(url);
+    if (inflight.has(url)) return inflight.get(url).p;
 
+    // #209⑦: 先読みは「途中で捨てられる」前提で行う。いま見る1本より優先されてはいけないので、
+    //   getCachedVideoObjectUrl から中断できるよう AbortController を持たせる（非対応環境は従来どおり）。
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     const p = (async () => {
         let blob = await readFromIDB(url);
         if (!blob || blob.size === 0) {
             // 全体取得（Range を投げない＝200・SW/HTTP でキャッシュ可）
-            const resp = await fetch(url);
+            const resp = await fetch(url, ctrl ? { signal: ctrl.signal } : undefined);
             if (!resp.ok) throw new Error(`video fetch HTTP ${resp.status}`);
             blob = await resp.blob();
             if (!blob || blob.size === 0) throw new Error('empty video blob');
             persistToIDB(url, blob).catch(() => {});
         }
-        const blobUrl = URL.createObjectURL(blob);
-        evictMemIfNeeded();
-        const old = cache.get(url);
-        if (old) URL.revokeObjectURL(old.blobUrl);
-        cache.set(url, { blobUrl, fetchedAt: Date.now(), lastUsedAt: Date.now() });
-        return blobUrl;
+        return toObjectUrl(url, blob);
     })();
-    inflight.set(url, p);
+    inflight.set(url, { p, abort: () => { try { if (ctrl) ctrl.abort(); } catch (e) { /* ignore */ } } });
     try {
         return await p;
     } finally {
@@ -76,9 +88,62 @@ export async function loadVideoObjectUrl(url) {
     }
 }
 
+/**
+ * #209⑦-3: 「取りに行かずに」キャッシュだけ引く（メモリ → IDB）。ネットワークには出ない。
+ * @returns {Promise<string|null>} blobUrl／未キャッシュなら null
+ *   → 呼び出し側（reel-ui）は null のときネットワークURLを直接 <video src> に渡して progressive 再生する。
+ *
+ * ⚠⚠ 先読み（loadVideoObjectUrl）が同じURLを取得中なら「待たずに中断させて null を返す」。
+ *   相乗りして待つ実装にすると、先読みの**全体取得の完了を待つ**ことになり（4〜12MB・弱電波で十数秒）、
+ *   progressive 再生の意味が完全に消える＝⑦の「黒いまま出てこない」がそのまま再現する
+ *   （実測：全DL 800ms のうち 698ms ブロック）。いま見ている1本の再生開始を最優先する。
+ *   中断した分の通信は無駄になるが、「見たい動画が出てこない」より軽い（reels-spec §4 の先読みも
+ *   あくまでカクつき防止が目的で、再生開始を遅らせるためのものではない）。
+ *   ＝先読みが完了していれば当然キャッシュヒットする（＝相乗りが要るのは「途中」のときだけ）。
+ */
+export async function getCachedVideoObjectUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    if (url.startsWith('blob:') || url.startsWith('data:')) return url;
+
+    const hit = cache.get(url);
+    if (hit) {
+        hit.lastUsedAt = Date.now();
+        return hit.blobUrl;
+    }
+    const inf = inflight.get(url);
+    if (inf) {
+        // 先読みの途中＝待たずに中断し、呼び出し側に progressive（ネットワークURL直挿し）で行かせる。
+        // prefetch 側は .catch(()=>{}) で AbortError を握り、finally で inflight を解放する＝再試行も従来どおり。
+        inf.abort();
+        return null;
+    }
+
+    const blob = await readFromIDB(url);
+    if (!blob || blob.size === 0) return null;
+    return toObjectUrl(url, blob);
+}
+
 /** そのURLが既にメモリキャッシュ済みか（同期・ポスター→即再生の判定用）。 */
 export function isVideoCached(url) {
     return typeof url === 'string' && cache.has(url);
+}
+
+/**
+ * Blob → object URL（メモリ層へ登録・LRU）。loadVideoObjectUrl と getCachedVideoObjectUrl の共通処理。
+ * ⚠ 既に同じURLの blobUrl があればそれを使い回す（revoke して作り直さない）＝
+ *   await の間に別経路が先に登録していた場合、revoke すると
+ *   その blobUrl を既に src に持っている <video> が再生できなくなるため。
+ */
+function toObjectUrl(url, blob) {
+    const existing = cache.get(url);
+    if (existing) {
+        existing.lastUsedAt = Date.now();
+        return existing.blobUrl;
+    }
+    const blobUrl = URL.createObjectURL(blob);
+    evictMemIfNeeded();
+    cache.set(url, { blobUrl, fetchedAt: Date.now(), lastUsedAt: Date.now() });
+    return blobUrl;
 }
 
 function evictMemIfNeeded() {

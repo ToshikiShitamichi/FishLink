@@ -597,6 +597,14 @@
         let listingData = null;
         let lastRemitAmount = 0; // 6/5 #129 ⑥: コピー用に保持
 
+        // 2026-07-17 #210③: 桁区切りは必ず 'en-US' を明示する。
+        //   ロケール引数なしの toLocaleString() は端末の既定ロケールに従うため、
+        //   区切りが「.」になる端末（de-DE/id-ID/vi-VN 等）で「41.000 KHR」のように化ける。
+        //   アプリの言語設定とは無関係に端末次第で化けるので、金額表示はこのページ内すべて 'en-US' に統一
+        //   （買い手カート cart.html・js/reel-ui.js が既に 'en-US' 固定＝そちらが正）。
+        //   ⚠ 入金照合・送金額のコピーで運営が読む数字なので、桁区切りのブレは特に危険。
+        const KHR_LOCALE = 'en-US';
+
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
             else setTimeout(() => waitForUserData(cb), 200);
@@ -732,7 +740,7 @@
 
             // 金額
             const total = orderData.totalAmount || 0;
-            document.getElementById('summary-pay').textContent = `${total.toLocaleString()} KHR`;
+            document.getElementById('summary-pay').textContent = `${total.toLocaleString(KHR_LOCALE)} KHR`;
 
             const fishPrice = orderData.fishPrice || 0;
             const deliveryFee = orderData.deliveryFee || 0;
@@ -747,7 +755,7 @@
                 ? orderData.farmerReceiveAmount
                 : (fishPrice - commission + deliveryFee);
             lastRemitAmount = remitAmount;
-            document.getElementById('summary-remit').textContent = `${remitAmount.toLocaleString()} KHR`;
+            document.getElementById('summary-remit').textContent = `${remitAmount.toLocaleString(KHR_LOCALE)} KHR`;
 
             // 注文情報（スナップショット優先）
             const fishTypeKey = orderData.snapFishType || listingData?.fishType;
@@ -775,21 +783,21 @@
             const campaign = orderData.campaignDiscount || 0;
             const serviceFee = orderData.serviceFee || 0;
             let payHtml = `
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishPrice')}</span><span class="kv-row__v">${fishPrice.toLocaleString()} KHR</span></div>
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.deliveryFee')}</span><span class="kv-row__v">${deliveryFee.toLocaleString()} KHR</span></div>
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.serviceFee')}</span><span class="kv-row__v">${serviceFee.toLocaleString()} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishPrice')}</span><span class="kv-row__v">${fishPrice.toLocaleString(KHR_LOCALE)} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.deliveryFee')}</span><span class="kv-row__v">${deliveryFee.toLocaleString(KHR_LOCALE)} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.serviceFee')}</span><span class="kv-row__v">${serviceFee.toLocaleString(KHR_LOCALE)} KHR</span></div>
             `;
             if (campaign > 0) {
-                payHtml += `<div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.campaignDiscount')}</span><span class="kv-row__v minus">-${campaign.toLocaleString()} KHR</span></div>`;
+                payHtml += `<div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.campaignDiscount')}</span><span class="kv-row__v minus">-${campaign.toLocaleString(KHR_LOCALE)} KHR</span></div>`;
             }
             // 6/7 #135 ①: 紹介クーポン割引行（カートで適用済みのみ）。これが無いと合計が合わない。
             const referralDiscount = orderData.referralDiscountAmount || 0;
             if (referralDiscount > 0) {
-                payHtml += `<div class="kv-row"><span class="kv-row__k">${i18next.t('order.referralCouponDiscount')}</span><span class="kv-row__v amber">-${referralDiscount.toLocaleString()} KHR</span></div>`;
+                payHtml += `<div class="kv-row"><span class="kv-row__k">${i18next.t('order.referralCouponDiscount')}</span><span class="kv-row__v amber">-${referralDiscount.toLocaleString(KHR_LOCALE)} KHR</span></div>`;
             }
             payHtml += `
                 <div class="divider-dashed"></div>
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.total')}</span><span class="kv-row__v bold">${total.toLocaleString()} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.total')}</span><span class="kv-row__v bold">${total.toLocaleString(KHR_LOCALE)} KHR</span></div>
             `;
             document.getElementById('pay-breakdown').innerHTML = payHtml;
 
@@ -805,15 +813,15 @@
             //   農家送金は常に満額（クーポンは FishLink 負担）＝ボーナスは受取額に上乗せ。
             const remitBonus = orderData.referralBonusAmount || 0;
             const remitBonusLine = remitBonus > 0
-                ? `<div class="kv-row"><span class="kv-row__k">${i18next.t('order.referralBonus')}</span><span class="kv-row__v amber">+${remitBonus.toLocaleString()} KHR</span></div>`
+                ? `<div class="kv-row"><span class="kv-row__k">${i18next.t('order.referralBonus')}</span><span class="kv-row__v amber">+${remitBonus.toLocaleString(KHR_LOCALE)} KHR</span></div>`
                 : '';
             document.getElementById('remit-breakdown').innerHTML = `
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishPrice')}</span><span class="kv-row__v">${fishPrice.toLocaleString()} KHR</span></div>
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.deliveryFee')}</span><span class="kv-row__v">${deliveryFee.toLocaleString()} KHR</span></div>
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.commissionDeduct', { rate: commissionRate })}</span><span class="kv-row__v minus">-${commission.toLocaleString()} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishPrice')}</span><span class="kv-row__v">${fishPrice.toLocaleString(KHR_LOCALE)} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.deliveryFee')}</span><span class="kv-row__v">${deliveryFee.toLocaleString(KHR_LOCALE)} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.commissionDeduct', { rate: commissionRate })}</span><span class="kv-row__v minus">-${commission.toLocaleString(KHR_LOCALE)} KHR</span></div>
                 ${remitBonusLine}
                 <div class="divider-dashed"></div>
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.total')}</span><span class="kv-row__v bold">${remitAmount.toLocaleString()} KHR</span></div>
+                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.total')}</span><span class="kv-row__v bold">${remitAmount.toLocaleString(KHR_LOCALE)} KHR</span></div>
             `;
 
             // 送金先情報

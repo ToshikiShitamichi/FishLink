@@ -535,6 +535,13 @@
             return true;
         }
 
+        // 2026-07-17 #210③: 桁区切りは必ず 'en-US' を明示する。
+        //   ロケール引数なしの toLocaleString() は端末の既定ロケールに従うため、
+        //   区切りが「.」になる端末（de-DE/id-ID/vi-VN 等）で「41.000 KHR」のように化ける。
+        //   アプリの言語設定とは無関係に端末次第で化けるので、金額表示はこのページ内すべて 'en-US' に統一
+        //   （買い手カート cart.html・js/reel-ui.js が既に 'en-US' 固定＝そちらが正）。
+        const KHR_LOCALE = 'en-US';
+
         // ── データ取得 ─────────────────────────────
         let allOrders = [];
         let allFishListings = {}; // id → data
@@ -644,8 +651,8 @@
             }, 0);
 
             document.getElementById('sum-count').textContent = i18next.t('admin.tx.countUnit', { count });
-            document.getElementById('sum-volume').textContent = `${volume.toLocaleString()} KHR`;
-            document.getElementById('sum-fee').textContent = `${fee.toLocaleString()} KHR`;
+            document.getElementById('sum-volume').textContent = `${volume.toLocaleString(KHR_LOCALE)} KHR`;
+            document.getElementById('sum-fee').textContent = `${fee.toLocaleString(KHR_LOCALE)} KHR`;
 
             // テーブル描画（PC/タブレット）＋ カード描画（モバイル）
             const tbody = document.getElementById('tx-body');
@@ -669,7 +676,7 @@
                         <td>${date}</td>
                         <td>${restName}</td>
                         <td>${farmerName}</td>
-                        <td style="font-weight:600;">${(o.totalAmount || 0).toLocaleString()} KHR</td>
+                        <td style="font-weight:600;">${(o.totalAmount || 0).toLocaleString(KHR_LOCALE)} KHR</td>
                         <td><a class="btn-detail" href="/pages/admin/order.html?id=${o.id}">${i18next.t('admin.tx.viewDetail')}</a></td>
                     </tr>
                 `;
@@ -690,7 +697,7 @@
                         <div style="font-family:monospace; font-size:11px; color:#475569; margin-bottom:8px;">${orderNo}</div>
                         <div class="tx-card__row"><span class="tx-card__k">${i18next.t('admin.tx.colRestaurant')}</span><span class="tx-card__v">${restName}</span></div>
                         <div class="tx-card__row"><span class="tx-card__k">${i18next.t('admin.tx.colFarmer')}</span><span class="tx-card__v">${farmerName}</span></div>
-                        <div class="tx-card__row"><span class="tx-card__k">${i18next.t('admin.tx.colPay')}</span><span class="tx-card__v bold">${(o.totalAmount || 0).toLocaleString()} KHR</span></div>
+                        <div class="tx-card__row"><span class="tx-card__k">${i18next.t('admin.tx.colPay')}</span><span class="tx-card__v bold">${(o.totalAmount || 0).toLocaleString(KHR_LOCALE)} KHR</span></div>
                     </a>
                 `;
             }).join('');

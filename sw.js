@@ -462,7 +462,37 @@ self.addEventListener('notificationclick', (event) => {
 //   locales 3言語に reel.mute/unmute/emptySub/farmerVideosTitle/gridNote 追加＋videoTapAdd(30秒)/nudge 改。
 //   ⚠ storage.rules（reels/ の image 許可）を Console 手動公開。functions も変更あり（レビュー指摘＝サムネ _thumb.jpg の
 //   道連れ物理削除＝reel doc に thumbStoragePath 保存＋保持N超過/道連れ削除の2経路で thumb も削除）。Firestore Rules/インデックス変更なし。
-const CACHE_NAME = 'fishlink-v149';
+// 2026-07-19 #209/#210/#211（7/17 リール取りこぼし＋丸め残差分＋前払い画面表示面）→ v150
+//   #209 全画面リール＝ミュート自動再生（旧タップ再生・spec §4 2026-07-15変更）／ループ継ぎ目の黒フラッシュを
+//        JS制御で解消（loop属性を外し rAF で終端手前に seek）／次の1本だけ先読み（再生開始後・saveData/2g は不可）／
+//        再生バーを画面最上部→〔この魚を見る〕直上へ／poster が video の不透明背景に隠れていた既存バグを修正
+//        （z-index＝#205④ の poster は一度も見えていなかった＝⑦「タップ直後に真っ黒」の一因）／
+//        Home新着リールの sizeLabel に単位（8 head/kg）＝spec §8。
+//   #210 カート「表示単価×数量＝小計」の整合（serviceFee を buyerDisplayUnitPrice からの逆算に）／
+//        内臓処理ヒントを2つの表示単価の差分に（旧＝gutPrice単体×料率で一般にはズレる）／
+//        ウォレット手入力のパース穴（"50.750"→50.75→0）と cap の100丸め／
+//        桁区切りの表記ゆれ（41.000）＝toLocaleString をページ内18箇所すべて 'en-US' 明示に。
+//   #211 ステージ別ヘッダータイトル（カート／注文内容の確認／お支払い）／KHQR の長い説明を削除し
+//        ⚠ボックス・ボタンのサブ文言・※ノートへ再配置／控え添付の✕削除。
+//   ⚠ hosting のみ（functions / Firestore Rules / インデックス / Storage ルール変更なし）。
+// 2026-07-19 #209⑦（最優先・機能の生命線）実機で全画面リールが「なかなか出てこない／黒いまま」→ v151
+//   原因は3つ揃わないと直らない＝今回の3点セット。
+//   ⑦-1 投稿時に MP4 を faststart 化（moov atom を先頭へ）＝js/mp4-faststart.js を新規 PRECACHE 追加。
+//        moov が末尾だと、再生開始前にファイル全体のダウンロードが必要＝激遅だった。
+//   ⑦-2 全画面リールの再生を「全DL待ち」から progressive 再生へ（js/reel-ui.js / js/video-cache.js）。
+//        ⚠ ⑦-1 だけ入れても速くならない：従来は video-cache が fetch でファイル全体を Blob 化してから
+//        <video src=blobURL> に渡していた（＝SW が 206 をキャッシュできない問題を回避するための #199 設計）ため、
+//        moov を先頭に置いても全部落とすまで待っていた。
+//   ⑦-3 SW が動画リクエストに手を出さない（下の fetch ハンドラ・詳細はそこのコメント参照）。
+//        従来は全 GET を横取りしており、ブラウザ本来の Range/206 progressive 再生を邪魔していた。
+// 2026-07-19 実機修正：前払い画面「お支払いの控えを添付」が反応しない → v152
+//   ① トリガー方式を統一：この行だけ <label> が hidden な file input を暗黙に activate する方式だったが、
+//      iOS Safari 等では display:none の input が label クリックで開かないことがある。
+//      → label の既定動作を preventDefault で止め、input.click() を明示的に呼ぶ（post.html 等と同方式）。
+//   ② 失敗を可視化：アップロード失敗時に console.warn だけで無言リセットしていたため、
+//      「押しても何も起きない」と区別がつかなかった（Storage ルール未公開＝permission-denied も同じ見え方）。
+//      → payment.attachProofFailed のトーストを出す（3言語・locales は PRECACHE なので版バンプが必須）。
+const CACHE_NAME = 'fishlink-v152';
 
 const PRECACHE_URLS = [
     '/',
@@ -496,6 +526,9 @@ const PRECACHE_URLS = [
     '/js/video-cache.js',
     '/js/reel-utils.js',
     '/js/reel-ui.js',
+    // 🎬 #209⑦-1: 投稿時に MP4 の moov atom を先頭へ移す（faststart 化）。
+    //   reel-utils.js から import されるため、同じ扱いで precache する。
+    '/js/mp4-faststart.js',
     '/locales/ja.json',
     '/locales/en.json',
     '/locales/km.json',
@@ -546,6 +579,28 @@ self.addEventListener('activate', (event) => {
 // 5/13 追補2：スキップ対象を「動的データ API」に限定。Firebase Storage（画像）と
 //   Firebase SDK の CDN は SW キャッシュを使う方向に変更（プロフィール写真等の
 //   再表示を高速化）。
+//
+// 🎬 2026-07-19 #209⑦-3 追補：メディア（動画・音声）はスキップ対象に追加＝下記 isMediaRequest。
+
+// 🎬 #209⑦-3: URL が動画・音声ファイルかを拡張子で判定する。
+//   Firebase Storage の download URL はパスが URL エンコードされている
+//   （例 /v0/b/<bucket>/o/reels%2F<uid>%2F<listingId>%2F<id>.mp4?alt=media&token=…）ので、
+//   デコードしてから末尾の拡張子を見る。クエリ（?alt=media&token=…）は pathname に含まれない。
+//   ⚠ 「パスに reels を含む」だけで判定してはいけない：reels/ 配下には #205 のサムネ
+//      （{id}_thumb.jpg）も同居しており、それまで SW キャッシュ対象外になってしまう。
+//      サムネは poster＝黒画面対策の要なのでキャッシュを効かせたい。だから拡張子で見る。
+//   ・voice/{orderId}/{msgId}.{webm|mp4|m4a}（ボイスメッセージ）も一致するが、これは正しい：
+//     <audio> も Range で取りに行くため同じ 206 問題を抱えており、素通しが正解。
+function isMediaUrl(url) {
+    let path = url.pathname;
+    try {
+        path = decodeURIComponent(path);
+    } catch (e) {
+        // 不正なエスケープシーケンスはデコードせずそのまま判定（拡張子が拾えないだけ）
+    }
+    return /\.(mp4|m4v|mov|webm|ogv|m4a)$/i.test(path);
+}
+
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     const host = url.hostname;
@@ -560,7 +615,22 @@ self.addEventListener('fetch', (event) => {
         || host.includes('fcm.googleapis.com')
         || host.includes('fcmregistrations.googleapis.com');
 
-    if (isDynamicApi || event.request.method !== 'GET') {
+    // 🎬 #209⑦-3: 動画（メディア）は SW を素通りさせ、ブラウザに直接ネットワークへ行かせる。
+    //   なぜ：<video> の progressive 再生でブラウザは Range ヘッダ付きで要求し、
+    //   サーバは 206 Partial Content を返す。ところが下の stale-while-revalidate は
+    //     ・206 をキャッシュしない（status === 200 のときだけ cache.put）＝毎回ネットワーク
+    //     ・cache.match(request) は Range ヘッダを見ないため、過去に 200 で入ったフル
+    //       レスポンスを Range 要求に返してしまう＝シークや再生が壊れる
+    //   ＝ブラウザ本来の部分取得を SW が邪魔していた（#209⑦「黒いまま止まって見える」の一因）。
+    //   早期 return すれば Range/206 がネイティブに効き、moov 先頭化（⑦-1）が初めて生きる。
+    //   ⚠ 画像・JSON・HTML を巻き込まないこと（誤って除外するとオフライン動作や #69 の
+    //     画像キャッシュ戦略が壊れる）。端末差があるので 1 つの判定に頼らず OR で見る。
+    const isMediaRequest =
+        event.request.destination === 'video'    // <video> 由来（主要ブラウザで利用可）
+        || event.request.headers.has('range')    // Range 付き＝部分取得（destination 未対応端末の保険）
+        || isMediaUrl(url);                      // 拡張子で判定（サムネ .jpg は対象外＝キャッシュ継続）
+
+    if (isDynamicApi || isMediaRequest || event.request.method !== 'GET') {
         return;
     }
 

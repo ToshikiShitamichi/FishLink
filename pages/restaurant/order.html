@@ -798,7 +798,10 @@
         // 🎬 7/9 #202: この魚の動画（リール）＝この出品スコープの保持動画・新しい順の横カルーセル→全画面フィード
         import { getReelsForListing, formatDuration, relativePostedText } from '/js/reel-utils.js';
         import { openReelFeed } from '/js/reel-ui.js';
-        import { buyerDisplayUnitPrice } from '/js/order-utils.js';
+        // 2026-07-19 #210①-2: 買い手表示単価は「魚の単価」と「内臓処理」を【別々の行】として
+        //   それぞれ100リエル未満を切り捨ててから足す（payment-spec §4.2）。合算してから1回だけ
+        //   切り捨てる buyerDisplayUnitPrice(price + gutPrice, rate) は使わない。
+        import { buyerUnitPrice } from '/js/order-utils.js';
 
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
@@ -1001,7 +1004,9 @@
                     const x = d.data();
                     const fName = i18next.exists(`fish.${x.fishType}`) ? i18next.t(`fish.${x.fishType}`) : x.fishType;
                     const shortName = String(fName).trim();
-                    const unit = buyerDisplayUnitPrice((x.price || 0) + (x.gutPrice || 0), serviceRate);
+                    // #210①-2: この農家の他の出品カードも既定は内臓処理込み表示（gutIncluded=true）。
+                    //   gutPrice が null（丸魚のみ）の出品は buyerUnitPrice 側で自動的に0行として扱われる。
+                    const unit = buyerUnitPrice(x.price || 0, x.gutPrice || 0, true, serviceRate);
                     const sz = x.size || '';
                     const img = x.photoUrl
                         ? `<img ${asCachedImgAttrs(x.photoUrl)} alt="" loading="lazy" style="width:100%; height:96px; object-fit:cover; border-radius:10px 10px 0 0;">`
@@ -1012,7 +1017,7 @@
                             <div style="padding:8px 10px 10px;">
                                 <div style="font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--color-text);">${escapeHtml(shortName)}</div>
                                 ${sz ? `<div style="font-size:11px; color:var(--color-text-sub); margin-top:2px;">${escapeHtml(sz)} head/kg</div>` : ''}
-                                <div style="font-size:16px; font-weight:800; color:var(--color-cta); margin-top:6px;">${unit.toLocaleString()}<span style="font-size:10px; color:var(--color-text-sub); font-weight:600;"> KHR/kg</span></div>
+                                <div style="font-size:16px; font-weight:800; color:var(--color-cta); margin-top:6px;">${unit.toLocaleString('en-US')}<span style="font-size:10px; color:var(--color-text-sub); font-weight:600;"> KHR/kg</span></div>
                             </div>
                         </a>
                     `;
@@ -1152,7 +1157,11 @@
             }
 
             // 6/1 #110: 価格は内臓処理込みの単一値（手数料込み）＋グレー注記（常時）。単一の正(§7)。
-            const displayPrice = buyerDisplayUnitPrice((listingData.price || 0) + (listingData.gutPrice || 0), serviceRate);
+            // 2026-07-17 #210③: 桁区切りは 'en-US' 明示。引数なしの toLocaleString() は端末の既定ロケールに
+            //   従うため、区切りが「.」になる端末で「7.300 KHR/kg」に化ける（アプリの言語設定とは無関係）。
+            // 2026-07-19 #210①-2: 魚の単価と内臓処理は行ごとに切り捨ててから足す（合算して1回丸めない）。
+            //   ここは既定表示＝内臓処理込みなので gutIncluded=true（丸魚のみ＝gutPrice null は自動で0行）。
+            const displayPrice = buyerUnitPrice(listingData.price || 0, listingData.gutPrice || 0, true, serviceRate);
 
             document.getElementById('fish-detail').innerHTML = `
                 <div class="fish-detail__carousel">${carouselHtml}</div>
@@ -1160,7 +1169,7 @@
                     <!-- ②魚名(サイズ) -->
                     <div class="fish-detail__name">${escapeHtml(fishName)}${size ? `（${escapeHtml(size)} head/kg）` : ''}</div>
                     <!-- ③価格（内臓処理込み単一値＋グレー注記） -->
-                    <div class="fish-detail__price">${displayPrice.toLocaleString()} KHR/kg</div>
+                    <div class="fish-detail__price">${displayPrice.toLocaleString('en-US')} KHR/kg</div>
                     <div class="fish-detail__price-incl">${listingData.gutPrice == null ? i18next.t('order.priceWholeFishOnly') : i18next.t('order.priceGutIncluded')}</div>
                     <!-- ④農家行（タップで生産者ページ・★好評価率%） -->
                     <div class="fish-detail__farmer">
@@ -1294,7 +1303,8 @@
             const stock = Number(listingData.stock) || 0;
             // 販売中×在庫あり＝buyable（配達圏内は無視・spec §7）。停止/売切れ/削除はアーカイブ表示。
             const buyable = listingData.isActive === true && stock > 0 && !listingData.deletedAt;
-            const displayPrice = buyerDisplayUnitPrice((listingData.price || 0) + (listingData.gutPrice || 0), serviceRate);
+            // #210①-2: 商品詳細の価格と同じ組み立て方（行ごと切り捨て）で出す＝リールと詳細で単価が食い違わない。
+            const displayPrice = buyerUnitPrice(listingData.price || 0, listingData.gutPrice || 0, true, serviceRate);
             return (listingReels || []).map(r => ({
                 videoUrl: r.videoUrl,
                 thumbUrl: r.thumbUrl || firstPhoto,

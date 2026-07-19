@@ -79,6 +79,11 @@
   .attach-row .ac-ic { font-size:16px; }
   .attach-row .ac-t { font-size:12.5px; font-weight:800; color:#0B5FB0; }
   .attach-row .ac-s { font-size:11px; color:#5A6470; font-weight:600; }
+  .attached-row { display:flex; align-items:center; gap:8px; margin:8px 2px 0; padding:10px 12px; border:1px solid #BFE3C8; border-radius:11px; background:#F1FAF3; }
+  .attached-row .at-thumb { position:relative; width:34px; height:34px; border-radius:7px; background:repeating-linear-gradient(45deg,#D8E6DB,#D8E6DB 4px,#E7F1E9 4px,#E7F1E9 8px); flex:none; }
+  .attached-row .at-x { position:absolute; top:-6px; right:-6px; width:17px; height:17px; border-radius:50%; background:#333; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .attached-row .at-t { font-size:12.5px; font-weight:800; color:#1E8E4E; }
+  .attached-row .at-s { font-size:11px; color:#5A6470; font-weight:600; }
   /* KHQR金額の差引リキャップ＋アクション */
   .khqr-amt .kv-row { display:flex; align-items:center; justify-content:center; gap:8px; }
   .copy-chip { font-size:12px; font-weight:800; color:#0B5FB0; background:#EAF2FB; border:1px solid #BBD3EC; border-radius:9px; padding:7px 13px; cursor:pointer; }
@@ -245,15 +250,17 @@
           <div class="qr-img"></div>
           <div class="qr-tag warn">⚠ このQRに金額は入っていません。上の「お支払い額」を〔金額をコピー〕して入力してください</div>
         </div>
-        <div class="qr-note">※お支払い先は「<b>TACHIBANAKI RYOSUKE AND OKADA RYUJU（FISHLINK運営者）</b>」と表示されます。FISHLINKが責任を持ってお預かりします。</div>
+        <div class="qr-note">※お支払い先は「<b>TACHIBANAKI RYOSUKE AND OKADA RYUJU（FISHLINK運営者）</b>」と表示されます。<b>受け取りまで運営が安全にお預かりし、農家の辞退・受け取りの問題があればウォレットに返金します。</b></div>
         <div class="qr-actions">
-          <button class="qr-open">ABAアプリで開く<span class="qs">ABAをお使いの方はこちらが最短（金額はご自身で入力）</span></button>
+          <button class="qr-open">🏦 ABAアプリで開く<span class="qs">ABAの方はこちらが最短</span></button>
           <div class="qr-row2">
-            <button class="qr-sbtn">🖼 QR画像を保存<span class="qs2">ABA以外の銀行の方はこちら</span></button>
+            <button class="qr-sbtn">🖼 QR画像を保存<span class="qs2">ABA以外の方：保存して銀行アプリの「画像から読み取り」で</span></button>
           </div>
         </div>
-        <div class="qr-help"><b>ABAの方＝〔ABAアプリで開く〕</b>が最短。<b>ABA以外の銀行の方＝〔QR画像を保存〕</b>→ ご自身の銀行アプリの「画像から読み取り」でお支払いください。<br><b>銀行アプリで「お支払い額」を入力してお支払いください</b>（上の〔金額をコピー〕→貼り付けが確実・打ち間違い防止）。<br><b>FISHLINKが受け取り、受け取りまで安全にお預かりします</b>（農家の辞退・受け取りの問題はウォレットに返金）。</div>
+        <!-- 長い説明段落は削除＝金額は⚠ボックス／誰が・どうやってはボタン／安心・返金は※ノートに集約（重複解消・2026-07-17） -->
         <div class="attach-row"><span class="ac-ic">📎</span><span class="ac-t">お支払いの控えを添付</span><span class="ac-s">任意・確認が早くなります</span></div>
+        <!-- 添付後の状態＝サムネ右上に✕で削除/やり直しできる -->
+        <div class="attached-row"><span class="at-thumb"><span class="at-x">✕</span></span><span class="at-t">✓ 控えを添付しました</span><span class="at-s">任意・確認が早くなります</span></div>
       </div>
       <div class="footer"><button class="btn">支払いました</button></div>
     </div>

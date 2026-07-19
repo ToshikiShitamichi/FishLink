@@ -67,7 +67,10 @@
         "unmute": "音を出す",
         "emptySub": "動画を投稿すると、いちばん新しい1本が買い手に見せられます。",
         "farmerVideosTitle": "{{name}} の動画",
-        "gridNote": "この農家が投稿した動画（新しい順）。青「販売中」＝いま買える魚。タップで全画面再生。"
+        "gridNote": "この農家が投稿した動画（新しい順）。青「販売中」＝いま買える魚。タップで全画面再生。",
+        "loadFailed": "読み込めませんでした",
+        "retry": "再試行",
+        "saving": "保存中…"
     },
     "app": {
         "name": "FISHLINK",
@@ -903,9 +906,9 @@
         "khqrAccountLabel": "口座番号",
         "khqrNoAmountWarn": "⚠ このQRに金額は入っていません。上の「お支払い額」を〔金額をコピー〕して入力してください",
         "openBankAba": "ABAアプリで開く",
-        "openBankAbaSub": "ABAをお使いの方はこちらが最短（金額はご自身で入力）",
-        "saveQrSub": "ABA以外の銀行の方はこちら",
-        "khqrPayeeNotice": "※お支払い先は「TACHIBANAKI RYOSUKE AND OKADA RYUJU（FISHLINK運営者）」と表示されます。FISHLINKが責任を持ってお預かりします。",
+        "openBankAbaSub": "ABAの方はこちらが最短",
+        "saveQrSub": "ABA以外の方：保存して銀行アプリの「画像から読み取り」で",
+        "khqrPayeeNotice": "※お支払い先は「TACHIBANAKI RYOSUKE AND OKADA RYUJU（FISHLINK運営者）」と表示されます。受け取りまで運営が安全にお預かりし、農家の辞退・受け取りの問題があればウォレットに返金します。",
         "attachProof": "お支払いの控えを添付",
         "attachProofSub": "任意・確認が早くなります",
         "attachProofDone": "控えを添付しました",
@@ -927,7 +930,9 @@
         "reviewAfterTrade": "※ レビューは取引完了後に表示されます",
         "statusPayoutWaiting": "送金待ち",
         "payoutWaitingDesc": "問題がなければ数時間後に取引完了し、FISHLINKから送金されます。",
-        "aboutRemittancePrepay": "お支払いは FISHLINK が預かっています（農家への直接支払いではありません）。問題がなければ取引完了後、FISHLINK から農家へ送金されます。"
+        "aboutRemittancePrepay": "お支払いは FISHLINK が預かっています（農家への直接支払いではありません）。問題がなければ取引完了後、FISHLINK から農家へ送金されます。",
+        "attachProofRemove": "添付した控えを削除",
+        "attachProofFailed": "控えを添付できませんでした。もう一度お試しください（控えは任意です）"
     },
     "dashboard": {
         "listings": "投稿一覧",

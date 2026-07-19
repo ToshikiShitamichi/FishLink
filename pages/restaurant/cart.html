@@ -578,6 +578,7 @@
             padding: 10px 0; font-size: 12.5px; font-weight: 800;
             color: var(--color-cta); background: #fff;
         }
+        /* 2026-07-17 #211②で未使用化（長い説明段落を削除・重複解消）。将来の説明枠用に残置 */
         .qr-help { font-size: 12px; color: var(--color-text-sub); line-height: 1.6; margin: 14px 2px 0; }
         .qr-help b { color: var(--color-cta); font-weight: 700; }
         /* 7/10 #203 A-4: 受取名の先回り告知（中立グレー note） */
@@ -599,6 +600,19 @@
         .attach-row.done .material-symbols-outlined { color: #2e7d32; }
         .attach-row.done .attach-row__t { color: #2e7d32; }
         .attach-row__thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+        /* 2026-07-17 #211③: 控えのサムネ右上の✕（添付を取り消して付け直せる・モック ⑤ の .at-x）。
+           表示は .done クラス（＝添付済み）に連動させる＝リセット漏れが起きない。 */
+        .attach-row__thumbwrap { position: relative; flex-shrink: 0; display: none; }
+        .attach-row.done .attach-row__thumbwrap { display: block; }
+        .attach-row__x {
+            position: absolute; top: -7px; right: -7px;
+            width: 21px; height: 21px; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--color-border); border-radius: 50%;
+            background: var(--color-surface); cursor: pointer;
+        }
+        /* ⚠ .attach-row.done .material-symbols-outlined（緑・18px）に負けないよう詳細度を上げる */
+        .attach-row.done .attach-row__x .material-symbols-outlined { font-size: 14px; color: var(--color-text-sub); }
     </style>
 </head>
 
@@ -644,13 +658,12 @@
 
     <!-- 確認ステージ -->
     <div class="stage-page" id="confirm-page">
-        <div class="stage-intro" style="background:#eef2ff; border-color:#c7d2fe; color:#312e81;">
-            <div class="stage-intro__title">
-                <span class="material-symbols-outlined" style="font-size:18px;">fact_check</span>
-                <span data-i18n="cart.confirmTitle"></span>
-            </div>
-            <div data-i18n="cart.confirmDesc"></div>
-        </div>
+        <!-- #211①: 見出し（cart.confirmTitle）はヘッダー #page-title がステージ別に出すので、ここでは繰り返さない。
+             説明段落（cart.confirmDesc）も撤去：文言が「下の『注文を確定する』ボタンを押してください」＝案B以前のもので、
+             通常フローの実ボタンは〔KHQRで支払う ◯ KHR〕（ウォレットで全額まかなえる時だけ〔注文を確定する〕）＝
+             存在しないボタン名を案内していた。モック payment-prepay ①〜④ もこの段落は持たず、
+             注文カード＋お支払いブロック＋エスクロー文＋金額入りの実ボタンで意図は足りる。
+             ⚠ cart.confirmDesc は他に参照が無くデッドキーになるが、慣例どおり locales には残置。 -->
         <div id="confirm-container"></div>
 
         <!-- #178: クーポンは「期限が近い順に自動適用」（手動で1枚選ぶUIは作らない）。
@@ -718,7 +731,10 @@
                 <span class="qr-sbtn__sub" data-i18n="payment.saveQrSub"></span>
             </a>
         </div>
-        <div class="qr-help" data-i18n="payment.khqrHelp"></div>
+        <!-- 2026-07-17 #211②: 長い説明段落（payment.khqrHelp）は削除。
+             同じ情報が画面内で3重複していたため（金額入力＝⚠ボックス／誰が・どうやって＝ボタンのサブ文言／
+             安心・返金＝※ノート）。各パーツに寄せて重複解消（モック ⑤ どおり）。
+             ※ i18n の payment.khqrHelp はデッドキーとして残置（無害）。 -->
         <!-- 7/10 #203 A-5: お支払いの控えを添付（任意・確認が早くなる） -->
         <label class="attach-row" id="khqr-attach-row">
             <span class="material-symbols-outlined" id="khqr-attach-icon">attach_file</span>
@@ -726,8 +742,18 @@
                 <div class="attach-row__t" id="khqr-attach-title" data-i18n="payment.attachProof"></div>
                 <div class="attach-row__s" data-i18n="payment.attachProofSub"></div>
             </div>
-            <img class="attach-row__thumb" id="khqr-attach-thumb" alt="" style="display:none;">
-            <input type="file" accept="image/*" id="khqr-proof-input" hidden>
+            <!-- 2026-07-17 #211③: 添付済みのときだけサムネ＋✕を出す（✕で取り消し・付け直し可）。
+                 表示制御は .attach-row.done（CSS）＝JS側のリセット処理と自動で同期する。 -->
+            <span class="attach-row__thumbwrap">
+                <img class="attach-row__thumb" id="khqr-attach-thumb" alt="" style="display:none;">
+                <button type="button" class="attach-row__x" id="khqr-attach-clear">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </span>
+            <!-- ⚠ 2026-07-19: label の暗黙のフォワードに任せず JS で明示的に開く（下の click ハンドラ）。
+                 iOS Safari 等で display:none（hidden）の file input は label クリックで開かないことがあるため、
+                 アプリ内で実績のある方式（post.html / profile.html 等＝input.click() を明示）に揃える。 -->
+            <input type="file" accept="image/*" id="khqr-proof-input" style="display:none;">
         </label>
     </div>
 
@@ -793,11 +819,12 @@
         // 7/10 #203 A-5: 支払い控え画像を Storage(paymentProofs/{uid}/) へアップロード（admin/order.html と同方式）
         import { ref } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
         import { uploadImageResized } from '/js/image-resize.js';
+        import { showToast } from '/js/toast.js';
         import {
             subscribeCart, updateCartItem, removeCartItem, clearCart, groupByFarmer
         } from '/js/cart.js';
         import {
-            calcItemPrices, calcDeliveryFee, sumItems, calcOrderTotal, resolveDelivery, buyerDisplayUnitPrice
+            calcItemPrices, calcDeliveryFee, sumItems, calcOrderTotal, resolveDelivery, buyerUnitPrice, buyerDisplayUnitPrice, floor100
         } from '/js/order-utils.js';
         // #196: 納品スロット/承認期限の共通ロジック（承認期限+準備4h/最短8h/最長14日）
         import { earliestDeliveryMs, latestDeliveryMs, slotStartUtcMs, maxDeliveryDateIso, DELIV_PARAMS } from '/js/approval-deadline.js';
@@ -1035,7 +1062,14 @@
             }
         });
 
-        function fmtKhr(n) { return `${Math.round(n).toLocaleString()} KHR`; }
+        // 2026-07-17 #210③: 桁区切りは必ず 'en-US' を明示する。
+        //   ロケール引数なしの toLocaleString() は端末の既定ロケールに従うため、
+        //   区切りが「.」になる端末で「お支払い額 41.000 KHR」のように化ける（実機で発覚）。
+        //   金額・数量など桁区切りを出す表示はこのページ内すべて 'en-US' で統一する
+        //   （js/reel-ui.js が既に toLocaleString('en-US') 固定＝そちらが正）。
+        const KHR_LOCALE = 'en-US';
+        function fmtNum(n) { return Math.round(Number(n) || 0).toLocaleString(KHR_LOCALE); }
+        function fmtKhr(n) { return `${fmtNum(n)} KHR`; }
 
         // 6/3 #116: 納品日は曜日付き表記「6/4（木）」で統一（カート/注文確認/Home）。年は省略。
         const WEEKDAY_SHORT = {
@@ -1135,12 +1169,23 @@
                     const fishName = i18next.exists(`fish.${fishType}`) ? i18next.t(`fish.${fishType}`) : fishType;
                     const shortName = fishName.trim();
                     const photoUrl = c.listing.photoUrl || (c.listing.photos?.[0]);
-                    // レストラン側UIは「手数料込み」単価を表示（仕様：(price+gutPrice)×(1+serviceRate)）
-                    const baseUnit = (c.listing.price || 0) + (c.raw.gutProcessing ? (c.listing.gutPrice || 0) : 0);
-                    const unitPrice = buyerDisplayUnitPrice(baseUnit, serviceRate);
-                    // 6/1 #111 / 7/15 #208: 内臓処理を外したときの増減額（手数料込み・100リエル単位）
+                    // レストラン側UIは「手数料込み」単価を表示。
+                    //   2026-07-19 #210①-2: 魚の単価と内臓処理は【別々の行】としてそれぞれ100リエル未満を
+                    //   切り捨ててから足す（payment-spec §4.2 の「％計算の行ごとに切り捨て」）。
+                    //   合算してから1回だけ切り捨てる旧方式だと、内臓処理を外したときの減額が
+                    //   運営ルール（500×1.05=525→切り捨て500）とズレる（8,400−7,800=600 になる）。
+                    //   第3引数には「買い手が今トグルで選んでいる状態」を渡す＝表示単価がその選択を反映する。
+                    const unitPrice = buyerUnitPrice(c.listing.price || 0, c.listing.gutPrice || 0, c.raw.gutProcessing, serviceRate);
+                    // 6/1 #111 / 7/15 #208 / 2026-07-19 #210①-2: 内臓処理を外した/戻したときの増減額。
+                    //   行ごと切り捨て方式では「内臓処理の行そのもの」がそのまま増減額になる。
+                    //   ＝ヒントの値と、トグルを切り替えたときの表示単価の変化が構造的に必ず一致する
+                    //     （buyerUnitPrice が base + gut の単純な加算で組み立てているため）。
                     const gutRemoveKhr = buyerDisplayUnitPrice(c.listing.gutPrice || 0, serviceRate);
-                    // 小計も手数料込み（c.prices.fishPrice + c.prices.serviceFee）
+                    // 小計も手数料込み（c.prices.fishPrice + c.prices.serviceFee）。
+                    //   2026-07-17 #210①: calcItemPrices は「fishPrice + serviceFee === 表示単価 × 数量」を保証する
+                    //   （buyerUnitPrice で丸めた単価から積み上げる契約）。よってこの行小計は
+                    //   上の unitPrice × quantity と必ず一致する＝買い手が検算しても合う。
+                    //   ⚠ 契約に依存しているので、ここを手計算（unitPrice × quantity）に書き換えないこと。
                     const lineTotal = (c.prices.fishPrice || 0) + (c.prices.serviceFee || 0);
                     const minOrder = c.listing.minOrder || 1;
                     // #195: 丸魚のみ（内臓処理を提供しない出品）＝ gutPrice == null（falsy 判定は不可）。
@@ -1152,8 +1197,8 @@
                     // ヒント（トグル直下）：あり→外すと−／なし→戻すと+
                     const gutHint = gutRemoveKhr > 0
                         ? (c.raw.gutProcessing
-                            ? i18next.t('cart.gutHintRemove', { price: gutRemoveKhr.toLocaleString() })
-                            : i18next.t('cart.gutHintAdd', { price: gutRemoveKhr.toLocaleString() }))
+                            ? i18next.t('cart.gutHintRemove', { price: gutRemoveKhr.toLocaleString(KHR_LOCALE) })
+                            : i18next.t('cart.gutHintAdd', { price: gutRemoveKhr.toLocaleString(KHR_LOCALE) }))
                         : '';
 
                     html += `<div class="cart-item">
@@ -1168,7 +1213,7 @@
                                 </button>
                             </div>
                             <div class="cart-item__size">${c.listing.size || ''} head/kg</div>
-                            <div class="cart-item__price">${unitPrice.toLocaleString()} KHR/kg ${gutAnno}</div>
+                            <div class="cart-item__price">${unitPrice.toLocaleString(KHR_LOCALE)} KHR/kg ${gutAnno}</div>
                             <div class="cart-item__ctrl">
                                 <div class="qty-box">
                                     <button type="button" data-act="qty-minus" data-idx="${origIndex}" ${c.raw.quantity <= minOrder ? 'disabled' : ''}>−</button>
@@ -1376,8 +1421,28 @@
         // ── ステージ管理（cart / suggest / confirm / khqr）──
         let stage = 'cart';
 
+        // 2026-07-17 #211①: ヘッダータイトルをステージごとに切り替える。
+        //   支払う段階で「カート」のままだと「まだ確定していない？」と不安になり、←の戻り先も不明瞭になるため
+        //   （モック fishlink-payment-prepay-mockup.html の各 title どおり）。
+        //   ⚠ 言語切替は applyTranslations() が data-i18n を読み直して上書きするので、textContent だけでなく
+        //     data-i18n 属性も付け替える（再支払いモード initRepay と同じ手法＝そちらの「お支払い」も壊さない）。
+        const STAGE_TITLE_KEY = {
+            cart: 'cart.title',
+            suggest: 'cart.title',
+            confirm: 'cart.confirmTitle',  // 「注文内容の確認」（既存キーを流用）
+            khqr: 'payment.title',         // 「お支払い」（既存キーを流用）
+        };
+        function applyStageTitle() {
+            const el = document.getElementById('page-title');
+            if (!el) return;
+            const key = STAGE_TITLE_KEY[stage] || 'cart.title';
+            el.setAttribute('data-i18n', key);
+            el.textContent = i18next.t(key);
+        }
+
         function setStage(next) {
             stage = next;
+            applyStageTitle();
             const cartPage = document.getElementById('cart-page');
             const suggestPage = document.getElementById('suggest-page');
             const confirmPage = document.getElementById('confirm-page');
@@ -1520,20 +1585,22 @@
                 const curShort = curName.trim();
                 const altName = curShort; // 同じ fishType なので同じ名前
                 // サービス料込み単価で比較表示
-                const curPrice = buyerDisplayUnitPrice((s.currentListing.price || 0) + (s.currentListing.gutPrice || 0), serviceRate);
-                const altPrice = buyerDisplayUnitPrice((s.altListing.price || 0) + (s.altListing.gutPrice || 0), serviceRate);
+                //   2026-07-19 #210①-2: 魚の単価と内臓処理は行ごとに切り捨ててから足す（buyerUnitPrice）。
+                //   ここは「内臓処理込みの参考単価」なので gutIncluded=true 固定（比較用・トグルはまだ無い）。
+                const curPrice = buyerUnitPrice(s.currentListing.price || 0, s.currentListing.gutPrice || 0, true, serviceRate);
+                const altPrice = buyerUnitPrice(s.altListing.price || 0, s.altListing.gutPrice || 0, true, serviceRate);
                 const priceDiff = altPrice - curPrice;
 
                 const curPhoto = s.currentListing.photoUrl || (s.currentListing.photos?.[0]);
                 const altPhoto = s.altListing.photoUrl || (s.altListing.photos?.[0]);
 
                 const savingsText = s.savingsDeliveryFee > 0
-                    ? i18next.t('cart.saveDelivery', { amount: s.savingsDeliveryFee.toLocaleString() })
+                    ? i18next.t('cart.saveDelivery', { amount: s.savingsDeliveryFee.toLocaleString(KHR_LOCALE) })
                     : i18next.t('cart.sameDelivery');
 
                 const priceDiffText = priceDiff === 0 ? ''
-                    : priceDiff > 0 ? ` (+${priceDiff.toLocaleString()} KHR/kg)`
-                    : ` (${priceDiff.toLocaleString()} KHR/kg)`;
+                    : priceDiff > 0 ? ` (+${priceDiff.toLocaleString(KHR_LOCALE)} KHR/kg)`
+                    : ` (${priceDiff.toLocaleString(KHR_LOCALE)} KHR/kg)`;
 
                 return `
                     <div class="suggest-card" data-suggest-idx="${sIdx}">
@@ -1542,7 +1609,7 @@
                             <div class="suggest-card__thumb">${curPhoto ? `<img ${asCachedImgAttrs(curPhoto)} alt="" loading="lazy">` : ''}</div>
                             <div class="suggest-card__info">
                                 <div class="suggest-card__title">${escapeHtml(s.currentFarmerName)}</div>
-                                <div class="suggest-card__sub">${curShort} · ${curPrice.toLocaleString()} KHR/kg</div>
+                                <div class="suggest-card__sub">${curShort} · ${curPrice.toLocaleString(KHR_LOCALE)} KHR/kg</div>
                                 <button class="detail-link" type="button" data-act="show-detail" data-listing-id="${s.currentListingId}" data-farmer-id="${s.currentFarmerId}">
                                     <span class="material-symbols-outlined">info</span>
                                     <span>${i18next.t('cart.viewDetail')}</span>
@@ -1554,7 +1621,7 @@
                             <div class="suggest-card__thumb">${altPhoto ? `<img ${asCachedImgAttrs(altPhoto)} alt="" loading="lazy">` : ''}</div>
                             <div class="suggest-card__info">
                                 <div class="suggest-card__title">${escapeHtml(s.altFarmerName)}</div>
-                                <div class="suggest-card__sub">${altName} · ${altPrice.toLocaleString()} KHR/kg${priceDiffText}</div>
+                                <div class="suggest-card__sub">${altName} · ${altPrice.toLocaleString(KHR_LOCALE)} KHR/kg${priceDiffText}</div>
                                 <button class="detail-link" type="button" data-act="show-detail" data-listing-id="${s.altListingId}" data-farmer-id="${s.altFarmerId}">
                                     <span class="material-symbols-outlined">info</span>
                                     <span>${i18next.t('cart.viewDetail')}</span>
@@ -1624,8 +1691,9 @@
                 ? `<div class="lm-gallery">${photos.map(u => `<img ${asCachedImgAttrs(u)} alt="" loading="lazy">`).join('')}</div>`
                 : `<div class="lm-gallery__placeholder"><span class="material-symbols-outlined" style="font-size:64px;">set_meal</span></div>`;
 
-            // サービス料込み単価（#208: 表示単価 = floor100((price+gutPrice)×(1+serviceRate))）
-            const unitPrice = buyerDisplayUnitPrice((listing.price || 0) + (listing.gutPrice || 0), serviceRate);
+            // サービス料込み単価（#208 → 2026-07-19 #210①-2: 魚の単価と内臓処理は行ごとに切り捨ててから足す）
+            //   出品詳細モーダルは「内臓処理込みの参考単価」なので gutIncluded=true 固定。
+            const unitPrice = buyerUnitPrice(listing.price || 0, listing.gutPrice || 0, true, serviceRate);
             // 5/11 #65 + 拡張: province は i18n ラベル、district は UI 言語に応じて km/en 切替
             const province = formatProvince(farmer.province || '');
             const district = formatDistrict(farmer);
@@ -1655,13 +1723,13 @@
                 <div class="lm-name">${escapeHtml(fishName)}</div>
                 <div class="lm-meta">${listing.size || ''} head/kg</div>
                 <div class="lm-price-row">
-                    <span class="lm-price">${unitPrice.toLocaleString()}</span>
+                    <span class="lm-price">${unitPrice.toLocaleString(KHR_LOCALE)}</span>
                     <span class="lm-price-unit">KHR/kg</span>
                 </div>
                 <div class="lm-info-grid">
                     <div><div class="k">${i18next.t('order.stock').replace(/[:：]\s*$/, '')}</div><div class="v">${listing.stock || 0} kg</div></div>
                     <div><div class="k">${i18next.t('order.minOrder')}</div><div class="v">${listing.minOrder || 0} kg</div></div>
-                    <div><div class="k">${i18next.t('post.deliveryRate')}</div><div class="v">${Math.round(_dlv.ratePerKm * 10).toLocaleString()} KHR/10km</div></div>
+                    <div><div class="k">${i18next.t('post.deliveryRate')}</div><div class="v">${Math.round(_dlv.ratePerKm * 10).toLocaleString(KHR_LOCALE)} KHR/10km</div></div>
                     <div><div class="k">${i18next.t('post.freeDeliveryDistance')}</div><div class="v">${_dlv.freeKm || 0} km</div></div>
                 </div>
                 ${listing.description ? `
@@ -1787,10 +1855,20 @@
             updateFooter();
         }
 
+        // 2026-07-17 #210②: ウォレット充当の上限。
+        //   KHQR額 ＝ 合計 − ウォレット利用 なので、両方が100リエル単位でないと銀行で払えない。
+        //   ・残高で全額まかなえる → 上限＝合計（KHQR額0＝端数が生まれないので合計そのままでよい）
+        //   ・一部充当（残高 < 合計）→ 上限＝残高を100リエル未満切り捨て
+        //     （例 残高50,750／合計91,800 → 上限50,700・KHQR41,100。端数50はウォレットに残る＝買い手有利）
+        //   これで walletApplied は「合計ちょうど」か「100の倍数」のどちらかになり、KHQR額は必ず100単位で閉じる。
+        function walletCap() {
+            return walletBalance >= confirmGrandTotal ? confirmGrandTotal : floor100(walletBalance);
+        }
+
         // #172: ウォレット既定値の再計算。ユーザーが〔変更〕で指定済みなら上限だけ clamp、
         //   未指定なら「合計を上限に全額自動充当」。
         function recomputeWalletDefault() {
-            const cap = Math.min(walletBalance, confirmGrandTotal);
+            const cap = walletCap();
             if (!walletUserSet) {
                 walletApplied = cap;
             } else {
@@ -1805,7 +1883,7 @@
             const groups = groupByFarmer(cartItems);
             const multiFarmer = groups.size > 1;
             const payAmount = Math.max(0, confirmGrandTotal - walletApplied);
-            const cap = Math.min(walletBalance, confirmGrandTotal);
+            const cap = walletCap(); // #210②: 一部充当時は100リエル単位に切り捨てた上限
 
             let html = '';
             if (multiFarmer) {
@@ -1826,19 +1904,19 @@
                     <span class="pay-row__label">
                         <span class="material-symbols-outlined" style="font-size:16px;">account_balance_wallet</span>
                         <span>${escapeHtml(i18next.t('payment.walletUse'))}</span>
-                        <span class="pay-row__bal">${escapeHtml(i18next.t('payment.walletBalance', { amount: walletBalance.toLocaleString() }))}</span>
+                        <span class="pay-row__bal">${escapeHtml(i18next.t('payment.walletBalance', { amount: walletBalance.toLocaleString(KHR_LOCALE) }))}</span>
                     </span>
                     <span class="pay-row__value">−${fmtKhr(walletApplied)}<button type="button" class="pay-row__act" id="wallet-toggle">${escapeHtml(actLabel)}</button></span>
                 </div>`;
                 if (walletEditOpen) {
                     html += `<div class="wallet-edit">
-                        <div class="wallet-edit__l">${i18next.t('payment.walletMax', { amount: `<b>${cap.toLocaleString()} KHR</b>` })}</div>
+                        <div class="wallet-edit__l">${i18next.t('payment.walletMax', { amount: `<b>${cap.toLocaleString(KHR_LOCALE)} KHR</b>` })}</div>
                         <div class="wallet-edit__input">
-                            <input class="wallet-edit__field" id="wallet-input" inputmode="numeric" value="${walletApplied.toLocaleString()}">
+                            <input class="wallet-edit__field" id="wallet-input" inputmode="numeric" value="${walletApplied.toLocaleString(KHR_LOCALE)}">
                             <span class="wallet-edit__unit">KHR</span>
                         </div>
                         <div class="wallet-edit__quick">
-                            <button type="button" id="wallet-all">${escapeHtml(i18next.t('payment.walletAll', { amount: cap.toLocaleString() }))}</button>
+                            <button type="button" id="wallet-all">${escapeHtml(i18next.t('payment.walletAll', { amount: cap.toLocaleString(KHR_LOCALE) }))}</button>
                             <button type="button" id="wallet-none">${escapeHtml(i18next.t('payment.walletNone'))}</button>
                         </div>
                     </div>`;
@@ -1867,8 +1945,15 @@
             const input = document.getElementById('wallet-input');
             if (input) {
                 const commit = () => {
-                    // 2026-07-04 #191: ウォレット充当額も100リエル単位に floor（KHQR残額 khqrAmount を100単位に保つ）。
-                    let v = Math.floor((parseFloat(String(input.value).replace(/[^\d.]/g, '')) || 0) / 100) * 100;
+                    // 2026-07-04 #191 / 2026-07-17 #210②: ウォレット充当額も100リエル単位に floor
+                    //   （KHQR残額 khqrAmount を100単位に保つ）。
+                    // ⚠ 旧実装は replace(/[^\d.]/g,'') でピリオドを残したまま parseFloat していたため、
+                    //   桁区切りが「.」になる端末（#210③ の「41.000」と同じ原因＝入力欄の初期値も "50.750" になる）や、
+                    //   ユーザーが "50.750" と手入力した場合に parseFloat("50.750")=50.75 → floor100 → 0 となり、
+                    //   ウォレット充当が無言で0に落ちる穴があった。
+                    //   KHRに小数は存在しないので「数字以外を全部落とす」のが正しい
+                    //   ＝区切りが「,」でも「.」でも 50750 に解釈される。
+                    let v = floor100(parseInt(String(input.value).replace(/\D/g, ''), 10) || 0);
                     if (!Number.isFinite(v) || v < 0) v = 0;
                     if (v > cap) v = cap;
                     walletApplied = v;
@@ -2179,7 +2264,7 @@
             block.style.display = 'flex';
             const amtEl = document.getElementById('coupon-applied-amt');
             const metaEl = document.getElementById('coupon-applied-meta');
-            if (amtEl) amtEl.textContent = i18next.t('myCoupons.amountUnit', { amount: appliedCoupon.amountKhr.toLocaleString() });
+            if (amtEl) amtEl.textContent = i18next.t('myCoupons.amountUnit', { amount: appliedCoupon.amountKhr.toLocaleString(KHR_LOCALE) });
             if (metaEl) {
                 const meta = c
                     ? [c.sourceText, c.expStr ? i18next.t('myCoupons.expiresAt', { date: c.expStr }) : ''].filter(Boolean).join(' · ')
@@ -2266,11 +2351,16 @@
             //   init/言語切替で適用するため JS 側での上書きは不要（静的QR＝金額補間なし）。
             // 7/10 #203 A-5: 控え添付のリセットは「新規に khqr へ進入する時だけ」行う（confirm→khqr 遷移側で呼ぶ）。
             //   renderKhqr は言語切替でも呼ばれるため、ここでリセットすると添付済みの控えが消えてしまう。
+            // 2026-07-17 #211③: ✕の aria-label は言語に追従させる。
+            //   applyTranslations の属性記法 `[attr]key` は \w のみ対応＝ハイフンを含む aria-label は
+            //   マッチせず textContent 扱いになってしまうため、data-i18n ではなくここで直接セットする。
+            const clearBtn = document.getElementById('khqr-attach-clear');
+            if (clearBtn) clearBtn.setAttribute('aria-label', i18next.t('payment.attachProofRemove'));
             const sub = document.getElementById('khqr-sub');
             if (walletApplied > 0) {
                 sub.innerHTML = i18next.t('payment.khqrDeducted', {
-                    total: confirmGrandTotal.toLocaleString(),
-                    wallet: `<b>${walletApplied.toLocaleString()}</b>`,
+                    total: confirmGrandTotal.toLocaleString(KHR_LOCALE),
+                    wallet: `<b>${walletApplied.toLocaleString(KHR_LOCALE)}</b>`,
                 });
                 sub.style.display = 'block';
             } else {
@@ -2295,9 +2385,8 @@
                     location.replace('/pages/restaurant/orders.html'); return;
                 }
                 repayOrder = order;
-                // ヘッダータイトルを「お支払い」に（言語切替でも維持されるよう data-i18n も付け替え）
-                const pt = document.getElementById('page-title');
-                if (pt) { pt.setAttribute('data-i18n', 'payment.title'); pt.textContent = i18next.t('payment.title'); }
+                // ヘッダータイトル「お支払い」は末尾の setStage('khqr') が applyStageTitle() で付ける
+                //   （2026-07-17 #211①でステージ別タイトルに一本化＝ここでの個別セットは不要になった）。
                 resetProofAttach();
                 renderKhqr(Math.max(0, Number(order.khqrAmount || 0)));
                 // 再支払いでは「合計−ウォレット」の差引サブ行は出さない（元注文で充当済み）。
@@ -2341,7 +2430,8 @@
             const input = document.getElementById('khqr-proof-input');
             if (row) row.classList.remove('done');
             if (icon) icon.textContent = 'attach_file';
-            if (title) title.textContent = i18next.t('payment.attachProof');
+            // #211③: data-i18n も戻す＝言語切替（applyTranslations）で正しいキーが再適用される
+            if (title) { title.setAttribute('data-i18n', 'payment.attachProof'); title.textContent = i18next.t('payment.attachProof'); }
             if (thumb) { thumb.style.display = 'none'; thumb.removeAttribute('src'); }
             if (input) input.value = '';
         }
@@ -2364,16 +2454,48 @@
                 const thumb = document.getElementById('khqr-attach-thumb');
                 const row = document.getElementById('khqr-attach-row');
                 if (icon) icon.textContent = 'check_circle';
-                if (title) title.textContent = i18next.t('payment.attachProofDone');
+                // ⚠ #211③: textContent だけだと、言語を切り替えた瞬間に applyTranslations が
+                //   静的な data-i18n="payment.attachProof"（未添付の文言）で上書きしてしまい、
+                //   添付済みなのに「控えを添付」に戻って見える。data-i18n ごと付け替える。
+                if (title) { title.setAttribute('data-i18n', 'payment.attachProofDone'); title.textContent = i18next.t('payment.attachProofDone'); }
                 if (row) row.classList.add('done');
                 if (thumb) { thumb.src = url; thumb.style.display = 'block'; }
             } catch (err) {
                 console.warn('proof upload failed:', err);
                 // 失敗しても支払い自体は進められる（控えは任意）。行は初期状態に戻す。
+                // ⚠ 2026-07-19: 以前は無言でリセットしていたため、実機で「押しても何も起きない」ように見えた
+                //   （Storage ルール未公開＝permission-denied のときも同じ見え方になる）。必ず理由を出す。
                 resetProofAttach();
+                showToast(i18next.t('payment.attachProofFailed'), { icon: false, duration: 4000 });
             } finally {
                 loading.classList.remove('show');
             }
+        });
+
+        // 2026-07-17 #211③: 控えの✕＝添付を取り消して付け直せる（間違えて添付しても直せる＝標準UX）。
+        //   ⚠ ✕は <label class="attach-row"> の内側にあるため、click をそのまま通すと label が
+        //     ファイル選択ダイアログを開いてしまう（✕を押すたびにピッカーが出る）。
+        //     preventDefault() と stopPropagation() の両方が必須。
+        //   ※ 既に paymentProofs/ にアップロード済みの画像は削除しない（未参照になるだけ＝MVP許容）。
+        //     注文には buyerProofUrl=null が入るので、運営の入金照合（#204）には出ない。
+        document.getElementById('khqr-attach-clear').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            resetProofAttach();
+        });
+
+        // ⚠ 2026-07-19: 控え行のタップで確実にファイル選択を開く。
+        //   <label> が hidden な file input を暗黙に activate する挙動は端末差があり
+        //   （iOS Safari 等では display:none の input が開かないことがある）、実機で「押しても何も起きない」
+        //   と報告された。→ label の既定動作は preventDefault で止め、input.click() を明示的に呼ぶ
+        //   （post.html / account/profile.html 等、アプリ内で実績のある方式に統一）。
+        document.getElementById('khqr-attach-row').addEventListener('click', (e) => {
+            const inputEl = document.getElementById('khqr-proof-input');
+            if (!inputEl) return;
+            if (e.target === inputEl) return;                       // input 自身の click は素通し（再帰防止）
+            if (e.target.closest && e.target.closest('#khqr-attach-clear')) return;  // ✕ は自前ハンドラに任せる
+            e.preventDefault();                                     // label の暗黙フォワードを止める＝二重に開かない
+            inputEl.click();
         });
 
         // #172: 〔支払いました〕中央確認モーダル → placeOrders

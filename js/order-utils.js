@@ -13,15 +13,35 @@ export function floor100(n) {
     return Math.floor((Number(n) || 0) / 100) * 100;
 }
 
-// 2026-07-15 #208: 買い手が見る「表示単価」（KHR/kg）を出す唯一の共通関数。
+// 2026-07-15 #208: 買い手が見る「表示単価」（KHR/kg）の1行分を出す共通プリミティブ。
 //   買い手表示価格 = 農家価格 ×(1 + 手数料率) を 100リエル未満で切り捨て（#191 の表示レイヤー適用）。
-//   例: 7,500×1.05=7,875 → 7,800 ／ 7,000×1.05=7,350 → 7,300。
-//   ⚠ Home新着カード／魚一覧／新着リール・全画面リール／商品詳細／生産者ページ／カート表示 の
-//     すべてでこの関数を使い、画面ごとに素の Math.round(... ×(1+rate)) を出さない（表示の不一致を無くす）。
-//     引数 baseFarmerKhr は既に (price + gutPrice) 等に合算済みの農家価格を渡す。
-//   ※ 農家側の表示（投稿一覧等・手数料をかけない）は対象外。注文の実課金は calcItemPrices（floor 済）が正。
+//   例: 7,500×1.05=7,875 → 7,800 ／ 7,000×1.05=7,350 → 7,300 ／ 500×1.05=525 → 500。
+//   ※ 農家側の表示（投稿一覧等・手数料をかけない）は対象外。
+//
+// 2026-07-17 #210①: この関数は「表示専用」ではなく【課金の基準】でもある。
+//   calcItemPrices が serviceFee をこの表示単価から逆算するため、次の恒等式が常に成立する：
+//     fishPrice + serviceFee === buyerUnitPrice(...) × quantity
+//   ＝買い手が見ている単価 × 数量 が、そのまま明細の小計になる（買い手が検算して必ず合う）。
+//   ⚠ よってこの関数の丸め方を変えると課金額そのものが変わる。表示だけの都合で触らないこと。
 export function buyerDisplayUnitPrice(baseFarmerKhr, serviceRate) {
     return floor100((Number(baseFarmerKhr) || 0) * (1 + (Number(serviceRate) || 0)));
+}
+
+// 2026-07-19 #210①-2: 買い手表示単価は【％計算の“行”ごとに切り捨ててから足す】（payment-spec §4.2）。
+//   ⚠ 魚の単価と内臓処理は別々の行なので、合算してから1回だけ切り捨ててはいけない。
+//     正: floor100(7,500×1.05)=7,800 ＋ floor100(500×1.05)=500 → 8,300（外すと −500）
+//     誤: floor100((7,500+500)×1.05)=floor100(8,400)=8,400   → 外すと −600 になり
+//         「内臓処理の減額＝525→切り捨て500」という運営ルールとも、モックの表示とも食い違う。
+//   正本 docs/design/fishlink-cart-mockup.html が決着：品2「5,700 KHR/kg（内臓処理なし）/ 戻すと +500」＝
+//     行ごと切り捨て（5,700+500=6,200）でしか一致しない（合算方式は 6,300 になる）。
+//   ＝内臓処理の「外すと −N / 戻すと +N」ヒントは buyerDisplayUnitPrice(gutPrice, rate) そのものでよい
+//     （この関数が行ごとの加算で組み立てているため、ヒントと実際の単価変化が構造的に必ず一致する）。
+//   ⚠ 買い手が単価を見る画面はすべてこの関数を通すこと（画面ごとに素の ×(1+rate) を出さない）。
+export function buyerUnitPrice(priceKhr, gutPriceKhr, gutIncluded, serviceRate) {
+    const base = buyerDisplayUnitPrice(priceKhr, serviceRate);
+    const gut = (gutIncluded && Number(gutPriceKhr))
+        ? buyerDisplayUnitPrice(gutPriceKhr, serviceRate) : 0;
+    return base + gut;
 }
 
 /**
@@ -59,6 +79,13 @@ export function getOrderItems(order) {
  * 引数: listing（fishListings の該当doc）, quantity, gutProcessing, 料率群
  * 戻り値: { fishPrice, serviceFee, campaignDiscount, farmerCommission, farmerCommissionGross,
  *          farmerCampaignDiscount, farmerReceiveAmount }
+ *
+ * 2026-07-17 #210①: 買い手側の恒等式（これを壊さないこと）
+ *   fishPrice + serviceFee === buyerDisplayUnitPrice(unitPrice, serviceRate) × quantity
+ *   ＝カート／注文確認に出す「表示単価 × 数量」が、そのまま行小計になる（buyerUnit は100の倍数なので
+ *     小計・魚代・キャンペーン割引・合計まで自動で100リエル単位に揃う／payment-spec §4.2）。
+ *   ⚠ 農家側（farmerCommissionGross / farmerCampaignDiscount / farmerCommission / farmerReceiveAmount）は
+ *     従来どおり fishPrice（＝農家の素の単価×数量）ベース＝買い手側の丸めとは別勘定。混ぜないこと。
  */
 export function calcItemPrices({
     listing, quantity, gutProcessing,
@@ -70,8 +97,23 @@ export function calcItemPrices({
     const unitPrice = gutProcessing ? price + gutPrice : price;
     const fishPrice = unitPrice * quantity;
 
-    // 2026-07-04 #191: ％計算の端数は100リエル未満切り捨て（floor100・payment-spec §4.2）。
-    const serviceFee = floor100(fishPrice * (serviceRate || 0));
+    // 2026-07-17 #210①: 手数料は「買い手に見えている表示単価」から逆算する（＝単価×数量＝小計を保証）。
+    //   旧実装は serviceFee = floor100(fishPrice × rate) で、％の結果だけを丸めていた。
+    //   これだと「表示単価は丸めたのに、小計は丸める前の値で計算される」ズレが出る：
+    //     例) 単価7,000・rate5%・10kg → 表示単価は floor100(7,350)=7,300 なのに
+    //         小計は 70,000 + floor100(3,500)=3,500 → 73,500（買い手の検算 7,300×10=73,000 と合わない）。
+    //   数量1では見えず、数量2以上で必ず露見する（実機のスポットパンガシウスで発覚）。
+    //   → 表示単価 buyerUnit × quantity を「買い手が払う魚代」の正とし、その差分を手数料に載せる。
+    //   これで恒等式 fishPrice + serviceFee === buyerUnit × quantity が常に成立する。
+    //   ⚠ fishPrice（農家の基準額＝単価×数量）は動かさない＝農家の受取額計算は一切変わらない。
+    //   ⚠ #210①-2: 魚の単価と内臓処理は【別々の行】としてそれぞれ切り捨ててから足す（buyerUnitPrice）。
+    //     合算してから1回だけ切り捨てると、内臓処理を外したときの減額が運営ルール（525→切り捨て500）と
+    //     ずれる（8,400−7,800=600 になる）。cart-mockup 品2「戻すと +500」が行ごと方式でしか成立しない。
+    const buyerUnit = buyerUnitPrice(price, gutPrice, gutProcessing, serviceRate);
+    //   Math.max(0,...) のガード: 手数料率が極小(0含む)かつ単価が100の倍数でない legacy 出品だと、
+    //   buyerUnit（切り捨て）が unitPrice を下回り差分が負になりうる（例 単価7,350・rate0 → 7,300）。
+    //   手数料がマイナス＝買い手に値引きすることになるので0で止める。
+    const serviceFee = Math.max(0, buyerUnit * quantity - fishPrice);
     // 6/21 #163①: 買い手のキャンペーン割引は「魚代」（＝手数料込みの表示価格 fishPrice + serviceFee）ベース。
     //   旧実装は fishPrice（手数料前の農家価格）ベースで、買い手画面の「魚代から2.5%」文言と検算が合わなかった
     //   （例 魚代31,500×2.5%＝788 にすべきところ 30,000×2.5%＝750 になっていた）。

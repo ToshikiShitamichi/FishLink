@@ -213,7 +213,8 @@
                 titleEl.textContent = i18next.t('referral.couponListTitle');
             }
             if (coupons.length === 0) {
-                const amountStr = settingAmount ? settingAmount.toLocaleString() : '';
+                // 2026-07-17 #210③: 桁区切りは 'en-US' 明示（引数なしは端末の既定ロケール依存＝「2.500」に化ける）。
+                const amountStr = settingAmount ? settingAmount.toLocaleString('en-US') : '';
                 body.innerHTML = `
                     <div class="reward-empty">
                         <div class="re-i"><span class="material-symbols-outlined" style="font-size:30px;">confirmation_number</span></div>
@@ -223,7 +224,7 @@
                 return;
             }
             const rows = coupons.map(c => {
-                const amt = i18next.t('referral.couponAmount', { amount: c.amountKhr.toLocaleString() });
+                const amt = i18next.t('referral.couponAmount', { amount: c.amountKhr.toLocaleString('en-US') });
                 // i18n は escapeValue:false（グローバル設定）のため name を自前で escapeHtml（XSS対策）
                 const meta = c.sourceName
                     ? i18next.t('referral.couponFromExpires', { name: escapeHtml(c.sourceName), date: fmtDate(c.expiresAtMs) })

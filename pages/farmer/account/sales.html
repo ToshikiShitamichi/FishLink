@@ -177,7 +177,8 @@
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
-        const fmtKhr = n => `${Number(n || 0).toLocaleString()} KHR`;
+        // 2026-07-17 #210③: 桁区切りは 'en-US' 明示（引数なしだと端末ロケール依存で「41.000」に化ける）
+        const fmtKhr = n => `${Number(n || 0).toLocaleString('en-US')} KHR`;
         const WEEKDAY_SHORT = {
             ja: ['日', '月', '火', '水', '木', '金', '土'],
             en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -307,9 +308,9 @@
             // 7/5 #192①: 送金待ち（本日入る額）と確認中（保留）を分離＝混ぜない。
             const waiting = filtered.filter(t => !isRemitted(t) && !isHolding(t)).reduce((s, t) => s + (t.farmerReceiveAmount || 0), 0);
             const holdingAmt = filtered.filter(t => isHolding(t)).reduce((s, t) => s + (t.farmerReceiveAmount || 0), 0);
-            document.getElementById('sum-amount').innerHTML = `${Number(total).toLocaleString()}<span class="u"> KHR</span>`;
+            document.getElementById('sum-amount').innerHTML = `${Number(total).toLocaleString('en-US')}<span class="u"> KHR</span>`;
             document.getElementById('sum-count').textContent = `${count}`;
-            document.getElementById('sum-avg').innerHTML = `${Number(avg).toLocaleString()}<span class="u"> KHR</span>`;
+            document.getElementById('sum-avg').innerHTML = `${Number(avg).toLocaleString('en-US')}<span class="u"> KHR</span>`;
             const pendEl = document.getElementById('sum-pending');
             const holdEl = document.getElementById('sum-holding');
             if (waiting > 0) {

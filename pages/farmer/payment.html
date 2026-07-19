@@ -251,6 +251,13 @@
             else setTimeout(() => waitForUserData(cb), 300);
         }
 
+        // 2026-07-17 #210③: 桁区切りは必ず 'en-US' を明示する。
+        //   ロケール引数なしの toLocaleString() は端末の既定ロケールに従うため、
+        //   区切りが「.」になる端末（de-DE/id-ID/vi-VN 等）で「41.000 KHR」のように化ける。
+        //   アプリの言語設定とは無関係に端末次第で化けるので、金額表示はこのページ内すべて 'en-US' に統一
+        //   （買い手カート cart.html・js/reel-ui.js が既に 'en-US' 固定＝そちらが正）。
+        const KHR_LOCALE = 'en-US';
+
         // 6/18 #154 C⑫: 納品日に曜日（売上・取引 sales.html と同じ helper を流用）
         const WEEKDAY_SHORT = {
             ja: ['日', '月', '火', '水', '木', '金', '土'],
@@ -431,22 +438,22 @@
                 ? orderData.farmerReceiveAmount
                 : (fishTotal - netCommission + deliveryFee);
 
-            document.getElementById('receive-amount').textContent = `${receiveAmount.toLocaleString()} KHR`;
+            document.getElementById('receive-amount').textContent = `${receiveAmount.toLocaleString(KHR_LOCALE)} KHR`;
             // 5/27 #101 ④: 紹介ボーナス行を追加（適用済みのみ表示）
             const referralBonus = Number(orderData.referralBonusAmount || 0);
             const bonusLine = referralBonus > 0
-                ? `<div class="amount-line"><span class="amount-line__label">${i18next.t('order.referralBonus')}</span><span class="amount-line__value campaign">+${referralBonus.toLocaleString()} KHR</span></div>`
+                ? `<div class="amount-line"><span class="amount-line__label">${i18next.t('order.referralBonus')}</span><span class="amount-line__value campaign">+${referralBonus.toLocaleString(KHR_LOCALE)} KHR</span></div>`
                 : '';
             // キャンペーン割引行（farmer 側・amber）。適用済みのみ表示
             const campaignLine = farmerCampaignDiscount > 0
-                ? `<div class="amount-line"><span class="amount-line__label"><span class="material-symbols-outlined">local_offer</span>${i18next.t('orders.farmerCampaignDiscount')}</span><span class="amount-line__value campaign">${i18next.t('orders.farmerCampaignDiscountValue', { amount: farmerCampaignDiscount.toLocaleString() })}</span></div>`
+                ? `<div class="amount-line"><span class="amount-line__label"><span class="material-symbols-outlined">local_offer</span>${i18next.t('orders.farmerCampaignDiscount')}</span><span class="amount-line__value campaign">${i18next.t('orders.farmerCampaignDiscountValue', { amount: farmerCampaignDiscount.toLocaleString(KHR_LOCALE) })}</span></div>`
                 : '';
             document.getElementById('breakdown').innerHTML = `
-                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.fishTotal')}</span><span class="amount-line__value">${fishTotal.toLocaleString()} KHR</span></div>
-                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.commission', { rate: commissionRate })}</span><span class="amount-line__value minus">-${grossCommission.toLocaleString()} KHR</span></div>
+                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.fishTotal')}</span><span class="amount-line__value">${fishTotal.toLocaleString(KHR_LOCALE)} KHR</span></div>
+                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.commission', { rate: commissionRate })}</span><span class="amount-line__value minus">-${grossCommission.toLocaleString(KHR_LOCALE)} KHR</span></div>
                 ${campaignLine}
                 ${bonusLine}
-                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.deliveryFee')}</span><span class="amount-line__value plus">+${deliveryFee.toLocaleString()} KHR</span></div>
+                <div class="amount-line"><span class="amount-line__label">${i18next.t('orders.deliveryFee')}</span><span class="amount-line__value plus">+${deliveryFee.toLocaleString(KHR_LOCALE)} KHR</span></div>
             `;
         }
 

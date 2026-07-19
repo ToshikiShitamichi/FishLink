@@ -67,7 +67,10 @@
         "unmute": "Unmute",
         "emptySub": "Once you post a video, your newest one is shown to buyers.",
         "farmerVideosTitle": "{{name}}'s videos",
-        "gridNote": "Videos this farmer posted (newest first). Blue \"On sale\" = fish you can buy now. Tap to play full screen."
+        "gridNote": "Videos this farmer posted (newest first). Blue \"On sale\" = fish you can buy now. Tap to play full screen.",
+        "loadFailed": "Couldn't load",
+        "retry": "Retry",
+        "saving": "Saving…"
     },
     "app": {
         "name": "FISHLINK",
@@ -903,9 +906,9 @@
         "khqrAccountLabel": "Account number",
         "khqrNoAmountWarn": "⚠ This QR does not include the amount. Copy the 'Amount to pay' above with 'Copy amount' and enter it.",
         "openBankAba": "Open in ABA app",
-        "openBankAbaSub": "Fastest for ABA users (enter the amount yourself)",
-        "saveQrSub": "For banks other than ABA",
-        "khqrPayeeNotice": "* The payee will appear as 'TACHIBANAKI RYOSUKE AND OKADA RYUJU (FISHLINK operators)'. FISHLINK holds it responsibly on your behalf.",
+        "openBankAbaSub": "Fastest for ABA users",
+        "saveQrSub": "Other banks: save it, then use \"Scan from image\" in your bank app",
+        "khqrPayeeNotice": "* The payee will appear as \"TACHIBANAKI RYOSUKE AND OKADA RYUJU (FISHLINK operators)\". We hold your payment safely until you receive your order, and refund it to your wallet if the farmer declines or there is a problem with the delivery.",
         "attachProof": "Attach payment receipt",
         "attachProofSub": "Optional — speeds up confirmation",
         "attachProofDone": "Receipt attached",
@@ -927,7 +930,9 @@
         "reviewAfterTrade": "* Reviews appear after the trade is completed",
         "statusPayoutWaiting": "Awaiting payout",
         "payoutWaitingDesc": "If there are no problems, the trade completes in a few hours and FISHLINK sends your payout.",
-        "aboutRemittancePrepay": "The payment is held by FISHLINK (not paid directly to the farmer). If there are no problems, FISHLINK sends the payout to the farmer after the trade completes."
+        "aboutRemittancePrepay": "The payment is held by FISHLINK (not paid directly to the farmer). If there are no problems, FISHLINK sends the payout to the farmer after the trade completes.",
+        "attachProofRemove": "Remove attached receipt",
+        "attachProofFailed": "Couldn't attach the receipt. Please try again (it's optional)."
     },
     "dashboard": {
         "listings": "My Listings",

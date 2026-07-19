@@ -39,6 +39,14 @@
         .rv-del { flex: 0 0 auto; background: none; border: none; color: #D14343; padding: 8px; cursor: pointer; display: inline-flex; align-items: center; font-family: inherit; }
         .rv-del .material-symbols-outlined { font-size: 20px; }
 
+        /* 楽観表示の仮カード（#209 ⑩-1: 選んだ瞬間にリスト先頭へ出す「アップロード中」の1本）。
+           まだ videoUrl が無い＝再生も削除もできないので、再生アイコンも🗑も持たせない（タップ不能）。
+           進行中であることが分かるよう青（＝操作中）＋スピナー。 */
+        .rv-row--pending { border-color: var(--color-cta); background: var(--color-cta-lt); }
+        .rv-row--pending .rv-thumb { cursor: default; }
+        .rv-pending__t { font-size: 13.5px; font-weight: 800; color: var(--color-cta); }
+        .rv-pending__spin { width: 18px; height: 18px; flex: 0 0 18px; margin-right: 8px; border: 2.5px solid var(--color-border); border-top-color: var(--color-cta); border-radius: 50%; animation: spin .7s linear infinite; }
+
         /* 空状態（#205⑨: 管理説明は出さず短い空状態＝見出し＋一言） */
         .rv-empty { text-align: center; padding: 34px 14px; border: 1.5px dashed var(--color-border); border-radius: 13px; color: var(--color-text-sub); font-size: 13px; background: var(--color-surface); }
         .rv-empty .material-symbols-outlined { font-size: 34px; display: block; margin: 0 auto 8px; opacity: .5; }
@@ -160,7 +168,7 @@
         import { db } from '/js/firebase-config.js';
         import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { asCachedImgAttrs } from '/js/image-cache.js';
-        import { getReelsForListing, uploadReelVideo, deleteReelVideo, relativePostedText } from '/js/reel-utils.js';
+        import { getReelsForListing, uploadReelVideo, deleteReelVideo, relativePostedText, captureVideoThumbnail } from '/js/reel-utils.js';
         import { loadVideoObjectUrl } from '/js/video-cache.js';
         import { showToast } from '/js/toast.js';
 
@@ -176,6 +184,9 @@
         let listing = null;   // { fishType, size, stock, price, photoUrl, farmerId }
         let reels = [];        // getReelsForListing の結果（postedAt 降順・最大 N 本）
         let uploading = false; // #205⑩: アップロード中（非ブロッキング＝画面は固めず、削除操作だけ抑止）
+        // #209 ⑩-1: 楽観表示の仮カード { thumbUrl, phase:'compressing'|'uploading'|'saving', ratio }。
+        //   投稿中だけ非null＝リストの先頭に1本として並べ、件数にも数える（「処理中なのに0本」を出さない）。
+        let pending = null;
 
         // 戻る：来た画面（投稿一覧カード／出品編集）に戻す。履歴が無ければ投稿一覧へ。
         document.getElementById('btn-back').addEventListener('click', () => {
@@ -198,8 +209,22 @@
             const size = listing.size ? `（${listing.size} head/kg）` : '';
             document.getElementById('rv-fish-name').textContent = fishNameOf(listing.fishType) + size;
             const stock = i18next.t('reel.stockKg', { kg: Math.round(Number(listing.stock) || 0) });
-            const price = `${Number(listing.price || 0).toLocaleString()} KHR/kg`;
+            // ロケール明示＝端末ロケール依存で桁区切りが「.」に化けるのを防ぐ
+            const price = `${Number(listing.price || 0).toLocaleString('en-US')} KHR/kg`;
             document.getElementById('rv-fish-sub').textContent = `${stock} ・ ${price}`;
+        }
+
+        // #209 ⑩-1: アップロード中の仮カード。ラベルは描画後に textContent で入れる（syncProgressUi）。
+        function pendingRowHtml() {
+            const thumb = pending.thumbUrl
+                ? `<img class="rv-thumb__img" src="${pending.thumbUrl}" alt="">`
+                : '';
+            return `
+                <div class="rv-row rv-row--pending" aria-busy="true">
+                    <div class="rv-thumb">${thumb}</div>
+                    <div class="rv-info"><div class="rv-pending__t" id="rv-pending-label"></div></div>
+                    <span class="rv-pending__spin" aria-hidden="true"></span>
+                </div>`;
         }
 
         // 動画リスト（新しい順・各行=サムネ＋相対日付＋🗑）＋件数見出し＋空状態
@@ -208,11 +233,15 @@
             const emptyEl = document.getElementById('rv-empty');
             const countEl = document.getElementById('rv-count');
             const hintEl = document.getElementById('rv-hint');
-            const has = reels.length > 0;
-            countEl.textContent = i18next.t('reel.videoCount', { n: reels.length });
+            // #209 ⑩-1: 投稿中の仮カードも1本として数える＝「動画を処理中」なのに「動画がありません」の矛盾を出さない
+            const total = reels.length + (pending ? 1 : 0);
+            const has = total > 0;
+            countEl.textContent = i18next.t('reel.videoCount', { n: total });
             // #205⑨: 管理説明（件数見出し＋ヒント）は 1本以上のときだけ。0本は短い空状態のみ。
             countEl.hidden = !has;
-            hintEl.hidden = !has;
+            // ⚠ ヒント（最大10本・古いのは自動で消える）は「保存済みが1本以上」のときだけ＝#205⑨ の趣旨
+            //   （まだ何も溜まっていない初回投稿中に管理ルールを出すのは気が早い）。件数見出しは仮カードを含めて出す。
+            hintEl.hidden = reels.length === 0;
 
             if (!has) {
                 listEl.innerHTML = '';
@@ -220,7 +249,7 @@
                 return;
             }
             emptyEl.hidden = true;
-            listEl.innerHTML = reels.map((r) => {
+            const rows = reels.map((r) => {
                 const rel = relativePostedText(r.postedAt, i18next.t);
                 const thumb = r.thumbUrl
                     ? `<img class="rv-thumb__img" ${asCachedImgAttrs(r.thumbUrl)} alt="">`
@@ -236,12 +265,16 @@
                             <span class="material-symbols-outlined">delete</span>
                         </button>
                     </div>`;
-            }).join('');
+            });
+            // 仮カードは常に先頭（＝新しい順の先頭に入る1本）
+            if (pending) rows.unshift(pendingRowHtml());
+            listEl.innerHTML = rows.join('');
         }
 
         function render() {
             renderHead();
             renderList();
+            syncProgressUi();   // 仮カードのラベル＋投稿ボタンの表示を現在のフェーズに合わせる
         }
 
         onLanguageChange(() => render());
@@ -346,15 +379,38 @@
         const btnLabel = btnPost.querySelector('span:not(.material-symbols-outlined)');
         btnPost.addEventListener('click', () => { if (uploading) return; clearUploadError(); videoInput.value = ''; videoInput.click(); });
 
-        // #205⑩: ノンブロッキング＝全画面オーバーレイで固めず、投稿ボタンに進捗％を出す（画面は操作可能なまま）。
-        function setBtnProgress(label, r) {
-            if (btnIcon) btnIcon.textContent = 'hourglass_top';
-            const pct = (typeof r === 'number' && r > 0) ? ' ' + Math.round(r * 100) + '%' : '';
-            if (btnLabel) btnLabel.textContent = label + pct;
+        // #205⑩: ノンブロッキング＝全画面オーバーレイで固めず、投稿ボタン（と #209 の仮カード）に進捗％を出す。
+        // #209 ⑩-2: バイト転送が100%に達した後は「保存中…」＝サムネ生成＋Firestore確定の“すきま”を無表示にしない
+        //   （100%のまま止まって見えると「終わったのか止まったのか」分からないため）。
+        function progressLabel() {
+            if (!pending) return i18next.t('reel.postNewVideo');
+            const key = pending.phase === 'saving' ? 'reel.saving'
+                : pending.phase === 'uploading' ? 'reel.uploading'
+                    : 'reel.compressing';
+            // 「保存中…」は進捗を測れない区間なので％を付けない
+            const pct = (pending.phase !== 'saving' && pending.ratio > 0)
+                ? ' ' + Math.round(pending.ratio * 100) + '%' : '';
+            return i18next.t(key) + pct;
         }
-        function restoreBtn() {
-            if (btnIcon) btnIcon.textContent = 'refresh';
-            if (btnLabel) btnLabel.textContent = i18next.t('reel.postNewVideo');
+        // ボタンと仮カードのラベルは常に同じ文言＝2か所で同じ進捗を見せる
+        function syncProgressUi() {
+            const label = progressLabel();
+            if (btnIcon) btnIcon.textContent = pending ? 'hourglass_top' : 'refresh';
+            if (btnLabel) btnLabel.textContent = label;
+            const pendingLabelEl = document.getElementById('rv-pending-label');
+            if (pendingLabelEl) pendingLabelEl.textContent = label;
+        }
+        function setProgress(phase, r) {
+            if (!pending) return;
+            pending.phase = phase;
+            pending.ratio = typeof r === 'number' ? r : 0;
+            syncProgressUi();   // 進捗ティックはラベルだけ差し替え（毎回 render すると画像が再生成されちらつくため）
+        }
+        function clearPending() {
+            if (pending && pending.thumbUrl) {
+                try { URL.revokeObjectURL(pending.thumbUrl); } catch (e) { /* ignore */ }
+            }
+            pending = null;
         }
 
         videoInput.addEventListener('change', async () => {
@@ -363,7 +419,19 @@
             clearUploadError();
             uploading = true;
             btnPost.disabled = true;
-            setBtnProgress(i18next.t('reel.compressing'));
+            // #209 ⑩-1: 選んだ瞬間にリスト先頭へ仮カードを出す（空状態は消え「（1本）」になる）
+            pending = { thumbUrl: '', phase: 'compressing', ratio: 0 };
+            render();
+            // 仮カードのサムネはローカル動画の1コマ（表示だけの使い捨て。本サムネはアップロード後に uploadReelVideo が作る）。
+            // ⚠ 圧縮（compressReelVideo）と同時にデコードすると端末のデコーダを取り合い圧縮が原本フォールバックに落ちうるので、
+            //    先に1コマだけ取り切ってから投稿を始める（失敗してもサムネ無しの仮カードで続行＝投稿は止めない）。
+            try {
+                const thumbBlob = await captureVideoThumbnail(file);
+                if (thumbBlob && pending) {
+                    pending.thumbUrl = URL.createObjectURL(thumbBlob);
+                    render();
+                }
+            } catch (e) { /* サムネ無しの仮カードで続行 */ }
             try {
                 await uploadReelVideo({
                     file,
@@ -371,19 +439,22 @@
                     farmerId: window.currentUser.uid,
                     fishType: listing.fishType || '',
                     thumbUrl: (listing.photos && listing.photos[0]) || listing.photoUrl || '',
-                    onCompressProgress: (r) => setBtnProgress(i18next.t('reel.compressing'), r),
-                    onProgress: (r) => setBtnProgress(i18next.t('reel.uploading'), r),
+                    onCompressProgress: (r) => setProgress('compressing', r),
+                    // r>=1＝バイト転送完了。この後（サムネ生成＋setDoc）は進捗が出ないので「保存中…」に切り替える（⑩-2）
+                    onProgress: (r) => setProgress(r >= 1 ? 'saving' : 'uploading', r),
                 });
                 // 保持N上限の物理削除は functions が担う＝クライアントは最新順で再取得（最大 N 本）
                 reels = await getReelsForListing(listingId);
+                clearPending();   // 実データで描き直す＝仮カードと本カードが2枚並ばない
                 render();
                 showToast(i18next.t('reel.videoPosted'));
             } catch (err) {
                 console.error('uploadReelVideo failed:', err);
+                clearPending();   // 失敗した仮カードを残さない（0本なら空状態に戻る）
+                render();
                 showUploadError(reasonToMessage(err && err.reason));
             } finally {
                 uploading = false;
-                restoreBtn();
                 btnPost.disabled = false;
                 videoInput.value = '';
             }

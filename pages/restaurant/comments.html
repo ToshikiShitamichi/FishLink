@@ -311,7 +311,7 @@
         import { asCachedImgAttrs } from '/js/image-cache.js';
         // 5/23 #69 Phase B: 同一タブ内 users/fishListings の重複取得を抑止
         import { getCachedUser, getCachedListing } from '/js/data-cache.js';
-        import { buyerDisplayUnitPrice } from '/js/order-utils.js';
+        import { buyerUnitPrice } from '/js/order-utils.js';
         // 5/25 #91/#92 拡張: 画面 HTML を即時復元
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
         // 6/3 #120: 連絡先（電話番号・SNS・URL）の自動マスク
@@ -424,8 +424,11 @@
                     const campSnap = await getDoc(doc(db, 'settings', 'campaign'));
                     if (campSnap.exists()) serviceRate = campSnap.data().serviceRate ?? 0.05;
                 } catch (e) { /* keep default */ }
-                const price = buyerDisplayUnitPrice((listing.price || 0) + (listing.gutPrice || 0), serviceRate);
-                document.getElementById('fish-meta').textContent = `${farmerName} · ${price.toLocaleString()} KHR/kg`;
+                // 2026-07-17 #210①-2: 魚単価と内臓処理は別行＝行ごとに100リエル切り捨て（payment-spec §4.2）。
+                //   合算後に1回切り捨てると商品詳細・カートと単価がズレるため buyerUnitPrice に集約。
+                const price = buyerUnitPrice(listing.price || 0, listing.gutPrice || 0, true, serviceRate);
+                // 2026-07-17 #210③: 桁区切りは 'en-US' 明示（引数なしは端末の既定ロケール依存＝「7.300」に化ける）。
+                document.getElementById('fish-meta').textContent = `${farmerName} · ${price.toLocaleString('en-US')} KHR/kg`;
 
                 // ユーザー情報キャッシュ（5/23 #69 Phase B: data-cache 経由）
                 async function getUser(uid) {

@@ -405,7 +405,9 @@
         function renderPaymentUnconfirmedCard(o) {
             const { d, order, fishName, farmerName } = o;
             const orderNo = getOrderNumber({ id: d.id, ...order });
-            const total = (order.totalAmount || 0).toLocaleString();
+            // 2026-07-17 #210③: 桁区切りは 'en-US' 明示。引数なしだと端末の既定ロケールに従い、
+            //   区切りが「.」になる端末で「41.000 KHR」のように化ける（アプリの言語設定とは無関係）。
+            const total = (order.totalAmount || 0).toLocaleString('en-US');
             return `
                 <div class="os-card os-card--urgent" id="order-${d.id}">
                     <div class="os-card__top">
@@ -482,7 +484,7 @@
             if (!(amt > 0)) return '';
             return `<div class="os-refunded">
                 <span class="material-symbols-outlined">check_circle</span>
-                <span class="os-refunded__t">${i18next.t('orders.refundedToWallet', { amount: amt.toLocaleString() })}<span class="os-refunded__sub">${i18next.t('orders.refundedToWalletSub')}</span></span>
+                <span class="os-refunded__t">${i18next.t('orders.refundedToWallet', { amount: amt.toLocaleString('en-US') })}<span class="os-refunded__sub">${i18next.t('orders.refundedToWalletSub')}</span></span>
             </div>`;
         }
 
@@ -817,7 +819,7 @@
                 if (order && order.prepaid === true && order.depositConfirmed === true) {
                     // 農家確認中（入金確認済）＝即ウォレット返金を約束（金額入り）。
                     const amt = Number(order.refundAmount ?? order.subtotal ?? order.totalAmount ?? 0);
-                    bodyEl.innerHTML = i18next.t('orders.cancelRefundModalBody', { amount: amt.toLocaleString() });
+                    bodyEl.innerHTML = i18next.t('orders.cancelRefundModalBody', { amount: amt.toLocaleString('en-US') });
                 } else if (order && order.prepaid === true) {
                     // お支払い確認中（入金未確認）＝即返金と約束しない（未入金→即キャンセルの穴を塞ぐ・金額を出さない）。
                     bodyEl.textContent = i18next.t('orders.cancelConfirmingModalBody');

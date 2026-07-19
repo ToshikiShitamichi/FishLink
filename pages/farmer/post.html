@@ -1041,9 +1041,10 @@
                 if ('rangeMin' in priceData || 'rangeMax' in priceData) {
                     const rMin = priceData.rangeMin != null ? priceData.rangeMin + SELL_MARKUP_KHR : null;
                     const rMax = priceData.rangeMax != null ? priceData.rangeMax + SELL_MARKUP_KHR : null;
-                    if (rMin != null && rMax != null) rangeText = `${rMin.toLocaleString()}–${rMax.toLocaleString()} KHR/kg`;
-                    else if (rMin != null) rangeText = `${rMin.toLocaleString()} KHR/kg`;
-                    else if (rMax != null) rangeText = `${rMax.toLocaleString()} KHR/kg`;
+                    // 2026-07-17: 桁区切りは 'en-US' 固定（端末ロケール依存でクメール数字等に化けないように）
+                    if (rMin != null && rMax != null) rangeText = `${rMin.toLocaleString('en-US')}–${rMax.toLocaleString('en-US')} KHR/kg`;
+                    else if (rMin != null) rangeText = `${rMin.toLocaleString('en-US')} KHR/kg`;
+                    else if (rMax != null) rangeText = `${rMax.toLocaleString('en-US')} KHR/kg`;
                     const sMin = priceData.sizeMin;
                     const sMax = priceData.sizeMax;
                     if (sMin != null && sMax != null) sizeText = `${sMin}–${sMax}kg`;
@@ -1143,7 +1144,7 @@
             const helperEl = document.getElementById('gut-helper');
             const formulaEl = document.getElementById('price-formula');
             if (gutEnabled) {
-                if (helperEl) helperEl.textContent = i18next.t('post.gutPriceHelper', { gut: gutRaw.toLocaleString() });
+                if (helperEl) helperEl.textContent = i18next.t('post.gutPriceHelper', { gut: gutRaw.toLocaleString('en-US') });
                 if (formulaEl) formulaEl.textContent = i18next.t('post.priceFormula');
             } else {
                 if (helperEl) helperEl.textContent = i18next.t('post.gutHelperNone');
@@ -1157,7 +1158,7 @@
                 if (unitEl) unitEl.style.display = 'none';
             } else {
                 const unit = parseInt(rawUnit) || 0;
-                valEl.textContent = (unit + gut).toLocaleString();
+                valEl.textContent = (unit + gut).toLocaleString('en-US');
                 valEl.classList.remove('empty');
                 if (unitEl) unitEl.style.display = '';
             }
@@ -1197,7 +1198,7 @@
             if (free > 0) html += ' ・ <span class="delivery-summary__free">' + i18next.t('post.deliverySummaryFree', { km: free }) + '</span>';
             document.getElementById('ds-line').innerHTML = html;
             document.getElementById('ds-line2').textContent =
-                i18next.t('post.deliverySummaryFee', { fee: Number(fee || 0).toLocaleString() });
+                i18next.t('post.deliverySummaryFee', { fee: Number(fee || 0).toLocaleString('en-US') });
         }
 
         async function initDeliverySection() {
@@ -1639,7 +1640,14 @@
                             fishType,
                             thumbUrl: photoUrls[0] || '',
                             onCompressProgress: (r) => { loadingText.textContent = i18next.t('reel.compressing') + (r ? ' ' + Math.round(r * 100) + '%' : ''); },
-                            onProgress: (r) => { loadingText.textContent = i18next.t('reel.uploading') + (r ? ' ' + Math.round(r * 100) + '%' : ''); },
+                            // 2026-07-17 #205⑩-2: 100%到達後も getDownloadURL→サムネ生成/アップロード→doc保存が続くため、
+                            //   「アップロード中 100%」のまま数秒固まって見える。その区間は「保存中…」に差し替える。
+                            onProgress: (r) => {
+                                const pct = Math.round((r || 0) * 100);
+                                loadingText.textContent = pct >= 100
+                                    ? i18next.t('reel.saving')
+                                    : i18next.t('reel.uploading') + (r ? ' ' + pct + '%' : '');
+                            },
                         });
                         loadingText.textContent = '';
                     } catch (vErr) {

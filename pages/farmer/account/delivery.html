@@ -87,6 +87,8 @@
                 </div>
                 <div class="fb-help" data-i18n="post.deliveryRateExample"></div>
                 <div class="field-error" id="err-fee" data-i18n="post.errorDeliveryFee"></div>
+                <!-- 2026-07-17: 100リエル単位の検証（出品フォーム post.html #194② と同方式＝自動で丸めない） -->
+                <div class="field-error" id="err-fee-100" data-i18n="post.error100Unit"></div>
             </div>
 
             <div class="fb">
@@ -151,6 +153,7 @@
         document.getElementById('in-fee').addEventListener('input', () => {
             document.getElementById('in-fee').classList.remove('input-error');
             document.getElementById('err-fee').classList.remove('show');
+            document.getElementById('err-fee-100').classList.remove('show');   // 2026-07-17: 100リエル単位エラーも解除
         });
 
         document.getElementById('btn-save').addEventListener('click', async () => {
@@ -158,12 +161,13 @@
             if (!uid) return;
             const btn = document.getElementById('btn-save');
             const radius = parseFloat(document.getElementById('in-radius').value) || 0;
-            // 2026-07-04 #191: 送料(per10km)は100リエル単位に floor（KHR金額を100単位に統一・payment-spec §4.2）。
-            const fee = Math.floor((parseInt(document.getElementById('in-fee').value, 10) || 0) / 100) * 100;
+            // 2026-07-17: #194② の決定に合わせ、送料(per10km)は自動で丸めない（raw保存＋検証ブロック）。
+            //   #191 の silent floor を撤去＝5,050 と入力して無言で 5,000 が保存される（入力値と保存値の食い違い）のを解消。
+            const fee = parseInt(document.getElementById('in-fee').value, 10) || 0;
             const free = parseFloat(document.getElementById('in-free').value) || 0;
 
             // インラインバリデーション（配送可能距離・送料は必須＝0より大／無料距離は任意）
-            ['err-radius', 'err-fee', 'err-save'].forEach(e => document.getElementById(e)?.classList.remove('show'));
+            ['err-radius', 'err-fee', 'err-fee-100', 'err-save'].forEach(e => document.getElementById(e)?.classList.remove('show'));
             document.getElementById('in-radius').classList.remove('input-error');
             document.getElementById('in-fee').classList.remove('input-error');
             let firstError = null;
@@ -174,6 +178,11 @@
             }
             if (fee <= 0) {
                 document.getElementById('err-fee').classList.add('show');
+                document.getElementById('in-fee').classList.add('input-error');
+                firstError = firstError || document.getElementById('in-fee');
+            } else if (fee % 100 !== 0) {
+                // 2026-07-17: 100リエル単位でなければ保存をブロック（丸めずに農家に直させる＝入力値＝保存値）
+                document.getElementById('err-fee-100').classList.add('show');
                 document.getElementById('in-fee').classList.add('input-error');
                 firstError = firstError || document.getElementById('in-fee');
             }

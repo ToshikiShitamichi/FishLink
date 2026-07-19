@@ -610,10 +610,12 @@
 
             const stock = Number(d.stock || 0);
             const sub = `${escapeHtml(d.size || '')} head/kg ・ ${i18next.t('dashboard.stock')}${stock} kg`;
+            // 2026-07-17 #210③: 以下の金額は桁区切りを 'en-US' で明示する。
+            //   引数なしの toLocaleString() は端末の既定ロケール依存で「7.500」に化けるため（アプリ言語とは無関係）。
             const gutHtml = d.gutPrice == null
                 ? `<div class="pl-gut">${i18next.t('dashboard.gutWholeFishOnly')}</div>`
                 : (d.gutPrice
-                    ? `<div class="pl-gut">${i18next.t('dashboard.gutPrice')} +${Number(d.gutPrice).toLocaleString()} KHR/kg</div>`
+                    ? `<div class="pl-gut">${i18next.t('dashboard.gutPrice')} +${Number(d.gutPrice).toLocaleString('en-US')} KHR/kg</div>`
                     : '');
 
             // 🎬 7/9 #200: 「動画」チップ（動画あり＝青「確認・更新」／なし＝amber「追加」）。
@@ -656,7 +658,7 @@
                         <div class="pl-info">
                             <div class="pl-row1"><div class="pl-name">${fishName}</div>${statusBadge}</div>
                             <div class="pl-sub">${sub}</div>
-                            <div class="pl-price"><span class="num">${Number(d.price || 0).toLocaleString()}</span><span class="unit">KHR /kg</span></div>
+                            <div class="pl-price"><span class="num">${Number(d.price || 0).toLocaleString('en-US')}</span><span class="unit">KHR /kg</span></div>
                             ${gutHtml}
                             ${reelChip}
                         </div>

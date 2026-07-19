@@ -228,7 +228,30 @@
       "Bash(git --no-pager diff js/reel-utils.js)",
       "Bash(git --no-pager diff -- pages/restaurant/dashboard.html)",
       "Bash(git --no-pager diff -- storage.rules sw.js pages/farmer/reel-post.html pages/farmer/dashboard.html)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(node -e \"const j=require\\('./locales/ja.json'\\); console.log\\(JSON.stringify\\(j.reel,null,1\\)\\)\")",
+      "Bash(node --check js/order-utils.js)",
+      "Bash(node \"C:/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/d5a49632-b1f6-4987-a2bc-a4296490b9b9/scratchpad/verify210.mjs\")",
+      "Bash(node --check dash_3.mjs)",
+      "Bash(node --check js/reel-ui.js)",
+      "Bash(cp js/reel-ui.js __TRACKED_VAR__/reel-ui-check.mjs)",
+      "Bash(cp js/reel-ui.js /tmp/reel-ui-check.mjs)",
+      "Bash(node --check /tmp/reel-ui-check.mjs)",
+      "Bash(node --check s0.mjs)",
+      "Bash(node verify.mjs)",
+      "Bash(awk 'NR>=810 && NR<=1050' pages/restaurant/cart.html)",
+      "Bash(awk 'NR>=1022 && NR<=1046' pages/restaurant/cart.html)",
+      "Bash(awk 'NR>=1022 && NR<=1032' pages/restaurant/cart.html)",
+      "Bash(node --check \"C:/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/d5a49632-b1f6-4987-a2bc-a4296490b9b9/scratchpad/final.mjs\")",
+      "Bash(node -e \"['ja','en','km'].forEach\\(l=>{JSON.parse\\(require\\('fs'\\).readFileSync\\('locales/'+l+'.json','utf8'\\)\\);console.log\\(l+'.json: JSON OK'\\)}\\)\")",
+      "Bash(sed -n '809,2526p' pages/restaurant/cart.html > \"/c/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/d5a49632-b1f6-4987-a2bc-a4296490b9b9/scratchpad/cart-check.mjs\" && node --check \"/c/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/d5a49632-b1f6-4987-a2bc-a4296490b9b9/scratchpad/cart-check.mjs\" && echo \"SYNTAX OK\")",
+      "Bash(rm -f \"/c/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/d5a49632-b1f6-4987-a2bc-a4296490b9b9/scratchpad/t.mjs\" *)",
+      "Bash(mkdir -p \"/c/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/d5a49632-b1f6-4987-a2bc-a4296490b9b9/scratchpad/mp4t\" && cp /c/work/FishLink/js/mp4-faststart.js \"/c/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/d5a49632-b1f6-4987-a2bc-a4296490b9b9/scratchpad/mp4t/mp4-faststart.mjs\" && node -e \"console.log\\(process.version\\)\")",
+      "Bash(mkdir -p \"/c/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/d5a49632-b1f6-4987-a2bc-a4296490b9b9/scratchpad/fs\" && cp /c/work/FishLink/js/mp4-faststart.js \"/c/Users/T_SHIT~1/AppData/Local/Temp/claude/c--work-FishLink/d5a49632-b1f6-4987-a2bc-a4296490b9b9/scratchpad/fs/mp4-faststart.mjs\" && echo copied)",
+      "Bash(cat > *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\T_SHIT~1\\AppData\\Local\\Temp\\claude\\c--work-FishLink\\d5a49632-b1f6-4987-a2bc-a4296490b9b9\\scratchpad"
     ]
   }
 }

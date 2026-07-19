@@ -269,7 +269,8 @@
             const size = d.size ? `（${escapeHtml(d.size)} head/kg）` : '';
             const stock = Number(d.stock || 0);
             const price = Number(d.price || 0);
-            const l2 = `${t('reel.stockKg', { kg: stock })} ・ ${price.toLocaleString()} KHR/kg`;
+            // ロケール明示＝端末ロケール依存で桁区切りが「.」に化けるのを防ぐ
+            const l2 = `${t('reel.stockKg', { kg: stock })} ・ ${price.toLocaleString('en-US')} KHR/kg`;
             const photo = (Array.isArray(d.photos) && d.photos[0]) || d.photoUrl || '';
             const thumb = photo
                 ? `<img class="lrow__thumb" ${asCachedImgAttrs(photo)} alt="">`
@@ -321,6 +322,8 @@
         });
 
         // ── 投稿 ─────────────────────────────
+        const pctSuffix = (r) => (r > 0 ? ' ' + Math.round(r * 100) + '%' : '');
+
         async function doPost() {
             if (posting) return;
             const uid = window.currentUser?.uid;
@@ -338,8 +341,10 @@
                     farmerId: uid,
                     fishType: listing.data.fishType || '',
                     thumbUrl: (Array.isArray(listing.data.photos) && listing.data.photos[0]) || listing.data.photoUrl || '',
-                    onCompressProgress: (r) => { loadStatus.textContent = t('reel.compressing') + (r ? ' ' + Math.round(r * 100) + '%' : ''); },
-                    onProgress: (r) => { loadStatus.textContent = t('reel.uploading') + (r ? ' ' + Math.round(r * 100) + '%' : ''); },
+                    onCompressProgress: (r) => { loadStatus.textContent = t('reel.compressing') + pctSuffix(r); },
+                    // #209 ⑩-2: r>=1＝バイト転送完了。この後（サムネ生成＋Firestore確定）は進捗が出ないので
+                    //   「保存中…」に切り替える＝100%のまま止まって見えないようにする。
+                    onProgress: (r) => { loadStatus.textContent = r >= 1 ? t('reel.saving') : t('reel.uploading') + pctSuffix(r); },
                 });
                 showToast(t('reel.videoPosted'));
                 location.href = '/pages/farmer/dashboard.html';
