@@ -565,6 +565,25 @@
             </div>
         </section>
 
+        <!-- 7/23 #216 2-7: 配送チャット履歴（農家⇄買い手・閲覧のみ・折りたたみ・最終操作の手前） -->
+        <section class="section">
+            <div class="section__head">
+                <div class="section__title">
+                    <span data-i18n="admin.order.chatHistoryTitle"></span>
+                    <span style="font-size:11px; font-weight:700; color:#6A7482; background:#EEF1F5; border-radius:8px; padding:3px 9px; margin-left:6px;" data-i18n="admin.order.chatHistoryReadonly"></span>
+                </div>
+                <button type="button" id="chat-history-toggle" aria-expanded="false" style="display:inline-flex; align-items:center; gap:5px; border:1px solid #cbd3dd; background:#fff; border-radius:16px; padding:6px 13px; font-size:12px; color:#16233f; font-weight:700; cursor:pointer; font-family:inherit;">
+                    <span class="material-symbols-outlined" id="chat-history-caret" style="font-size:18px;">expand_more</span>
+                    <span id="chat-history-toggle-label" data-i18n="admin.order.chatHistoryExpand"></span>
+                </button>
+            </div>
+            <div style="color:#8a94a3; font-size:11.5px; margin:-6px 0 0;" data-i18n="admin.order.chatHistoryNote"></div>
+            <div id="chat-history-body" hidden style="background:#f7f9fb; border:1px solid #e7ebf0; border-radius:10px; padding:12px 12px 4px; margin-top:12px;">
+                <div id="chat-history-empty" style="text-align:center; color:#9aa3b0; font-size:12px; padding:12px 0; display:none;" data-i18n="admin.order.chatHistoryEmpty"></div>
+                <div id="chat-history-timeline"></div>
+            </div>
+        </section>
+
         </div>
     </div>
 
@@ -601,8 +620,10 @@
         import { db, storage } from '/js/firebase-config.js';
         import { initAdminReportBadge } from '/js/admin-report-badge.js';
         import { deliveryAxisKey, paymentAxisKey } from '/js/status-axes.js';
+        // 7/23 #216: 配送チャット履歴（農家⇄買い手）の閲覧表示（共有レンダラを流用）
+        import { renderChatTimelineHtml } from '/js/chat-timeline.js';
         import {
-            doc, getDoc, updateDoc, onSnapshot, serverTimestamp
+            doc, getDoc, updateDoc, onSnapshot, serverTimestamp, collection, query, orderBy
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 6/5 #129 ⑥: 入金/送金スクショの添付（証拠）
         import { ref } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js';
@@ -734,6 +755,56 @@
                 console.error(err);
                 loading.classList.remove('show'); document.body.classList.add('app-ready');
             }
+        });
+
+        // 7/23 #216 2-7: 配送チャット履歴（閲覧のみ・折りたたみ・展開時に初めて購読＝詳細の初期表示を重くしない）
+        let chatHistorySubscribed = false;
+        let lastChatSnap = null;
+        function renderChatHistory(snap) {
+            lastChatSnap = snap;
+            const tl = document.getElementById('chat-history-timeline');
+            const empty = document.getElementById('chat-history-empty');
+            if (!tl) return;
+            if (snap.empty) {
+                tl.innerHTML = '';
+                if (empty) empty.style.display = 'block';
+                return;
+            }
+            if (empty) empty.style.display = 'none';
+            // 運営は第三者＝買い手UIDを myUid に渡し「買い手=右/青・農家=左」。ロール名ラベルも前置。
+            const roleLabels = {};
+            if (orderData?.restaurantId) roleLabels[orderData.restaurantId] = i18next.t('admin.order.chatHistoryRoleBuyer');
+            if (orderData?.farmerId) roleLabels[orderData.farmerId] = i18next.t('admin.order.chatHistoryRoleFarmer');
+            tl.innerHTML = renderChatTimelineHtml(snap, orderData?.restaurantId || '', { roleLabels });
+        }
+        document.getElementById('chat-history-toggle')?.addEventListener('click', () => {
+            const body = document.getElementById('chat-history-body');
+            const caret = document.getElementById('chat-history-caret');
+            const label = document.getElementById('chat-history-toggle-label');
+            const btn = document.getElementById('chat-history-toggle');
+            const willOpen = body.hasAttribute('hidden');
+            if (willOpen) {
+                body.removeAttribute('hidden');
+                caret.textContent = 'expand_less';
+                label.textContent = i18next.t('admin.order.chatHistoryCollapse');
+                btn.setAttribute('aria-expanded', 'true');
+                if (!chatHistorySubscribed) {
+                    chatHistorySubscribed = true;
+                    onSnapshot(query(collection(db, 'orders', orderId, 'messages'), orderBy('createdAt', 'asc')), renderChatHistory);
+                }
+            } else {
+                body.setAttribute('hidden', '');
+                caret.textContent = 'expand_more';
+                label.textContent = i18next.t('admin.order.chatHistoryExpand');
+                btn.setAttribute('aria-expanded', 'false');
+            }
+        });
+        // 言語切替：トグル文言を状態に合わせて復帰（applyTranslations が data-i18n を戻すため）＋タイムライン再描画。
+        onLanguageChange(() => {
+            const body = document.getElementById('chat-history-body');
+            const label = document.getElementById('chat-history-toggle-label');
+            if (body && label) label.textContent = i18next.t(body.hasAttribute('hidden') ? 'admin.order.chatHistoryExpand' : 'admin.order.chatHistoryCollapse');
+            if (chatHistorySubscribed && lastChatSnap) renderChatHistory(lastChatSnap);
         });
 
         function adminDisplayKey() {

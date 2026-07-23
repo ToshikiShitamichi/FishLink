@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FISHLINK キャンペーンバナー（決定版）- モック</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; background:#EEF1F5; color:#1B2430; font-family:-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif; font-size:14px; }
+  .wrap { max-width:1120px; margin:0 auto; padding:22px 22px 60px; }
+  .note-top { background:#E9F3EC; border:1px solid #BFE0C9; color:#1B5E3A; border-radius:10px; padding:12px 15px; font-size:12.5px; line-height:1.8; margin-bottom:22px; }
+  .note-top b { color:#12833F; }
+  h2.sec { font-size:15px; margin:26px 0 6px; padding-bottom:6px; border-bottom:2px solid #DDE3EA; }
+  h2.sec .side { font-size:11px; font-weight:700; color:#fff; border-radius:6px; padding:2px 8px; margin-left:8px; vertical-align:middle; }
+  .side-b { background:#1A73C7; } .side-f { background:#1E9E58; }
+  .lead { color:#6A7482; font-size:12px; margin:8px 0 12px; }
+  .cols { display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+  .col-cap { font-size:12px; font-weight:800; color:#3C4656; margin-bottom:8px; }
+  .col-cap .r { font-weight:500; color:#8A94A3; }
+
+  .phone { width:314px; background:#F7F9FB; border:1px solid #DDE3EA; border-radius:20px; overflow:hidden; box-shadow:0 6px 20px rgba(20,35,60,.08); }
+  .ph-top { background:#fff; padding:10px 12px; border-bottom:1px solid #EEF1F5; display:flex; align-items:center; justify-content:space-between; }
+  .ph-logo { font-weight:900; color:#1A73C7; font-size:14px; }
+  .ph-body { padding:12px; }
+  .searchbar { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid #E1E6EC; border-radius:12px; padding:10px 13px; color:#9AA3B0; font-size:13px; }
+  .mini-h { font-size:12px; font-weight:800; margin:10px 0 5px; }
+  .reel-strip { display:flex; gap:8px; }
+  .reel { width:78px; height:100px; border-radius:9px; background:linear-gradient(160deg,#3a5a75,#24384a); flex:none; position:relative; }
+  .reel::after { content:"▶"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.8); font-size:15px; }
+
+  /* banner（決定＝ライト＋差し色） */
+  .bn { border-radius:12px; padding:10px 13px; display:flex; align-items:center; gap:11px; position:relative; }
+  .bn .x { position:absolute; top:8px; right:10px; font-size:14px; }
+  .bn-ico { font-size:18px; flex:none; }
+  .bn-sub { font-size:11px; margin-top:3px; }
+  .bn-buy { background:#FBF6EE; border:1px solid #EAD9C0; color:#3C4656; }
+  .bn-buy .x { color:#B9A98C; }
+  .chip-off { background:#F26A24; color:#fff; border-radius:7px; padding:1px 8px; font-weight:900; }
+  .bn-farm { background:#EEF8F1; border:1px solid #C7E6D3; color:#1B5E3A; }
+  .bn-farm .x { color:#8FB8A0; }
+  .chip-farm { background:#1E9E58; color:#fff; border-radius:7px; padding:1px 8px; font-weight:900; }
+  .full { color:#D2551A; font-weight:900; } .full-f { color:#12833F; font-weight:900; }
+  .state-tag { display:inline-block; font-size:10px; font-weight:800; border-radius:5px; padding:1px 7px; margin-bottom:6px; }
+  .st-normal { background:#EEF1F5; color:#6A7482; } .st-full { background:#FDEFD9; color:#C0651A; }
+
+  /* list chip */
+  .sortrow { display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+  .sortpill { border:1px solid #DDE3EA; border-radius:16px; padding:6px 11px; font-size:12px; }
+  .listchip { margin-left:auto; display:inline-flex; align-items:center; gap:5px; background:#FBF6EE; border:1px solid #EAD9C0; color:#C0651A; border-radius:16px; padding:5px 10px; font-size:11.5px; font-weight:800; }
+  .fcards { display:flex; gap:8px; }
+  .fcard { flex:1; } .fthumb { height:74px; border-radius:9px; }
+  .fname { font-size:12px; font-weight:700; margin-top:5px; } .fprice { font-size:13px; font-weight:800; color:#1A73C7; }
+
+  /* money card */
+  .cart { width:330px; background:#fff; border:1px solid #E7EBF0; border-radius:12px; padding:16px 18px; }
+  .cart h3 { font-size:14px; margin:0 0 10px; }
+  .crow { display:flex; justify-content:space-between; font-size:13px; padding:6px 0; }
+  .crow.disc { color:#1E8E4E; font-weight:700; background:#FBF6EE; border-radius:6px; padding:6px 8px; margin:2px -8px; }
+  .crow.fee { color:#C0392B; }
+  .crow.total { border-top:1px solid #EEF1F5; margin-top:4px; padding-top:10px; font-weight:800; font-size:15px; }
+  .cchip { display:inline-flex; align-items:center; gap:6px; background:#FBF6EE; color:#C0651A; border:1px solid #EAD9C0; border-radius:16px; padding:5px 11px; font-size:11.5px; font-weight:800; margin-bottom:10px; }
+  .mini-note { color:#8A94A3; font-size:11px; margin-top:8px; line-height:1.6; }
+  .farm-row { font-size:17px; font-weight:800; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="note-top">
+    <b>【キャンペーンバナー＝決定版】</b> 検討時の比較（配色4段階・場所3案等）は削除し、決定した仕様だけ。<br>
+    ● <b>配色</b>＝ライト＋差し色（「◯%OFF」だけ色チップ）／● <b>文言</b>＝料金設定を動的参照（"半額"廃止・満額＝割引率がサービス料率と同じ時だけ「実質無料！」）／● <b>✕</b>＝セッション毎（消しても次回開くと再表示・割引は常に有効）／● <b>日付</b>＝終了日のみ「〜8/18」／● <b>買い手には手数料%を見せない・農家には見せる</b>。
+  </div>
+
+  <!-- ============ 買い手 ============ -->
+  <h2 class="sec">買い手<span class="side side-b">レストラン</span></h2>
+
+  <div class="cols">
+    <!-- Home -->
+    <div>
+      <div class="col-cap">① Home＝検索の下にバナー（通常）</div>
+      <div class="phone">
+        <div class="ph-top"><span class="ph-logo">🐟 FISHLINK</span><span style="color:#9AA3B0;">🔔 ✓ 👤</span></div>
+        <div class="ph-body">
+          <div class="searchbar" style="margin-bottom:8px;">🔍 魚種・農家を探す</div>
+          <div class="bn bn-buy"><span class="x">✕</span><span class="bn-ico">🏷️</span><div><div style="font-size:14px;font-weight:800;">お魚 全品 <span class="chip-off">2.5% OFF</span></div><div class="bn-sub" style="color:#8A94A3;">特別割引キャンペーン ・ 〜8/18</div></div></div>
+          <div class="mini-h">📹 新着リール</div>
+          <div class="reel-strip"><div class="reel"></div><div class="reel"></div><div class="reel"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 状態切替 -->
+    <div>
+      <div class="col-cap">② バナーの2状態（料金設定で自動切替）</div>
+      <div style="width:314px;">
+        <div class="state-tag st-normal">通常（割引率 2.5% ＜ サービス料 5%）</div>
+        <div class="bn bn-buy" style="margin-bottom:14px;"><span class="x">✕</span><span class="bn-ico">🏷️</span><div><div style="font-size:14px;font-weight:800;">お魚 全品 <span class="chip-off">2.5% OFF</span></div><div class="bn-sub" style="color:#8A94A3;">特別割引キャンペーン ・ 〜8/18</div></div></div>
+        <div class="state-tag st-full">満額（割引率 ＝ サービス料 5%）</div>
+        <div class="bn bn-buy"><span class="x">✕</span><span class="bn-ico">🎉</span><div><div style="font-size:15px;" class="full">手数料 実質無料！</div><div class="bn-sub" style="color:#8A94A3;">お魚 全品 5% OFF ・ 〜8/18</div></div></div>
+        <p class="mini-note">数字（割引率）・日付（終了日）は料金設定を自動反映。買い手は"手数料"を言わず割引率を直に出す（満額のときだけ「実質無料」）。</p>
+      </div>
+    </div>
+
+    <!-- 魚一覧チップ -->
+    <div>
+      <div class="col-cap">③ 魚一覧＝フルバナー無し・並び替え横に軽いチップ</div>
+      <div class="phone">
+        <div class="ph-top"><span class="ph-logo">🐟 FISHLINK</span><span style="color:#9AA3B0;">🔔 ✓ 👤</span></div>
+        <div class="ph-body">
+          <div class="searchbar">🔍 魚種・農家を探す</div>
+          <div style="font-size:16px;font-weight:800;margin:8px 0 2px;">魚一覧</div>
+          <div class="sortrow"><span class="sortpill">距離が近い順 ▾</span><span class="sortpill">⇅ 絞り込み</span><span class="listchip">🏷️ 2.5%OFF実施中</span></div>
+          <div style="font-size:11.5px;color:#8A94A3;margin-bottom:8px;">7件の魚</div>
+          <div class="fcards">
+            <div class="fcard"><div class="fthumb" style="background:linear-gradient(160deg,#3a5a75,#24384a);"></div><div class="fname">ヒレナマズ</div><div class="fprice">6,800 <span style="font-size:10px;color:#8A94A3;">KHR/kg</span></div></div>
+            <div class="fcard"><div class="fthumb" style="background:linear-gradient(160deg,#7a3535,#4a2424);"></div><div class="fname">ヒレナマズ</div><div class="fprice">7,800 <span style="font-size:10px;color:#8A94A3;">KHR/kg</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- カート -->
+    <div>
+      <div class="col-cap">④ カート＝ダメ押し（手数料%は見せない）</div>
+      <div class="cart">
+        <div class="cchip">🏷️ キャンペーンで 2.5%OFF 適用中</div>
+        <div class="crow"><span>魚代</span><span>37,800 KHR</span></div>
+        <div class="crow disc"><span>キャンペーン割引（2.5%）</span><span>−900 KHR</span></div>
+        <div class="crow"><span>送料</span><span>12,400 KHR</span></div>
+        <div class="crow total"><span>合計</span><span>49,300 KHR</span></div>
+        <p class="mini-note">※「魚代（5%込み）」とは書かない＝手数料を意識させない。引かれる（割引）%だけ見せる。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 農家 ============ -->
+  <h2 class="sec">農家<span class="side side-f">Farmer</span></h2>
+
+  <div class="cols">
+    <!-- 投稿一覧 -->
+    <div>
+      <div class="col-cap">⑤ 投稿一覧の上部にバナー（通常）</div>
+      <div class="phone">
+        <div class="ph-top"><span class="ph-logo">🐟 FISHLINK</span><span style="color:#9AA3B0;">🔔 ✓ 👤</span></div>
+        <div class="ph-body">
+          <div style="font-size:16px;font-weight:800;margin:2px 0 10px;">投稿一覧</div>
+          <div class="bn bn-farm" style="margin-bottom:12px;"><span class="x">✕</span><span class="bn-ico">🌾</span><div><div style="font-size:13px;font-weight:800;">手数料 <span class="chip-farm">2.5%割引中</span> → 受取額UP</div><div class="bn-sub" style="color:#6C8C7A;">〜8/18</div></div></div>
+          <div style="font-size:12px;font-weight:800;color:#1E8E4E;margin-bottom:8px;">● 販売中 (7)</div>
+          <div style="border:1px solid #EEF1F5;border-radius:10px;padding:10px;display:flex;gap:10px;align-items:center;background:#fff;">
+            <div style="width:46px;height:46px;border-radius:8px;background:linear-gradient(160deg,#7a3535,#4a2424);flex:none;"></div>
+            <div><div style="font-size:13px;font-weight:700;">ヒレナマズ</div><div class="fprice">7,000 <span style="font-size:10px;color:#8A94A3;">KHR/kg</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 農家 状態切替 -->
+    <div>
+      <div class="col-cap">⑥ バナーの2状態（受取額UPが主役＝買い手の逆）</div>
+      <div style="width:314px;">
+        <div class="state-tag st-normal">通常</div>
+        <div class="bn bn-farm" style="margin-bottom:14px;"><span class="x">✕</span><span class="bn-ico">🌾</span><div><div style="font-size:13px;font-weight:800;">手数料 <span class="chip-farm">2.5%割引中</span> → 受取額UP</div><div class="bn-sub" style="color:#6C8C7A;">〜8/18</div></div></div>
+        <div class="state-tag st-full">満額</div>
+        <div class="bn bn-farm"><span class="x">✕</span><span class="bn-ico">🎉</span><div><div style="font-size:14px;" class="full-f">手数料 実質無料！ 受取額UP</div><div class="bn-sub" style="color:#6C8C7A;">〜8/18</div></div></div>
+        <p class="mini-note">農家は「受取額が増える」を主役に。トグルは買い手と対称（4-4）。</p>
+      </div>
+    </div>
+
+    <!-- 農家ダメ押し -->
+    <div>
+      <div class="col-cap">⑦ 注文確認/精算＝ダメ押し（手数料%は見せてOK）</div>
+      <div class="cart">
+        <h3>受取額の内訳</h3>
+        <div class="crow"><span>魚代</span><span>37,500 KHR</span></div>
+        <div class="crow fee"><span>手数料（5%）</span><span>−1,800 KHR</span></div>
+        <div class="crow disc"><span>🏷️ キャンペーン（2.5%）</span><span>+900 KHR</span></div>
+        <div class="crow"><span>送料</span><span>12,400 KHR</span></div>
+        <div class="crow total"><span>受取額</span><span>49,000 KHR</span></div>
+        <p class="mini-note">※農家には手数料を見せてOK（実際に負担する側）。キャンペーン +900 で受取額が増えるのがダメ押し。</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

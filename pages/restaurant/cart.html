@@ -333,6 +333,14 @@
             padding: 12px 14px;
             margin-bottom: 10px;
         }
+        /* #219: 明細先頭のダメ押しチップ（手数料%は見せない＝引かれる割引%だけ） */
+        .cart-camp-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #FBF6EE; color: #C0651A; border: 1px solid #EAD9C0;
+            border-radius: 16px; padding: 5px 11px; font-size: 11.5px; font-weight: 800;
+            margin-bottom: 10px;
+        }
+        .cart-camp-chip .material-symbols-outlined { font-size: 14px; }
         .confirm-group__head {
             display: flex; justify-content: space-between; align-items: center;
             font-size: 14px; font-weight: 700; margin-bottom: 8px;
@@ -1025,6 +1033,16 @@
             }
         } catch (e) { /* ignore */ }
 
+        // 7/23 #218 4-1/4-5: キャンペーン割引は開始日〜終了日の窓内のみ有効（日付未設定は無条件＝従来挙動）。
+        //   today=ローカル YYYY-MM-DD。バナー表示条件（dashboard/fish-list）と同じ述語。金額計算式（order-utils）は不変。
+        function withinCampaignDates(start, end) {
+            const now = new Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            if (start && today < start) return false;
+            if (end && today > end) return false;
+            return true;
+        }
+
         // カート購読開始
         waitForUserData(async () => {
             if (!cachedRendered) loading.classList.add('show');
@@ -1036,10 +1054,11 @@
                 if (campSnap.exists()) {
                     const c = campSnap.data();
                     serviceRate = c.serviceRate ?? 0.05;
-                    campaignActive = c.campaignActive === true;
+                    // 7/23 #218 4-1/4-5: 割引は開始日〜終了日の窓内のみ有効（＝予約中は割引なし・終了後は正価に戻る）。
+                    campaignActive = c.campaignActive === true && withinCampaignDates(c.campaignStartDate, c.campaignEndDate);
                     campaignDiscountRate = c.campaignDiscount ?? 0;
                     farmerRate = c.farmerRate ?? 0.05;
-                    farmerCampaignActive = c.farmerCampaignActive === true;
+                    farmerCampaignActive = c.farmerCampaignActive === true && withinCampaignDates(c.farmerCampaignStartDate, c.farmerCampaignEndDate);
                     farmerCampaignDiscountRate = c.farmerCampaignDiscount ?? 0;
                     leadTimeHours = c.leadTimeHours != null ? c.leadTimeHours : 8;
                     delivParams = { ...DELIV_PARAMS, minLeadHours: (leadTimeHours || 8) };
@@ -1770,6 +1789,11 @@
             const groups = groupByFarmer(cartItems);
             groupSubtotals.clear();
             let html = '';
+            // #219: 明細先頭のダメ押しチップ（クーポン適用中は effectiveCampaignActive=false で出さない）
+            if (effectiveCampaignActive && campaignDiscountRate > 0) {
+                const pct = Math.round(campaignDiscountRate * 1000) / 10;
+                html += `<div class="cart-camp-chip"><span class="material-symbols-outlined">local_offer</span>${i18next.t('cart.campaignChip', { pct })}</div>`;
+            }
             let grandTotal = 0;
             for (const [farmerId, items] of groups.entries()) {
                 const farmer = farmerCache.get(farmerId) || {};

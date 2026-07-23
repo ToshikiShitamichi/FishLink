@@ -99,7 +99,13 @@
         "campaignOff": "{{pct}}% off service fee",
         "campaignSub": "{{pct}}% off the fish price",
         "campaignSubUntil": "{{pct}}% off the fish price · until {{until}}",
-        "dismissDecline": "Dismiss this notice"
+        "dismissDecline": "Dismiss this notice",
+        "bannerTitle": "All fish",
+        "bannerChip": "{{pct}}% OFF",
+        "bannerFullTitle": "Service fee effectively free!",
+        "bannerSub": "Special discount campaign",
+        "bannerFullSub": "All fish {{pct}}% OFF",
+        "bannerUntil": "Until {{until}}"
     },
     "fishlist": {
         "filter": "Filter",
@@ -125,7 +131,8 @@
         "emptyTitleSpecies": "No {{species}} listed today",
         "emptySubSpecies": "Other fish are available",
         "emptyViewAll": "See all fish",
-        "removeFilter": "Remove {{label}}"
+        "removeFilter": "Remove {{label}}",
+        "campaignChip": "{{pct}}% OFF now"
     },
     "farmerlist": {
         "count": "{{count}} farmers",
@@ -434,7 +441,12 @@
         "back": "Back",
         "draftNote": "Draft — under review",
         "updated": "Last updated: June 2026",
-        "updatedPrefix": "Last updated: "
+        "updatedPrefix": "Last updated: ",
+        "effectivePrefix": "Effective date ",
+        "fallbackNote": "The {{current}} version is being prepared, so the {{shown}} version is shown.",
+        "lnJa": "Japanese",
+        "lnEn": "English",
+        "lnKm": "Khmer"
     },
     "terms": {
         "title": "Terms of Use",
@@ -966,7 +978,12 @@
         "refillStock": "Restock",
         "question": "Q&A",
         "gutPrice": "Gutting Fee",
-        "gutWholeFishOnly": "Whole fish only (no gutting)"
+        "gutWholeFishOnly": "Whole fish only (no gutting)",
+        "bannerFarmPre": "Service fee",
+        "bannerFarmChip": "{{pct}}% off",
+        "bannerFarmPost": "→ You receive more",
+        "bannerFarmFullTitle": "Service fee effectively free! You receive more",
+        "bannerFarmUntil": "Until {{until}}"
     },
     "nav": {
         "logout": "Logout",
@@ -1161,7 +1178,8 @@
         "navCart": "Cart",
         "distance": "Distance {{km}} km",
         "gutWholeFishOnly": "Whole fish only (gutting not available for this listing)",
-        "gutAnnoWhole": "(whole fish only)"
+        "gutAnnoWhole": "(whole fish only)",
+        "campaignChip": "{{pct}}% OFF campaign applied"
     },
     "notifMessages": {
         "newOrder": {
@@ -1820,7 +1838,15 @@
             "remitScreenshotHint": "Payout screenshot (tap to enlarge / ✕ to remove)",
             "saveRemitMemo": "Save payout memo",
             "openInAbaRemit": "Open in ABA app to send",
-            "removeProof": "Remove"
+            "removeProof": "Remove",
+            "chatHistoryTitle": "Delivery chat history (farmer ⇄ buyer)",
+            "chatHistoryReadonly": "View only",
+            "chatHistoryExpand": "Expand to review",
+            "chatHistoryCollapse": "Collapse",
+            "chatHistoryNote": "For investigating problem reports. Staff can view only (intervene via the problem-report flow).",
+            "chatHistoryEmpty": "No messages yet",
+            "chatHistoryRoleBuyer": "Buyer",
+            "chatHistoryRoleFarmer": "Farmer"
         },
         "settings": {
             "title": "Fee Settings",
@@ -1828,8 +1854,8 @@
             "restaurantSection": "Restaurant Side",
             "farmerSection": "Farmer Side",
             "bannerSection": "Restaurant page banner",
-            "bannerActiveLabel": "Show campaign banner",
-            "bannerActiveHint": "When ON, a 'Special Discount Campaign' banner is shown at the top of the Home screen (below the search bar).",
+            "bannerActiveLabel": "Show campaign banner (Restaurant Home)",
+            "bannerActiveHint": "When ON, a 'Special Discount Campaign' banner is shown at the top of Home (below the search bar).",
             "serviceRateLabel": "Service Rate (%)",
             "serviceRateHint": "Rate added to restaurant payment (default 5%)",
             "campaignActiveLabel": "Enable Campaign",
@@ -1837,7 +1863,7 @@
             "campaignDiscountLabel": "Campaign Discount (%)",
             "campaignDiscountHint": "Discount rate applied to the fish subtotal. Set it equal to the service rate to effectively waive the service fee.",
             "campaignEndDateLabel": "Campaign End Date",
-            "campaignEndDateHint": "The banner shows until this date (enabling the campaign is the effective start). It hides automatically after this date.",
+            "campaignEndDateHint": "After this date, the <b>campaign (discount and banner) ends</b> (the discount stops and prices return to normal).",
             "farmerRateLabel": "Service Fee Rate (%)",
             "farmerRateHint": "Rate deducted from farmer payout (default 5%)",
             "farmerCampaignActiveLabel": "Enable Campaign",
@@ -1845,8 +1871,8 @@
             "farmerCampaignDiscountLabel": "Campaign Discount (%)",
             "farmerCampaignDiscountHint": "Discount rate applied to the fish subtotal. Set it equal to the commission rate to effectively waive the commission.",
             "farmerCampaignEndDateLabel": "Campaign End Date",
-            "farmerCampaignEndDateHint": "The campaign shows until this date (enabling the campaign is the effective start). It hides automatically after this date.",
-            "leadTimeSection": "Delivery lead time",
+            "farmerCampaignEndDateHint": "After this date, the <b>campaign (discount and banner) ends</b>.",
+            "leadTimeSection": "Delivery lead time / Problem reports",
             "leadTimeHoursLabel": "Minimum lead time (hours)",
             "leadTimeHoursHint": "Minimum time from order to delivery. Time slots starting sooner than this can't be selected (default 8 hours).",
             "reportWindowSection": "Problem report window",
@@ -1854,7 +1880,30 @@
             "reportWindowHoursHint": "Buyers and farmers can report problems only within this many hours after delivery is completed. After that the entry disappears and payment proceeds to the farmer (default 4 hours).",
             "save": "Save",
             "saved": "Saved",
-            "errorSave": "Save failed. Please try again."
+            "errorSave": "Save failed. Please try again.",
+            "campaignStartDateLabel": "Campaign start date",
+            "campaignStartDateHint": "The campaign starts on this date (shown as 'Scheduled' until then). Even if enabled, it does not apply before the start date.",
+            "farmerCampaignStartDateLabel": "Campaign start date",
+            "farmerCampaignStartDateHint": "The campaign starts on this date (shown as 'Scheduled' until then).",
+            "discountGuard": "* Keep the discount rate at or below the service rate ({{rate}}%). Exceeding it makes the fee negative (out-of-pocket).",
+            "farmerDiscountGuard": "* Keep the discount rate at or below the service rate ({{rate}}%).",
+            "discountExceedError": "Discount rate must be at or below the service rate.",
+            "statusLive": "Live (until {{until}})",
+            "statusLiveNoEnd": "Live",
+            "statusScheduled": "Scheduled (starts {{from}})",
+            "statusEnded": "Ended",
+            "farmerBannerActiveLabel": "Show campaign banner (Farmer Home)",
+            "farmerBannerActiveHint": "When ON, a 'Fee discount now' banner is shown in the farmer app (symmetric with restaurant; wording for the recipient).",
+            "leadTimeError": "Enter an integer of 0 or more.",
+            "reportWindowWarnStrong": "This value directly affects the timing of farmer payouts.",
+            "reportWindowWarnBody": "Shorter reduces the buyer's reporting window and speeds up payout; longer delays payout. Change with care.",
+            "maintTitle": "Maintenance / Dev tools",
+            "maintNote": "One-off back-fills of past data. Separate from fee settings. [Run] shows a confirmation dialog and the last-run date.",
+            "maintRun": "Run (with confirmation)",
+            "maintLastRun": "Last run {{date}} · {{count}} processed",
+            "maintNotRun": "Not run",
+            "confirmRun": "Run",
+            "confirmCancel": "Cancel"
         },
         "referral": {
             "title": "Referral Coupon Settings",
@@ -1979,10 +2028,21 @@
             "saveDraft": "Save draft",
             "publish": "Publish",
             "publishedToast": "Published",
-            "needContent": "Enter the Japanese title and body",
+            "needContent": "Enter the title and body",
             "saveFailed": "Failed to save",
             "badgePublished": "Published",
-            "badgeDraft": "Unpublished"
+            "badgeDraft": "Unpublished",
+            "badgePub": "Published",
+            "badgeUnpub": "Unpublished",
+            "badgeStaffUnpub": "Unpublished (staff)",
+            "fieldEffectiveDate": "Effective date",
+            "effectiveDateHint": "Shown at the top of the published version as “Effective date YYYY/MM/DD”. Future dates are allowed (announce → take effect later). Note: no version numbers / re-consent this time.",
+            "ruleTitle": "Publishing rule (fallback for unpublished languages)",
+            "ruleLine1": "If the user's language is unpublished, a published language is shown instead (order: Khmer → English). Japanese is for staff and is not used as a fallback.",
+            "ruleLine2": "Always keep at least one user-facing language (Khmer or English) published.",
+            "ruleStatusOk": "A user-facing language is published (users of unpublished languages will see a published one).",
+            "ruleStatusNone": "No user-facing language is published. Please publish Khmer or English.",
+            "needUserLang": "Publish a user-facing language (Khmer or English) first (Japanese is for staff)."
         },
         "navAnalytics": "Analytics",
         "axis": {

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FISHLINK 管理画面 規約・ポリシー編集（施行日・フォールバック反映）- モック</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; background:#F4F6F9; color:#1B2430; font-family:-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif; font-size:14px; }
+  .wrap { max-width:1000px; margin:0 auto; padding:22px 26px 60px; }
+  .note-top { background:#FFF7E6; border:1px solid #F2D48A; color:#7A5B12; border-radius:10px; padding:11px 14px; font-size:12.5px; line-height:1.7; margin-bottom:18px; }
+  .note-top b { color:#5E4708; }
+  .app-tag { color:#8A94A3; font-size:12px; }
+  h1 { font-size:24px; margin:2px 0 4px; }
+  .desc { color:#6A7482; font-size:12.5px; margin:0 0 16px; }
+  .topnav { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+  .topnav .t { background:#fff; border:1px solid #E1E6EC; border-radius:20px; padding:7px 13px; font-size:12px; color:#3C4656; }
+  .topnav .t.on { background:#16233F; color:#fff; border-color:#16233F; font-weight:700; }
+  .topnav .t .badge { background:#E23B4E; color:#fff; border-radius:10px; padding:1px 6px; font-size:11px; margin-left:5px; font-weight:700; }
+  .lang-pill { display:inline-flex; align-items:center; gap:6px; border:1px solid #1E8E4E; color:#1E8E4E; border-radius:16px; padding:5px 12px; font-size:12px; font-weight:700; float:right; }
+  .card { background:#fff; border:1px solid #E7EBF0; border-radius:12px; padding:18px 20px; margin-bottom:16px; }
+  .seg { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .seg .s { border:1px solid #E1E6EC; background:#fff; border-radius:10px; padding:8px 16px; font-size:13px; color:#3C4656; cursor:pointer; }
+  .seg .s.on { background:#EAF1FB; border-color:#B9D4F2; color:#0B5FB0; font-weight:700; }
+  .row { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+  .row-label { font-size:12px; color:#6A7482; font-weight:700; }
+  .langtab { display:inline-flex; align-items:center; gap:7px; border:1px solid #E1E6EC; background:#fff; border-radius:16px; padding:6px 12px; font-size:12.5px; color:#3C4656; cursor:pointer; }
+  .langtab.on { background:#16233F; color:#fff; border-color:#16233F; font-weight:700; }
+  .st { font-size:10.5px; font-weight:700; border-radius:8px; padding:2px 7px; }
+  .st-pub { background:#E4F6E9; color:#1E8E4E; }
+  .st-unpub { background:#EEF1F5; color:#8A94A3; }
+  .fld-label { font-size:12.5px; font-weight:700; margin:14px 0 5px; }
+  .inp { width:100%; border:1px solid #D5DDE6; border-radius:8px; padding:11px 13px; font-size:14px; font-family:inherit; }
+  textarea.inp { min-height:150px; resize:vertical; line-height:1.8; color:#3C4656; }
+  .new-wrap { border:1.5px dashed #E0A93B; border-radius:10px; padding:12px 14px; background:#FFFCF5; margin:14px 0; }
+  .new-tag { display:inline-block; background:#E0A93B; color:#fff; font-size:10px; font-weight:800; border-radius:6px; padding:2px 8px; margin-bottom:8px; }
+  .date-inp { border:1px solid #D5DDE6; border-radius:8px; padding:10px 13px; font-size:14px; font-family:inherit; }
+  .gate { display:flex; gap:10px; align-items:flex-start; background:#EAF1FB; border:1px solid #B9D4F2; border-radius:10px; padding:12px 14px; font-size:12.5px; color:#204a76; line-height:1.7; margin:14px 0; }
+  .btns { display:flex; gap:12px; margin-top:16px; }
+  .btn { flex:1; border:none; border-radius:10px; padding:14px; font-size:14px; font-weight:800; cursor:pointer; }
+  .btn-draft { background:#EEF1F5; color:#6A7482; }
+  .btn-pub { background:#0B5FB0; color:#fff; }
+  .prev-head { font-size:13px; font-weight:800; margin-bottom:4px; }
+  .fallback-note { display:flex; gap:8px; align-items:center; background:#FFF7E6; border:1px solid #F2D48A; border-radius:8px; padding:9px 12px; font-size:12px; color:#7A5B12; margin-bottom:12px; }
+  .prev-body { color:#3C4656; font-size:12.5px; line-height:1.8; }
+  .eff { color:#8A94A3; font-size:11.5px; margin-bottom:8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="note-top">
+    <b>【モック＝規約・ポリシー編集画面（仕組みの反映版）】</b> 中身（章立て・文面）は後日・法務レビュー前提。ここは編集画面の"仕組み"だけ：<b>3-2 施行日の欄</b>を追加／<b>3-1 未公開言語のフォールバック</b>（クメール未公開→英語を表示・最低1言語は常に公開）。<span style="color:#E0A93B;font-weight:800;">オレンジ破線＝今回の追加分</span>。
+  </div>
+
+  <div class="app-tag">FISHLINK 管理画面</div>
+  <h1>利用規約・プライバシーポリシー</h1>
+  <p class="desc">本文を編集し、言語ごとに公開します。ユーザーには公開版のみ表示されます。</p>
+
+  <div class="topnav">
+    <span class="t">取引一覧</span><span class="t">ユーザー</span><span class="t">料金設定</span>
+    <span class="t">紹介クーポン</span><span class="t">CAA参考価格</span>
+    <span class="t">トラブル報告<span class="badge">14</span></span><span class="t">FAQ</span>
+    <span class="t on">規約・ポリシー</span><span class="t">ログアウト</span>
+  </div>
+  <div style="overflow:hidden;margin-bottom:14px;"><span class="lang-pill">🌐 日本語</span></div>
+
+  <!-- 編集カード -->
+  <div class="card">
+    <div class="seg">
+      <span class="s on">利用規約</span>
+      <span class="s">プライバシーポリシー</span>
+    </div>
+
+    <!-- 編集する言語＋公開状態バッジ（3-1） -->
+    <div class="row">
+      <span class="row-label">編集する言語</span>
+      <span class="langtab on">日本語 <span class="st st-unpub">未公開・運営用</span></span>
+      <span class="langtab">英語 <span class="st st-pub">公開済</span></span>
+      <span class="langtab">クメール語 <span class="st st-unpub">未公開</span></span>
+    </div>
+
+    <div class="fld-label">タイトル</div>
+    <input class="inp" value="利用規約">
+
+    <!-- 施行日（3-2 追加） -->
+    <div class="new-wrap">
+      <span class="new-tag">3-2 追加</span>
+      <div class="fld-label" style="margin-top:0;">施行日</div>
+      <input class="date-inp" type="date" value="2026-07-23">
+      <div style="color:#8A94A3;font-size:11.5px;margin-top:6px;">公開版の先頭に「施行日 2026/07/23」と表示。将来日付も可（告知→数日後に施行）。※版数(v1/v2)・再同意フラグは今回は無し。</div>
+    </div>
+
+    <div class="fld-label">本文</div>
+    <textarea class="inp">1. サービスについて
+FISHLINK は養殖農家とレストランをつなぎ、魚の売買を行うサービスです。…
+
+（※中身＝章立て・文面は後日・法務レビュー前提。ここでは編集の器のみ）</textarea>
+
+    <!-- 公開ガード＋フォールバック説明（3-1 追加） -->
+    <div class="new-wrap">
+      <span class="new-tag">3-1 追加</span>
+      <div class="gate" style="margin:0;">
+        <span style="font-size:16px;">🛡️</span>
+        <span><b>公開のルール（未公開言語のフォールバック）</b><br>
+        ・ユーザーの言語が未公開なら<b>公開済みの別言語を表示</b>（順＝クメール語→英語）。日本語は運営用でフォールバック先にしない。<br>
+        ・<b>ユーザー向けの最低1言語（クメール or 英語）は常に公開</b>。これを割ると〔公開する〕で警告（＝全言語未公開の"空っぽ"を根絶）。<br>
+        ・今の状態＝<b>英語が公開済</b>なのでルールOK。クメール語ユーザーには英語版が表示される。</span>
+      </div>
+    </div>
+
+    <div class="btns">
+      <button class="btn btn-draft">下書き保存</button>
+      <button class="btn btn-pub">公開する</button>
+    </div>
+  </div>
+
+  <!-- ユーザー側の見え方（3-1 フォールバックの結果） -->
+  <div class="card">
+    <span class="new-tag">3-1 ユーザー側の見え方</span>
+    <div class="prev-head" style="margin-top:8px;">ユーザー側の表示（クメール語で開いた場合）</div>
+    <div class="fallback-note">ℹ️ クメール語版は準備中のため、<b>英語版を表示しています</b>。</div>
+    <div class="eff">Effective date: 2026/07/23</div>
+    <div class="prev-body"><b>Terms of Service</b><br>1. About the service<br>FISHLINK connects aquaculture farmers and restaurants to trade fish. …</div>
+  </div>
+
+</div>
+</body>
+</html>

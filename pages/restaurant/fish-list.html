@@ -58,6 +58,14 @@
         /* ── タイトル・ソート/絞り込みバー ── */
         .fl-title { font-size: 20px; font-weight: 700; padding: 14px 0 8px; }
         .fl-bar { display: flex; gap: 8px; align-items: center; padding-bottom: 8px; position: relative; }
+        /* #219: キャンペーン中の軽いチップ（並び替え/絞り込みの右端・フルバナーは Home のみ） */
+        .fl-camp-chip {
+            margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
+            background: #FBF6EE; border: 1px solid #EAD9C0; color: #C0651A;
+            border-radius: 16px; padding: 5px 10px; font-size: 11.5px; font-weight: 800;
+        }
+        .fl-camp-chip .material-symbols-outlined { font-size: 14px; }
+        .fl-camp-chip[hidden] { display: none; }
         .fl-sort-btn, .fl-filter-btn {
             flex: 0 0 auto; background: var(--color-surface);
             border: 1px solid var(--color-border); border-radius: 20px;
@@ -331,6 +339,11 @@
                     <div class="fl-sort-pop__opt" data-value="price" data-i18n="restaurant.sortPrice"></div>
                     <div class="fl-sort-pop__opt" data-value="newest" data-i18n="restaurant.sortNewest"></div>
                 </div>
+                <!-- #219: キャンペーン中の軽いチップ（フルバナー無し・右端） -->
+                <span class="fl-camp-chip" id="fl-camp-chip" hidden>
+                    <span class="material-symbols-outlined">local_offer</span>
+                    <span id="fl-camp-chip-text"></span>
+                </span>
             </div>
 
             <!-- 6/16 #146: アクティブ絞り込みチップ行（絞り込み1件以上の時だけ表示・✕で個別解除） -->
@@ -613,6 +626,27 @@
         // ── データ取得（ページング） ──
         let allItems = [];
         let serviceRate = 0.05;
+        // #219: キャンペーンチップ（並び替えバー右端）。settings/campaign を丸ごと保持し、条件を満たす時だけ表示。
+        let campaignChipData = null;
+        function withinCampaignDates(start, end) {
+            const now = new Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            return (!start || today >= start) && (!end || today <= end);
+        }
+        function renderCampaignChip() {
+            const chip = document.getElementById('fl-camp-chip');
+            if (!chip) return;
+            const c = campaignChipData;
+            const discount = Number(c?.campaignDiscount || 0);
+            // 条件＝キャンペーン有効 ＆ 割引>0 ＆ 開始日〜終了日の範囲内（bannerActive には依存させない）
+            if (!c || c.campaignActive !== true || discount <= 0 || !withinCampaignDates(c.campaignStartDate, c.campaignEndDate)) {
+                chip.hidden = true;
+                return;
+            }
+            const pct = Math.round(discount * 1000) / 10;   // 小数1桁保持（2.5%→「2.5」）
+            document.getElementById('fl-camp-chip-text').textContent = i18next.t('fishlist.campaignChip', { pct });
+            chip.hidden = false;
+        }
         const PAGE_SIZE = 10;
         let lastListingDoc = null;
         let hasMoreListings = false;
@@ -632,7 +666,11 @@
                         if (campSnap.exists()) {
                             const c = campSnap.data();
                             serviceRate = c.serviceRate ?? 0.05;
-                            // 6/1 #109: バナーは Home画面のみ。魚一覧では表示しない（serviceRate は価格計算に使用）
+                            // 6/1 #109: フルバナーは Home画面のみ。魚一覧では serviceRate を価格計算に使用。
+                            // #219: 並び替えバー右端の軽いチップは魚一覧でも出す（bannerActive に依存させない＝
+                            //   bannerActive は Home 専用トグルのため。チップ条件＝campaignActive && discount>0 && withinDates）。
+                            campaignChipData = c;
+                            renderCampaignChip();
                         }
                     } catch (e) { }
                 }
@@ -1145,6 +1183,7 @@
         onLanguageChange(() => {
             const moreBtn = document.getElementById('load-more-btn');
             if (moreBtn) moreBtn.textContent = i18next.t('restaurant.loadMore');
+            renderCampaignChip();   // #219: チップ文言も言語に追従
             renderList();
             if (document.getElementById('filter-sheet').classList.contains('show')) syncSheetControls();
         });

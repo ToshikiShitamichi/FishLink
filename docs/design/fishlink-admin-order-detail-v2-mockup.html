@@ -174,6 +174,38 @@
     </div>
   </div>
 
+  <!-- 2-7 配送チャット履歴（農家⇄買い手・閲覧のみ・折りたたみ） -->
+  <div class="card">
+    <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <span>配送チャット履歴（農家⇄買い手）
+        <span style="font-size:11px;font-weight:700;color:#6A7482;background:#EEF1F5;border-radius:8px;padding:4px 9px;margin-left:6px;">閲覧のみ</span>
+      </span>
+      <button style="border:1px solid #CBD3DD;background:#fff;border-radius:16px;padding:6px 13px;font-size:12px;color:#16233F;font-weight:700;cursor:pointer;"
+        onclick="var b=document.getElementById('chatBody');var on=b.style.display==='none';b.style.display=on?'block':'none';this.textContent=on?'▲ 閉じる':'▼ 展開して確認';">▼ 展開して確認</button>
+    </h2>
+    <div style="color:#8A94A3;font-size:11.5px;margin:-4px 0 4px;">トラブル報告の調査用。運営は閲覧のみ（介入はトラブル報告フローで）。</div>
+    <div id="chatBody" style="display:none;background:#F7F9FB;border:1px solid #E7EBF0;border-radius:10px;padding:14px 14px 6px;margin-top:8px;">
+      <div style="text-align:center;color:#9AA3B0;font-size:10.5px;margin-bottom:10px;">2026/07/22</div>
+      <!-- buyer=右/青、farmer=左/グレー -->
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <div style="max-width:70%;"><div style="background:#DCEBFA;border-radius:12px 12px 3px 12px;padding:8px 12px;font-size:13px;">明日の朝、時間通りに届きますか？</div><div style="text-align:right;color:#9AA3B0;font-size:10px;margin-top:2px;">買い手・16:30</div></div>
+      </div>
+      <div style="display:flex;justify-content:flex-start;margin-bottom:10px;">
+        <div style="max-width:70%;"><div style="background:#EEF1F5;border-radius:12px 12px 12px 3px;padding:8px 12px;font-size:13px;">はい、6:00〜7:00で伺います。氷締めで準備します。</div><div style="color:#9AA3B0;font-size:10px;margin-top:2px;">農家・16:45</div></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <div style="max-width:70%;"><div style="background:#DCEBFA;border-radius:12px 12px 3px 12px;padding:8px 12px;font-size:13px;">助かります。数量は5kgで確定でお願いします。</div><div style="text-align:right;color:#9AA3B0;font-size:10px;margin-top:2px;">買い手・16:50</div></div>
+      </div>
+      <div style="text-align:center;color:#9AA3B0;font-size:10.5px;margin:6px 0 10px;">2026/07/23　─　配送開始 6:05</div>
+      <div style="display:flex;justify-content:flex-start;margin-bottom:10px;">
+        <div style="max-width:70%;"><div style="background:#EEF1F5;border-radius:12px 12px 12px 3px;padding:8px 12px;font-size:13px;">到着しました。受け取りお願いします。</div><div style="color:#9AA3B0;font-size:10px;margin-top:2px;">農家・6:40</div></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <div style="max-width:70%;"><div style="background:#DCEBFA;border-radius:12px 12px 3px 12px;padding:8px 12px;font-size:13px;">受け取りました。ありがとうございます！</div><div style="text-align:right;color:#9AA3B0;font-size:10px;margin-top:2px;">買い手・6:48</div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- 最終操作 -->
   <div class="card" style="display:flex;align-items:center;justify-content:space-between;">
     <div><b>最終操作</b><div class="del-note">入金確認と農家送金が完了したら、取引完了にする</div></div>

@@ -1,9 +1,12 @@
 // 7/4 #190: 利用規約・プライバシーポリシーの Firestore 駆動表示（FAQ #144 と同じ発想）。
 //   - コレクション `legal`、doc id = 'terms' | 'privacy'（固定2ドキュメント）。
 //   - フィールド：draft{ja,en,km}{title,body}（管理画面で編集中）／pub{...同}（公開版＝ユーザー表示）／
-//     published(bool)／updatedAt（公開時のサーバ時刻）。
-//   - ユーザーは published==true のとき pub を読む。表示言語＝ユーザーの選択言語。未整備の言語は
-//     lang→en→ja→km の順でフォールバック（空表示にしない・spec §7「英語へフォールバック」）。
+//     pubLangs{ja,en,km}(bool・言語別公開・7/23 #217)／effectiveDate{ja,en,km}('YYYY-MM-DD'・施行日の編集値=下書き側)／
+//     pubEffectiveDate{ja,en,km}(公開版の施行日＝公開時のみ昇格・ユーザー表示はこれ)／
+//     published(bool・「いずれかの言語が公開なら true」を維持＝firestore.rules 変更不要)／updatedAt（公開時のサーバ時刻）。
+//   - 7/23 #217: ユーザーは pubLangs[l]==true の言語の pub を読む。フォールバック順＝lang→km→en
+//     （日本語は運営用なのでフォールバック先にしない）。旧 doc（published(bool)のみ）は pub 本文の有無で
+//     公開言語を推定して後方互換。表示言語が未公開なら公開済みの別言語（km→en）＋「準備中」注記。
 //   - まだ運営が公開していない（doc 無し／未公開）ときは DEFAULT_LEGAL（現行 日本語ドラフト）に
 //     フォールバックする＝リグレッションなし（従来の静的表示を維持）。
 //
@@ -72,22 +75,43 @@ export async function loadLegalDoc(type) {
 }
 
 /**
- * 公開版テキストを言語フォールバックで取り出す（lang→en→ja→km の順で最初に本文がある言語）。
+ * 公開版テキストを言語フォールバックで取り出す（7/23 #217：lang→km→en の順・日本語は運営用でフォールバック先にしない）。
+ * pubLangs[l]==true の言語だけを候補にする（旧 doc は published(bool) 時代の後方互換として pub 本文の有無で推定）。
  * @param {object} docData legal ドキュメントデータ
  * @param {string} lang 表示言語
- * @returns {{title:string, body:string}}
+ * @returns {{title:string, body:string, usedLang:(string|null), effectiveDate:(string|null)}}
  */
 export function legalPubText(docData, lang) {
     const pub = (docData && docData.pub) || {};
-    const order = [lang, 'en', 'ja', 'km'];
-    let title = '', body = '';
+    const pubEff = (docData && docData.pubEffectiveDate) || null;   // 公開時に確定した施行日（新モデル・ユーザー表示はこれ）
+    const eff = (docData && docData.effectiveDate) || {};           // 旧モデル互換（pubEffectiveDate 無し doc のフォールバック）
+    const pubLangs = (docData && docData.pubLangs) || null;
+    // 公開判定：pubLangs があればそれ／無ければ旧 doc（pub 本文の有無で推定）。
+    const isPub = (l) => pubLangs ? pubLangs[l] === true : !!(pub[l] && pub[l].body);
+    // 日本語はフォールバック先にしない（運営用）。ユーザー言語 → クメール語 → 英語。
+    const order = [];
+    [lang, 'km', 'en'].forEach(l => { if (l && !order.includes(l)) order.push(l); });
+    let usedLang = null;
     for (const l of order) {
-        const e = pub[l];
-        if (!title && e?.title) title = e.title;
-        if (!body && e?.body) body = e.body;
-        if (title && body) break;
+        if (isPub(l) && pub[l] && (pub[l].body || pub[l].title)) { usedLang = l; break; }
     }
-    return { title, body };
+    if (!usedLang) return { title: '', body: '', usedLang: null, effectiveDate: null };
+    // 施行日は公開版（pubEffectiveDate）を優先＝下書き保存では表示が変わらない。旧 doc は effectiveDate にフォールバック。
+    const effectiveDate = pubEff ? (pubEff[usedLang] || null) : (eff[usedLang] || null);
+    return {
+        title: pub[usedLang].title || '',
+        body: pub[usedLang].body || '',
+        usedLang,
+        effectiveDate,
+    };
+}
+
+/** 施行日（'YYYY-MM-DD'）→ 'YYYY/MM/DD'。不正/空なら ''。 */
+export function formatEffectiveDate(dateStr) {
+    if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return dateStr.replace(/-/g, '/');
+    }
+    return '';
 }
 
 /** updatedAt（Timestamp / millis / {seconds}）→「最終更新」に添える年月文字列。無ければ空。 */

@@ -85,10 +85,13 @@ function systemRow(kind, text, timeStr) {
 /**
  * Firestore の messages スナップショットを新デザインのタイムラインHTMLに描画する。
  * @param {QuerySnapshot} snap orders/{id}/messages（createdAt asc）
- * @param {string} myUid 自分のUID
+ * @param {string} myUid 自分のUID（＝バブルの右/青にする側。運営閲覧では買い手UIDを渡すと買い手=右/青・農家=左）
+ * @param {object} [opts] 7/23 #216: opts.roleLabels={[uid]:label} を渡すと、第三者（運営）閲覧用に
+ *   各会話/音声バブルの時刻へロール名（買い手/農家）を前置する。未指定なら従来どおり時刻のみ（delivery 両ページ）。
  * @returns {string} HTML
  */
-export function renderChatTimelineHtml(snap, myUid) {
+export function renderChatTimelineHtml(snap, myUid, opts = {}) {
+    const roleLabels = opts && opts.roleLabels ? opts.roleLabels : null;
     let html = '';
     let lastDateKey = null;
     snap.forEach(d => {
@@ -96,6 +99,9 @@ export function renderChatTimelineHtml(snap, myUid) {
         const t = msg.createdAt?.toDate ? msg.createdAt.toDate() : null;
         const timeStr = t ? fmtTime(t) : '';
         const isSelf = msg.senderId === myUid;
+        // 運営閲覧のみ：時刻に「買い手・」「農家・」を前置（roleLabels 指定時）。未指定なら時刻のみ。
+        const roleLabel = roleLabels ? (roleLabels[msg.senderId] || '') : '';
+        const timeLabel = roleLabel ? `${roleLabel}・${timeStr}` : timeStr;
 
         // 日付区切り（中央の区切り線・曜日付き）
         if (t) {
@@ -106,7 +112,7 @@ export function renderChatTimelineHtml(snap, myUid) {
             }
         }
 
-        // システム行（出来事）
+        // システム行（出来事）＝中央寄せ・ロール名は付けない
         const kind = statusKindOf(msg);
         if (kind) {
             html += systemRow(kind, msg.text || '', timeStr);
@@ -115,7 +121,7 @@ export function renderChatTimelineHtml(snap, myUid) {
 
         // 音声
         if (msg.type === 'voice') {
-            html += renderVoiceBubble(msg, isSelf, timeStr);
+            html += renderVoiceBubble(msg, isSelf, timeLabel);
             return;
         }
 
@@ -127,7 +133,7 @@ export function renderChatTimelineHtml(snap, myUid) {
             <div class="tl-chat ${isSelf ? 'self' : ''}">
                 ${text ? `<div class="tl-chat__text">${escapeHtml(text)}</div>` : ''}
                 ${imgHtml}
-                <div class="tl-chat__time">${escapeHtml(timeStr)}</div>
+                <div class="tl-chat__time">${escapeHtml(timeLabel)}</div>
             </div>`;
     });
     return html;

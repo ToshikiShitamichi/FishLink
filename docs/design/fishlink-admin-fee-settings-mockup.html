@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FISHLINK 管理画面 料金設定（レビュー反映版）- モック</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; background:#F4F6F9; color:#1B2430; font-family:-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif; font-size:14px; }
+  .wrap { max-width:1000px; margin:0 auto; padding:22px 26px 60px; }
+  .note-top { background:#FFF7E6; border:1px solid #F2D48A; color:#7A5B12; border-radius:10px; padding:11px 14px; font-size:12.5px; line-height:1.7; margin-bottom:18px; }
+  .note-top b { color:#5E4708; }
+  .app-tag { color:#8A94A3; font-size:12px; }
+  h1 { font-size:24px; margin:2px 0 4px; }
+  .desc { color:#6A7482; font-size:12.5px; margin:0 0 16px; }
+  .topnav { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+  .topnav .t { background:#fff; border:1px solid #E1E6EC; border-radius:20px; padding:7px 13px; font-size:12px; color:#3C4656; }
+  .topnav .t.on { background:#16233F; color:#fff; border-color:#16233F; font-weight:700; }
+  .topnav .t .badge { background:#E23B4E; color:#fff; border-radius:10px; padding:1px 6px; font-size:11px; margin-left:5px; font-weight:700; }
+  .card { background:#fff; border:1px solid #E7EBF0; border-radius:14px; padding:20px 22px; margin-bottom:16px; }
+  .card h2 { font-size:16px; font-weight:800; margin:0 0 4px; }
+  .card-sub { color:#8A94A3; font-size:11.5px; margin-bottom:6px; }
+  .frow { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:15px 0; border-top:1px solid #F1F4F7; }
+  .frow:first-of-type { border-top:none; }
+  .flabel { font-size:14px; font-weight:700; }
+  .fhint { color:#8A94A3; font-size:11.5px; margin-top:3px; line-height:1.6; max-width:640px; }
+  .fctl { flex:none; display:flex; align-items:center; gap:6px; }
+  .num { width:78px; text-align:right; border:1px solid #D5DDE6; border-radius:8px; padding:9px 11px; font-size:15px; font-weight:700; font-family:inherit; }
+  .unit { color:#6A7482; font-size:13px; }
+  .date { border:1px solid #D5DDE6; border-radius:8px; padding:9px 11px; font-size:14px; font-family:inherit; }
+  .tg { width:46px; height:26px; border-radius:20px; background:#26A65B; position:relative; flex:none; }
+  .tg::after { content:""; position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%; background:#fff; }
+  .tg.off { background:#CBD3DD; } .tg.off::after { right:auto; left:3px; }
+  .new-tag { display:inline-block; background:#E0A93B; color:#fff; font-size:10px; font-weight:800; border-radius:6px; padding:1px 7px; margin-left:7px; vertical-align:middle; }
+  .status { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:800; border-radius:16px; padding:4px 11px; }
+  .st-live { background:#E4F6E9; color:#1E8E4E; }
+  .st-sched { background:#FFF3D6; color:#B37A00; }
+  .st-end { background:#EEF1F5; color:#8A94A3; }
+  .warn { display:flex; gap:8px; align-items:flex-start; background:#FDEEDD; border:1px solid #F2C48A; border-radius:8px; padding:9px 12px; font-size:11.5px; color:#8A5A17; line-height:1.6; margin-top:8px; }
+  .guard { color:#C0392B; font-size:11px; margin-top:5px; }
+  .save-row { display:flex; justify-content:flex-end; }
+  .save { background:#16233F; color:#fff; border:none; border-radius:10px; padding:13px 30px; font-size:14px; font-weight:800; cursor:pointer; }
+  .maint-card { border:1.5px dashed #B7C0CC; background:#FBFCFD; }
+  .maint-item { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:14px 0; border-top:1px solid #EEF1F5; }
+  .maint-item:first-of-type { border-top:none; }
+  .run { background:#fff; border:1px solid #E0A93B; color:#B37A00; border-radius:8px; padding:9px 18px; font-size:13px; font-weight:800; cursor:pointer; flex:none; }
+  .lastrun { color:#1E8E4E; font-size:11px; font-weight:700; margin-top:4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="note-top">
+    <b>【モック＝料金設定（レビュー反映版）】</b> <b>4-1</b> 終了日＝割引もバナーも終了で文言統一／<b>4-2</b> 割引率≤サービス料率のガード／<b>4-4</b> 農家側にもバナートグル／<b>4-5</b> キャンペーン開始日＋予約中/実施中/終了バッジ／<b>4-6</b> 範囲バリデーション＋報告受付の注意／<b>4-3</b> メンテナンスを分離（確認ダイアログ＋最終実行日、できれば運営UIから外す）。<span style="color:#E0A93B;font-weight:800;">橙タグ＝追加分</span>。
+  </div>
+
+  <div class="app-tag">FISHLINK 管理画面</div>
+  <h1>料金設定</h1>
+  <p class="desc">サービス料率・手数料率およびキャンペーンの設定</p>
+
+  <div class="topnav">
+    <span class="t">取引一覧</span><span class="t">ユーザー</span><span class="t on">料金設定</span>
+    <span class="t">紹介クーポン</span><span class="t">CAA参考価格</span>
+    <span class="t">トラブル報告<span class="badge">14</span></span><span class="t">FAQ</span>
+    <span class="t">規約・ポリシー</span>
+  </div>
+
+  <!-- レストラン側 -->
+  <div class="card">
+    <h2>レストラン側</h2>
+    <div class="frow">
+      <div><div class="flabel">サービス料率（%）</div><div class="fhint">レストランの支払額に加算される料率（デフォルト5%）</div></div>
+      <div class="fctl"><input class="num" value="5.0"><span class="unit">%</span></div>
+    </div>
+    <div class="frow">
+      <div><div class="flabel">キャンペーン <span class="status st-live">🟢 実施中（〜7/31）<span class="new-tag">4-5</span></span></div>
+        <div class="fhint">有効化ONにすると、開始日〜終了日の間だけ割引が適用されます（当日手動ON不要）</div></div>
+      <div class="fctl"><span class="tg"></span></div>
+    </div>
+    <div class="frow">
+      <div><div class="flabel">キャンペーン割引率（%）</div>
+        <div class="fhint">魚代に対する割引率（サービス料率と同じ値で実質無料）</div>
+        <div class="guard">※割引率はサービス料率（5.0%）以下にしてください（超えると手数料がマイナス＝持ち出し）<span class="new-tag">4-2</span></div></div>
+      <div class="fctl"><input class="num" value="2.5"><span class="unit">%</span></div>
+    </div>
+    <div class="frow">
+      <div><div class="flabel">キャンペーン開始日 <span class="new-tag">4-5</span></div>
+        <div class="fhint">この日からキャンペーン開始（それまでは「予約中」）</div></div>
+      <div class="fctl"><input class="date" type="date" value="2026-07-20"></div>
+    </div>
+    <div class="frow">
+      <div><div class="flabel">キャンペーン終了日</div>
+        <div class="fhint">この日を過ぎると<b>キャンペーン（割引・バナー）が終了</b>します（＝割引も止まり正価に戻る）<span class="new-tag">4-1</span></div></div>
+      <div class="fctl"><input class="date" type="date" value="2026-07-31"></div>
+    </div>
+    <div class="frow">
+      <div><div class="flabel">キャンペーンバナー表示（レストランHome）</div>
+        <div class="fhint">ONでHome上部（検索バー直下）に「特別割引キャンペーン中」バナーを表示</div></div>
+      <div class="fctl"><span class="tg"></span></div>
+    </div>
+  </div>
+
+  <!-- 農家側 -->
+  <div class="card">
+    <h2>農家側</h2>
+    <div class="frow">
+      <div><div class="flabel">サービス料率（%）</div><div class="fhint">農家の受取額から差し引かれる料率（デフォルト5%）</div></div>
+      <div class="fctl"><input class="num" value="5.0"><span class="unit">%</span></div>
+    </div>
+    <div class="frow">
+      <div><div class="flabel">キャンペーン <span class="status st-sched">🟡 予約中（7/25開始）<span class="new-tag">4-5</span></span></div>
+        <div class="fhint">有効化ONにすると、開始日〜終了日の間だけ割引が適用されます</div></div>
+      <div class="fctl"><span class="tg"></span></div>
+    </div>
+    <div class="frow">
+      <div><div class="flabel">キャンペーン割引率（%）</div>
+        <div class="fhint">魚代に対する割引率（サービス料率と同じ値で実質無料）</div>
+        <div class="guard">※割引率はサービス料率（5.0%）以下にしてください<span class="new-tag">4-2</span></div></div>
+      <div class="fctl"><input class="num" value="2.5"><span class="unit">%</span></div>
+    </div>
+    <div class="frow">
+      <div><div class="flabel">キャンペーン開始日 <span class="new-tag">4-5</span></div><div class="fhint">この日からキャンペーン開始</div></div>
+      <div class="fctl"><input class="date" type="date" value="2026-07-25"></div>
+    </div>
+    <div class="frow">
+      <div><div class="flabel">キャンペーン終了日</div>
+        <div class="fhint">この日を過ぎると<b>キャンペーン（割引・バナー）が終了</b>します<span class="new-tag">4-1</span></div></div>
+      <div class="fctl"><input class="date" type="date" value="2026-07-31"></div>
+    </div>
+    <div class="frow">
+      <div><div class="flabel">キャンペーンバナー表示（農家Home） <span class="new-tag">4-4</span></div>
+        <div class="fhint">ONで農家アプリに「今なら手数料割引中」バナーを表示（レストランと対称・文言は受け手向け）</div></div>
+      <div class="fctl"><span class="tg off"></span></div>
+    </div>
+  </div>
+
+  <!-- 配達リードタイム / 問題報告 -->
+  <div class="card">
+    <h2>配達リードタイム・問題報告</h2>
+    <div class="frow">
+      <div><div class="flabel">最短リードタイム（時間）</div><div class="fhint">注文から納品までの最短時間。これ未満の開始時刻の時間帯は選べません（初期値8時間）。0以上の整数<span class="new-tag">4-6</span></div></div>
+      <div class="fctl"><input class="num" style="width:64px" value="8"><span class="unit">時間</span></div>
+    </div>
+    <div class="frow">
+      <div><div class="flabel">報告受付時間（時間）</div>
+        <div class="fhint">配送完了からこの時間内のみ、買い手・農家が問題を報告できます。過ぎると入口が消え農家送金に進みます（初期値4時間）</div>
+        <div class="warn"><span>⚠️</span><span><b>この値は「農家送金のタイミング」に直接影響します。</b>短くすると買い手の報告猶予が減り送金が早まる／長いと送金が遅れる。変更は慎重に。<span class="new-tag">4-6</span></span></div></div>
+      <div class="fctl"><input class="num" style="width:64px" value="4"><span class="unit">時間</span></div>
+    </div>
+  </div>
+
+  <div class="card save-row"><button class="save">保存する</button></div>
+
+  <!-- メンテナンス（4-3 分離） -->
+  <div class="card maint-card">
+    <h2>メンテナンス／開発ツール <span class="new-tag">4-3 分離</span></h2>
+    <div class="card-sub">⚠️ 過去データの後追い補正（一回きり）。料金設定とは別扱い。※できれば運営UIから外し、下道さんがスクリプト実行が安全。〔実行〕は確認ダイアログ＋最終実行日つき。</div>
+    <div class="maint-item">
+      <div><div class="flabel">州データの正規化</div><div class="fhint">既存ユーザーの province を内部キー（例: takeo）に統一。実行は1回でOK。地域フィルターの重複が解消。</div>
+        <div class="lastrun">✅ 最終実行 2026/07/20・224件処理</div></div>
+      <button class="run">実行（確認あり）</button>
+    </div>
+    <div class="maint-item">
+      <div><div class="flabel">district のクメール語版を Geocoder で取得</div><div class="fhint">位置情報から逆ジオコーディングして districtKm を補完。Geocoder API を呼ぶため 対象数 × 約100ms。</div>
+        <div class="lastrun" style="color:#8A94A3;">未実行</div></div>
+      <button class="run">実行（確認あり）</button>
+    </div>
+    <div class="maint-item">
+      <div><div class="flabel">取引数（取引N件）を集計</div><div class="fhint">完了済み注文から各ユーザーの tradeCount を集計。冪等・再実行可（タイムアウト時は再クリックで続きから）。</div>
+        <div class="lastrun">✅ 最終実行 2026/07/22・224件処理</div></div>
+      <button class="run">実行（確認あり）</button>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

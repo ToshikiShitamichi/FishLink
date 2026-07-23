@@ -237,6 +237,20 @@
             font-weight: 700;
             padding: 14px 16px 6px;
         }
+        /* #219: 農家キャンペーンバナー（受取額UPが主役＝買い手の逆。ライト薄緑＋緑チップ） */
+        .farmer-campaign {
+            margin: 4px 16px 10px; background: #EEF8F1; border: 1px solid #C7E6D3;
+            color: #1B5E3A; border-radius: 12px; padding: 10px 13px;
+            display: flex; align-items: center; gap: 11px; position: relative;
+        }
+        .farmer-campaign__main { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; }
+        .farmer-campaign__main > .material-symbols-outlined { color: #12833F; flex-shrink: 0; }
+        .farmer-campaign__title { font-size: 13px; font-weight: 800; color: #1B5E3A; }
+        .farmer-campaign__title.full { font-size: 14px; color: #12833F; font-weight: 900; }
+        .farmer-campaign__chip { background: #1E9E58; color: #fff; border-radius: 7px; padding: 1px 8px; font-weight: 900; }
+        .farmer-campaign__sub { font-size: 11px; color: #6C8C7A; margin-top: 3px; }
+        .farmer-campaign__close { background: none; border: none; color: #8FB8A0; cursor: pointer; padding: 4px; flex-shrink: 0; display: flex; }
+        .farmer-campaign__close .material-symbols-outlined { font-size: 18px; }
         .pl-group-head {
             display: flex;
             align-items: center;
@@ -463,6 +477,20 @@
 
         <!-- 投稿一覧（5/31 #104） -->
         <div class="page-title" data-i18n="dashboard.pageTitle"></div>
+
+        <!-- #219: 農家キャンペーンバナー（見出し「投稿一覧」の直下・キャンペーン中のみ表示・mock⑤準拠） -->
+        <div id="farmer-campaign-banner" class="farmer-campaign" style="display:none;">
+            <div class="farmer-campaign__main">
+                <span class="material-symbols-outlined" id="farmer-campaign-icon">agriculture</span>
+                <div>
+                    <div class="farmer-campaign__title" id="farmer-campaign-title"></div>
+                    <div class="farmer-campaign__sub" id="farmer-campaign-sub"></div>
+                </div>
+            </div>
+            <button type="button" class="farmer-campaign__close" id="farmer-campaign-close" aria-label="close">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
         <div id="fish-list"></div>
         <div id="load-more-wrap">
             <button type="button" id="load-more-btn" data-i18n="restaurant.loadMore"></button>
@@ -534,7 +562,7 @@
         import { subscribeTodos } from '/js/todos.js';
         import { subscribeNotifications } from '/js/notifications.js';
         import {
-            collection, query, where, orderBy, getDocs, doc, updateDoc, onSnapshot,
+            collection, query, where, orderBy, getDocs, getDoc, doc, updateDoc, onSnapshot,
             limit, startAfter, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         // 5/23 #69 Phase B: メモリ画像キャッシュ
@@ -577,6 +605,66 @@
             return String(s ?? '').replace(/[&<>"']/g, c => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
             }[c]));
+        }
+
+        // #219: 農家キャンペーンバナー（投稿一覧の上・受取額UPが主役）。
+        //   表示条件（契約）＝ farmerBannerActive===true ＆ farmerCampaignActive===true ＆ farmerCampaignDiscount>0
+        //     ＆ withinDates(farmerCampaignStartDate, farmerCampaignEndDate) ＆ セッション未dismiss。
+        //   ✕＝セッション毎（sessionStorage・消しても次回開くと再表示・割引は常に有効）。
+        //   満額＝farmerCampaignDiscount>=farmerRate のとき「手数料 実質無料！ 受取額UP」。農家には手数料%を見せてOK。
+        function fmtCampaignUntil(iso) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+            return m ? `${Number(m[2])}/${Number(m[3])}` : '';
+        }
+        function withinCampaignDates(start, end) {
+            const now = new Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            return (!start || today >= start) && (!end || today <= end);
+        }
+        let lastFarmerCampaignData = null;
+        function renderFarmerCampaignBanner(c) {
+            const el = document.getElementById('farmer-campaign-banner');
+            if (!el) return;
+            lastFarmerCampaignData = c;   // 言語切替時の再描画用
+            const farmerRate = Number(c.farmerRate ?? 0.05);
+            const discount = Number(c.farmerCampaignDiscount || 0);
+            if (c.farmerBannerActive !== true || c.farmerCampaignActive !== true || discount <= 0) { el.style.display = 'none'; return; }
+            if (!withinCampaignDates(c.farmerCampaignStartDate, c.farmerCampaignEndDate)) { el.style.display = 'none'; return; }
+            if (sessionStorage.getItem('fishlink_campaign_dismissed_farmer') === '1') { el.style.display = 'none'; return; }
+
+            const pct = Math.round(discount * 1000) / 10;   // 小数1桁保持（2.5%→「2.5」）
+            const until = fmtCampaignUntil(c.farmerCampaignEndDate);
+            const isFull = discount >= farmerRate - 0.0001;
+            const iconEl = document.getElementById('farmer-campaign-icon');
+            const titleEl = document.getElementById('farmer-campaign-title');
+            const subEl = document.getElementById('farmer-campaign-sub');
+            if (isFull) {
+                iconEl.textContent = 'celebration';
+                titleEl.classList.add('full');
+                titleEl.textContent = i18next.t('dashboard.bannerFarmFullTitle');
+            } else {
+                iconEl.textContent = 'agriculture';
+                titleEl.classList.remove('full');
+                titleEl.innerHTML = `${escapeHtml(i18next.t('dashboard.bannerFarmPre'))} <span class="farmer-campaign__chip">${escapeHtml(i18next.t('dashboard.bannerFarmChip', { pct }))}</span> ${escapeHtml(i18next.t('dashboard.bannerFarmPost'))}`;
+            }
+            if (until) {
+                subEl.textContent = i18next.t('dashboard.bannerFarmUntil', { until });
+                subEl.style.display = '';
+            } else {
+                subEl.style.display = 'none';
+            }
+            el.style.display = 'flex';
+            document.getElementById('farmer-campaign-close').onclick = (e) => {
+                e.stopPropagation();
+                try { sessionStorage.setItem('fishlink_campaign_dismissed_farmer', '1'); } catch (_) { }
+                el.style.display = 'none';
+            };
+        }
+        async function loadFarmerCampaignBanner() {
+            try {
+                const snap = await getDoc(doc(db, 'settings', 'campaign'));
+                if (snap.exists()) renderFarmerCampaignBanner(snap.data());
+            } catch (e) { /* ignore */ }
         }
 
         // 5/31 #104: ステータス導出（停止操作＋在庫から）
@@ -973,7 +1061,10 @@
         }
 
         // 言語変更時に投稿一覧を再描画
-        onLanguageChange(() => loadMyFishListings());
+        onLanguageChange(() => {
+            if (lastFarmerCampaignData) renderFarmerCampaignBanner(lastFarmerCampaignData);   // #219: バナー文言も言語に追従
+            loadMyFishListings();
+        });
 
         // 5/23 #69 Phase J: 描画キャッシュ確認 → HIT すれば即時表示してスピナー解除
         //   auth.currentUser は永続化されたセッションがあれば immediate に取得可能
@@ -999,6 +1090,7 @@
         // onAuthStateChanged 後にデータ取得
         setTimeout(() => {
             loadMyFishListings({ silent: cachedRendered });
+            loadFarmerCampaignBanner();   // #219: 農家キャンペーンバナー（settings/campaign を1回照会）
             watchOrderBadge();
             if (window.currentUser?.uid) {
                 subscribeTodos(window.currentUser.uid, 'farmer');

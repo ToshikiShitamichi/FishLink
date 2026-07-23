@@ -27,6 +27,9 @@
         .legal p { font-size: 13.5px; line-height: 1.8; color: var(--color-text); margin: 0 0 8px; }
         /* Firestore 公開版の本文＝改行保持のプレーンテキスト（textContent で描画＝XSS安全） */
         .legal__body { font-size: 13.5px; line-height: 1.85; color: var(--color-text); white-space: pre-wrap; }
+        /* 7/23 #217: 表示言語が未公開＝公開済みの別言語を表示している旨の amber 注記 */
+        .legal__fallback { display: none; align-items: flex-start; gap: 8px; background: #FFF7E6; border: 1px solid #F2D48A; color: #7A5B12; border-radius: 8px; padding: 9px 12px; font-size: 12px; line-height: 1.6; margin: 4px 0 12px; }
+        .legal__fallback .material-symbols-outlined { flex: 0 0 auto; font-size: 16px; margin-top: 1px; }
     </style>
 </head>
 
@@ -46,6 +49,12 @@
 
         <div class="legal__title" id="doc-title"></div>
         <div class="legal__updated" id="doc-updated"></div>
+
+        <!-- 7/23 #217: 未公開言語→公開済みの別言語（km→en）表示の注記（施行日の下・本文の上・mock③準拠） -->
+        <div class="legal__fallback" id="doc-fallback-note">
+            <span class="material-symbols-outlined">info</span>
+            <span id="doc-fallback-note-text"></span>
+        </div>
 
         <!-- Firestore 公開版の本文（あれば表示） -->
         <div class="legal__body" id="doc-body" style="display:none;"></div>
@@ -67,7 +76,7 @@
 
     <script type="module">
         import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
-        import { loadLegalDoc, legalPubText, formatUpdatedYearMonth } from '/js/legal-display.js';
+        import { loadLegalDoc, legalPubText, formatUpdatedYearMonth, formatEffectiveDate } from '/js/legal-display.js';
         await initI18n();
         initLangSelector();
         document.body.classList.add('app-ready');
@@ -77,24 +86,40 @@
 
         function currentLang() { return (i18next.language || 'km').split('-')[0]; }
 
+        // 7/23 #217: 表示言語が未公開なら公開済みの別言語（km→en）を表示＋施行日＋準備中注記。
+        function langName(l) { return i18next.t('legal.ln' + (l ? l.charAt(0).toUpperCase() + l.slice(1) : '')); }
         function renderDoc() {
             const lang = currentLang();
             const titleEl = document.getElementById('doc-title');
             const updatedEl = document.getElementById('doc-updated');
             const bodyEl = document.getElementById('doc-body');
             const fallbackEl = document.getElementById('doc-fallback');
+            const noteEl = document.getElementById('doc-fallback-note');
+            const noteTextEl = document.getElementById('doc-fallback-note-text');
 
-            const pub = (legalData && legalData.published) ? legalPubText(legalData, lang) : null;
-            if (pub && pub.body) {
+            const res = legalData ? legalPubText(legalData, lang) : null;
+            if (res && res.body) {
                 fallbackEl.style.display = 'none';
                 bodyEl.style.display = 'block';
-                bodyEl.textContent = pub.body;
-                titleEl.textContent = pub.title || i18next.t('privacy.title');
-                const ym = formatUpdatedYearMonth(legalData.updatedAt, lang);
-                updatedEl.textContent = ym ? `${i18next.t('legal.updatedPrefix')}${ym}` : i18next.t('legal.updated');
+                bodyEl.textContent = res.body;
+                titleEl.textContent = res.title || i18next.t('privacy.title');
+                const effStr = res.effectiveDate ? formatEffectiveDate(res.effectiveDate) : '';
+                if (effStr) {
+                    updatedEl.textContent = `${i18next.t('legal.effectivePrefix')}${effStr}`;
+                } else {
+                    const ym = formatUpdatedYearMonth(legalData.updatedAt, lang);
+                    updatedEl.textContent = ym ? `${i18next.t('legal.updatedPrefix')}${ym}` : '';
+                }
+                if (res.usedLang && res.usedLang !== lang) {
+                    noteTextEl.textContent = i18next.t('legal.fallbackNote', { current: langName(lang), shown: langName(res.usedLang) });
+                    noteEl.style.display = 'flex';
+                } else {
+                    noteEl.style.display = 'none';
+                }
             } else {
                 bodyEl.style.display = 'none';
                 fallbackEl.style.display = 'block';
+                noteEl.style.display = 'none';
                 titleEl.textContent = i18next.t('privacy.title');
                 updatedEl.textContent = i18next.t('legal.updated');
             }

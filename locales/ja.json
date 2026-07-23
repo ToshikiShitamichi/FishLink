@@ -99,7 +99,13 @@
         "campaignOff": "手数料{{pct}}%OFF",
         "campaignSub": "魚代から{{pct}}%割引",
         "campaignSubUntil": "魚代から{{pct}}%割引 〜{{until}}",
-        "dismissDecline": "このお知らせを閉じる"
+        "dismissDecline": "このお知らせを閉じる",
+        "bannerTitle": "お魚 全品",
+        "bannerChip": "{{pct}}% OFF",
+        "bannerFullTitle": "手数料 実質無料！",
+        "bannerSub": "特別割引キャンペーン",
+        "bannerFullSub": "お魚 全品 {{pct}}% OFF",
+        "bannerUntil": "〜{{until}}"
     },
     "fishlist": {
         "filter": "絞り込み",
@@ -125,7 +131,8 @@
         "emptyTitleSpecies": "本日{{species}}の出品はありません",
         "emptySubSpecies": "別の魚なら出品があります",
         "emptyViewAll": "すべての魚を見る",
-        "removeFilter": "{{label}}を解除"
+        "removeFilter": "{{label}}を解除",
+        "campaignChip": "{{pct}}%OFF実施中"
     },
     "farmerlist": {
         "count": "{{count}}件の農家",
@@ -434,7 +441,12 @@
         "back": "戻る",
         "draftNote": "ドラフト（レビュー中）",
         "updated": "最終更新：2026年6月",
-        "updatedPrefix": "最終更新："
+        "updatedPrefix": "最終更新：",
+        "effectivePrefix": "施行日 ",
+        "fallbackNote": "{{current}}版は準備中のため、{{shown}}版を表示しています。",
+        "lnJa": "日本語",
+        "lnEn": "英語",
+        "lnKm": "クメール語"
     },
     "terms": {
         "title": "利用規約",
@@ -966,7 +978,12 @@
         "refillStock": "在庫を補充",
         "question": "質問",
         "gutPrice": "内臓処理",
-        "gutWholeFishOnly": "丸魚のみ（内臓処理なし）"
+        "gutWholeFishOnly": "丸魚のみ（内臓処理なし）",
+        "bannerFarmPre": "手数料",
+        "bannerFarmChip": "{{pct}}%割引中",
+        "bannerFarmPost": "→ 受取額UP",
+        "bannerFarmFullTitle": "手数料 実質無料！ 受取額UP",
+        "bannerFarmUntil": "〜{{until}}"
     },
     "nav": {
         "logout": "ログアウト",
@@ -1161,7 +1178,8 @@
         "navCart": "カート",
         "distance": "配送距離 {{km}} km",
         "gutWholeFishOnly": "丸魚のみ（この出品は内臓処理を選べません）",
-        "gutAnnoWhole": "（丸魚のみ）"
+        "gutAnnoWhole": "（丸魚のみ）",
+        "campaignChip": "キャンペーンで {{pct}}%OFF 適用中"
     },
     "notifMessages": {
         "newOrder": {
@@ -1820,7 +1838,15 @@
             "remitScreenshotHint": "送金スクショ（タップで拡大／✕で削除）",
             "saveRemitMemo": "送金メモを保存",
             "openInAbaRemit": "ABAアプリで開いて送金",
-            "removeProof": "削除"
+            "removeProof": "削除",
+            "chatHistoryTitle": "配送チャット履歴（農家⇄買い手）",
+            "chatHistoryReadonly": "閲覧のみ",
+            "chatHistoryExpand": "展開して確認",
+            "chatHistoryCollapse": "閉じる",
+            "chatHistoryNote": "トラブル報告の調査用。運営は閲覧のみ（介入はトラブル報告フローで）。",
+            "chatHistoryEmpty": "まだメッセージはありません",
+            "chatHistoryRoleBuyer": "買い手",
+            "chatHistoryRoleFarmer": "農家"
         },
         "settings": {
             "title": "料金設定",
@@ -1828,8 +1854,8 @@
             "restaurantSection": "レストラン側",
             "farmerSection": "農家側",
             "bannerSection": "レストラン画面のバナー表示",
-            "bannerActiveLabel": "キャンペーンバナー表示",
-            "bannerActiveHint": "ONにするとHome画面の上部（検索バー直下）に「特別割引キャンペーン中」のバナーが表示されます",
+            "bannerActiveLabel": "キャンペーンバナー表示（レストランHome）",
+            "bannerActiveHint": "ONでHome上部（検索バー直下）に「特別割引キャンペーン中」バナーを表示",
             "serviceRateLabel": "サービス料率（%）",
             "serviceRateHint": "レストランの支払額に加算される料率（デフォルト5%）",
             "campaignActiveLabel": "キャンペーン有効化",
@@ -1837,7 +1863,7 @@
             "campaignDiscountLabel": "キャンペーン割引率（%）",
             "campaignDiscountHint": "魚代に対する割引率（サービス料率と同じ値を入れるとサービス料が実質無料になります）",
             "campaignEndDateLabel": "キャンペーン終了日",
-            "campaignEndDateHint": "この日までバナーを表示します（開始日はキャンペーン有効化が実質の開始）。この日を過ぎると自動で非表示になります",
+            "campaignEndDateHint": "この日を過ぎると<b>キャンペーン（割引・バナー）が終了</b>します（＝割引も止まり正価に戻る）",
             "farmerRateLabel": "サービス料率（%）",
             "farmerRateHint": "農家の受取額から差し引かれる料率（デフォルト5%）",
             "farmerCampaignActiveLabel": "キャンペーン有効化",
@@ -1845,8 +1871,8 @@
             "farmerCampaignDiscountLabel": "キャンペーン割引率（%）",
             "farmerCampaignDiscountHint": "魚代に対する割引率（サービス料率と同じ値を入れるとサービス料が実質無料になります）",
             "farmerCampaignEndDateLabel": "キャンペーン終了日",
-            "farmerCampaignEndDateHint": "この日までキャンペーンを表示します（開始日はキャンペーン有効化が実質の開始）。この日を過ぎると自動で非表示になります",
-            "leadTimeSection": "配達リードタイム",
+            "farmerCampaignEndDateHint": "この日を過ぎると<b>キャンペーン（割引・バナー）が終了</b>します",
+            "leadTimeSection": "配達リードタイム・問題報告",
             "leadTimeHoursLabel": "最短リードタイム（時間）",
             "leadTimeHoursHint": "注文から納品までの最短時間。これ未満の開始時刻の時間帯は選べません（初期値8時間）",
             "reportWindowSection": "問題報告の受付",
@@ -1854,7 +1880,30 @@
             "reportWindowHoursHint": "配送完了からこの時間内のみ、買い手・農家が問題を報告できます。この時間を過ぎると入口が消え、農家への送金に進みます（初期値4時間）",
             "save": "保存する",
             "saved": "保存しました",
-            "errorSave": "保存に失敗しました。再度お試しください。"
+            "errorSave": "保存に失敗しました。再度お試しください。",
+            "campaignStartDateLabel": "キャンペーン開始日",
+            "campaignStartDateHint": "この日からキャンペーン開始（それまでは「予約中」）。有効化ONでも開始日までは適用されません",
+            "farmerCampaignStartDateLabel": "キャンペーン開始日",
+            "farmerCampaignStartDateHint": "この日からキャンペーン開始（それまでは「予約中」）",
+            "discountGuard": "※割引率はサービス料率（{{rate}}%）以下にしてください（超えると手数料がマイナス＝持ち出し）",
+            "farmerDiscountGuard": "※割引率はサービス料率（{{rate}}%）以下にしてください",
+            "discountExceedError": "割引率はサービス料率以下にしてください",
+            "statusLive": "実施中（〜{{until}}）",
+            "statusLiveNoEnd": "実施中",
+            "statusScheduled": "予約中（{{from}}開始）",
+            "statusEnded": "終了",
+            "farmerBannerActiveLabel": "キャンペーンバナー表示（農家Home）",
+            "farmerBannerActiveHint": "ONで農家アプリに「今なら手数料割引中」バナーを表示（レストランと対称・文言は受け手向け）",
+            "leadTimeError": "0以上の整数を入力してください",
+            "reportWindowWarnStrong": "この値は「農家送金のタイミング」に直接影響します。",
+            "reportWindowWarnBody": "短くすると買い手の報告猶予が減り送金が早まる／長いと送金が遅れる。変更は慎重に。",
+            "maintTitle": "メンテナンス／開発ツール",
+            "maintNote": "過去データの後追い補正（一回きり）。料金設定とは別扱い。〔実行〕は確認ダイアログ＋最終実行日つき。",
+            "maintRun": "実行（確認あり）",
+            "maintLastRun": "最終実行 {{date}}・{{count}}件処理",
+            "maintNotRun": "未実行",
+            "confirmRun": "実行する",
+            "confirmCancel": "キャンセル"
         },
         "referral": {
             "title": "紹介クーポン設定",
@@ -1979,10 +2028,21 @@
             "saveDraft": "下書き保存",
             "publish": "公開する",
             "publishedToast": "公開しました",
-            "needContent": "日本語のタイトルと本文を入力してください",
+            "needContent": "タイトルと本文を入力してください",
             "saveFailed": "保存に失敗しました",
             "badgePublished": "公開中",
-            "badgeDraft": "未公開"
+            "badgeDraft": "未公開",
+            "badgePub": "公開済",
+            "badgeUnpub": "未公開",
+            "badgeStaffUnpub": "未公開・運営用",
+            "fieldEffectiveDate": "施行日",
+            "effectiveDateHint": "公開版の先頭に「施行日 YYYY/MM/DD」と表示します。将来日付も可（告知→数日後に施行）。※版数・再同意フラグは今回はありません。",
+            "ruleTitle": "公開のルール（未公開言語のフォールバック）",
+            "ruleLine1": "ユーザーの言語が未公開なら、公開済みの別言語を表示します（順＝クメール語→英語）。日本語は運営用のためフォールバック先にしません。",
+            "ruleLine2": "ユーザー向けの最低1言語（クメール語または英語）は常に公開してください。",
+            "ruleStatusOk": "ユーザー向けの公開言語があります（未公開言語のユーザーには公開言語が表示されます）。",
+            "ruleStatusNone": "ユーザー向けの公開言語がありません。クメール語または英語を公開してください。",
+            "needUserLang": "先にユーザー向けの言語（クメール語または英語）を公開してください（日本語は運営用です）。"
         },
         "navAnalytics": "分析",
         "axis": {

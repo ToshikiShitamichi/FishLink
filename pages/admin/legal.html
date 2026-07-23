@@ -80,6 +80,24 @@
         .btn.pri { background: var(--color-cta); color: #fff; }
         .btn:disabled { opacity: .6; cursor: not-allowed; }
 
+        /* 7/23 #217: 言語タブの公開状態バッジ（言語別公開） */
+        .lang-tab { display: inline-flex; align-items: center; gap: 6px; }
+        .lang-tab__badge { font-size: 9.5px; font-weight: 800; padding: 2px 6px; border-radius: 7px; }
+        .lang-tab__badge.pub { background: #E4F6E9; color: #1E8E4E; }
+        .lang-tab__badge.unpub { background: #EEF1F5; color: #8A94A3; }
+        .lang-tab.on .lang-tab__badge.unpub { background: rgba(255,255,255,.20); color: #dbe2ea; }
+        /* 施行日欄（オレンジ破線・追加分） */
+        .lg-effective { border: 1.5px dashed #E0A93B; background: #FFFCF5; border-radius: 10px; padding: 12px 14px; margin: 14px 0; }
+        .lg-effective .inp-date { width: auto; }
+        .lg-effective__hint { font-size: 11.5px; color: #8A94A3; margin-top: 6px; line-height: 1.5; }
+        /* 公開のルール（青ボックス） */
+        .lg-rule { display: flex; gap: 10px; align-items: flex-start; background: #EAF1FB; border: 1px solid #B9D4F2; color: #204a76; border-radius: 10px; padding: 12px 14px; margin: 14px 0; font-size: 12px; line-height: 1.6; }
+        .lg-rule > .material-symbols-outlined { flex: 0 0 auto; color: var(--color-cta); }
+        .lg-rule b { color: #163a5f; }
+        .lg-rule__status { margin-top: 6px; font-weight: 700; }
+        .lg-rule__status.ok { color: #1E8E4E; }
+        .lg-rule__status.warn { color: #B37A00; }
+
         @media (max-width: 480px) {
             .admin-shell { padding: 14px; }
             .admin-title { font-size: 22px; }
@@ -128,9 +146,9 @@
             <div class="lg-toolbar">
                 <label class="l" style="font-size:12px; color:#64748b; font-weight:700;" data-i18n="admin.faq.contentLangLabel"></label>
                 <div class="lang-tabs" id="lang-tabs">
-                    <button type="button" class="lang-tab on" data-lang="ja" data-i18n="admin.faq.langJa"></button>
-                    <button type="button" class="lang-tab" data-lang="en" data-i18n="admin.faq.langEn"></button>
-                    <button type="button" class="lang-tab" data-lang="km" data-i18n="admin.faq.langKm"></button>
+                    <button type="button" class="lang-tab on" data-lang="ja"><span data-i18n="admin.faq.langJa"></span><span class="lang-tab__badge" data-lang-badge="ja"></span></button>
+                    <button type="button" class="lang-tab" data-lang="en"><span data-i18n="admin.faq.langEn"></span><span class="lang-tab__badge" data-lang-badge="en"></span></button>
+                    <button type="button" class="lang-tab" data-lang="km"><span data-i18n="admin.faq.langKm"></span><span class="lang-tab__badge" data-lang-badge="km"></span></button>
                 </div>
                 <div class="lg-status">
                     <span class="lg-badge" id="pub-badge"></span>
@@ -141,12 +159,29 @@
             <div class="lg-editor">
                 <div class="fl" data-i18n="admin.legal.fieldTitle"></div>
                 <input class="inp" id="e-title" data-i18n="[placeholder]admin.legal.titlePlaceholder">
+                <!-- 7/23 #217 3-2: 施行日（言語別） -->
+                <div class="lg-effective">
+                    <div class="fl" style="margin-top:0;" data-i18n="admin.legal.fieldEffectiveDate"></div>
+                    <input class="inp inp-date" id="e-effective" type="date">
+                    <div class="lg-effective__hint" data-i18n="admin.legal.effectiveDateHint"></div>
+                </div>
                 <div class="fl" data-i18n="admin.legal.fieldBody"></div>
                 <textarea class="inp" id="e-body" data-i18n="[placeholder]admin.legal.bodyPlaceholder"></textarea>
             </div>
 
-            <div class="hint">💡 <span data-i18n="admin.legal.hint"></span></div>
+            <div class="hint"><span class="material-symbols-outlined" style="font-size:15px; vertical-align:-2px;">lightbulb</span> <span data-i18n="admin.legal.hint"></span></div>
             <div class="edit-err" id="edit-err"></div>
+
+            <!-- 7/23 #217 3-1: 公開のルール（未公開言語のフォールバック） -->
+            <div class="lg-rule">
+                <span class="material-symbols-outlined">shield</span>
+                <div>
+                    <b data-i18n="admin.legal.ruleTitle"></b>
+                    <div style="margin-top:4px;" data-i18n="admin.legal.ruleLine1"></div>
+                    <div data-i18n="admin.legal.ruleLine2"></div>
+                    <div class="lg-rule__status" id="lg-rule-status"></div>
+                </div>
+            </div>
 
             <div class="actions">
                 <button type="button" class="btn sec" id="btn-draft" data-i18n="admin.legal.saveDraft"></button>
@@ -170,7 +205,9 @@
 
         let docType = 'terms';
         let editLang = 'ja';
-        // docState.draft{ja,en,km}{title,body} ＝編集中（メモリ保持）。published/updatedAt は表示用。
+        // 7/23 #217: docState = draft{ja,en,km}{title,body}（編集中）／pub{...同}（公開版）／
+        //   pubLangs{ja,en,km}(bool・言語別公開)／effectiveDate{ja,en,km}('YYYY-MM-DD'・施行日の編集値=下書き側)／
+        //   pubEffectiveDate{ja,en,km}(公開版の施行日＝公開時のみ昇格・ユーザー表示はこれ)／published/updatedAt。
         let docState = null;
 
         watchAuthState({ requireAuth: true });
@@ -194,6 +231,9 @@
             return o;
         }
 
+        function emptyPubLangs() { return { ja: false, en: false, km: false }; }
+        function emptyEffective() { return { ja: '', en: '', km: '' }; }
+
         async function loadDoc() {
             loading.classList.add('show');
             try {
@@ -202,21 +242,35 @@
                 if (snap.exists()) {
                     const data = snap.data();
                     const src = data.draft || {};
+                    const pub = emptyDraft();
                     LEGAL_LANGS.forEach(l => {
                         draft[l] = { title: src[l]?.title || '', body: src[l]?.body || '' };
+                        pub[l] = { title: data.pub?.[l]?.title || '', body: data.pub?.[l]?.body || '' };
                     });
-                    docState = { draft, published: data.published === true, updatedAt: data.updatedAt || null };
+                    // 公開状態：pubLangs があればそれ／無ければ旧 doc（published(bool)＋pub 本文）から推定＝後方互換。
+                    const pubLangs = emptyPubLangs();
+                    LEGAL_LANGS.forEach(l => {
+                        pubLangs[l] = data.pubLangs ? data.pubLangs[l] === true
+                            : (data.published === true && !!pub[l].body);
+                    });
+                    const effectiveDate = emptyEffective();
+                    const pubEffectiveDate = emptyEffective();
+                    LEGAL_LANGS.forEach(l => {
+                        effectiveDate[l] = (data.effectiveDate && data.effectiveDate[l]) || '';
+                        pubEffectiveDate[l] = (data.pubEffectiveDate && data.pubEffectiveDate[l]) || '';
+                    });
+                    docState = { draft, pub, pubLangs, effectiveDate, pubEffectiveDate, published: LEGAL_LANGS.some(l => pubLangs[l]), updatedAt: data.updatedAt || null };
                 } else {
                     // 初回：日本語を現行ドラフト（DEFAULT_LEGAL）でプリフィル＝移行の下訳元。
                     draft.ja = { ...DEFAULT_LEGAL[docType].ja };
-                    docState = { draft, published: false, updatedAt: null };
+                    docState = { draft, pub: emptyDraft(), pubLangs: emptyPubLangs(), effectiveDate: emptyEffective(), pubEffectiveDate: emptyEffective(), published: false, updatedAt: null };
                 }
                 render();
             } catch (e) {
                 console.error('loadDoc failed:', e);
                 const draft = emptyDraft();
                 draft.ja = { ...DEFAULT_LEGAL[docType].ja };
-                docState = { draft, published: false, updatedAt: null };
+                docState = { draft, pub: emptyDraft(), pubLangs: emptyPubLangs(), effectiveDate: emptyEffective(), pubEffectiveDate: emptyEffective(), published: false, updatedAt: null };
                 render();
             } finally {
                 loading.classList.remove('show'); document.body.classList.add('app-ready');
@@ -228,8 +282,10 @@
             if (!docState) return;
             const t = document.getElementById('e-title');
             const b = document.getElementById('e-body');
+            const e = document.getElementById('e-effective');
             if (t) docState.draft[editLang].title = t.value;
             if (b) docState.draft[editLang].body = b.value;
+            if (e) docState.effectiveDate[editLang] = e.value;
         }
 
         function render() {
@@ -241,17 +297,42 @@
             const cur = docState.draft[editLang] || blankLang();
             document.getElementById('e-title').value = cur.title || '';
             document.getElementById('e-body').value = cur.body || '';
-            // 状態バッジ＋最終更新
+            document.getElementById('e-effective').value = docState.effectiveDate[editLang] || '';
+            // 言語タブの公開状態バッジ（言語別）。日本語は「未公開・運営用」の特別文言。
+            LEGAL_LANGS.forEach(l => {
+                const b = document.querySelector(`#lang-tabs [data-lang-badge="${l}"]`);
+                if (!b) return;
+                const isPub = docState.pubLangs[l] === true;
+                b.textContent = i18next.t(isPub ? 'admin.legal.badgePub' : (l === 'ja' ? 'admin.legal.badgeStaffUnpub' : 'admin.legal.badgeUnpub'));
+                b.className = 'lang-tab__badge ' + (isPub ? 'pub' : 'unpub');
+            });
+            // 現在の編集言語の状態バッジ（従来の #pub-badge を流用）＋最終更新
             const badge = document.getElementById('pub-badge');
-            badge.textContent = i18next.t(docState.published ? 'admin.legal.badgePublished' : 'admin.legal.badgeDraft');
-            badge.className = 'lg-badge ' + (docState.published ? 'pub' : 'draft');
+            const curPub = docState.pubLangs[editLang] === true;
+            badge.textContent = i18next.t(curPub ? 'admin.legal.badgePublished' : 'admin.legal.badgeDraft');
+            badge.className = 'lg-badge ' + (curPub ? 'pub' : 'draft');
             const meta = document.getElementById('updated-meta');
             const lang = (i18next.language || 'ja').split('-')[0];
             const ym = formatUpdatedYearMonth(docState.updatedAt, lang);
             meta.textContent = ym ? `${i18next.t('legal.updatedPrefix')}${ym}` : '';
+            renderRuleStatus();
             // エラー欄は状況に応じて隠す
             const err = document.getElementById('edit-err');
             if (err) err.style.display = 'none';
+        }
+
+        // 公開ルールの現在状態（ユーザー向け言語 km/en が1つでも公開されているか）
+        function renderRuleStatus() {
+            const el = document.getElementById('lg-rule-status');
+            if (!el || !docState) return;
+            const hasUser = docState.pubLangs.km === true || docState.pubLangs.en === true;
+            el.textContent = i18next.t(hasUser ? 'admin.legal.ruleStatusOk' : 'admin.legal.ruleStatusNone');
+            el.className = 'lg-rule__status ' + (hasUser ? 'ok' : 'warn');
+        }
+
+        function showEditErr(msg) {
+            const err = document.getElementById('edit-err');
+            if (err) { err.textContent = msg; err.style.display = 'block'; }
         }
 
         async function saveDraft() {
@@ -259,7 +340,8 @@
             const btn = document.getElementById('btn-draft');
             btn.disabled = true; loading.classList.add('show');
             try {
-                await setDoc(doc(db, 'legal', docType), { draft: docState.draft }, { merge: true });
+                // 下書き保存＝draft と施行日のみ更新（pub/pubLangs/published は不変）。
+                await setDoc(doc(db, 'legal', docType), { draft: docState.draft, effectiveDate: docState.effectiveDate }, { merge: true });
                 showToast(i18next.t('account.saved'));
             } catch (e) {
                 console.error('saveDraft failed:', e);
@@ -269,32 +351,40 @@
             }
         }
 
+        // 7/23 #217: 公開は「編集中の言語」単位。その言語の draft を pub へ昇格＋pubLangs[lang]=true。
         async function publish() {
             captureInputs();
-            // 公開する言語＝日本語（正本）はタイトル・本文が必須。他言語は空でも英語/日本語にフォールバック表示。
-            const ja = docState.draft.ja || {};
-            if (!ja.title?.trim() || !ja.body?.trim()) {
-                const err = document.getElementById('edit-err');
-                if (err) { err.textContent = i18next.t('admin.legal.needContent'); err.style.display = 'block'; }
-                // 未入力の日本語タブへ切替
-                if (editLang !== 'ja') { editLang = 'ja'; render(); }
+            const L = editLang;
+            const cur = docState.draft[L] || {};
+            // 公開する言語のタイトル・本文が必須。
+            if (!cur.title?.trim() || !cur.body?.trim()) {
+                showEditErr(i18next.t('admin.legal.needContent'));
+                return;
+            }
+            // ガード：ユーザー向け言語（km/en）が1つも公開されていない状態で日本語だけを公開しようとしたらブロック。
+            //   （日本語は運営用＝ユーザーに出ない。"空っぽ"を根絶するため先に km/en を公開させる。）
+            if (L === 'ja' && !(docState.pubLangs.km === true || docState.pubLangs.en === true)) {
+                showEditErr(i18next.t('admin.legal.needUserLang'));
                 return;
             }
             const btn = document.getElementById('btn-publish');
             btn.disabled = true; loading.classList.add('show');
             try {
-                // draft を pub へ昇格（全言語）。published=true・updatedAt を更新。
-                const pub = {};
-                LEGAL_LANGS.forEach(l => {
-                    pub[l] = { title: (docState.draft[l]?.title || '').trim(), body: (docState.draft[l]?.body || '').trim() };
-                });
+                // 編集中の言語だけを pub へ昇格。他言語の公開状態・本文は不変。
+                docState.pub[L] = { title: cur.title.trim(), body: cur.body.trim() };
+                docState.pubLangs[L] = true;
+                docState.effectiveDate[L] = (document.getElementById('e-effective').value || '');
+                docState.pubEffectiveDate[L] = docState.effectiveDate[L];   // 施行日を公開版へ昇格（下書き保存では公開版は変わらない）
+                docState.published = LEGAL_LANGS.some(l => docState.pubLangs[l]);
                 await setDoc(doc(db, 'legal', docType), {
                     draft: docState.draft,
-                    pub,
-                    published: true,
+                    pub: docState.pub,
+                    pubLangs: docState.pubLangs,
+                    effectiveDate: docState.effectiveDate,
+                    pubEffectiveDate: docState.pubEffectiveDate,
+                    published: docState.published,   // 「いずれか公開なら true」＝firestore.rules 変更不要
                     updatedAt: serverTimestamp(),
                 }, { merge: true });
-                docState.published = true;
                 showToast(i18next.t('admin.legal.publishedToast'));
                 await loadDoc();   // updatedAt/バッジを反映
             } catch (e) {

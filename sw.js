@@ -502,7 +502,11 @@ self.addEventListener('notificationclick', (event) => {
 //   ⚠ v154（再bump）＝敵対的レビュー確定6件を反映（faststart callable の timeoutSeconds:540/memory＋documentId
 //     ページング／status-axes の onHold〔問題報告中〕入金軸状態＝誤送金防止／手数料KPIを運営取り分ベースに是正／
 //     分析の期間終端 .999＋createdAt欠損の span 汚染ガード）。precached の status-axes.js・locales を触ったため再bump。
-const CACHE_NAME = 'fishlink-v154';
+// 7/23 #216-219: 取引詳細に配送チャット履歴（read-only）／規約 施行日+言語別公開+フォールバック（km→en）／
+//     料金設定レビュー（開始日・農家バナー・状態バッジ・割引率ガード・メンテ分離+確認モーダル+最終実行日）／
+//     キャンペーンバナー決定版（ライト配色・2状態・sessionStorage dismiss）。precached の legal-display.js・
+//     chat-timeline.js・locales を触ったため版バンプ。
+const CACHE_NAME = 'fishlink-v155';
 
 const PRECACHE_URLS = [
     '/',
