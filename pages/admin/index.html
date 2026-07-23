@@ -145,7 +145,15 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* #212 1-5: KPI 補足（流通総額・手数料は成立取引ベース） */
+        .kpi-note {
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.6;
+            margin: 0 2px 20px;
         }
 
         .summary-card {
@@ -167,40 +175,58 @@
             margin-top: 4px;
         }
 
-        .tab-row {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
+        /* #212 1-4: 2軸フィルタ（配送・入金）＝旧の単一タブ行を置換 */
+        .filters {
             background: #fff;
             border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            padding: 10px 12px;
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
         }
 
-        .tab-btn {
-            padding: 7px 14px;
-            border-radius: 999px;
-            border: none;
-            background: #f1f5f9;
-            color: #475569;
-            font-size: 13px;
+        .frow {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .frow + .frow {
+            margin-top: 11px;
+            padding-top: 11px;
+            border-top: 1px dashed #e7ebf0;
+        }
+
+        .axis-label {
+            font-size: 12px;
+            font-weight: 800;
+            color: #586274;
+            min-width: 104px;
+        }
+
+        .axis-label small {
+            display: block;
+            color: #9aa3b0;
             font-weight: 600;
-            cursor: pointer;
+            font-size: 10.5px;
         }
 
-        .tab-btn.active {
-            background: #0f172a;
-            color: #fff;
+        .chip {
+            border: 1px solid #e1e6ec;
+            background: #fff;
+            border-radius: 16px;
+            padding: 6px 13px;
+            font-size: 12px;
+            color: #3c4656;
+            cursor: pointer;
+            white-space: nowrap;
         }
-        /* 6/5 #129 ⑤: 未払いタブの件数バッジ（赤） */
-        .tab-btn.tab-overdue { border: 1px solid #f1c0bd; color: #b91c1c; background: #fdf1f0; }
-        .tab-btn.tab-overdue.active { background: #b91c1c; color: #fff; border-color: #b91c1c; }
-        .tab-btn .tab-count {
-            display: inline-block; margin-left: 5px; padding: 0 6px;
-            border-radius: 999px; background: #e5453f; color: #fff;
-            font-size: 11px; font-weight: 700;
-        }
+
+        .chip.on { background: #16233f; color: #fff; border-color: #16233f; font-weight: 700; }
+        .chip.warn { color: #c0392b; border-color: #e6c4be; }
+        .chip.warn.on { background: #c0392b; color: #fff; border-color: #c0392b; }
+        .chip.todo { color: #b26a00; border-color: #f0d28c; }
+        .chip.todo.on { background: #e08a00; color: #fff; border-color: #e08a00; }
 
         .table-card {
             background: #fff;
@@ -215,7 +241,7 @@
 
         table.tx-table {
             width: 100%;
-            min-width: 950px;
+            min-width: 1040px;
             border-collapse: collapse;
             font-size: 13px;
         }
@@ -241,26 +267,46 @@
             background: #f8fafc;
         }
 
-        .badge {
+        /* #212 1-2: 2軸ステータスバッジ（配送=b-*, 入金=m-*・mockup のパレット準拠） */
+        .bdg {
             display: inline-block;
-            padding: 3px 10px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 600;
+            border-radius: 20px;
+            padding: 4px 11px;
+            font-size: 11.5px;
+            font-weight: 700;
+            white-space: nowrap;
         }
+        /* 配送軸 */
+        .b-wait   { background: #eef1f5; color: #5a6678; }  /* 農家確認中＝ニュートラル */
+        .b-prep   { background: #e3f0ff; color: #1b6fc4; }  /* 準備開始＝青 */
+        .b-ship   { background: #ddebff; color: #1857b8; }  /* 配送開始＝青 */
+        .b-recv   { background: #fff2cc; color: #9a7400; }  /* 受け取り完了＝アンバー/ゴールド */
+        .b-done   { background: #16233f; color: #fff; }     /* 取引完了＝ダークネイビー */
+        .b-decl   { background: #fbe3e6; color: #c0392b; }  /* 辞退＝赤 */
+        .b-cancel { background: #fbe3e6; color: #c0392b; }  /* キャンセル＝赤 */
+        /* 入金軸 */
+        .m-wait    { background: #fff0d6; color: #b26a00; } /* 入金確認待ち＝アンバー(To-Do) */
+        .m-conf    { background: #e4f6e9; color: #1e8e4e; } /* 入金確認済＝緑 */
+        .m-paywait { background: #fff0d6; color: #b26a00; } /* 農家送金待ち＝アンバー(To-Do) */
+        .m-paid    { background: #d9f2e1; color: #137a41; } /* 農家送金済＝緑 */
+        .m-refund  { background: #eef1f5; color: #5a6678; } /* 返金済＝ニュートラル */
+        .m-unpaid  { background: #fbe3e6; color: #c0392b; } /* 未払い・お支払い未確認＝赤 */
+        .m-hold    { background: #fbefd9; color: #c2620e; } /* 確認中（保留・問題報告あり）＝オレンジ(To-Doとは別) */
 
-        .badge-pending { background: #fef3c7; color: #854d0e; }
-        .badge-approved { background: #dbeafe; color: #1e40af; }
-        .badge-preparing { background: #e2e8f0; color: #334155; }
-        .badge-delivering { background: #dbeafe; color: #1d4ed8; }
-        .badge-delivered { background: #ede9fe; color: #6d28d9; }
-        .badge-completed { background: #fef3c7; color: #854d0e; }
-        .badge-payment_confirmed { background: #d1fae5; color: #065f46; }
-        .badge-remitted { background: #ccfbf1; color: #0f766e; }
-        .badge-done { background: #0f172a; color: #fff; }
-        .badge-declined { background: #fee2e2; color: #991b1b; }
-        /* 6/5 #129 ⑤: 未払い（期限超過）＝赤 */
-        .badge-overdue { background: #fee2e2; color: #b91c1c; }
+        /* 買い手支払い額（返金済は muted＋タグ） */
+        .amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+        .amt.muted { color: #9aa3b0; font-weight: 600; }
+        .refund {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 10.5px;
+            color: #7c8697;
+            background: #eef1f5;
+            border-radius: 5px;
+            padding: 1px 6px;
+            font-weight: 700;
+            vertical-align: middle;
+        }
 
         .btn-detail {
             padding: 6px 12px;
@@ -331,8 +377,9 @@
             .summary-card { padding: 12px 14px; }
             .summary-card__value { font-size: 18px; }
 
-            .tab-row { padding: 8px; gap: 6px; overflow-x: auto; flex-wrap: nowrap; }
-            .tab-btn { padding: 6px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+            .filters { padding: 12px; }
+            .axis-label { min-width: 100%; margin-bottom: 2px; }
+            .chip { padding: 6px 11px; font-size: 12px; }
 
             /* テーブルを隠してカード表示に */
             .table-scroll { display: none; }
@@ -354,6 +401,7 @@
             <div class="admin-header__right">
                 <nav class="admin-nav">
                     <a href="/pages/admin/index.html" class="active" data-i18n="admin.navTransactions"></a>
+                    <a href="/pages/admin/analytics.html" data-i18n="admin.navAnalytics"></a>
                     <a href="/pages/admin/users.html" data-i18n="admin.navUsers"></a>
                     <a href="/pages/admin/settings.html" data-i18n="admin.navSettings"></a>
                     <a href="/pages/admin/referral.html" data-i18n="admin.navReferral"></a>
@@ -402,8 +450,11 @@
             </div>
         </div>
 
-        <!-- ステータスタブ -->
-        <div class="tab-row" id="tab-row"></div>
+        <!-- #212 1-5: KPI 補足（成立取引ベース） -->
+        <div class="kpi-note" data-i18n="admin.tx.kpiRevenueNote"></div>
+
+        <!-- #212 1-4: 2軸ステータスフィルタ（配送・入金） -->
+        <div class="filters" id="filters"></div>
 
         <!-- 取引一覧テーブル -->
         <div class="table-card">
@@ -412,7 +463,8 @@
                     <thead>
                         <tr>
                             <th data-i18n="admin.tx.colOrderNo"></th>
-                            <th data-i18n="admin.tx.colStatus"></th>
+                            <th data-i18n="admin.tx.colDelivery"></th>
+                            <th data-i18n="admin.tx.colPayment"></th>
                             <th data-i18n="admin.tx.colDate"></th>
                             <th data-i18n="admin.tx.colRestaurant"></th>
                             <th data-i18n="admin.tx.colFarmer"></th>
@@ -421,7 +473,7 @@
                         </tr>
                     </thead>
                     <tbody id="tx-body">
-                        <tr><td colspan="6" class="empty-cell" data-i18n="admin.tx.empty"></td></tr>
+                        <tr><td colspan="8" class="empty-cell" data-i18n="admin.tx.empty"></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -437,6 +489,12 @@
         import { initAdminReportBadge } from '/js/admin-report-badge.js';
         // 5/25 #91/#92 拡張: 画面 HTML を即時復元
         import { saveRenderState, loadRenderState } from '/js/render-cache.js';
+        // #212: 2軸ステータス（配送・入金）の導出は共有モジュールに集約（買い手/農家の直線ステータスとは別）
+        import {
+            deliveryAxisKey, paymentAxisKey,
+            isPaymentTodo, isPaymentWarn, isDeliveryException, isSettledTransaction, isOverdue,
+            DELIVERY_AXIS_KEYS, PAYMENT_AXIS_KEYS
+        } from '/js/status-axes.js';
         import {
             collection, query, orderBy, getDocs, doc, getDoc
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -458,59 +516,41 @@
             else setTimeout(() => waitForUserData(cb), 200);
         }
 
-        // ── ステータス判定 ─────────────────────────────
-        // UIタブのキー → matcher
-        // 取引一覧では status（配送ステータス）と adminStatus（管理ステータス）を組み合わせる
-        // 4/28: delivered ステータスは廃止、completed に統合
-        const TAB_KEYS = [
-            'all', 'preparing', 'delivering',
-            'completed', 'payment_confirmed', 'remitted', 'done', 'overdue'
-        ];
-
-        // 6/5 #129 ⑤: 未払い（期限超過）＝魚は受取完了・レストラン未入金・支払期限超過。
-        //   運営が見つけて督促する対象。adminStatus が進んでいる（入金確認済以降）ものは除外。
-        function isOverdue(order) {
-            const isReceived = order.status === 'completed' || order.status === 'delivered';
-            if (!isReceived) return false;
-            if (order.paymentStatus === 'paid') return false;
-            if (['payment_confirmed', 'remitted', 'done'].includes(order.adminStatus)) return false;
-            const dl = order.paymentDeadline?.toMillis?.() || 0;
-            return dl > 0 && Date.now() > dl;
+        // ── 2軸ステータス（#212 1-1/1-2/1-4）─────────────────────────────
+        //   配送軸・入金軸の導出は js/status-axes.js（前払い/旧 受取時払いの両方に対応）。
+        //   ここではキー → CSSクラス／i18nラベル／フィルタ一致 だけを持つ。
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
 
-        function matchTab(order, tab) {
-            if (tab === 'all') return true;
-            if (tab === 'overdue') return isOverdue(order);
-            // admin 用の表示ステータス
-            if (order.adminStatus === 'done') return tab === 'done';
-            if (order.adminStatus === 'remitted') return tab === 'remitted';
-            if (order.adminStatus === 'payment_confirmed') return tab === 'payment_confirmed';
-            // 配送ステータス（旧 delivered は completed として扱う）
-            if (order.status === 'completed' || order.status === 'delivered') return tab === 'completed';
-            if (order.status === 'delivering') return tab === 'delivering';
-            if (order.status === 'preparing') return tab === 'preparing';
-            return false;
-        }
+        // キー → mockup のバッジ配色クラス
+        const DELIVERY_BADGE_CLASS = {
+            farmerConfirming: 'b-wait',
+            preparing: 'b-prep',
+            shipping: 'b-ship',
+            received: 'b-recv',
+            tradeDone: 'b-done',
+            declined: 'b-decl',
+            cancelled: 'b-cancel',
+        };
+        const PAYMENT_BADGE_CLASS = {
+            waitDeposit: 'm-wait',
+            depositOk: 'm-conf',
+            remitWait: 'm-paywait',
+            remitted: 'm-paid',
+            onHold: 'm-hold',          // 確認中（保留）＝オレンジ・To-Do(送金待ち)とは別
+            unconfirmed: 'm-unpaid',   // お支払い未確認＝赤
+            unpaid: 'm-unpaid',        // 未払い（期限超過）＝赤
+            refunded: 'm-refund',
+        };
+        const deliveryBadgeClass = k => DELIVERY_BADGE_CLASS[k] || 'b-wait';
+        const paymentBadgeClass = k => PAYMENT_BADGE_CLASS[k] || 'm-wait';
+        const deliveryLabel = k => i18next.t(`admin.axis.delivery.${k}`);
+        const paymentLabel = k => i18next.t(`admin.axis.payment.${k}`);
 
-        function adminDisplayStatus(order) {
-            if (order.adminStatus === 'done') return 'done';
-            if (order.adminStatus === 'remitted') return 'remitted';
-            if (order.adminStatus === 'payment_confirmed') return 'payment_confirmed';
-            if (order.status === 'declined') return 'declined';
-            // 6/5 #129 ⑤: 期限超過は赤い「未払い」表示で運営に気づかせる
-            if (isOverdue(order)) return 'overdue';
-            // 4/28: 旧 delivered は completed として表示
-            if (order.status === 'delivered') return 'completed';
-            return order.status || 'pending';
-        }
-
-        function statusLabel(key) {
-            return i18next.t(`admin.tx.status${capitalize(key)}`) || key;
-        }
-
-        function capitalize(s) {
-            return s.charAt(0).toUpperCase() + s.slice(1).replace(/_([a-z])/g, (_, c) => c.toUpperCase());
-        }
+        // フィルタ一致（'all' は無条件通過）
+        function matchDelivery(order, f) { return f === 'all' || deliveryAxisKey(order) === f; }
+        function matchPayment(order, f) { return f === 'all' || paymentAxisKey(order) === f; }
 
         // ── 期間フィルタ ─────────────────────────────
         let periodMode = 'today';
@@ -546,7 +586,9 @@
         let allOrders = [];
         let allFishListings = {}; // id → data
         let allUsers = {};        // uid → data
-        let currentTab = 'all';
+        // #212 1-4: 2軸フィルタ（既定はどちらも「すべて」）
+        let deliveryFilter = 'all';
+        let paymentFilter = 'all';
 
         waitForUserData(async () => {
             if (window.currentUserData?.role !== 'admin') {
@@ -577,7 +619,7 @@
                     if (lSnap.exists()) allFishListings[lid] = lSnap.data();
                 }));
 
-                buildTabs();
+                buildFilters();
                 render();
             } catch (err) {
                 console.error(err);
@@ -586,23 +628,46 @@
             }
         });
 
-        function buildTabs() {
-            const row = document.getElementById('tab-row');
-            row.innerHTML = '';
-            TAB_KEYS.forEach(key => {
-                const btn = document.createElement('button');
-                // 6/5 #129 ⑤: 未払い（期限超過）タブは赤系＋件数バッジ
-                const isOverdueTab = key === 'overdue';
-                btn.className = 'tab-btn' + (isOverdueTab ? ' tab-overdue' : '') + (key === currentTab ? ' active' : '');
-                btn.dataset.tab = key;
-                btn.innerHTML = `<span>${i18next.t(`admin.tx.tab${capitalize(key)}`)}</span>${isOverdueTab ? '<span class="tab-count" id="overdue-count" style="display:none;">0</span>' : ''}`;
-                btn.addEventListener('click', () => {
-                    currentTab = key;
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
+        // #212 1-4: 2軸フィルタ（配送・入金）を描画。To-Do=amber(.todo)／例外=red(.warn)。
+        function chipHtml(axis, key, current, label, extraCls) {
+            const cls = 'chip' + (extraCls ? ' ' + extraCls : '') + (key === current ? ' on' : '');
+            return `<span class="${cls}" data-axis="${axis}" data-key="${escapeHtml(key)}">${escapeHtml(label)}</span>`;
+        }
+
+        function buildFilters() {
+            const wrap = document.getElementById('filters');
+            if (!wrap) return;
+            const allLabel = i18next.t('admin.tx.tabAll');
+
+            const dChips = [chipHtml('delivery', 'all', deliveryFilter, allLabel, '')]
+                .concat(DELIVERY_AXIS_KEYS.map(k =>
+                    chipHtml('delivery', k, deliveryFilter, deliveryLabel(k), isDeliveryException(k) ? 'warn' : '')));
+
+            const pChips = [chipHtml('payment', 'all', paymentFilter, allLabel, '')]
+                .concat(PAYMENT_AXIS_KEYS.map(k => {
+                    const extra = isPaymentTodo(k) ? 'todo' : (isPaymentWarn(k) ? 'warn' : '');
+                    return chipHtml('payment', k, paymentFilter, paymentLabel(k), extra);
+                }));
+
+            wrap.innerHTML = `
+                <div class="frow">
+                    <span class="axis-label">${escapeHtml(i18next.t('admin.tx.axisDelivery'))}<small>${escapeHtml(i18next.t('admin.tx.axisDeliveryHint'))}</small></span>
+                    ${dChips.join('')}
+                </div>
+                <div class="frow">
+                    <span class="axis-label">${escapeHtml(i18next.t('admin.tx.axisPayment'))}<small>${escapeHtml(i18next.t('admin.tx.axisPaymentHint'))}</small></span>
+                    ${pChips.join('')}
+                </div>`;
+
+            wrap.querySelectorAll('.chip').forEach(el => {
+                el.addEventListener('click', () => {
+                    const axis = el.dataset.axis;
+                    const key = el.dataset.key;
+                    if (axis === 'delivery') deliveryFilter = key;
+                    else paymentFilter = key;
+                    buildFilters();
                     render();
                 });
-                row.appendChild(btn);
             });
         }
 
@@ -621,87 +686,117 @@
             const f = document.getElementById('date-from').value;
             const t = document.getElementById('date-to').value;
             dateFrom = f ? new Date(f + 'T00:00:00').getTime() : null;
-            dateTo = t ? new Date(t + 'T23:59:59').getTime() : null;
+            dateTo = t ? new Date(t + 'T23:59:59.999').getTime() : null;
             render();
         });
 
         function render() {
-            const filtered = allOrders
-                .filter(matchPeriod)
-                .filter(o => matchTab(o, currentTab));
+            const tbody = document.getElementById('tx-body');
+            const cards = document.getElementById('tx-cards');
 
-            // サマリー計算（期間フィルタ後、タブ無視）
-            const periodFiltered = allOrders.filter(matchPeriod);
-            const count = periodFiltered.length;
-
-            // 6/5 #129 ⑤: 未払い（期限超過）件数バッジ更新
-            const overdueCount = periodFiltered.filter(isOverdue).length;
-            const overdueBadge = document.getElementById('overdue-count');
-            if (overdueBadge) {
-                overdueBadge.textContent = overdueCount;
-                overdueBadge.style.display = overdueCount > 0 ? 'inline-block' : 'none';
+            // #212 1-3: 期間指定モードで from/to を1つも入れていないときは全件を出さない。
+            //   期間の選択を促し、KPI も 0 にする。「本日」「全期間」は従来どおり。
+            const customUnset = periodMode === 'custom' && dateFrom === null && dateTo === null;
+            if (customUnset) {
+                document.getElementById('sum-count').textContent = i18next.t('admin.tx.countUnit', { count: 0 });
+                document.getElementById('sum-volume').textContent = `0 KHR`;
+                document.getElementById('sum-fee').textContent = `0 KHR`;
+                const prompt = escapeHtml(i18next.t('admin.tx.selectPeriod'));
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">${prompt}</td></tr>`;
+                cards.innerHTML = `<div class="empty-cell">${prompt}</div>`;
+                saveState(tbody, cards);
+                return;
             }
-            const volume = periodFiltered.reduce((s, o) => s + (o.totalAmount || 0), 0);
-            // 手数料 = FishLink収益 = 魚代 × 10%（= 手数料5% + サービス料5%）
-            // 正確には fishPrice × 5% + serviceFee で算出
-            const fee = periodFiltered.reduce((s, o) => {
-                const commission = Math.round((o.fishPrice || 0) * 0.05);
-                const service = (o.serviceFee || 0) - (o.campaignDiscount || 0);
-                return s + commission + service;
+
+            const periodFiltered = allOrders.filter(matchPeriod);
+            const filtered = periodFiltered.filter(o => matchDelivery(o, deliveryFilter) && matchPayment(o, paymentFilter));
+
+            // KPI（#212 1-5）:
+            //   取引数     = 期間内 全件（ステータス除外なし）
+            //   流通総額   = 成立した取引の Σ totalAmount（辞退・キャンセルは除外）
+            //   手数料     = 成立した取引の運営取り分 Σ(totalAmount − farmerReceiveAmount)（保存済みの100リエル値）。
+            //     ⚠ 旧式 Math.round(魚代×5%)+サービス料−割引 は floor100 でなく、農家側キャンペーン戻し
+            //       (farmerCampaignDiscount) も引かないため手数料を過大表示していた（#212 レビュー指摘#4）。
+            //       farmerReceiveAmount 未保存の legacy 注文のみ旧式へフォールバック。
+            const count = periodFiltered.length;
+            const settled = periodFiltered.filter(isSettledTransaction);
+            const volume = settled.reduce((s, o) => s + (o.totalAmount || 0), 0);
+            const fee = settled.reduce((s, o) => {
+                if (o.farmerReceiveAmount != null) return s + ((o.totalAmount || 0) - o.farmerReceiveAmount);
+                return s + Math.round((o.fishPrice || 0) * 0.05) + ((o.serviceFee || 0) - (o.campaignDiscount || 0));
             }, 0);
 
             document.getElementById('sum-count').textContent = i18next.t('admin.tx.countUnit', { count });
             document.getElementById('sum-volume').textContent = `${volume.toLocaleString(KHR_LOCALE)} KHR`;
             document.getElementById('sum-fee').textContent = `${fee.toLocaleString(KHR_LOCALE)} KHR`;
 
-            // テーブル描画（PC/タブレット）＋ カード描画（モバイル）
-            const tbody = document.getElementById('tx-body');
-            const cards = document.getElementById('tx-cards');
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">${i18next.t('admin.tx.empty')}</td></tr>`;
-                cards.innerHTML = `<div class="empty-cell">${i18next.t('admin.tx.empty')}</div>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">${escapeHtml(i18next.t('admin.tx.empty'))}</td></tr>`;
+                cards.innerHTML = `<div class="empty-cell">${escapeHtml(i18next.t('admin.tx.empty'))}</div>`;
+                saveState(tbody, cards);
                 return;
             }
 
+            // 2軸バッジ＋金額（返金済/辞退/キャンセルは muted＋返金済タグ・displayName は escapeHtml）
+            const refundTag = escapeHtml(i18next.t('admin.tx.refundedTag'));
+            function amtCellHtml(o, dk, pk) {
+                const muted = isDeliveryException(dk) || pk === 'refunded';
+                const amtStr = `${(o.totalAmount || 0).toLocaleString(KHR_LOCALE)} KHR`;
+                return muted
+                    ? `<span class="amt muted">${amtStr}<span class="refund">${refundTag}</span></span>`
+                    : `<span class="amt">${amtStr}</span>`;
+            }
+
             tbody.innerHTML = filtered.map(o => {
-                const status = adminDisplayStatus(o);
+                const dk = deliveryAxisKey(o);
+                const pk = paymentAxisKey(o);
                 const restName = allUsers[o.restaurantId]?.displayName || '-';
                 const farmerName = allUsers[o.farmerId]?.displayName || '-';
                 const date = o.createdAt?.toDate ? formatDate(o.createdAt.toDate()) : '';
                 const orderNo = o.orderNumber || `FL-${String(o.id).slice(0, 8).toUpperCase()}`;
                 return `
                     <tr>
-                        <td style="font-family:monospace; font-size:12px; color:#475569; white-space:nowrap;">${orderNo}</td>
-                        <td><span class="badge badge-${status}">${statusLabel(status)}</span></td>
+                        <td style="font-family:monospace; font-size:12px; color:#475569; white-space:nowrap;">${escapeHtml(orderNo)}</td>
+                        <td><span class="bdg ${deliveryBadgeClass(dk)}">${escapeHtml(deliveryLabel(dk))}</span></td>
+                        <td><span class="bdg ${paymentBadgeClass(pk)}">${escapeHtml(paymentLabel(pk))}</span></td>
                         <td>${date}</td>
-                        <td>${restName}</td>
-                        <td>${farmerName}</td>
-                        <td style="font-weight:600;">${(o.totalAmount || 0).toLocaleString(KHR_LOCALE)} KHR</td>
-                        <td><a class="btn-detail" href="/pages/admin/order.html?id=${o.id}">${i18next.t('admin.tx.viewDetail')}</a></td>
+                        <td>${escapeHtml(restName)}</td>
+                        <td>${escapeHtml(farmerName)}</td>
+                        <td>${amtCellHtml(o, dk, pk)}</td>
+                        <td><a class="btn-detail" href="/pages/admin/order.html?id=${encodeURIComponent(o.id)}">${escapeHtml(i18next.t('admin.tx.viewDetail'))}</a></td>
                     </tr>
                 `;
             }).join('');
 
             cards.innerHTML = filtered.map(o => {
-                const status = adminDisplayStatus(o);
+                const dk = deliveryAxisKey(o);
+                const pk = paymentAxisKey(o);
                 const restName = allUsers[o.restaurantId]?.displayName || '-';
                 const farmerName = allUsers[o.farmerId]?.displayName || '-';
                 const date = o.createdAt?.toDate ? formatDate(o.createdAt.toDate()) : '';
                 const orderNo = o.orderNumber || `FL-${String(o.id).slice(0, 8).toUpperCase()}`;
                 return `
-                    <a class="tx-card" href="/pages/admin/order.html?id=${o.id}" style="text-decoration:none; color:inherit; display:block;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px;">
-                            <span class="badge badge-${status}">${statusLabel(status)}</span>
+                    <a class="tx-card" href="/pages/admin/order.html?id=${encodeURIComponent(o.id)}" style="text-decoration:none; color:inherit; display:block;">
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
+                            <span class="bdg ${deliveryBadgeClass(dk)}">${escapeHtml(deliveryLabel(dk))}</span>
+                            <span class="bdg ${paymentBadgeClass(pk)}">${escapeHtml(paymentLabel(pk))}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                            <span style="font-family:monospace; font-size:11px; color:#475569;">${escapeHtml(orderNo)}</span>
                             <span style="font-size:12px; color:#64748b;">${date}</span>
                         </div>
-                        <div style="font-family:monospace; font-size:11px; color:#475569; margin-bottom:8px;">${orderNo}</div>
-                        <div class="tx-card__row"><span class="tx-card__k">${i18next.t('admin.tx.colRestaurant')}</span><span class="tx-card__v">${restName}</span></div>
-                        <div class="tx-card__row"><span class="tx-card__k">${i18next.t('admin.tx.colFarmer')}</span><span class="tx-card__v">${farmerName}</span></div>
-                        <div class="tx-card__row"><span class="tx-card__k">${i18next.t('admin.tx.colPay')}</span><span class="tx-card__v bold">${(o.totalAmount || 0).toLocaleString(KHR_LOCALE)} KHR</span></div>
+                        <div class="tx-card__row"><span class="tx-card__k">${escapeHtml(i18next.t('admin.tx.colRestaurant'))}</span><span class="tx-card__v">${escapeHtml(restName)}</span></div>
+                        <div class="tx-card__row"><span class="tx-card__k">${escapeHtml(i18next.t('admin.tx.colFarmer'))}</span><span class="tx-card__v">${escapeHtml(farmerName)}</span></div>
+                        <div class="tx-card__row"><span class="tx-card__k">${escapeHtml(i18next.t('admin.tx.colPay'))}</span><span class="tx-card__v bold">${amtCellHtml(o, dk, pk)}</span></div>
                     </a>
                 `;
             }).join('');
-            // 5/25 #91/#92 拡張: 次回訪問用にキャッシュ保存
+
+            saveState(tbody, cards);
+        }
+
+        // 5/25 #91/#92: 次回訪問用に画面HTML＋サマリーをキャッシュ保存
+        function saveState(tbody, cards) {
             try {
                 saveRenderState('admin_index', {
                     sumCount: document.getElementById('sum-count')?.textContent || '',
@@ -743,7 +838,7 @@
         }
 
         onLanguageChange(() => {
-            buildTabs();
+            buildFilters();
             render();
         });
     </script>

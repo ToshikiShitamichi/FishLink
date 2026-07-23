@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FISHLINK 管理画面 分析（トレンド・魚別・地域別）- モック</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; background:#F4F6F9; color:#1B2430; font-family:-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif; font-size:14px; }
+  .wrap { max-width:1240px; margin:0 auto; padding:22px 26px 60px; }
+  .note-top { background:#FFF7E6; border:1px solid #F2D48A; color:#7A5B12; border-radius:10px; padding:11px 14px; font-size:12.5px; line-height:1.7; margin-bottom:18px; }
+  .note-top b { color:#5E4708; }
+  .app-tag { color:#8A94A3; font-size:12px; }
+  h1 { font-size:26px; margin:2px 0 4px; }
+  .desc { color:#6A7482; font-size:12.5px; margin:0 0 16px; }
+  .topnav { display:flex; gap:9px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+  .topnav .t { background:#fff; border:1px solid #E1E6EC; border-radius:20px; padding:8px 15px; font-size:12.5px; color:#3C4656; }
+  .topnav .t.on { background:#16233F; color:#fff; border-color:#16233F; font-weight:700; }
+  .topnav .t .badge { background:#E23B4E; color:#fff; border-radius:10px; padding:1px 6px; font-size:11px; margin-left:5px; font-weight:700; }
+  .controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+  .seg { display:flex; gap:6px; }
+  .seg .p, .mt { border:1px solid #E1E6EC; background:#fff; border-radius:16px; padding:6px 13px; font-size:12px; color:#3C4656; cursor:pointer; }
+  .seg .p.on, .mt.on { background:#16233F; color:#fff; border-color:#16233F; font-weight:700; }
+  .spacer { flex:1; }
+  .ctl-label { font-size:11px; color:#9AA3B0; font-weight:700; margin-right:2px; }
+  .card { background:#fff; border:1px solid #E7EBF0; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .card h2 { font-size:14px; font-weight:800; margin:0 0 12px; }
+  .chart-wrap { width:100%; overflow-x:auto; }
+  .bar { fill:#3B82C4; } .bar:hover { fill:#0B5FB0; }
+  .blabel { font-size:9px; fill:#9AA3B0; } .vlabel { font-size:9px; fill:#586274; font-weight:700; }
+  .note { color:#8A94A3; font-size:11px; margin-top:8px; }
+  .cols2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  /* horizontal ranking */
+  .rank-row { display:flex; align-items:center; gap:10px; padding:7px 0; }
+  .rank-rankno { width:18px; text-align:center; font-size:11px; font-weight:800; color:#9AA3B0; flex:none; }
+  .rank-name { width:120px; font-size:12.5px; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rank-bar-wrap { flex:1; background:#EEF2F6; border-radius:6px; height:16px; overflow:hidden; }
+  .rank-bar { height:100%; background:linear-gradient(90deg,#3B82C4,#4E9BDD); border-radius:6px; transition:width .25s; }
+  .rank-bar.region { background:linear-gradient(90deg,#1E8E4E,#38b06a); }
+  .rank-val { width:74px; text-align:right; font-size:12px; font-weight:800; font-variant-numeric:tabular-nums; flex:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="note-top">
+    <b>【モック＝分析タブ（新設案）】</b> 運営の"何が売れてる／どこで動いてる"を可視化。<b>日次トレンド＋魚別ランキング＋地域別</b>を1枚に。上部の<b>メトリクス（流通総額／取引数／手数料）</b>と<b>通貨（KHR／＄）</b>トグルは全チャート共通。期間フィルタ連動・成立取引ベース（辞退・キャンセル除外＝1-5）。※数値はサンプル。
+  </div>
+
+  <div class="app-tag">FISHLINK 管理画面</div>
+  <h1>分析</h1>
+  <p class="desc">流通の推移・魚種別・地域別を可視化して、仕入れ誘導やエリア戦略に活かす</p>
+
+  <div class="topnav">
+    <span class="t">取引一覧</span>
+    <span class="t on">分析</span>
+    <span class="t">ユーザー</span>
+    <span class="t">料金設定</span>
+    <span class="t">紹介クーポン</span>
+    <span class="t">CAA参考価格</span>
+    <span class="t">トラブル報告<span class="badge">14</span></span>
+    <span class="t">FAQ</span>
+    <span class="t">規約・ポリシー</span>
+  </div>
+
+  <div class="controls">
+    <div class="seg">
+      <span class="p on">本日</span><span class="p">期間指定</span><span class="p">全期間</span>
+    </div>
+    <div class="spacer"></div>
+    <span class="ctl-label">地域</span>
+    <select id="regionSel" style="border:1px solid #CBD3DD;border-radius:16px;padding:6px 12px;font-size:12px;background:#fff;color:#16233F;font-weight:700;">
+      <option value="all">全地域</option>
+      <option value="タケオ州">タケオ州</option>
+      <option value="プノンペン">プノンペン</option>
+      <option value="カンダール州">カンダール州</option>
+      <option value="コンポンスプー州">コンポンスプー州</option>
+      <option value="シェムリアップ">シェムリアップ</option>
+    </select>
+    <span class="ctl-label">指標</span>
+    <div class="seg" id="metricToggle">
+      <button class="mt on" data-m="gmv">流通総額</button>
+      <button class="mt" data-m="count">取引数</button>
+      <button class="mt" data-m="fee">手数料</button>
+    </div>
+    <span class="ctl-label">通貨</span>
+    <div class="seg" id="curToggle">
+      <button class="mt on" data-c="khr">KHR</button>
+      <button class="mt" data-c="usd">＄</button>
+    </div>
+  </div>
+
+  <!-- 日次トレンド -->
+  <div class="card">
+    <h2 id="trendTitle">日次トレンド（直近14日）</h2>
+    <div class="chart-wrap"><svg id="chart" viewBox="0 0 720 200" width="100%" height="200" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="note">※本日＝直近14日／期間指定＝日次／全期間＝週・月に自動集約。</div>
+  </div>
+
+  <!-- 魚別・地域別 -->
+  <div class="cols2">
+    <div class="card">
+      <h2 id="fishTitle">魚種別ランキング</h2>
+      <div id="fishRank"></div>
+      <div class="note">※どの魚が動いているか（仕入れ誘導・在庫バランスに）。地域を選ぶとその州の売れ筋に絞られる。</div>
+    </div>
+    <div class="card">
+      <h2>地域別ランキング（州）</h2>
+      <div id="regionRank"></div>
+      <div class="note">※どのエリアで動いているか（配送・エリア戦略に）。</div>
+    </div>
+  </div>
+
+</div>
+<script>
+(function(){
+  var RATE=4000;
+  var days=['7/9','7/10','7/11','7/12','7/13','7/14','7/15','7/16','7/17','7/18','7/19','7/20','7/21','7/22'];
+  var trend={
+    gmv:[1800,2400,2100,3000,2700,1500,900,3300,3600,4200,3900,4500,5100,5400].map(function(v){return v*1000;}),
+    count:[6,8,7,10,9,5,3,11,12,14,13,15,17,18],
+    fee:[18,24,21,30,27,15,9,33,36,42,39,45,51,54].map(function(v){return v*1000;})
+  };
+  // gmvから件数・手数料を補完（サンプル）
+  function ex(list){ return list.map(function(f){ return {n:f.n,gmv:f.gmv,count:Math.max(1,Math.round(f.gmv/280000)),fee:Math.round(f.gmv*0.01/100)*100}; }); }
+  var fishByRegion={
+    all: ex([{n:'パンガシウス',gmv:12800000},{n:'ヒレナマズ',gmv:9500000},{n:'レッドティラピア',gmv:7200000},{n:'スポットパンガシウス',gmv:6400000},{n:'ナイルティラピア',gmv:5100000},{n:'シルバーバーブ',gmv:3200000},{n:'ライギョ',gmv:2400000}]),
+    'タケオ州': ex([{n:'パンガシウス',gmv:9500000},{n:'スポットパンガシウス',gmv:5200000},{n:'ヒレナマズ',gmv:3800000},{n:'レッドティラピア',gmv:1800000},{n:'ナイルティラピア',gmv:1200000},{n:'ライギョ',gmv:500000}]),
+    'プノンペン': ex([{n:'レッドティラピア',gmv:4500000},{n:'ナイルティラピア',gmv:3800000},{n:'ヒレナマズ',gmv:3000000},{n:'パンガシウス',gmv:2200000},{n:'シルバーバーブ',gmv:1500000}]),
+    'カンダール州': ex([{n:'ヒレナマズ',gmv:3000000},{n:'パンガシウス',gmv:2500000},{n:'レッドティラピア',gmv:1500000},{n:'ナイルティラピア',gmv:1000000}]),
+    'コンポンスプー州': ex([{n:'ナイルティラピア',gmv:2000000},{n:'パンガシウス',gmv:1500000},{n:'シルバーバーブ',gmv:900000},{n:'ライギョ',gmv:600000}]),
+    'シェムリアップ': ex([{n:'ライギョ',gmv:1200000},{n:'ヒレナマズ',gmv:900000},{n:'レッドティラピア',gmv:600000},{n:'パンガシウス',gmv:300000}])
+  };
+  var region=[
+    {n:'タケオ州',gmv:22000000,count:80,fee:220000},
+    {n:'プノンペン',gmv:15000000,count:55,fee:150000},
+    {n:'カンダール州',gmv:8000000,count:30,fee:80000},
+    {n:'コンポンスプー州',gmv:5000000,count:20,fee:50000},
+    {n:'シェムリアップ',gmv:3000000,count:12,fee:30000}
+  ];
+  var regionShare={all:1}; var allTot=0; for(var r=0;r<region.length;r++) allTot+=region[r].gmv;
+  for(var r2=0;r2<region.length;r2++) regionShare[region[r2].n]=region[r2].gmv/allTot;
+  var curM='gmv', curC='khr', curR='all';
+  function label(v,m,c){
+    if(m==='count') return v.toLocaleString()+' 件';
+    if(c==='usd') return '$'+Math.round(v/RATE).toLocaleString();
+    if(v>=1000000) return (v/1000000).toFixed(1)+'M';
+    if(v>=1000) return Math.round(v/1000)+'k';
+    return v+'';
+  }
+  // trend chart
+  var svg=document.getElementById('chart');
+  var W=720,H=200,padL=8,padR=8,padT=20,padB=24;
+  function drawTrend(){
+    var sh=regionShare[curR];
+    var d=trend[curM].map(function(v){return curM==='count'?Math.round(v*sh):Math.round(v*sh);}),max=Math.max.apply(null,d),n=d.length;
+    var cw=(W-padL-padR)/n,bw=cw*0.6,s='';
+    for(var i=0;i<n;i++){
+      var h=(H-padT-padB)*(d[i]/max);
+      var x=padL+i*cw+(cw-bw)/2,y=H-padB-h,cx=x+bw/2;
+      s+='<rect class="bar" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="2"><title>'+days[i]+'：'+label(d[i],curM,curC)+'</title></rect>';
+      s+='<text class="vlabel" x="'+cx.toFixed(1)+'" y="'+(y-4).toFixed(1)+'" text-anchor="middle">'+label(d[i],curM,curC)+'</text>';
+      s+='<text class="blabel" x="'+cx.toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+days[i]+'</text>';
+    }
+    svg.innerHTML=s;
+  }
+  // ranking
+  function drawRank(el,rows,cls){
+    var sorted=rows.slice().sort(function(a,b){return b[curM]-a[curM];});
+    var max=sorted[0][curM],s='';
+    for(var i=0;i<sorted.length;i++){
+      var w=(sorted[i][curM]/max*100).toFixed(1);
+      s+='<div class="rank-row"><div class="rank-rankno">'+(i+1)+'</div>'
+        +'<div class="rank-name">'+sorted[i].n+'</div>'
+        +'<div class="rank-bar-wrap"><div class="rank-bar '+cls+'" style="width:'+w+'%"></div></div>'
+        +'<div class="rank-val">'+label(sorted[i][curM],curM,curC)+'</div></div>';
+    }
+    document.getElementById(el).innerHTML=s;
+  }
+  function drawAll(){
+    drawTrend();
+    drawRank('fishRank',fishByRegion[curR],'');
+    drawRank('regionRank',region,'region');
+    var suffix=(curR==='all')?'':'（'+curR+'）';
+    document.getElementById('trendTitle').textContent='日次トレンド（直近14日）'+suffix;
+    document.getElementById('fishTitle').textContent='魚種別ランキング'+suffix;
+    var ct=document.getElementById('curToggle');
+    ct.style.opacity=(curM==='count')?'0.4':'1';
+    ct.style.pointerEvents=(curM==='count')?'none':'auto';
+  }
+  document.getElementById('regionSel').addEventListener('change',function(){ curR=this.value; drawAll(); });
+  drawAll();
+  var mb=document.querySelectorAll('#metricToggle .mt');
+  for(var j=0;j<mb.length;j++) mb[j].addEventListener('click',function(){
+    for(var k=0;k<mb.length;k++) mb[k].classList.remove('on'); this.classList.add('on'); curM=this.getAttribute('data-m'); drawAll();
+  });
+  var cb=document.querySelectorAll('#curToggle .mt');
+  for(var p=0;p<cb.length;p++) cb[p].addEventListener('click',function(){
+    for(var q=0;q<cb.length;q++) cb[q].classList.remove('on'); this.classList.add('on'); curC=this.getAttribute('data-c'); drawAll();
+  });
+})();
+</script>
+</body>
+</html>

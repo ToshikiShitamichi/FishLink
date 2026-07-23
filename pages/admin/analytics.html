@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="km">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0d6e4c">
+    <meta name="google" content="notranslate">
+    <title>FishLink Admin</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23/i18next.min.js"></script>
+    <style>
+        body { background: #f8fafc; }
+
+        .admin-shell { max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+        .admin-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .admin-header__right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .admin-brand { font-size: 13px; color: #64748b; margin-bottom: 2px; }
+        .admin-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: #0f172a; }
+        .admin-subtitle { font-size: 13px; color: #475569; margin-top: 4px; }
+
+        .admin-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+        .admin-nav a {
+            text-decoration: none;
+            color: #475569;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .admin-nav a.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+        .admin-nav a:hover:not(.active) { background: #f1f5f9; }
+
+        #lang-selector {
+            width: auto;
+            font-size: 13px;
+            padding: 6px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: #fff;
+            color: #475569;
+        }
+
+        /* 上部の説明ノート（成立取引ベース） */
+        .top-note {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            border-radius: 10px;
+            padding: 11px 14px;
+            font-size: 12.5px;
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+
+        /* 期間切替（index.html と同スタイル・アクティブは横断ルールに従い青） */
+        .period-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .period-btn {
+            border: none;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .period-btn.active { background: var(--color-cta); color: #fff; }
+
+        .custom-range {
+            display: none;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            background: #fff;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .custom-range.show { display: flex; }
+        .custom-range label { font-size: 12px; color: #64748b; }
+        .custom-range input[type="date"] {
+            width: auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+        .custom-range button {
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: none;
+            background: var(--color-cta);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* 地域・指標・通貨トグル */
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .controls .spacer { flex: 1; }
+        .ctl-label { font-size: 11px; color: #94a3b8; font-weight: 700; }
+        .region-sel {
+            border: 1px solid #cbd5e1;
+            border-radius: 16px;
+            padding: 6px 12px;
+            font-size: 12.5px;
+            background: #fff;
+            color: #0f172a;
+            font-weight: 600;
+            width: auto;
+            max-width: 220px;
+        }
+        .seg { display: flex; gap: 6px; }
+        .seg .mt {
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            border-radius: 16px;
+            padding: 6px 13px;
+            font-size: 12px;
+            color: #475569;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .seg .mt.active { background: var(--color-cta); color: #fff; border-color: var(--color-cta); }
+        #curToggle.disabled { opacity: 0.4; pointer-events: none; }
+
+        .card {
+            background: #fff;
+            border: 1px solid #e7ebf0;
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 16px;
+        }
+        .card h2 { font-size: 14px; font-weight: 800; margin: 0 0 12px; color: #0f172a; }
+
+        .chart-wrap { width: 100%; overflow-x: auto; }
+        #chart { display: block; }
+        .bar { fill: var(--color-cta); }
+        .bar:hover { fill: #094a8c; }
+        .blabel { font-size: 9px; fill: #94a3b8; }
+        .vlabel { font-size: 9px; fill: #475569; font-weight: 700; }
+        .note { color: #94a3b8; font-size: 11px; margin-top: 8px; line-height: 1.6; }
+
+        .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        /* 横棒ランキング */
+        .rank-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
+        .rank-rankno { width: 18px; text-align: center; font-size: 11px; font-weight: 800; color: #94a3b8; flex: none; }
+        .rank-name {
+            width: 120px;
+            font-size: 12.5px;
+            flex: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #0f172a;
+        }
+        .rank-bar-wrap { flex: 1; background: #eef2f6; border-radius: 6px; height: 16px; overflow: hidden; }
+        .rank-bar { height: 100%; background: var(--color-cta); border-radius: 6px; transition: width .25s; }
+        .rank-val {
+            width: 84px;
+            text-align: right;
+            font-size: 12px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            flex: none;
+            color: #0f172a;
+        }
+        .rank-empty { color: #94a3b8; font-size: 12px; padding: 16px 0; text-align: center; }
+
+        @media (max-width: 1024px) {
+            .admin-shell { padding: 20px; }
+            .admin-title { font-size: 24px; }
+        }
+        @media (max-width: 820px) {
+            .cols2 { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 720px) {
+            .admin-shell { padding: 14px; }
+            .admin-header { flex-direction: column; align-items: stretch; gap: 12px; }
+            .admin-header__right { justify-content: flex-start; }
+            .admin-title { font-size: 20px; }
+            .admin-subtitle { font-size: 12px; }
+            .admin-nav { order: 1; }
+            .admin-nav a { padding: 7px 12px; font-size: 12px; }
+            .controls { gap: 8px; }
+            .controls .spacer { display: none; }
+            .region-sel { max-width: 100%; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+    <div class="admin-shell">
+        <div class="admin-header">
+            <div>
+                <div class="admin-brand" data-i18n="admin.brand"></div>
+                <div class="admin-title" data-i18n="admin.analytics.title"></div>
+                <div class="admin-subtitle" data-i18n="admin.analytics.subtitle"></div>
+            </div>
+            <div class="admin-header__right">
+                <nav class="admin-nav">
+                    <a href="/pages/admin/index.html" data-i18n="admin.navTransactions"></a>
+                    <a href="/pages/admin/analytics.html" class="active" data-i18n="admin.navAnalytics"></a>
+                    <a href="/pages/admin/users.html" data-i18n="admin.navUsers"></a>
+                    <a href="/pages/admin/settings.html" data-i18n="admin.navSettings"></a>
+                    <a href="/pages/admin/referral.html" data-i18n="admin.navReferral"></a>
+                    <a href="/pages/admin/caa.html" data-i18n="admin.navCaa"></a>
+                    <a href="/pages/admin/reports.html" data-i18n="admin.navReports"></a>
+                    <a href="/pages/admin/faq.html" data-i18n="admin.navFaq"></a>
+                    <a href="/pages/admin/legal.html" data-i18n="admin.navLegal"></a>
+                    <a href="#" id="logout-btn" data-i18n="admin.navLogout"></a>
+                </nav>
+                <select id="lang-selector">
+                    <option value="km">ខ្មែរ</option>
+                    <option value="en">ENGLISH</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 成立取引ベースの注記 -->
+        <div class="top-note" data-i18n="admin.analytics.note"></div>
+
+        <!-- 期間切替 -->
+        <div class="period-row">
+            <button class="period-btn active" data-period="today" data-i18n="admin.tx.periodToday"></button>
+            <button class="period-btn" data-period="custom" data-i18n="admin.tx.periodCustom"></button>
+            <button class="period-btn" data-period="all" data-i18n="admin.tx.periodAll"></button>
+        </div>
+
+        <div class="custom-range" id="custom-range">
+            <label><span data-i18n="admin.tx.fromLabel"></span>:</label>
+            <input type="date" id="date-from">
+            <label><span data-i18n="admin.tx.toLabel"></span>:</label>
+            <input type="date" id="date-to">
+            <button id="apply-range" data-i18n="admin.tx.apply"></button>
+        </div>
+
+        <!-- 地域 / 指標 / 通貨 -->
+        <div class="controls">
+            <span class="ctl-label" data-i18n="admin.analytics.labelRegion"></span>
+            <select id="regionSel" class="region-sel">
+                <option value="all">-</option>
+            </select>
+            <span class="spacer"></span>
+            <span class="ctl-label" data-i18n="admin.analytics.labelMetric"></span>
+            <div class="seg" id="metricToggle">
+                <button class="mt active" data-m="gmv" data-i18n="admin.analytics.metricGmv"></button>
+                <button class="mt" data-m="count" data-i18n="admin.analytics.metricCount"></button>
+                <button class="mt" data-m="fee" data-i18n="admin.analytics.metricFee"></button>
+            </div>
+            <span class="ctl-label" data-i18n="admin.analytics.labelCurrency"></span>
+            <div class="seg" id="curToggle">
+                <button class="mt active" data-c="khr">KHR</button>
+                <button class="mt" data-c="usd">＄</button>
+            </div>
+        </div>
+
+        <!-- 日次トレンド -->
+        <div class="card">
+            <h2 id="trendTitle"></h2>
+            <div class="chart-wrap">
+                <svg id="chart" viewBox="0 0 720 210" width="100%" height="210" preserveAspectRatio="xMidYMid meet"></svg>
+            </div>
+            <div class="note" data-i18n="admin.analytics.trendNote"></div>
+        </div>
+
+        <!-- 魚別・地域別 -->
+        <div class="cols2">
+            <div class="card">
+                <h2 id="fishTitle"></h2>
+                <div id="fishRank"></div>
+                <div class="note" data-i18n="admin.analytics.fishNote"></div>
+            </div>
+            <div class="card">
+                <h2 id="regionTitle" data-i18n="admin.analytics.regionTitle"></h2>
+                <div id="regionRank"></div>
+                <div class="note" data-i18n="admin.analytics.regionNote"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initI18n, initLangSelector, onLanguageChange } from '/js/i18n.js';
+        import { watchAuthState, logout } from '/js/auth.js';
+        import { db } from '/js/firebase-config.js';
+        import { initAdminReportBadge } from '/js/admin-report-badge.js';
+        import { isSettledTransaction } from '/js/status-axes.js';
+        import { getOrderItems } from '/js/order-utils.js';
+        import { normalizeProvince, formatProvince } from '/js/province-utils.js';
+        import {
+            collection, query, orderBy, getDocs, doc, getDoc
+        } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
+
+        // 2026-07-17 #210③ に合わせ、桁区切りは必ず 'en-US' を明示（端末ロケール依存の「41.000」化を防ぐ）。
+        const KHR_LOCALE = 'en-US';
+        const RATE = 4000;            // ＄換算レート（round(v/4000)）
+        const DAY = 86400000;
+        const UNKNOWN = '__UNKNOWN__'; // 地域不明バケットのセンチネル
+
+        const loading = document.getElementById('loading');
+        watchAuthState({ requireAuth: true });
+        await initI18n();
+        initLangSelector();
+        initAdminReportBadge();
+
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logout();
+        });
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function waitForUserData(cb) {
+            if (window.currentUserData) cb();
+            else setTimeout(() => waitForUserData(cb), 200);
+        }
+
+        // ── state ─────────────────────────────
+        let allOrders = [];
+        let allUsers = {};          // uid -> data
+        let settledOrders = [];     // 成立取引のみ（辞退・キャンセル除外＝1-5）。金額も件数もこの集合で数える
+        let loaded = false;
+        let periodMode = 'today';   // today(直近14日) | custom | all
+        let dateFrom = null, dateTo = null;
+        let curM = 'gmv';           // gmv | count | fee
+        let curC = 'khr';           // khr | usd
+        let curR = 'all';           // 地域キー or 'all'
+
+        // ── データ取得 ─────────────────────────────
+        waitForUserData(async () => {
+            if (window.currentUserData?.role !== 'admin') {
+                alert('Admin access required');
+                location.href = '/index.html';
+                return;
+            }
+            loading.classList.add('show');
+            try {
+                const snap = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
+                allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                // 関連 users（レストラン・農家）をキャッシュ取得（地域＝province 参照用）
+                const userIds = new Set();
+                allOrders.forEach(o => {
+                    if (o.restaurantId) userIds.add(o.restaurantId);
+                    if (o.farmerId) userIds.add(o.farmerId);
+                });
+                await Promise.all([...userIds].map(async uid => {
+                    const uSnap = await getDoc(doc(db, 'users', uid));
+                    if (uSnap.exists()) allUsers[uid] = uSnap.data();
+                }));
+
+                settledOrders = allOrders.filter(isSettledTransaction);
+                loaded = true;
+                rebuildRegionSelect();
+                drawAll();
+            } catch (err) {
+                console.error(err);
+            } finally {
+                loading.classList.remove('show');
+                document.body.classList.add('app-ready');
+            }
+        });
+
+        // ── メトリクス ─────────────────────────────
+        function orderMs(o) { return o.createdAt?.toMillis?.() || 0; }
+
+        // 運営取り分（手数料）: 買い手支払い − 農家受取。legacy（farmerReceiveAmount 無し）は
+        // 魚代×5% ＋（サービス料 − キャンペーン割引）でフォールバック。金額は既に100リエル単位＝再丸めしない。
+        function orderFee(o) {
+            if (o.farmerReceiveAmount != null) return (o.totalAmount || 0) - (o.farmerReceiveAmount || 0);
+            return Math.round((o.fishPrice || 0) * 0.05) + ((o.serviceFee || 0) - (o.campaignDiscount || 0));
+        }
+
+        function orderMetricValue(o, m) {
+            if (m === 'count') return 1;
+            if (m === 'gmv') return (o.totalAmount || 0);
+            return orderFee(o);
+        }
+
+        function sumMetric(orders, m) {
+            if (m === 'count') return orders.length;
+            let s = 0;
+            for (const o of orders) s += orderMetricValue(o, m);
+            return s;
+        }
+
+        // ── 地域（州）解決：農家 province 優先・無ければレストラン・両方無ければ地域不明 ──
+        function orderProvinceKey(o) {
+            const f = allUsers[o.farmerId];
+            const r = allUsers[o.restaurantId];
+            const prov = (f && f.province) || (r && r.province) || null;
+            if (!prov) return UNKNOWN;
+            return normalizeProvince(prov) || String(prov);
+        }
+        function provinceLabel(key) {
+            if (key === UNKNOWN) return i18next.t('admin.analytics.unknownRegion');
+            return formatProvince(key); // 既知キー→i18nラベル／未知の生文字列→そのまま
+        }
+
+        // ── 期間ウィンドウ ─────────────────────────────
+        function startOfDay(ms) {
+            const d = new Date(ms);
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
+        }
+        function periodWindow() {
+            if (periodMode === 'all') return { start: -Infinity, end: Infinity };
+            if (periodMode === 'custom') {
+                return { start: dateFrom ?? -Infinity, end: dateTo ?? Infinity };
+            }
+            // today ＝ 直近14日（本日を末尾に含む）
+            const now = new Date();
+            const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime();
+            const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 13, 0, 0, 0, 0).getTime();
+            return { start, end };
+        }
+        function inWindow(o, win) {
+            const ms = orderMs(o);
+            return ms >= win.start && ms <= win.end;
+        }
+
+        // 期間・地域フィルタ後の作業集合を作る
+        function computeSets() {
+            const win = periodWindow();
+            const periodOrders = settledOrders.filter(o => inWindow(o, win));
+            const regionOrders = periodOrders; // 地域ランキングは常に全州
+            const trendOrders = (curR === 'all')
+                ? periodOrders
+                : periodOrders.filter(o => orderProvinceKey(o) === curR);
+            return { win, periodOrders, regionOrders, trendOrders };
+        }
+
+        // ── トレンドのバケット（日次／週次／月次 自動集約） ──
+        function labelMD(ms) { const d = new Date(ms); return (d.getMonth() + 1) + '/' + d.getDate(); }
+
+        function chooseGranularity(spanDays) {
+            if (periodMode === 'today') return 'daily';
+            if (periodMode === 'custom') {
+                if (spanDays <= 62) return 'daily';
+                if (spanDays <= 372) return 'weekly';
+                return 'monthly';
+            }
+            // all ＝ 週・月のみ（日次にはしない）
+            return spanDays <= 372 ? 'weekly' : 'monthly';
+        }
+
+        function makeBuckets(startMs, endMs, gran) {
+            const buckets = [];
+            if (gran === 'daily') {
+                let cur = startOfDay(startMs);
+                const last = startOfDay(endMs);
+                while (cur <= last) {
+                    buckets.push({ start: cur, end: cur + DAY, label: labelMD(cur), orders: [] });
+                    cur += DAY;
+                    if (buckets.length > 400) break;
+                }
+            } else if (gran === 'weekly') {
+                let cur = startOfDay(startMs);
+                while (cur <= endMs) {
+                    const next = cur + 7 * DAY;
+                    buckets.push({ start: cur, end: next, label: labelMD(cur) + '-' + labelMD(next - DAY), orders: [] });
+                    cur = next;
+                    if (buckets.length > 400) break;
+                }
+            } else { // monthly
+                const s = new Date(startMs); let y = s.getFullYear(), mo = s.getMonth();
+                const e = new Date(endMs); const ey = e.getFullYear(), em = e.getMonth();
+                while (y < ey || (y === ey && mo <= em)) {
+                    const start = new Date(y, mo, 1, 0, 0, 0, 0).getTime();
+                    const end = new Date(y, mo + 1, 1, 0, 0, 0, 0).getTime();
+                    buckets.push({ start, end, label: y + '/' + (mo + 1), orders: [] });
+                    mo++; if (mo > 11) { mo = 0; y++; }
+                    if (buckets.length > 400) break;
+                }
+            }
+            return buckets;
+        }
+
+        function buildTrend(trendOrders) {
+            if (trendOrders.length === 0 && periodMode !== 'today') {
+                return { buckets: [], gran: 'daily' };
+            }
+            const win = periodWindow();
+            let startMs, endMs;
+            if (periodMode === 'today') {
+                startMs = win.start; endMs = win.end;
+            } else {
+                let mn = Infinity, mx = -Infinity;
+                // ⚠ createdAt 欠損(ms<=0)は 1970 として span を汚染し 400バケット上限で全件がチャートから落ちる＝除外（レビュー#6）。
+                for (const o of trendOrders) { const ms = orderMs(o); if (ms <= 0) continue; if (ms < mn) mn = ms; if (ms > mx) mx = ms; }
+                startMs = (win.start !== -Infinity) ? win.start : (isFinite(mn) ? mn : Date.now());
+                endMs = (win.end !== Infinity) ? win.end : (isFinite(mx) ? mx : Date.now());
+                if (!isFinite(startMs)) startMs = Date.now();
+                if (!isFinite(endMs)) endMs = Date.now();
+                if (endMs < startMs) endMs = startMs;
+            }
+            const spanDays = Math.max(1, Math.round((endMs - startMs) / DAY) + 1);
+            const gran = chooseGranularity(spanDays);
+            const buckets = makeBuckets(startMs, endMs, gran);
+            for (const o of trendOrders) {
+                const ms = orderMs(o);
+                for (const b of buckets) { if (ms >= b.start && ms < b.end) { b.orders.push(o); break; } }
+            }
+            return { buckets, gran };
+        }
+
+        // ── 表示フォーマット ─────────────────────────────
+        function fmtKhr(v) {
+            const n = Math.round(v);
+            if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+            return n.toLocaleString(KHR_LOCALE);
+        }
+        function fmtUsd(v) { return '$' + Math.round(v / RATE).toLocaleString(KHR_LOCALE); }
+        function fmtCount(v) { return i18next.t('admin.analytics.countUnit', { count: Math.round(v) }); }
+
+        function valLabel(v, m, c) {
+            if (m === 'count') return fmtCount(v);
+            return (c === 'usd') ? fmtUsd(v) : fmtKhr(v);
+        }
+        // ホバー tooltip：金額は常に ≒$X（Y KHR）の両建て・件数はそのまま
+        function hoverTitle(name, v, m) {
+            if (m === 'count') return name + '：' + fmtCount(v);
+            const n = Math.round(v);
+            return name + '：≒$' + Math.round(n / RATE).toLocaleString(KHR_LOCALE)
+                + '（' + n.toLocaleString(KHR_LOCALE) + ' KHR）';
+        }
+
+        // ── 描画：トレンド（SVG棒グラフ） ──
+        function drawTrend(trend) {
+            const svg = document.getElementById('chart');
+            const buckets = trend.buckets;
+            if (buckets.length === 0) {
+                svg.setAttribute('viewBox', '0 0 720 210');
+                svg.setAttribute('width', '100%');
+                svg.innerHTML = `<text x="360" y="108" text-anchor="middle" class="blabel" style="font-size:12px;">${escapeHtml(i18next.t('admin.analytics.empty'))}</text>`;
+                return;
+            }
+            const data = buckets.map(b => sumMetric(b.orders, curM));
+            const maxV = Math.max(1, ...data);
+            const n = buckets.length;
+            const perBar = trend.gran === 'weekly' ? 62 : trend.gran === 'monthly' ? 54 : 46;
+            const W = Math.max(700, n * perBar), H = 210, padL = 10, padR = 10, padT = 24, padB = 42;
+            const cw = (W - padL - padR) / n, bw = Math.min(cw * 0.6, 42);
+            let s = '';
+            for (let i = 0; i < n; i++) {
+                const h = (H - padT - padB) * (data[i] / maxV);
+                const x = padL + i * cw + (cw - bw) / 2;
+                const y = H - padB - h;
+                const cx = x + bw / 2;
+                const vl = valLabel(data[i], curM, curC);
+                const tt = hoverTitle(buckets[i].label, data[i], curM);
+                s += `<rect class="bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="2"><title>${escapeHtml(tt)}</title></rect>`;
+                s += `<text class="vlabel" x="${cx.toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle">${escapeHtml(vl)}</text>`;
+                s += `<text class="blabel" x="${cx.toFixed(1)}" y="${H - 14}" text-anchor="middle">${escapeHtml(buckets[i].label)}</text>`;
+            }
+            svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+            svg.setAttribute('width', W <= 720 ? '100%' : String(W));
+            svg.innerHTML = s;
+        }
+
+        // ── 描画：横棒ランキング（上位8） ──
+        function drawRank(elId, rows) {
+            const el = document.getElementById(elId);
+            if (!rows || rows.length === 0) {
+                el.innerHTML = `<div class="rank-empty">${escapeHtml(i18next.t('admin.analytics.empty'))}</div>`;
+                return;
+            }
+            const sorted = rows.slice().sort((a, b) => b.value - a.value).slice(0, 8);
+            const maxV = Math.max(1, sorted[0].value);
+            el.innerHTML = sorted.map((row, i) => {
+                const w = (row.value / maxV * 100).toFixed(1);
+                return `<div class="rank-row">`
+                    + `<div class="rank-rankno">${i + 1}</div>`
+                    + `<div class="rank-name" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</div>`
+                    + `<div class="rank-bar-wrap"><div class="rank-bar" style="width:${w}%"></div></div>`
+                    + `<div class="rank-val">${escapeHtml(valLabel(row.value, curM, curC))}</div>`
+                    + `</div>`;
+            }).join('');
+        }
+
+        // ── 集計：魚別 ──
+        function addTo(map, key, v) { map.set(key, (map.get(key) || 0) + v); }
+
+        // 1注文を魚種へ配賦。単一魚種＝満額／複数魚種＝item買い手金額の按分（件数は最大シェアの魚へ丸ごと）。
+        function accumulateFish(map, o, m) {
+            const items = getOrderItems(o);
+            const perFish = {}; const keys = []; let totalBuyer = 0;
+            for (const it of items) {
+                const key = it.snapFishType || o.snapFishType;
+                if (!key) continue;
+                const amt = (it.fishPrice || 0) + (it.serviceFee || 0) - (it.campaignDiscount || 0);
+                if (perFish[key] == null) { perFish[key] = 0; keys.push(key); }
+                perFish[key] += amt; totalBuyer += amt;
+            }
+            if (keys.length === 0) {
+                // item に魚種が無い（超旧データ）→ トップレベル snapFishType にフォールバック
+                const key = o.snapFishType;
+                if (!key) return; // 魚種不明は魚別ランキングから除外
+                addTo(map, key, orderMetricValue(o, m));
+                return;
+            }
+            if (m === 'count') {
+                let best = keys[0];
+                for (const k of keys) if (perFish[k] > perFish[best]) best = k;
+                addTo(map, best, 1);
+                return;
+            }
+            const orderVal = orderMetricValue(o, m);
+            if (totalBuyer <= 0) {
+                const share = orderVal / keys.length;
+                for (const k of keys) addTo(map, k, share);
+                return;
+            }
+            for (const k of keys) addTo(map, k, orderVal * (perFish[k] / totalBuyer));
+        }
+
+        function fishRows(orders) {
+            const map = new Map();
+            for (const o of orders) accumulateFish(map, o, curM);
+            const rows = [];
+            for (const [key, value] of map) {
+                if (value <= 0) continue;
+                const name = i18next.exists('fish.' + key) ? i18next.t('fish.' + key) : key;
+                rows.push({ name, value });
+            }
+            return rows;
+        }
+
+        function regionRows(orders) {
+            const map = new Map();
+            for (const o of orders) addTo(map, orderProvinceKey(o), orderMetricValue(o, curM));
+            const rows = [];
+            for (const [key, value] of map) {
+                if (value <= 0) continue;
+                rows.push({ name: provinceLabel(key), value });
+            }
+            return rows;
+        }
+
+        // ── 地域セレクト再構築（期間内に存在する州のみ） ──
+        function rebuildRegionSelect() {
+            const sel = document.getElementById('regionSel');
+            if (!loaded) return;
+            const win = periodWindow();
+            const periodOrders = settledOrders.filter(o => inWindow(o, win));
+            const keys = new Set();
+            for (const o of periodOrders) keys.add(orderProvinceKey(o));
+            const arr = [...keys].sort((a, b) => {
+                if (a === UNKNOWN) return 1;
+                if (b === UNKNOWN) return -1;
+                return provinceLabel(a).localeCompare(provinceLabel(b));
+            });
+            const prev = curR;
+            let opts = `<option value="all">${escapeHtml(i18next.t('admin.analytics.regionAll'))}</option>`;
+            for (const k of arr) opts += `<option value="${escapeHtml(k)}">${escapeHtml(provinceLabel(k))}</option>`;
+            sel.innerHTML = opts;
+            if (prev !== 'all' && keys.has(prev)) sel.value = prev;
+            else { sel.value = 'all'; curR = 'all'; }
+        }
+
+        // ── まとめ描画 ──
+        function drawAll() {
+            if (!loaded) return;
+            const { regionOrders, trendOrders } = computeSets();
+
+            drawTrend(buildTrend(trendOrders));
+            drawRank('fishRank', fishRows(trendOrders));
+            drawRank('regionRank', regionRows(regionOrders));
+
+            const suffix = (curR === 'all') ? '' : '（' + provinceLabel(curR) + '）';
+            const trendBase = (periodMode === 'today')
+                ? i18next.t('admin.analytics.trendTitleRecent')
+                : i18next.t('admin.analytics.trendTitle');
+            document.getElementById('trendTitle').textContent = trendBase + suffix;
+            document.getElementById('fishTitle').textContent = i18next.t('admin.analytics.fishTitle') + suffix;
+            document.getElementById('regionTitle').textContent = i18next.t('admin.analytics.regionTitle');
+
+            // 件数のときは通貨トグルを無効化（＄/KHR は金額指標のみ）
+            document.getElementById('curToggle').classList.toggle('disabled', curM === 'count');
+        }
+
+        // ── コントロール配線 ─────────────────────────────
+        document.querySelectorAll('.period-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                periodMode = btn.dataset.period;
+                document.getElementById('custom-range').classList.toggle('show', periodMode === 'custom');
+                rebuildRegionSelect();
+                drawAll();
+            });
+        });
+
+        document.getElementById('apply-range').addEventListener('click', () => {
+            const f = document.getElementById('date-from').value;
+            const t = document.getElementById('date-to').value;
+            dateFrom = f ? new Date(f + 'T00:00:00').getTime() : null;
+            dateTo = t ? new Date(t + 'T23:59:59.999').getTime() : null;
+            rebuildRegionSelect();
+            drawAll();
+        });
+
+        document.querySelectorAll('#metricToggle .mt').forEach(b => {
+            b.addEventListener('click', () => {
+                document.querySelectorAll('#metricToggle .mt').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                curM = b.dataset.m;
+                drawAll();
+            });
+        });
+
+        document.querySelectorAll('#curToggle .mt').forEach(b => {
+            b.addEventListener('click', () => {
+                if (curM === 'count') return; // 件数時は無効
+                document.querySelectorAll('#curToggle .mt').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                curC = b.dataset.c;
+                drawAll();
+            });
+        });
+
+        document.getElementById('regionSel').addEventListener('change', function () {
+            curR = this.value;
+            drawAll();
+        });
+
+        // 言語切替：data-i18n は i18n.js が自動更新。地域セレクト・タイトル・チャートを再描画
+        onLanguageChange(() => {
+            rebuildRegionSelect();
+            drawAll();
+        });
+    </script>
+</body>
+
+</html>

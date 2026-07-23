@@ -1454,6 +1454,31 @@
             });
         });
 
+        // ── 2026-07-22 #214: 価格・送料は step=100。フォーカスを外した時点で最寄りの100リエルへスナップ（補助）。──
+        //   空欄はそのまま／0・負・非数値は 0。丸め後は input.value に書き戻す。
+        //   価格2欄はスナップ後に updateTotalPrice() で表示・注記を更新し、100リエルエラーが出ていれば消す。
+        //   既存の error100Unit インライン検証（投稿時）はバックストップとして残す（丸めても保存前に再検証）。
+        const snap = v => Math.round(v / 100) * 100;
+        function snapField(inputEl, errId, afterSnap) {
+            if (!inputEl) return;
+            const raw = inputEl.value.trim();
+            if (raw === '') return;                                     // 空欄はそのまま
+            const n = parseFloat(raw);
+            inputEl.value = (Number.isFinite(n) && n > 0) ? snap(n) : 0; // 0・負・非数値 → 0
+            inputEl.classList.remove('input-error');
+            if (errId) document.getElementById(errId)?.classList.remove('show');
+            if (typeof afterSnap === 'function') afterSnap();
+        }
+        [
+            ['price-unit', 'err-price-100', () => window.updateTotalPrice()],
+            ['gut-price', 'err-gut-100', () => window.updateTotalPrice()],
+            ['delivery-fee-per-10km', 'err-fee-100', null],
+            ['sheet-fee', null, null],
+        ].forEach(([inputId, errId, afterSnap]) => {
+            const el = document.getElementById(inputId);
+            el?.addEventListener('blur', () => snapField(el, errId, afterSnap));
+        });
+
         // ── 投稿処理 ────────────────────────────────────────────────
         const submitBtn = document.getElementById('submit-btn');
 

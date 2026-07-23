@@ -259,10 +259,19 @@ export async function compressReelVideo(file, opts = {}) {
         };
         rec.start();
         draw();
-        await ended;
+        // ⚠ #215⑰: 「await ended」に無制限で待つと、デコードが詰まった端末で永久にハングする（アップロード全体が固まる）。
+        //   ended と「尺+20秒（尺が不明なら固定60秒）」のタイマーを競走させ、タイムアウト時は原本フォールバック＝絶対に止めない。
+        const compressTimeoutMs = dur > 0 ? (Math.max(30, dur) + 20) * 1000 : 60000;
+        let timedOut = false;
+        await Promise.race([
+            ended,
+            new Promise((res) => setTimeout(() => { timedOut = true; res(); }, compressTimeoutMs)),
+        ]);
         if (raf) { cancelAnimationFrame(raf); raf = 0; }
-        if (rec.state !== 'inactive') rec.stop();
-        await stopped;
+        if (rec.state !== 'inactive') { try { rec.stop(); } catch (e) { /* ignore */ } }
+        if (timedOut) return { blob: file, compressed: false };   // 詰まった＝原本を返す（finally で後始末は走る）
+        // onstop も詰まりうる＝短いタイマーで保険（chunks は stop 前に出揃っているのが通常）
+        await Promise.race([stopped, new Promise((res) => setTimeout(res, 4000))]);
 
         const blob = new Blob(chunks, { type: 'video/mp4' });
         if (!blob.size || blob.size >= file.size) return { blob: file, compressed: false }; // 効果なければ原本
@@ -296,19 +305,31 @@ export async function captureVideoThumbnail(source) {
     let url = null, video = null;
     try {
         video = document.createElement('video');
-        video.muted = true; video.playsInline = true; video.preload = 'auto';
-        url = URL.createObjectURL(source);
+        video.muted = true;
+        video.playsInline = true;
+        video.setAttribute('webkit-playsinline', '');
+        video.preload = 'auto';
+        // ⚠ #215①: iOS Safari は DOM から切り離した（もしくは display:none の）<video> を 1 フレームも
+        //   デコードしない＝seek しても canvas が真っ黒／そもそも loadeddata・seeked が来ずハングする。
+        //   画面外に極小で貼り付けて（display:none にせず）実際にデコードさせる。
+        video.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+        document.body.appendChild(video);
+        url = URL.createObjectURL(source);   // ローカル blob から抽出（正しい・変更しない）
         video.src = url;
         await onceEvent(video, 'loadeddata', 8000);
         const w = video.videoWidth, h = video.videoHeight;
         if (!w || !h) return null;
         const dur = video.duration || 0;
+        // ⚠ #215①: iOS はデコーダを「暖める」ために一度 play() が要る（seek 前に再生してフレームを描かせる）。
+        //   muted 再生なので自動再生ポリシーには掛からない。拒否されても握って続行（seek で拾えることもある）。
+        try { await video.play(); } catch (e) { /* デコーダ暖機の best-effort */ }
         // 0秒は真っ黒になりがち＝少し進めた位置（0.1〜1秒 or 尺の10%）へシーク
         const target = dur > 0 ? Math.min(Math.max(0.1, dur * 0.1), Math.min(1, dur)) : 0;
         if (target > 0) {
             try { video.currentTime = target; await onceEvent(video, 'seeked', 8000); }
             catch (e) { /* シーク不可なら現フレームで続行 */ }
         }
+        try { video.pause(); } catch (e) { /* ignore */ }
         const scale = Math.min(1, THUMB_MAX_DIM / Math.max(w, h));
         const cw = Math.max(2, Math.round(w * scale));
         const ch = Math.max(2, Math.round(h * scale));
@@ -323,9 +344,12 @@ export async function captureVideoThumbnail(source) {
         });
         return (blob && blob.size) ? blob : null;
     } catch (e) {
+        // ⚠ #215①: 旧実装は失敗を握りつぶしていた＝原因が分からなかった。理由をログに残す（返り値は従来どおり null）。
+        console.warn('[reel] thumbnail extraction failed:', e);
         return null;
     } finally {
-        try { if (video) { video.removeAttribute('src'); video.load(); } } catch (e) { /* ignore */ }
+        // DOM から必ず外す（画面外の使い捨て要素を残さない）＋ blob URL を解放
+        try { if (video) { video.pause(); video.removeAttribute('src'); video.load(); video.remove(); } } catch (e) { /* ignore */ }
         if (url) URL.revokeObjectURL(url);
     }
 }

@@ -221,7 +221,9 @@
            インライン展開を廃止し、独立した全画面ビューに切替（下の要素を押し下げない）。 */
         .reel-grid-view { position: fixed; inset: 0; z-index: 1000; background: var(--color-bg); display: none; flex-direction: column; overflow: hidden; }
         .reel-grid-view.show { display: flex; }
-        .rgv-header { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+        /* 背景（バー）は全幅・中身（戻る＋タイトル）は 480px 中央寄せで .rgv-body と左端を揃える（#215⑬ PC） */
+        .rgv-header { flex: 0 0 auto; padding: calc(12px + env(safe-area-inset-top, 0px)) 0 12px; background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+        .rgv-header__inner { display: flex; align-items: center; gap: 8px; max-width: 480px; width: 100%; margin: 0 auto; padding: 0 16px; }
         .rgv-back { background: none; border: none; color: var(--color-text-sub); cursor: pointer; display: inline-flex; align-items: center; padding: 0; }
         .rgv-title { font-size: 16px; font-weight: 800; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .rgv-body { flex: 1 1 auto; overflow-y: auto; max-width: 480px; width: 100%; margin: 0 auto; padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
@@ -355,8 +357,10 @@
     <!-- 🎬 7/15 #207⑬: 「すべて見る」→ 別グリッド画面（縦3列・新しい順・青「販売中」バッジ・タップで全画面再生）。 -->
     <div class="reel-grid-view" id="reel-grid-view" hidden>
         <div class="rgv-header">
-            <button type="button" class="rgv-back" id="rgv-back" aria-label="back"><span class="material-symbols-outlined">arrow_back</span></button>
-            <span class="rgv-title" id="rgv-title"></span>
+            <div class="rgv-header__inner">
+                <button type="button" class="rgv-back" id="rgv-back" aria-label="back"><span class="material-symbols-outlined">arrow_back</span></button>
+                <span class="rgv-title" id="rgv-title"></span>
+            </div>
         </div>
         <div class="rgv-body">
             <div class="rgv-note" data-i18n="reel.gridNote"></div>

@@ -156,6 +156,19 @@
             document.getElementById('err-fee-100').classList.remove('show');   // 2026-07-17: 100リエル単位エラーも解除
         });
 
+        // 2026-07-22 #214: 送料(per10km)は step=100。blur 時に最寄りの100リエルへスナップ（補助）。
+        //   空欄はそのまま／0・負・非数値は 0。既存の error100Unit 検証（保存時ブロック）はバックストップとして残す。
+        const snap = v => Math.round(v / 100) * 100;
+        document.getElementById('in-fee').addEventListener('blur', () => {
+            const el = document.getElementById('in-fee');
+            const raw = el.value.trim();
+            if (raw === '') return;                                     // 空欄はそのまま
+            const n = parseFloat(raw);
+            el.value = (Number.isFinite(n) && n > 0) ? snap(n) : 0;     // 0・負・非数値 → 0
+            el.classList.remove('input-error');
+            document.getElementById('err-fee-100').classList.remove('show');
+        });
+
         document.getElementById('btn-save').addEventListener('click', async () => {
             const uid = window.currentUser?.uid;
             if (!uid) return;

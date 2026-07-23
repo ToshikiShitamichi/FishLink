@@ -187,7 +187,7 @@
             display: inline-flex; align-items: center; gap: 6px;
             font-size: 12px; font-weight: 600; color: #0b5fb0;
             border: 1px dashed #9cc2e6; border-radius: 10px; padding: 8px 12px;
-            background: #f4f9fe; cursor: pointer;
+            background: #f4f9fe; cursor: pointer; font-family: inherit;
         }
         .attach-btn .material-symbols-outlined { font-size: 18px; }
         .proof-thumb img { width: 56px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; display: block; }
@@ -237,11 +237,6 @@
         .buyer-proof__none {
             font-size: 12.5px; color: #9aa3b0; text-align: center; padding: 12px 0; line-height: 1.6;
         }
-        .match-hint {
-            font-size: 12px; color: #5a6470; line-height: 1.6;
-            background: #f7f9fb; border: 1px solid #eef1f4; border-radius: 10px;
-            padding: 10px 12px; margin-bottom: 12px;
-        }
         .btn-sub { font-size: 11px; color: #64748b; text-align: center; margin-top: 4px; line-height: 1.5; }
         .unconfirm-btn {
             width: 100%; border: 1.5px solid #f0c97a; border-radius: 14px;
@@ -290,6 +285,44 @@
         }
         .uc-btn--cancel { background: #eef1f4; color: #5a6470; }
         .uc-btn--ok { background: #b36a00; color: #fff; }
+
+        /* 2026-07-22 #213 2-1: 2軸ステータスバー（配送／入金）＝mockup .axis/.bdg を移植 */
+        .statusbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .axis {
+            display: flex; align-items: center; gap: 7px;
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 13px;
+        }
+        .axis__lab { font-size: 11px; color: #8a94a3; font-weight: 700; }
+        .sb-bdg { display: inline-block; border-radius: 20px; padding: 3px 11px; font-size: 11.5px; font-weight: 700; }
+        .sb-grey  { background: #eef1f5; color: #5a6678; }
+        .sb-blue  { background: #dbeafe; color: #1e40af; }
+        .sb-amber { background: #fff0d6; color: #b26a00; }
+        .sb-green { background: #e4f6e9; color: #1e8e4e; }
+        .sb-red   { background: #fde2e1; color: #c0392b; }
+        .sb-navy  { background: #16233f; color: #fff; }
+
+        /* 2026-07-22 #213 2-5/2-6: 控え・確認方法（②）＋入金/送金スクショの✕削除・ヒント */
+        .buyer-proof__note { font-size: 11px; color: #8a94a3; margin-top: 8px; line-height: 1.6; }
+        .proof-hint { font-size: 11px; color: #8a94a3; margin-top: 8px; line-height: 1.5; }
+        .proof-thumb-wrap { position: relative; display: none; align-items: center; }
+        .proof-del {
+            position: absolute; top: -6px; right: -6px;
+            width: 18px; height: 18px; border-radius: 50%;
+            border: none; background: #333; color: #fff; font-size: 10px; line-height: 1;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+        }
+        .memo-save-btn {
+            border: 1px solid #cbd5e1; background: #fff; color: #334155;
+            font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 10px;
+            cursor: pointer; font-family: inherit;
+        }
+        /* 2026-07-22 #213 2-6: 送金先QRの生URL → ボタン風リンク（ABAアプリで開いて送金） */
+        .aba-remit-link {
+            display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+            font-size: 12.5px; font-weight: 600; color: #0b5fb0; text-decoration: none;
+            border: 1px solid #bfdbfe; background: #eff6ff; border-radius: 10px; padding: 8px 12px;
+        }
+        .aba-remit-link .material-symbols-outlined { font-size: 18px; }
 
         /* ── タブレット ── */
         @media (max-width: 1024px) {
@@ -344,6 +377,7 @@
             <div class="admin-header__right">
                 <nav class="admin-nav">
                     <a href="/pages/admin/index.html" class="active" data-i18n="admin.navTransactions"></a>
+                    <a href="/pages/admin/analytics.html" data-i18n="admin.navAnalytics"></a>
                     <a href="/pages/admin/users.html" data-i18n="admin.navUsers"></a>
                     <a href="/pages/admin/settings.html" data-i18n="admin.navSettings"></a>
                     <a href="/pages/admin/referral.html" data-i18n="admin.navReferral"></a>
@@ -360,9 +394,16 @@
         </div>
 
         <div class="order-content">
-        <!-- 上部ステータス -->
-        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
-            <span id="top-status-chip" class="status-chip chip-amber"></span>
+        <!-- 上部ステータス（2-1: 配送／入金 の2軸） -->
+        <div class="statusbar">
+            <div class="axis">
+                <span class="axis__lab" data-i18n="admin.axis.deliveryLabel"></span>
+                <span id="delivery-axis-badge" class="sb-bdg sb-grey"></span>
+            </div>
+            <div class="axis">
+                <span class="axis__lab" data-i18n="admin.axis.paymentLabel"></span>
+                <span id="payment-axis-badge" class="sb-bdg sb-amber"></span>
+            </div>
             <span id="top-date-pill" class="pill"></span>
         </div>
 
@@ -420,13 +461,19 @@
                 <span class="pill" style="background:#fef3c7; color:#854d0e; border-color:#fde68a;" data-i18n="admin.order.paymentCheckBadge"></span>
             </div>
             <div class="section-grid">
+                <!-- ① 支払予定額（照合用） -->
                 <div class="sub-card">
-                    <div class="sub-card__label" data-i18n="admin.order.payPreview"></div>
+                    <div class="sub-card__label" data-i18n="admin.order.payBreakdownTitle"></div>
                     <div id="pay-breakdown"></div>
                 </div>
                 <div class="sub-card">
-                    <div class="sub-card__label" data-i18n="admin.order.paymentInfo"></div>
-                    <div id="payment-info"></div>
+                    <!-- ② 控え・確認方法（買い手の控え or フォールバック案内を1ブロックに統合／前払いのみ） -->
+                    <div id="proof-method-section" style="display:none;">
+                        <div class="sub-card__label" data-i18n="admin.order.proofMethodTitle"></div>
+                        <div class="buyer-proof" id="buyer-proof-block" style="display:none;">
+                            <div id="buyer-proof-body"></div>
+                        </div>
+                    </div>
 
                     <!-- 7/10 #204: お支払い未確認ストリップ（前払い・paymentUnconfirmed 時のみ表示） -->
                     <div class="unconfirmed-strip" id="unconfirmed-strip" style="display:none;">
@@ -440,42 +487,33 @@
                         </div>
                     </div>
 
-                    <!-- 7/10 #204: 買い手が添付した支払い控え（前払いのみ） -->
-                    <div class="buyer-proof" id="buyer-proof-block" style="display:none;">
-                        <div class="buyer-proof__label">
-                            <span class="material-symbols-outlined">attach_file</span>
-                            <span data-i18n="admin.order.buyerProofLabel"></span>
-                        </div>
-                        <div id="buyer-proof-body"></div>
-                    </div>
-
-                    <!-- 7/10 #204: 照合ガイド（前払いのみ・控えの有無で出し分け） -->
-                    <div class="match-hint" id="match-hint" style="display:none;"></div>
-
-                    <!-- 入金確認済にする（青・前払い/旧 共通） -->
+                    <!-- ③ アクション: 入金確認済にする（青・前払い/旧 共通） -->
                     <button class="primary-btn" id="confirm-payment-btn" data-i18n="admin.order.markPaymentConfirmed"></button>
                     <div class="btn-sub" id="confirm-payment-sub" data-i18n="admin.order.markPaymentConfirmedSub"></div>
 
-                    <!-- 7/10 #204: お支払い未確認にする（amber・前払いのみ） -->
+                    <!-- ③ アクション: お支払い未確認にする（amber・前払いのみ） -->
                     <button class="unconfirm-btn" id="unconfirm-payment-btn" style="display:none;" data-i18n="admin.order.markPaymentUnconfirmed"></button>
                     <div class="btn-sub" id="unconfirm-payment-sub" style="display:none;" data-i18n="admin.order.markPaymentUnconfirmedSub"></div>
 
-                    <!-- 6/5 #129 ⑥: 入金控え（入金スクショ＋メモ＋振込元名義）＝証拠を毎回残す -->
+                    <!-- ④ 入金メモ・控え（メモ＋入金スクショ＝証拠を毎回残す） -->
                     <div class="proof-block">
-                        <div class="proof-label" data-i18n="admin.order.depositProofLabel"></div>
-                        <input class="proof-input" id="payer-name-input" data-i18n="[placeholder]admin.order.payerNamePlaceholder">
+                        <div class="proof-label" data-i18n="admin.order.depositMemoLabel"></div>
                         <textarea class="proof-memo" id="deposit-memo" data-i18n="[placeholder]admin.order.depositMemoPlaceholder"></textarea>
                         <div class="proof-attach-row">
-                            <label class="attach-btn">
+                            <button type="button" class="attach-btn" id="deposit-attach-btn">
                                 <span class="material-symbols-outlined">attach_file</span>
                                 <span data-i18n="admin.order.attachDepositProof"></span>
-                                <input type="file" accept="image/*" id="deposit-proof-file" hidden>
-                            </label>
-                            <a class="proof-thumb" id="deposit-proof-thumb" style="display:none;" target="_blank" rel="noopener"></a>
+                            </button>
+                            <div class="proof-thumb-wrap" id="deposit-proof-wrap" style="display:none;">
+                                <a class="proof-thumb" id="deposit-proof-thumb" target="_blank" rel="noopener"></a>
+                                <button type="button" class="proof-del" id="deposit-proof-del" aria-label="削除">✕</button>
+                            </div>
                         </div>
+                        <input type="file" accept="image/*" id="deposit-proof-file" hidden>
+                        <div class="proof-hint" data-i18n="admin.order.depositScreenshotHint"></div>
                         <div class="memo-save-row">
                             <span class="memo-save-row__note" id="deposit-saved" data-i18n="admin.order.memoSaved"></span>
-                            <button style="border:1px solid #cbd5e1; background:#fff; color:#334155; font-weight:600; font-size:13px; padding:8px 16px; border-radius:10px; cursor:pointer;" id="save-deposit-btn" data-i18n="admin.order.saveMemo"></button>
+                            <button class="memo-save-btn" id="save-deposit-btn" data-i18n="admin.order.saveMemo"></button>
                         </div>
                     </div>
                 </div>
@@ -502,34 +540,31 @@
                     <div class="sub-card__label" data-i18n="admin.order.remitTarget"></div>
                     <div id="remit-target"></div>
                     <button class="secondary-btn" id="mark-remit-btn" data-i18n="admin.order.markRemitted"></button>
-                    <!-- 6/5 #129 ⑥: 送金控え（送金スクショを添付）＝証拠 -->
+                    <!-- 2026-07-22 #213 2-6: 送金メモ・控え（メモ＋送金スクショ＝証拠） -->
                     <div class="proof-block">
-                        <div class="proof-label" data-i18n="admin.order.remitProofLabel"></div>
+                        <div class="proof-label" data-i18n="admin.order.remitMemoLabel"></div>
+                        <textarea class="proof-memo" id="remit-memo" data-i18n="[placeholder]admin.order.remitMemoPlaceholder"></textarea>
                         <div class="proof-attach-row">
-                            <label class="attach-btn">
+                            <button type="button" class="attach-btn" id="remit-attach-btn">
                                 <span class="material-symbols-outlined">attach_file</span>
                                 <span data-i18n="admin.order.attachRemitProof"></span>
-                                <input type="file" accept="image/*" id="remit-proof-file" hidden>
-                            </label>
-                            <a class="proof-thumb" id="remit-proof-thumb" style="display:none;" target="_blank" rel="noopener"></a>
+                            </button>
+                            <div class="proof-thumb-wrap" id="remit-proof-wrap" style="display:none;">
+                                <a class="proof-thumb" id="remit-proof-thumb" target="_blank" rel="noopener"></a>
+                                <button type="button" class="proof-del" id="remit-proof-del" aria-label="削除">✕</button>
+                            </div>
+                        </div>
+                        <input type="file" accept="image/*" id="remit-proof-file" hidden>
+                        <div class="proof-hint" data-i18n="admin.order.remitScreenshotHint"></div>
+                        <div class="memo-save-row">
+                            <span class="memo-save-row__note" id="remit-saved" data-i18n="admin.order.memoSaved"></span>
+                            <button class="memo-save-btn" id="save-remit-btn" data-i18n="admin.order.saveRemitMemo"></button>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 内部メモ -->
-        <section class="section">
-            <div class="section__head">
-                <div class="section__title" data-i18n="admin.order.memoTitle"></div>
-                <span class="pill" data-i18n="admin.order.memoBadge"></span>
-            </div>
-            <textarea class="memo-area" id="admin-memo" data-i18n="[placeholder]admin.order.memoPlaceholder"></textarea>
-            <div class="memo-save-row">
-                <span class="memo-save-row__note" id="memo-saved" data-i18n="admin.order.memoSaved"></span>
-                <button style="border:1px solid #cbd5e1; background:#fff; color:#334155; font-weight:600; font-size:13px; padding:8px 16px; border-radius:10px; cursor:pointer;" id="save-memo-btn" data-i18n="admin.order.saveMemo"></button>
-            </div>
-        </section>
         </div>
     </div>
 
@@ -565,6 +600,7 @@
         import { watchAuthState, logout } from '/js/auth.js';
         import { db, storage } from '/js/firebase-config.js';
         import { initAdminReportBadge } from '/js/admin-report-badge.js';
+        import { deliveryAxisKey, paymentAxisKey } from '/js/status-axes.js';
         import {
             doc, getDoc, updateDoc, onSnapshot, serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
@@ -605,6 +641,27 @@
         //   ⚠ 入金照合・送金額のコピーで運営が読む数字なので、桁区切りのブレは特に危険。
         const KHR_LOCALE = 'en-US';
 
+        // 2026-07-22 #213 2-1: 2軸バッジの配色（grey/blue/amber/green/red/navy）＝mockup .b-*/.m-* 準拠
+        const DELIVERY_AXIS_COLOR = {
+            farmerConfirming: 'sb-grey',
+            preparing: 'sb-blue',
+            shipping: 'sb-blue',
+            received: 'sb-amber',
+            tradeDone: 'sb-navy',
+            declined: 'sb-red',
+            cancelled: 'sb-red',
+        };
+        const PAYMENT_AXIS_COLOR = {
+            waitDeposit: 'sb-amber',
+            depositOk: 'sb-blue',
+            remitWait: 'sb-amber',
+            remitted: 'sb-navy',
+            onHold: 'sb-amber',
+            unconfirmed: 'sb-red',
+            unpaid: 'sb-red',
+            refunded: 'sb-green',
+        };
+
         function waitForUserData(cb) {
             if (window.currentUserData) cb();
             else setTimeout(() => waitForUserData(cb), 200);
@@ -626,15 +683,13 @@
                 setIfHtml('basic-info', cached.basicInfoHtml);
                 setIfHtml('delivery-info', cached.deliveryInfoHtml);
                 setIfHtml('pay-breakdown', cached.payBreakdownHtml);
-                setIfHtml('payment-info', cached.paymentInfoHtml);
                 setIfHtml('remit-breakdown', cached.remitBreakdownHtml);
-                if (cached.statusChipText) {
-                    const chip = document.getElementById('top-status-chip');
-                    if (chip) {
-                        chip.textContent = cached.statusChipText;
-                        if (cached.statusChipClass) chip.className = cached.statusChipClass;
-                    }
-                }
+                const setBadge = (id, txt, cls) => {
+                    const b = document.getElementById(id);
+                    if (b && txt) { b.textContent = txt; if (cls) b.className = cls; }
+                };
+                setBadge('delivery-axis-badge', cached.deliveryBadgeText, cached.deliveryBadgeClass);
+                setBadge('payment-axis-badge', cached.paymentBadgeText, cached.paymentBadgeClass);
                 loading.classList.remove('show');
                 document.body.classList.add('app-ready');
                 cachedRendered = true;
@@ -694,34 +749,28 @@
             return 'pending';
         }
 
-        function chipClass(key) {
-            const map = {
-                done: 'chip-slate',
-                remitted: 'chip-teal',
-                paymentConfirmed: 'chip-emerald',
-                completed: 'chip-amber',
-                delivered: 'chip-violet',
-                delivering: 'chip-blue',
-                preparing: 'chip-blue',
-                approved: 'chip-blue',
-                pending: 'chip-amber',
-                declined: 'chip-amber',
-            };
-            return map[key] || 'chip-amber';
-        }
-
         function render() {
             const key = adminDisplayKey();
             const label = i18next.t(`admin.tx.status${cap(key)}`) || key;
-            const chip = document.getElementById('top-status-chip');
-            chip.className = `status-chip ${chipClass(key)}`;
-            chip.textContent = label;
+
+            // 2-1: 2軸ステータス（配送／入金）バッジ
+            const dKey = deliveryAxisKey(orderData);
+            const pKey = paymentAxisKey(orderData);
+            const dLabel = i18next.t(`admin.axis.delivery.${dKey}`);
+            const pLabel = i18next.t(`admin.axis.payment.${pKey}`);
+            const dBadge = document.getElementById('delivery-axis-badge');
+            const pBadge = document.getElementById('payment-axis-badge');
+            dBadge.className = `sb-bdg ${DELIVERY_AXIS_COLOR[dKey] || 'sb-grey'}`;
+            dBadge.textContent = dLabel;
+            pBadge.className = `sb-bdg ${PAYMENT_AXIS_COLOR[pKey] || 'sb-grey'}`;
+            pBadge.textContent = pLabel;
 
             // 注文日時
             const created = orderData.createdAt?.toDate ? orderData.createdAt.toDate() : null;
             document.getElementById('top-date-pill').textContent = created ? formatDate(created) : '';
 
-            document.getElementById('summary-status').textContent = label;
+            // サマリー①は配送軸のラベルに統一（2軸表示と整合）
+            document.getElementById('summary-status').textContent = dLabel;
 
             // 次の操作
             let nextStepKey = 'stepAllDone';
@@ -801,13 +850,6 @@
             `;
             document.getElementById('pay-breakdown').innerHTML = payHtml;
 
-            // 入金情報（PoCでは未取得、手動確認のためN/A表示）
-            // 将来的にPayway APIと連携するなら自動取得可能
-            document.getElementById('payment-info').innerHTML = `
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fromName')}</span><span class="kv-row__v">${restData?.accountName || '-'}</span></div>
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fromAccount')}</span><span class="kv-row__v">-</span></div>
-            `;
-
             // 送金内訳
             // 6/7 #135 ②: 紹介ボーナス行（取引完了時に order へ加算済みのみ）。これが無いと合計が合わない。
             //   農家送金は常に満額（クーポンは FishLink 負担）＝ボーナスは受取額に上乗せ。
@@ -815,29 +857,41 @@
             const remitBonusLine = remitBonus > 0
                 ? `<div class="kv-row"><span class="kv-row__k">${i18next.t('order.referralBonus')}</span><span class="kv-row__v amber">+${remitBonus.toLocaleString(KHR_LOCALE)} KHR</span></div>`
                 : '';
+            // 2-3: 手数料を透明に別行（農家画面と統一）＝手数料（gross・赤）＋キャンペーン割引（戻し・amber・>0のみ）。
+            //   farmerCommissionGross が無い legacy 注文は、従来の1行 netted 手数料にフォールバック。
+            let feeRows;
+            if (orderData.farmerCommissionGross != null) {
+                const gross = orderData.farmerCommissionGross;
+                const fCampaign = orderData.farmerCampaignDiscount || 0;
+                feeRows = `<div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.commissionDeduct', { rate: commissionRate })}</span><span class="kv-row__v minus">-${gross.toLocaleString(KHR_LOCALE)} KHR</span></div>`;
+                if (fCampaign > 0) {
+                    feeRows += `<div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.farmerCampaignBack')}</span><span class="kv-row__v amber">+${fCampaign.toLocaleString(KHR_LOCALE)} KHR</span></div>`;
+                }
+            } else {
+                feeRows = `<div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.commissionDeduct', { rate: commissionRate })}</span><span class="kv-row__v minus">-${commission.toLocaleString(KHR_LOCALE)} KHR</span></div>`;
+            }
             document.getElementById('remit-breakdown').innerHTML = `
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.fishPrice')}</span><span class="kv-row__v">${fishPrice.toLocaleString(KHR_LOCALE)} KHR</span></div>
+                ${feeRows}
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.deliveryFee')}</span><span class="kv-row__v">${deliveryFee.toLocaleString(KHR_LOCALE)} KHR</span></div>
-                <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.commissionDeduct', { rate: commissionRate })}</span><span class="kv-row__v minus">-${commission.toLocaleString(KHR_LOCALE)} KHR</span></div>
                 ${remitBonusLine}
                 <div class="divider-dashed"></div>
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.total')}</span><span class="kv-row__v bold">${remitAmount.toLocaleString(KHR_LOCALE)} KHR</span></div>
             `;
 
-            // 送金先情報
+            // 送金先情報（2-6: 送金先QRの生URL → ボタン風リンク「ABAアプリで開いて送金」）
             const qrImage = farmerData?.qrImageUrl
                 ? `<img ${asCachedImgAttrs(farmerData.qrImageUrl)} alt="QR">`
                 : `<span class="qr-preview__empty">${i18next.t('admin.order.noQr')}</span>`;
-            const qrLink = farmerData?.qrLink
-                ? `<a href="${farmerData.qrLink}" target="_blank" rel="noopener" class="external-link">${farmerData.qrLink}</a>`
+            const qrLinkBtn = farmerData?.qrLink
+                ? `<a href="${farmerData.qrLink}" target="_blank" rel="noopener" class="aba-remit-link"><span class="material-symbols-outlined">account_balance</span><span>${i18next.t('admin.order.openInAbaRemit')}</span></a>`
                 : `<div style="font-size:12px; color:#94a3b8; margin-top:8px;">${i18next.t('admin.order.noQrLink')}</div>`;
 
             document.getElementById('remit-target').innerHTML = `
                 <div class="kv-row"><span class="kv-row__k">${i18next.t('admin.order.remitTargetName')}</span><span class="kv-row__v">${farmerData?.accountName || farmerData?.displayName || '-'}</span></div>
                 <div style="margin-top:8px; font-size:12px; color:#64748b;">${i18next.t('admin.order.remitQrImage')}</div>
                 <div class="qr-preview">${qrImage}</div>
-                <div style="margin-top:12px; font-size:12px; color:#64748b;">${i18next.t('admin.order.remitQrLink')}</div>
-                ${qrLink}
+                ${qrLinkBtn}
             `;
 
             // ボタン有効/無効（フロー順序）
@@ -861,8 +915,8 @@
             const unconfirmBtn = document.getElementById('unconfirm-payment-btn');
             const unconfirmSub = document.getElementById('unconfirm-payment-sub');
             const unconfirmedStrip = document.getElementById('unconfirmed-strip');
+            const proofSection = document.getElementById('proof-method-section');
             const buyerProofBlock = document.getElementById('buyer-proof-block');
-            const matchHint = document.getElementById('match-hint');
 
             if (isPrepaid) {
                 // 前払い: 承認前でも照合して押せる（status ゲート撤廃）
@@ -880,30 +934,32 @@
                 if (paymentUnconfirmed) {
                     document.getElementById('unconfirmed-reason').textContent = orderData.depositUnconfirmedReason || '-';
                 }
-                // 買い手の控え＋照合ガイド
+                // ② 控え・確認方法（買い手の控え or フォールバック案内を1ブロックに統合）
+                proofSection.style.display = '';
                 buyerProofBlock.style.display = '';
-                matchHint.style.display = '';
                 const proofUrl = orderData.buyerPaymentProofUrl;
                 const proofBody = document.getElementById('buyer-proof-body');
                 if (proofUrl) {
                     buyerProofBlock.classList.remove('none');
-                    proofBody.innerHTML = `<a href="${proofUrl}" target="_blank" rel="noopener" class="buyer-proof__img"><img ${asCachedImgAttrs(proofUrl)} alt="proof"></a>`;
-                    matchHint.textContent = i18next.t('admin.order.matchHint');
+                    proofBody.innerHTML = `
+                        <div class="buyer-proof__label"><span class="material-symbols-outlined">attach_file</span><span>${i18next.t('admin.order.buyerProofCaption')}</span></div>
+                        <a href="${proofUrl}" target="_blank" rel="noopener" class="buyer-proof__img"><img ${asCachedImgAttrs(proofUrl)} alt="proof"></a>
+                        <div class="buyer-proof__note">${i18next.t('admin.order.buyerProofMatchNote')}</div>
+                    `;
                 } else {
                     buyerProofBlock.classList.add('none');
-                    proofBody.innerHTML = `<div class="buyer-proof__none">${i18next.t('admin.order.buyerProofNone')}</div>`;
-                    matchHint.textContent = i18next.t('admin.order.matchHintNoProof');
+                    proofBody.innerHTML = `<div class="buyer-proof__none">${i18next.t('admin.order.noProofFallback')}</div>`;
                 }
             } else {
-                // 旧（受取時払い）: 従来どおり受取完了後のみ
+                // 旧（受取時払い）: 従来どおり受取完了後のみ／控え・確認方法は非表示
                 confirmBtn.disabled = !canStartAdmin || isPaymentConfirmed;
                 confirmBtn.textContent = i18next.t('admin.order.markPaymentConfirmed');
                 confirmSub.style.display = '';
                 unconfirmBtn.style.display = 'none';
                 unconfirmSub.style.display = 'none';
                 unconfirmedStrip.style.display = 'none';
+                proofSection.style.display = 'none';
                 buyerProofBlock.style.display = 'none';
-                matchHint.style.display = 'none';
             }
             // 入金確認ボタンは青（有効時）／グレー（無効・確認済）
             confirmBtn.style.background = confirmBtn.disabled ? '#94a3b8' : 'var(--color-cta, #0b5fb0)';
@@ -912,25 +968,23 @@
             remitBtn.disabled = !(orderData.status === 'completed') || !depositOk || isRemitted;
             doneBtn.disabled = !isRemitted || isDone;
 
-            // 内部メモ
-            document.getElementById('admin-memo').value = orderData.adminMemo || '';
-
             // 6/5 #129 ④/§8: 問題報告で送金保留中の通知（送金前のみ）
             const hold = orderData.paymentProblemHold === true && !isRemitted;
             const holdNotice = document.getElementById('hold-notice');
             if (holdNotice) holdNotice.style.display = hold ? 'flex' : 'none';
 
-            // 6/5 #129 ⑥: 入金控え（振込元名義・メモ・スクショ）を反映
-            const payerInput = document.getElementById('payer-name-input');
+            // ④ 入金メモ・控え／2-6 送金メモ・控え を反映（フォーカス中は上書きしない）
             const depositMemo = document.getElementById('deposit-memo');
-            if (payerInput && document.activeElement !== payerInput) payerInput.value = orderData.payerName || '';
             if (depositMemo && document.activeElement !== depositMemo) depositMemo.value = orderData.depositMemo || '';
-            renderProofThumb('deposit-proof-thumb', orderData.depositProofUrl);
-            renderProofThumb('remit-proof-thumb', orderData.remitProofUrl);
+            const remitMemoEl = document.getElementById('remit-memo');
+            if (remitMemoEl && document.activeElement !== remitMemoEl) remitMemoEl.value = orderData.remitMemo || '';
+            renderProofThumb('deposit-proof-thumb', 'deposit-proof-wrap', orderData.depositProofUrl);
+            renderProofThumb('remit-proof-thumb', 'remit-proof-wrap', orderData.remitProofUrl);
 
             // 5/25 #91/#92 拡張: 次回訪問用に画面 HTML をキャッシュ保存
             try {
-                const chip = document.getElementById('top-status-chip');
+                const dBadgeEl = document.getElementById('delivery-axis-badge');
+                const pBadgeEl = document.getElementById('payment-axis-badge');
                 saveRenderState(`admin_order:${orderId}`, {
                     orderNo: document.getElementById('order-no-display')?.textContent || '',
                     topDate: document.getElementById('top-date-pill')?.textContent || '',
@@ -938,12 +992,13 @@
                     nextStep: document.getElementById('summary-next-step')?.textContent || '',
                     summaryPay: document.getElementById('summary-pay')?.textContent || '',
                     summaryRemit: document.getElementById('summary-remit')?.textContent || '',
-                    statusChipText: chip?.textContent || '',
-                    statusChipClass: chip?.className || '',
+                    deliveryBadgeText: dBadgeEl?.textContent || '',
+                    deliveryBadgeClass: dBadgeEl?.className || '',
+                    paymentBadgeText: pBadgeEl?.textContent || '',
+                    paymentBadgeClass: pBadgeEl?.className || '',
                     basicInfoHtml: document.getElementById('basic-info')?.innerHTML || '',
                     deliveryInfoHtml: document.getElementById('delivery-info')?.innerHTML || '',
                     payBreakdownHtml: document.getElementById('pay-breakdown')?.innerHTML || '',
-                    paymentInfoHtml: document.getElementById('payment-info')?.innerHTML || '',
                     remitBreakdownHtml: document.getElementById('remit-breakdown')?.innerHTML || '',
                 });
             } catch (e) { /* ignore */ }
@@ -1015,25 +1070,20 @@
             await updateDoc(doc(db, 'orders', orderId), { adminStatus: 'done' });
         });
 
-        document.getElementById('save-memo-btn').addEventListener('click', async () => {
-            const memo = document.getElementById('admin-memo').value;
-            await updateDoc(doc(db, 'orders', orderId), { adminMemo: memo });
-            const note = document.getElementById('memo-saved');
-            note.classList.add('show');
-            setTimeout(() => note.classList.remove('show'), 1500);
-        });
-
         // ── 6/5 #129 ⑥: 入金控え／送金控え・金額コピー・保留解除 ──
-        function renderProofThumb(id, url) {
-            const el = document.getElementById(id);
+        function renderProofThumb(thumbId, wrapId, url) {
+            const el = document.getElementById(thumbId);
+            const wrap = document.getElementById(wrapId);
             if (!el) return;
             if (url) {
                 el.href = url;
                 el.innerHTML = `<img ${asCachedImgAttrs(url)} alt="proof">`;
                 el.style.display = 'inline-block';
+                if (wrap) wrap.style.display = 'inline-flex';
             } else {
                 el.style.display = 'none';
                 el.innerHTML = '';
+                if (wrap) wrap.style.display = 'none';
             }
         }
 
@@ -1053,17 +1103,30 @@
             }
         }
 
-        // 入金控え：振込元名義＋メモ保存
+        // ④ 入金メモ・控え：メモ保存（振込元名義は撤去＝メモに集約）
         document.getElementById('save-deposit-btn').addEventListener('click', async () => {
-            const payerName = document.getElementById('payer-name-input').value.trim();
             const depositMemo = document.getElementById('deposit-memo').value.trim();
-            await updateDoc(doc(db, 'orders', orderId), {
-                payerName: payerName || null,
-                depositMemo: depositMemo || null,
-            });
+            await updateDoc(doc(db, 'orders', orderId), { depositMemo: depositMemo || null });
             const note = document.getElementById('deposit-saved');
             note.classList.add('show');
             setTimeout(() => note.classList.remove('show'), 1500);
+        });
+
+        // 2-6: 送金メモ・控え：メモ保存
+        document.getElementById('save-remit-btn').addEventListener('click', async () => {
+            const remitMemo = document.getElementById('remit-memo').value.trim();
+            await updateDoc(doc(db, 'orders', orderId), { remitMemo: remitMemo || null });
+            const note = document.getElementById('remit-saved');
+            note.classList.add('show');
+            setTimeout(() => note.classList.remove('show'), 1500);
+        });
+
+        // ファイル選択は input.click() を明示（<label> 暗黙方式は iOS Safari 等で開かないことがある＝CLAUDE ルール）
+        document.getElementById('deposit-attach-btn').addEventListener('click', () => {
+            document.getElementById('deposit-proof-file').click();
+        });
+        document.getElementById('remit-attach-btn').addEventListener('click', () => {
+            document.getElementById('remit-proof-file').click();
         });
 
         document.getElementById('deposit-proof-file').addEventListener('change', (e) => {
@@ -1073,6 +1136,14 @@
         document.getElementById('remit-proof-file').addEventListener('change', (e) => {
             uploadProof('remitProofUrl', e.target.files?.[0], 'remit');
             e.target.value = '';
+        });
+
+        // 入金/送金スクショの✕削除（フィールドを null に）＝新規 confirm は付けない
+        document.getElementById('deposit-proof-del').addEventListener('click', async () => {
+            await updateDoc(doc(db, 'orders', orderId), { depositProofUrl: null });
+        });
+        document.getElementById('remit-proof-del').addEventListener('click', async () => {
+            await updateDoc(doc(db, 'orders', orderId), { remitProofUrl: null });
         });
 
         // 送金額をコピー

@@ -2658,6 +2658,89 @@ exports.resetPasswordWithPhone = onCall(
   }
 );
 
+// ── 🎬 7/22 #215⑦: 既存リール動画の faststart バックフィル（admin 手動・安全・冪等） ──
+//   sw.js は既に Range/206 を素通しする＝残るレバーは「moov が末尾の旧ファイル」を faststart 化すること。
+//   ・admin 限定（呼び出し元 users/{uid}.role==='admin'）。実際に押した admin＝実行の同意（confirm 不要）。
+//   ・documentId 順でページングして全件を走査する（'!='/欠損フィールドのクエリは扱いにくいため）。
+//     ⚠ limit だけの単発取得はカーソルが無く「同じ先頭N件」を取り続け 201件目以降に永遠に届かない（修正済）。
+//     未処理は faststarted マーカーで判定＝処理済みは download せず即スキップ＝再クリックで続きから（冪等・再実行可）。
+//   ・1回の呼び出しで実際に変換（DL+再UP）する件数は MAX_CONVERT で有界化＝実行時間を timeoutSeconds 内に収める。
+//   ・faststartBuffer が「すでに faststart／触れない」（out===buf）なら doc に faststarted:true を立てて次回スキップ。
+//   ・⚠⚠ 再アップロード時は firebaseStorageDownloadTokens を **必ず保持**＝既存 videoUrl(?token=...) が
+//        そのまま有効（トークンを再生成すると全リールの再生URLが無効化される）。
+//   ・各 doc は try/catch で隔離（1件失敗しても全体は止めない＝done/skipped/failed を集計して返す）。
+exports.faststartReelBackfill = onCall(
+  { region: "asia-southeast1", timeoutSeconds: 540, memory: "512MiB", invoker: "public", cors: true },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Authentication required");
+    }
+    const callerSnap = await db.doc(`users/${request.auth.uid}`).get();
+    if (callerSnap.data()?.role !== "admin") {
+      throw new HttpsError("permission-denied", "Admin role required");
+    }
+    const { faststartBuffer } = require("./mp4-faststart");
+    const { FieldPath } = require("firebase-admin/firestore");
+    const bucket = getStorage().bucket();
+
+    const PAGE = 100;         // 1ページの取得件数
+    const MAX_CONVERT = 150;  // この呼び出しで実際に変換（DL+再UP）する上限＝1回の実行時間を timeoutSeconds 内に収める
+    const MAX_SCAN = 20000;   // 安全ガード（無限ループ防止）
+    let total = 0, done = 0, skipped = 0, failed = 0;
+    let cursor = null, stop = false;
+
+    // documentId 順にページング＝全件を確実に走査（limit だけの単発取得だと 201件目以降に届かない）。
+    while (!stop && total < MAX_SCAN) {
+      let q = db.collection("reel_videos").orderBy(FieldPath.documentId()).limit(PAGE);
+      if (cursor) q = q.startAfter(cursor);
+      const snap = await q.get();
+      if (snap.empty) break;
+      cursor = snap.docs[snap.docs.length - 1].id;
+      for (const docSnap of snap.docs) {
+        total++;
+        const data = docSnap.data() || {};
+        if (data.faststarted === true) { skipped++; continue; }   // 処理済み＝download せず即スキップ
+        const sp = data.storagePath;
+        if (!sp) { skipped++; continue; }                         // 実体パス無し＝スキップ
+        try {
+          const file = bucket.file(sp);
+          // 既存メタデータを読む（download token・contentType・cacheControl を保存側に持ち越す）。
+          const [meta] = await file.getMetadata();
+          const token = meta.metadata && meta.metadata.firebaseStorageDownloadTokens;
+          const contentType = meta.contentType || "video/mp4";
+          const cacheControl = meta.cacheControl || "public, max-age=31536000";
+
+          const [buf] = await file.download();
+          const out = faststartBuffer(buf);
+          if (out === buf) {
+            // すでに faststart or 触れない＝次回スキップできるようマーカーだけ立てる（再DL防止）。
+            await docSnap.ref.update({ faststarted: true });
+            skipped++;
+          } else {
+            // ⚠ download token を必ず保持して上書き保存＝既存 videoUrl(?token=...) を生かす。
+            await file.save(out, {
+              resumable: false,
+              metadata: {
+                contentType,
+                cacheControl,
+                metadata: token ? { firebaseStorageDownloadTokens: token } : {},
+              },
+            });
+            await docSnap.ref.update({ faststarted: true });
+            done++;
+          }
+        } catch (e) {
+          console.error("faststartReelBackfill failed", docSnap.id, e);
+          failed++;
+        }
+        if (done >= MAX_CONVERT) { stop = true; break; }   // 変換量を有界化（残りは再クリックで続きから＝処理済みは即スキップ）
+      }
+      if (snap.docs.length < PAGE) break;   // 最終ページ
+    }
+    return { total, done, skipped, failed };
+  }
+);
+
 // ── 🎬 7/9 #199: リール動画 保持N上限（出品ごと最新10本・古いものから物理削除） ──
 //   ポートフォリオ化（差し替えても消さない）と両立するストレージ有界化。
 //   「最新10本を残して超過分（最古）だけ物理削除」＝収束的＝onDocumentCreated の at-least-once 再配信でも

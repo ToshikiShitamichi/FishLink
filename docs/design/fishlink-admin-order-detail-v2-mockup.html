@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FISHLINK 管理画面 注文管理詳細（レビュー反映版）- モック</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; background:#F4F6F9; color:#1B2430; font-family:-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif; font-size:14px; }
+  .wrap { max-width:1160px; margin:0 auto; padding:22px 26px 90px; }
+  .note-top { background:#FFF7E6; border:1px solid #F2D48A; color:#7A5B12; border-radius:10px; padding:11px 14px; font-size:12.5px; line-height:1.7; margin-bottom:18px; }
+  .note-top b { color:#5E4708; }
+  .back { color:#3C4656; font-size:13px; margin-bottom:8px; }
+  .app-tag { color:#8A94A3; font-size:12px; }
+  h1 { font-size:24px; margin:2px 0 4px; }
+  .desc { color:#6A7482; font-size:12.5px; margin:0 0 4px; }
+  .txid { color:#8A94A3; font-size:12px; margin-bottom:16px; }
+  /* 2軸ステータス badges（2-1） */
+  .statusbar { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+  .axis { display:flex; align-items:center; gap:7px; background:#fff; border:1px solid #E7EBF0; border-radius:10px; padding:8px 13px; }
+  .axis .lab { font-size:11px; color:#8A94A3; font-weight:700; }
+  .bdg { display:inline-block; border-radius:20px; padding:3px 11px; font-size:11.5px; font-weight:700; }
+  .b-wait { background:#EEF1F5; color:#5A6678; }
+  .m-wait { background:#FFF0D6; color:#B26A00; }
+  .ts { color:#8A94A3; font-size:12px; }
+  /* KPI */
+  .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:18px; }
+  .kpi { background:#fff; border:1px solid #E7EBF0; border-radius:12px; padding:15px 18px; }
+  .kpi .k { color:#8A94A3; font-size:12px; margin-bottom:6px; }
+  .kpi .v { font-size:21px; font-weight:800; }
+  .kpi .s { color:#8A94A3; font-size:11px; margin-top:4px; }
+  /* card / section */
+  .card { background:#fff; border:1px solid #E7EBF0; border-radius:14px; padding:20px 22px; margin-bottom:18px; }
+  .card h2 { font-size:16px; margin:0 0 14px; display:flex; align-items:center; justify-content:space-between; }
+  .aba-btn { background:#FFF7E6; border:1px solid #F0D28C; color:#8A5B00; border-radius:9px; padding:8px 13px; font-size:12px; font-weight:700; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:26px; }
+  /* amount list */
+  .amt-row { display:flex; justify-content:space-between; padding:9px 0; font-size:13px; border-bottom:1px solid #F2F4F7; }
+  .amt-row.total { border-top:1px solid #DDE3EA; border-bottom:none; font-weight:800; font-size:15px; padding-top:12px; margin-top:4px; }
+  .amt-row .neg { color:#C0392B; }
+  .amt-row .pos { color:#1E8E4E; }
+  .amt-row .sub { color:#8A94A3; font-size:11px; font-weight:400; }
+  .panel-label { font-size:11px; color:#8A94A3; font-weight:700; margin-bottom:8px; }
+  /* confirm block */
+  .confirm-line { background:#F7F9FB; border:1px solid #EAEEF3; border-radius:10px; padding:11px 13px; font-size:12.5px; color:#4A5464; line-height:1.6; margin-bottom:14px; }
+  .btn { display:block; width:100%; border:none; border-radius:11px; padding:13px; font-size:14px; font-weight:800; margin-bottom:5px; }
+  .btn-primary { background:#0B5FB0; color:#fff; }
+  .btn-amber { background:#FFF3D6; color:#9A6A00; border:1px solid #F0D28C; }
+  .btn-sub { color:#8A94A3; font-size:11px; text-align:center; margin:0 0 14px; }
+  .memo-block { border-top:1px dashed #E7EBF0; padding-top:14px; margin-top:4px; }
+  .memo-block .ml { font-size:12px; font-weight:700; color:#586274; margin-bottom:8px; }
+  input.inp, textarea.inp { width:100%; border:1px solid #DDE3EA; border-radius:9px; padding:9px 11px; font-size:12.5px; font-family:inherit; margin-bottom:8px; }
+  textarea.inp { min-height:56px; resize:vertical; }
+  .mini-btn { border:1px dashed #BBD3EC; background:#F7FAFE; color:#0B5FB0; border-radius:9px; padding:8px 12px; font-size:12px; font-weight:700; }
+  .save-btn { float:right; border:1px solid #CBD3DD; background:#fff; border-radius:9px; padding:8px 14px; font-size:12px; }
+  .del-note { color:#8A94A3; font-size:11px; }
+  .strike-demo { color:#C0392B; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="note-top">
+    <b>【モック＝注文管理詳細のレビュー反映版】</b> 2-1 ステータスを<b>2軸（配送／入金）</b>で表示／2-3 手数料を<b>透明に別行</b>（手数料 −1,800＋キャンペーン +900・農家画面と統一）／2-4 ボタンを<b>「ABAアプリで入金履歴を確認」</b>／2-5 レストラン入金確認の<b>重複・空表示を削除して4ブロックに整理</b>。※色・文言は叩き台。
+  </div>
+
+  <div class="back">← 取引一覧に戻る</div>
+  <div class="app-tag">FISHLINK 管理画面</div>
+  <h1>注文管理詳細</h1>
+  <p class="desc">レストラン入金確認 → 農家送金 → 取引完了 の運用を手動で管理</p>
+  <div class="txid">FL-260722-002</div>
+
+  <!-- 2-1 二軸ステータス -->
+  <div class="statusbar">
+    <div class="axis"><span class="lab">配送</span><span class="bdg b-wait">農家確認中</span></div>
+    <div class="axis"><span class="lab">入金</span><span class="bdg m-wait">入金確認待ち</span></div>
+    <span class="ts">2026/07/22 15:19</span>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpis">
+    <div class="kpi"><div class="k">レストラン支払い（買い手）</div><div class="v">50,500 KHR</div><div class="s">魚代・送料・サービス料・割引を含む</div></div>
+    <div class="kpi"><div class="k">農家送金予定額</div><div class="v">49,000 KHR</div><div class="s">手数料控除後の送金額</div></div>
+    <div class="kpi"><div class="k">運営の取り分</div><div class="v">1,500 KHR</div><div class="s">= 買い手支払い − 農家送金</div></div>
+  </div>
+
+  <!-- レストラン入金確認（2-5 整理版） -->
+  <div class="card">
+    <h2>レストラン入金確認 <button class="aba-btn">🏦 ABAアプリで入金履歴を確認</button></h2>
+    <div class="cols">
+      <!-- ① 支払予定額（照合用） -->
+      <div>
+        <div class="panel-label">① 支払予定額（照合用）</div>
+        <div class="amt-row"><span>魚代</span><span>37,500 KHR</span></div>
+        <div class="amt-row"><span>送料</span><span>12,400 KHR</span></div>
+        <div class="amt-row"><span>サービス料</span><span>1,500 KHR</span></div>
+        <div class="amt-row"><span>割引（キャンペーン）</span><span class="neg">−900 KHR</span></div>
+        <div class="amt-row total"><span>合計</span><span>50,500 KHR</span></div>
+      </div>
+      <!-- ②③④ -->
+      <div>
+        <!-- ② 控え・確認方法（重複を1つに統合／控えあり=画像サムネ・なし=案内文） -->
+        <div class="panel-label">② 控え・確認方法</div>
+        <!-- 控えあり（買い手が添付した画像を表示・タップで拡大） -->
+        <div class="confirm-line" style="display:flex;gap:12px;align-items:center;">
+          <span style="width:64px;height:64px;border-radius:8px;flex:none;background:repeating-linear-gradient(45deg,#dfe6ee,#dfe6ee 5px,#eef2f6 5px,#eef2f6 10px);border:1px solid #d5dee6;position:relative;">
+            <span style="position:absolute;bottom:3px;right:3px;font-size:9px;background:#16233F;color:#fff;border-radius:4px;padding:0 4px;">拡大</span>
+          </span>
+          <span>📎 <b>買い手が添付した支払い控え</b>（タップで拡大）<br><span style="color:#8A94A3;font-size:11px;">この画像で 金額・時刻 を照合できます。</span></span>
+        </div>
+        <!-- 控えなし（フォールバック案内） -->
+        <div class="confirm-line" style="color:#8A94A3;">
+          ※控えが無い場合（任意なので無いことあり）：<b>ABAアプリの入金履歴</b>で <b>金額・時刻</b> が合う入金を目視で確認してください。
+        </div>
+        <!-- ③ アクション2択 -->
+        <button class="btn btn-primary">入金確認済にする</button>
+        <div class="btn-sub">ABAアプリの入金履歴で金額・時刻が一致したら</div>
+        <button class="btn btn-amber">お支払い未確認にする（買い手に通知）</button>
+        <div class="btn-sub">入金が確認できない時／買い手に「お支払い未確認」が表示（理由メモ必須）</div>
+        <!-- ④ 内部メモ（振込元名義・メモ・スクショ・保存を1ブロック／上の空の振込元表示は削除） -->
+        <div class="memo-block">
+          <div class="ml">入金メモ・控え（任意）</div>
+          <textarea class="inp" placeholder="例：入金確認OK。／振込元 山田太郎。／50,000のみ入金・差額を督促中。"></textarea>
+          <!-- 添付後＝サムネ＋✕削除＋タップ拡大（買い手控え・送金スクショと同じUI） -->
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+            <span style="position:relative;width:52px;height:52px;border-radius:8px;flex:none;background:repeating-linear-gradient(45deg,#dfe6ee,#dfe6ee 5px,#eef2f6 5px,#eef2f6 10px);border:1px solid #d5dee6;">
+              <span style="position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#333;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;">✕</span>
+            </span>
+            <span style="color:#8A94A3;font-size:11px;">入金スクショ（タップで拡大／✕で削除）</span>
+            <button class="mini-btn" style="margin-left:auto;">📎 追加</button>
+          </div>
+          <button class="save-btn">入金メモを保存</button>
+          <div style="clear:both"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 農家送金（2-3 手数料を透明に別行） -->
+  <div class="card">
+    <h2>農家送金 <span style="font-size:12px;font-weight:700;color:#1E8E4E;background:#E4F6E9;border-radius:8px;padding:5px 10px;">入金確認後に手動送金</span></h2>
+    <div class="cols">
+      <div>
+        <div class="panel-label">送金予定額（内訳＝農家画面と統一）</div>
+        <div class="amt-row"><span>魚代</span><span>37,500 KHR</span></div>
+        <div class="amt-row"><span>手数料（5%）</span><span class="neg">−1,800 KHR</span></div>
+        <div class="amt-row"><span>キャンペーン割引</span><span class="pos">+900 KHR</span></div>
+        <div class="amt-row"><span>送料</span><span>12,400 KHR</span></div>
+        <div class="amt-row total"><span>合計（送金額）</span><span>49,000 KHR</span></div>
+        <div style="margin-top:12px;"><button class="mini-btn">📋 送金額をコピー</button></div>
+        <div class="del-note" style="margin-top:8px;">※旧「手数料控除額（5%）−900」は、手数料とキャンペーンをnetに畳んで"5%"と誤表記していた → <span class="strike-demo">上の別行表示に修正</span></div>
+      </div>
+      <div>
+        <div class="panel-label">送金先情報</div>
+        <div class="amt-row"><span>送金先名義</span><span>（農家本人の登録送金先）</span></div>
+        <div class="amt-row"><span>送金先QR</span><span>ABA PAY QR ▢</span></div>
+        <div style="margin-top:8px;"><a href="#" style="color:#0B5FB0;font-size:12px;">🏦 ABAアプリで開いて送金（2-6・任意）</a></div>
+        <div style="margin-top:14px;"><button class="btn" style="background:#EEF1F5;color:#8A94A3;">農家へ送金済にする（入金確認後に有効）</button></div>
+        <!-- 送金メモ＋送金スクショ（このセクション用のメモ・3箇所統一のスクショUI＝サムネ＋✕） -->
+        <div class="memo-block">
+          <div class="ml">送金メモ・控え（任意）</div>
+          <textarea class="inp" placeholder="例：送金完了。／農家から口座変更の連絡あり。"></textarea>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+            <span style="position:relative;width:52px;height:52px;border-radius:8px;flex:none;background:repeating-linear-gradient(45deg,#dfe6ee,#dfe6ee 5px,#eef2f6 5px,#eef2f6 10px);border:1px solid #d5dee6;">
+              <span style="position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#333;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;">✕</span>
+            </span>
+            <span style="color:#8A94A3;font-size:11px;">送金スクショ（タップで拡大／✕で削除）</span>
+            <button class="mini-btn" style="margin-left:auto;">📎 追加</button>
+          </div>
+          <button class="save-btn">送金メモを保存</button>
+          <div style="clear:both"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 最終操作 -->
+  <div class="card" style="display:flex;align-items:center;justify-content:space-between;">
+    <div><b>最終操作</b><div class="del-note">入金確認と農家送金が完了したら、取引完了にする</div></div>
+    <button class="btn" style="width:auto;background:#EEF1F5;color:#8A94A3;margin:0;padding:12px 22px;">取引完了にする</button>
+  </div>
+
+</div>
+</body>
+</html>

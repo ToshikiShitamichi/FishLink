@@ -98,8 +98,11 @@ function ensureStyle() {
 
 /* ── 全画面フィード ── */
 .rui-overlay{position:fixed;inset:0;z-index:5000;background:#0b1a22}
+/* ⚠ #215⑬（PC センタリング）: overlay（暗転）は全幅のまま、スクロール列だけを電話幅に絞って中央寄せ。
+   ＝ワイド画面で動画が横いっぱいに間延びしない（モバイルは <480px なので max-width が効かず全幅＝無影響）。
+   スナップスクロールは track（このスクロール容器）で成立するので列を絞っても崩れない。 */
 .rui-track{height:100%;height:100dvh;overflow-y:scroll;scroll-snap-type:y mandatory;
-  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;max-width:480px;margin:0 auto}
 .rui-track::-webkit-scrollbar{display:none}
 .rui-item{position:relative;height:100%;height:100dvh;scroll-snap-align:start;scroll-snap-stop:always;
   background:#0b1a22;overflow:hidden}
@@ -153,8 +156,23 @@ function ensureStyle() {
    上端は ← と 🔇 に近くて見にくかった／TikTok・IG も進捗バーは下端が定番）。
    ⚠ absolute の bottom 固定にせず .rui-btm の中に「流し込む」＝販売中（CTAあり）と
      アーカイブ（CTAなし＝「販売されていません」）どちらでもボタン/注記の真上に来て破綻しない。 */
-.rui-pbar{height:2px;border-radius:2px;background:rgba(255,255,255,.3);margin:14px 0 2px;overflow:hidden}
-.rui-pbar i{display:block;height:100%;width:0;border-radius:2px;background:rgba(255,255,255,.95)}
+.rui-pbar{height:2px;border-radius:2px;background:rgba(255,255,255,.3);margin:14px 0 2px;position:relative;
+  touch-action:none;cursor:pointer}
+.rui-pbar i{display:block;height:100%;width:0;border-radius:2px;background:rgba(255,255,255,.95);position:relative}
+/* #215⑱: 既存の再生バーをドラッグでシーク可能に（新スライダーは足さない）。通常は細い線、
+   掴むと太く＋ノブ＋「現在/合計」時間ラベル（IGリール方式）。2px の線は指で掴みにくいので、
+   透明の ::before で当たり判定を上下 10px 広げる（＝掴みやすくする）。
+   ⚠ 旧 overflow:hidden は外す＝付けたままだとノブと当たり判定（::before）が切れて出ない。
+   ⚠ touch-action:none＝バーを掴んだ指で track の縦スクロール（次の魚へ）が始まらないようにする。 */
+.rui-pbar::before{content:"";position:absolute;left:0;right:0;top:-10px;bottom:-10px}
+.rui-pbar.scrubbing{height:5px}
+.rui-pbar.scrubbing i::after{content:"";position:absolute;right:-6px;top:50%;transform:translateY(-50%);
+  width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+/* スクラブ中だけ出す「現在/合計」時間ラベル。バーは .rui-btm 内で流動配置＝縦位置が固定でないため、
+   bottom は JS（pointerdown 時）でバーの真上へ動的に合わせる（下の 74px は保険の既定値）。 */
+.rui-scrubtime{position:absolute;bottom:74px;left:0;right:0;text-align:center;color:#fff;font-weight:800;
+  font-size:13px;text-shadow:0 1px 4px rgba(0,0,0,.6);z-index:5;pointer-events:none}
+.rui-scrubtime[hidden]{display:none}
 .rui-btm{position:absolute;left:0;right:0;bottom:0;padding:44px 16px calc(18px + env(safe-area-inset-bottom,0px));
   background:linear-gradient(transparent,rgba(0,0,0,.88));color:#fff;z-index:4}
 .rui-badge{position:absolute;top:calc(50px + env(safe-area-inset-top,0px));left:16px;font-size:11px;font-weight:800;
@@ -389,6 +407,7 @@ function itemHtml(vm, i, t) {
         </span>
       </div>
       ${badge}
+      <div class="rui-scrubtime" hidden></div>
       <div class="rui-btm">
         <div class="rui-btm__rf${rfTap}" data-act="${vm.buyable ? 'farmer' : ''}">${av}<span>${esc(vm.farmerName || '')}</span>${rating} <span class="rui-btm__loc">・ ${distTxt}${chevF}</span></div>
         <div class="rui-btm__rn">${esc(vm.fishName || '')}${sizePart}</div>
@@ -415,6 +434,7 @@ function bindItem(el, vm, ctx) {
     let prefetched = false;    // 先読み済み（同じ動画を二重に先読みしない・#209⑭-3）
     let posterHidden = false;
     let destroyed = false;     // フィードを閉じた（＝この要素はもう DOM に無い）。src の貼り直しも再生もしない
+    let scrubbing = false;     // #215⑱: シーク中（バーをドラッグ中）＝▶を出さない・自動再生ドライバと競合させない
 
     // ── #209⑦-4: 表示状態は必ず排他にする（＝失敗表示と▶が同時に出ない） ──
     //   'loading' 読み込み中（poster＋スピナー）／'error' 失敗（poster＋読み込めませんでした・再試行）／
@@ -603,8 +623,76 @@ function bindItem(el, vm, ctx) {
     if (vidwrap) vidwrap.addEventListener('click', toggle);
     playBtn.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
 
+    // ── #215⑱: 既存の再生バーをドラッグでシーク（新スライダーは足さない・IGリール方式） ──
+    //   ⚠ .rui-pbar は .rui-btm（z-index 4）内＝タップ toggle を持つ .rui-item__vidwrap の「兄弟」なので、
+    //     バー上のポインタは元々 vidwrap に届かない。それでも保険で stopPropagation＋pointer capture を張り、
+    //     縦スワイプ（次の魚）は touch-action:none とキャプチャで止める＝タップ/スワイプと競合させない。
+    const pbarEl = el.querySelector('.rui-pbar');
+    const scrubTime = el.querySelector('.rui-scrubtime');
+    let scrubWasPlaying = false;
+
+    const scrubApply = (clientX) => {
+        const d = video.duration;
+        if (!pbarEl || !isFinite(d) || d <= 0) return;
+        const rect = pbarEl.getBoundingClientRect();
+        const frac = rect.width > 0 ? Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) : 0;
+        const cur = frac * d;
+        try { video.currentTime = cur; } catch (e) { /* seek 不可なら表示だけ動かす */ }
+        if (bar) bar.style.width = (frac * 100) + '%';
+        if (scrubTime) scrubTime.textContent = formatDuration(cur) + ' / ' + formatDuration(d);
+    };
+
+    const onScrubMove = (e) => {
+        if (!scrubbing) return;
+        e.preventDefault();
+        e.stopPropagation();       // 縦スワイプ／タップへ伝播させない
+        scrubApply(e.clientX);
+    };
+
+    const endScrub = (e) => {
+        if (!scrubbing) return;
+        scrubbing = false;
+        if (pbarEl) pbarEl.classList.remove('scrubbing');
+        if (scrubTime) scrubTime.hidden = true;
+        try { if (e && e.pointerId != null && pbarEl.hasPointerCapture(e.pointerId)) pbarEl.releasePointerCapture(e.pointerId); } catch (err) {}
+        // ドラッグ前に再生中だったら再開（＝掴んでいる間だけ一時停止・IG式）。閉じた／画面外なら鳴らさない。
+        if (scrubWasPlaying && !destroyed && (typeof shouldPlay !== 'function' || shouldPlay())) {
+            video.muted = state.muted;
+            playSafe().catch(() => {});
+        }
+    };
+
+    if (pbarEl) {
+        pbarEl.addEventListener('pointerdown', (e) => {
+            // バー上のポインタは常にタップ toggle へ渡さない（seek 不可でも誤って一時停止させない）
+            e.preventDefault();
+            e.stopPropagation();
+            const d = video.duration;
+            // メタデータ未取得（progressive で始まっていない等）はシーク不可＝スクラブに入らない
+            if (video.dataset.loaded !== '1' || !isFinite(d) || d <= 0) return;
+            scrubbing = true;
+            scrubWasPlaying = !video.paused;
+            pause();                                   // 掴んでいる間は一時停止（▶は pause ハンドラの scrubbing ガードで出さない）
+            pbarEl.classList.add('scrubbing');         // 太く＋ノブ
+            if (scrubTime) {                           // 時間ラベルをバーの真上へ（流動配置なので動的に）
+                const itemRect = el.getBoundingClientRect();
+                const barRect = pbarEl.getBoundingClientRect();
+                scrubTime.style.bottom = Math.round(itemRect.bottom - barRect.top + 8) + 'px';
+                scrubTime.hidden = false;
+            }
+            try { pbarEl.setPointerCapture(e.pointerId); } catch (err) {}
+            scrubApply(e.clientX);                     // 掴んだ位置へ即シーク（タップでその位置に飛ぶ＝IG/TikTok）
+        });
+        pbarEl.addEventListener('pointermove', onScrubMove);
+        pbarEl.addEventListener('pointerup', endScrub);
+        pbarEl.addEventListener('pointercancel', endScrub);
+        pbarEl.addEventListener('click', (e) => { e.stopPropagation(); });   // 合成 click を toggle へ渡さない保険
+    }
+
     // ⚠ #209⑦-4: 読み込み前／失敗中の pause で▶を出さない＝失敗表示を▶で上書きしない（状態は排他）。
+    // ⚠ #215⑱: スクラブ中の pause でも▶を出さない（IG式＝ドラッグ中は再生ボタンを見せない）。
     video.addEventListener('pause', () => {
+        if (scrubbing) { stopTick(); return; }
         if (video.dataset.loaded === '1' && !destroyed) setStatus('paused');
         stopTick();
     });

@@ -492,7 +492,17 @@ self.addEventListener('notificationclick', (event) => {
 //   ② 失敗を可視化：アップロード失敗時に console.warn だけで無言リセットしていたため、
 //      「押しても何も起きない」と区別がつかなかった（Storage ルール未公開＝permission-denied も同じ見え方）。
 //      → payment.attachProofFailed のトーストを出す（3言語・locales は PRECACHE なので版バンプが必須）。
-const CACHE_NAME = 'fishlink-v152';
+// 7/22 (v153→v154): #212-215 バッチ。運営管理画面の2軸ステータス（js/status-axes.js 新規＝配送軸/入金軸を
+//   既存 order フィールドから導出）＋取引一覧の2軸列/フィルタ・KPI成立ベース・買い手支払い列/返金済タグ・
+//   期間未選択ガード（admin/index.html）／分析タブ新設（admin/analytics.html＝クライアント集計）／
+//   注文管理詳細の2軸・手数料透明化・入金確認整理・送金メモ・QRボタン（admin/order.html）／
+//   出品フォーム・配送設定の単価/送料 100リエル最寄りスナップ（post.html / account/delivery.html）／
+//   リール：投稿ハング統一＋フレーム抽出再修正（reel-utils.js / reel-videos.html）・ドラッグシーク＋PC中央（reel-ui.js / farmer.html）・
+//   既存動画 faststart 遡及（functions/mp4-faststart.js 新規＋callable faststartReelBackfill＋admin/settings.html）。
+//   ⚠ v154（再bump）＝敵対的レビュー確定6件を反映（faststart callable の timeoutSeconds:540/memory＋documentId
+//     ページング／status-axes の onHold〔問題報告中〕入金軸状態＝誤送金防止／手数料KPIを運営取り分ベースに是正／
+//     分析の期間終端 .999＋createdAt欠損の span 汚染ガード）。precached の status-axes.js・locales を触ったため再bump。
+const CACHE_NAME = 'fishlink-v154';
 
 const PRECACHE_URLS = [
     '/',
@@ -523,6 +533,8 @@ const PRECACHE_URLS = [
     '/js/toast.js',
     '/js/push-optin.js',
     '/js/approval-deadline.js',
+    // 7/22 #212/#213: 運営管理画面の2軸ステータス導出（admin index/order/analytics が import）。
+    '/js/status-axes.js',
     '/js/video-cache.js',
     '/js/reel-utils.js',
     '/js/reel-ui.js',

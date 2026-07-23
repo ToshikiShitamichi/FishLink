@@ -157,6 +157,7 @@
             <div class="admin-header__right">
                 <nav class="admin-nav">
                     <a href="/pages/admin/index.html" data-i18n="admin.navTransactions"></a>
+                    <a href="/pages/admin/analytics.html" data-i18n="admin.navAnalytics"></a>
                     <a href="/pages/admin/users.html" data-i18n="admin.navUsers"></a>
                     <a href="/pages/admin/settings.html" class="active" data-i18n="admin.navSettings"></a>
                     <a href="/pages/admin/referral.html" data-i18n="admin.navReferral"></a>
@@ -365,6 +366,20 @@
                         <button class="save-btn" id="backfill-tradecount-btn" type="button" style="background:#f59e0b;">実行</button>
                     </div>
                     <div id="backfill-tradecount-result" style="font-size:12px; color:#475569; margin-top:8px; white-space:pre-wrap;"></div>
+                </div>
+                <!-- 7/22 #215⑦: 既存リール動画の faststart バックフィル（moov を先頭へ・既存動画の頭出し改善） -->
+                <div class="form-row">
+                    <div class="form-row__header">
+                        <div>
+                            <div class="form-row__label" id="faststart-title">既存リール動画の faststart 化</div>
+                            <div class="form-row__hint" id="faststart-desc">既存の出品動画の <code>moov</code>（再生用の索引）を先頭へ移し、iOS 等で頭出しできない旧動画を是正します。1回あたり最大200件・再クリックで続きから（冪等・再実行可）。既存の再生URLはそのまま維持されます。</div>
+                        </div>
+                        <button class="save-btn" id="faststart-btn" type="button" style="background:#f59e0b; display:inline-flex; align-items:center; gap:6px;">
+                            <span class="material-symbols-outlined" style="font-size:18px;">movie</span>
+                            <span id="faststart-run">実行</span>
+                        </button>
+                    </div>
+                    <div id="faststart-result" style="font-size:12px; color:#475569; margin-top:8px; white-space:pre-wrap;"></div>
                 </div>
             </div>
         </div>
@@ -599,6 +614,40 @@
                 btn.disabled = false;
             }
         });
+
+        // 7/22 #215⑦: 既存リール動画の faststart バックフィル。moov を先頭へ移して旧動画の頭出しを改善。
+        //   admin が押した時点で実行の同意＝confirm/alert は出さない（横断ルール）。
+        //   i18n キー admin.faststart.* を参照しつつ、未追加でも壊れないよう defaultValue（日本語）を持たせる。
+        (() => {
+            const t = (k, d, opts) =>
+                (window.i18next ? i18next.t(k, Object.assign({ defaultValue: d }, opts || {})) : d);
+            const titleEl = document.getElementById('faststart-title');
+            const descEl = document.getElementById('faststart-desc');
+            const runEl = document.getElementById('faststart-run');
+            if (titleEl) titleEl.textContent = t('admin.faststart.title', titleEl.textContent);
+            if (descEl) descEl.innerHTML = t('admin.faststart.desc', descEl.innerHTML);
+            if (runEl) runEl.textContent = t('admin.faststart.run', runEl.textContent);
+
+            const btn = document.getElementById('faststart-btn');
+            const resultEl = document.getElementById('faststart-result');
+            btn.addEventListener('click', async () => {
+                btn.disabled = true;
+                resultEl.textContent = t('admin.faststart.running', '実行中... (動画のダウンロード・再保存に時間がかかります)');
+                try {
+                    const functions = getFunctions(undefined, 'asia-southeast1');
+                    const fn = httpsCallable(functions, 'faststartReelBackfill', { timeout: 540000 });
+                    const { data } = await fn();
+                    resultEl.textContent = t('admin.faststart.result',
+                        `完了: total=${data.total} / done=${data.done} / skipped=${data.skipped} / failed=${data.failed}`,
+                        { done: data.done, skipped: data.skipped, failed: data.failed, total: data.total });
+                } catch (err) {
+                    console.error(err);
+                    resultEl.textContent = t('admin.faststart.failed', `エラー: ${err.message || err}`);
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        })();
     </script>
 </body>
 </html>

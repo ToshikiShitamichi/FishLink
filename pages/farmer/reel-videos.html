@@ -168,7 +168,7 @@
         import { db } from '/js/firebase-config.js';
         import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js';
         import { asCachedImgAttrs } from '/js/image-cache.js';
-        import { getReelsForListing, uploadReelVideo, deleteReelVideo, relativePostedText, captureVideoThumbnail } from '/js/reel-utils.js';
+        import { getReelsForListing, uploadReelVideo, deleteReelVideo, relativePostedText } from '/js/reel-utils.js';
         import { loadVideoObjectUrl } from '/js/video-cache.js';
         import { showToast } from '/js/toast.js';
 
@@ -419,19 +419,13 @@
             clearUploadError();
             uploading = true;
             btnPost.disabled = true;
-            // #209 ⑩-1: 選んだ瞬間にリスト先頭へ仮カードを出す（空状態は消え「（1本）」になる）
+            // #209 ⑩-1: 選んだ瞬間にリスト先頭へ仮カードを出す（空状態は消え「（1本）」になる）＝スピナーのみ。
+            // ⚠ #215⑰: 投稿前にローカル動画をデコードしてサムネを作らない（reel-post.html と同じく前デコードなし）。
+            //   前デコードは直後に走る compressReelVideo とデコーダを取り合い、圧縮が原本フォールバックに落ちる／
+            //   端末によってはアップロードごとハングした（＝⑰ の症状）。仮カードのサムネ preview は諦め、
+            //   本サムネはアップロード後に uploadReelVideo が outBlob から作る（従来どおり）。
             pending = { thumbUrl: '', phase: 'compressing', ratio: 0 };
             render();
-            // 仮カードのサムネはローカル動画の1コマ（表示だけの使い捨て。本サムネはアップロード後に uploadReelVideo が作る）。
-            // ⚠ 圧縮（compressReelVideo）と同時にデコードすると端末のデコーダを取り合い圧縮が原本フォールバックに落ちうるので、
-            //    先に1コマだけ取り切ってから投稿を始める（失敗してもサムネ無しの仮カードで続行＝投稿は止めない）。
-            try {
-                const thumbBlob = await captureVideoThumbnail(file);
-                if (thumbBlob && pending) {
-                    pending.thumbUrl = URL.createObjectURL(thumbBlob);
-                    render();
-                }
-            } catch (e) { /* サムネ無しの仮カードで続行 */ }
             try {
                 await uploadReelVideo({
                     file,

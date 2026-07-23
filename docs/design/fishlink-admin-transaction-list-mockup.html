@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FISHLINK 管理画面 取引一覧（2軸ステータス）- モック</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#F4F6F9; color:#1B2430; font-family:-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif; font-size:14px; }
+  .wrap { max-width:1240px; margin:0 auto; padding:22px 26px 60px; }
+  .note-top { background:#FFF7E6; border:1px solid #F2D48A; color:#7A5B12; border-radius:10px; padding:11px 14px; font-size:12.5px; line-height:1.7; margin-bottom:18px; }
+  .note-top b { color:#5E4708; }
+  .app-tag { color:#8A94A3; font-size:12px; }
+  h1 { font-size:26px; margin:2px 0 4px; }
+  .desc { color:#6A7482; font-size:12.5px; margin:0 0 16px; }
+  /* top nav */
+  .topnav { display:flex; gap:9px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+  .topnav .t { background:#fff; border:1px solid #E1E6EC; border-radius:20px; padding:8px 15px; font-size:12.5px; color:#3C4656; }
+  .topnav .t.on { background:#16233F; color:#fff; border-color:#16233F; font-weight:700; }
+  .topnav .t .badge { background:#E23B4E; color:#fff; border-radius:10px; padding:1px 6px; font-size:11px; margin-left:5px; font-weight:700; }
+  /* period */
+  .period { display:flex; gap:9px; margin-bottom:14px; }
+  .period .p { background:#EEF1F5; border:none; border-radius:18px; padding:7px 16px; font-size:12.5px; color:#3C4656; }
+  .period .p.on { background:#16233F; color:#fff; font-weight:700; }
+  /* KPI */
+  .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:8px; }
+  .kpi { background:#fff; border:1px solid #E7EBF0; border-radius:12px; padding:15px 18px; }
+  .kpi .k { color:#8A94A3; font-size:12px; margin-bottom:6px; }
+  .kpi .v { font-size:23px; font-weight:800; }
+  .kpi-note { color:#8A94A3; font-size:11.5px; margin:6px 2px 18px; }
+  /* filters (2 axes) */
+  .filters { background:#fff; border:1px solid #E7EBF0; border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  .frow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .frow + .frow { margin-top:11px; padding-top:11px; border-top:1px dashed #E7EBF0; }
+  .axis-label { font-size:12px; font-weight:800; color:#586274; min-width:104px; }
+  .axis-label small { display:block; color:#9AA3B0; font-weight:600; font-size:10.5px; }
+  .chip { border:1px solid #E1E6EC; background:#fff; border-radius:16px; padding:6px 13px; font-size:12px; color:#3C4656; }
+  .chip.on { background:#16233F; color:#fff; border-color:#16233F; font-weight:700; }
+  .chip.warn { color:#C0392B; border-color:#E6C4BE; }
+  .chip.warn.on { background:#C0392B; color:#fff; border-color:#C0392B; }
+  .chip.todo { color:#B26A00; border-color:#F0D28C; }
+  .chip.todo.on { background:#E08A00; color:#fff; border-color:#E08A00; }
+  /* table */
+  table { width:100%; border-collapse:collapse; background:#fff; border:1px solid #E7EBF0; border-radius:12px; overflow:hidden; }
+  th { text-align:left; font-size:11.5px; color:#8A94A3; font-weight:700; padding:13px 14px; background:#F7F9FB; border-bottom:1px solid #EDF0F4; }
+  td { padding:14px 14px; border-bottom:1px solid #F0F3F6; font-size:12.5px; vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  .txid { color:#3C4656; font-variant-numeric:tabular-nums; }
+  .amt { font-weight:800; font-variant-numeric:tabular-nums; }
+  .amt.muted { color:#9AA3B0; font-weight:600; }
+  .refund { display:inline-block; margin-left:6px; font-size:10.5px; color:#7C8697; background:#EEF1F5; border-radius:5px; padding:1px 6px; font-weight:700; vertical-align:middle; }
+  .detail-btn { border:1px solid #CBD3DD; background:#fff; border-radius:8px; padding:6px 12px; font-size:12px; color:#2C3646; }
+  /* status badges */
+  .bdg { display:inline-block; border-radius:20px; padding:4px 11px; font-size:11.5px; font-weight:700; white-space:nowrap; }
+  /* 配送軸 */
+  .b-wait   { background:#EEF1F5; color:#5A6678; }        /* 農家確認中 */
+  .b-prep   { background:#E3F0FF; color:#1B6FC4; }        /* 準備開始 */
+  .b-ship   { background:#DDEBFF; color:#1857B8; }        /* 配送開始 */
+  .b-recv   { background:#FFF2CC; color:#9A7400; }        /* 受け取り完了 */
+  .b-done   { background:#16233F; color:#fff; }           /* 取引完了 */
+  .b-decl   { background:#FBE3E6; color:#C0392B; }        /* 辞退 */
+  .b-cancel { background:#FBE3E6; color:#C0392B; }        /* キャンセル */
+  /* 入金軸 */
+  .m-wait   { background:#FFF0D6; color:#B26A00; }        /* 入金確認待ち */
+  .m-conf   { background:#E4F6E9; color:#1E8E4E; }        /* 入金確認済 */
+  .m-paywait{ background:#FFF0D6; color:#B26A00; }        /* 農家送金待ち */
+  .m-paid   { background:#D9F2E1; color:#137a41; }        /* 農家送金済 */
+  .m-refund { background:#EEF1F5; color:#5A6678; }        /* 返金済 */
+  .m-unpaid { background:#FBE3E6; color:#C0392B; }        /* 未払い */
+  .legend { display:flex; gap:22px; flex-wrap:wrap; margin:14px 2px 0; font-size:11.5px; color:#6A7482; }
+  .legend b { color:#3C4656; }
+  /* trend chart（1-7） */
+  .chart-card { background:#fff; border:1px solid #E7EBF0; border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .chart-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+  .chart-title { font-size:14px; font-weight:800; }
+  .metric-toggle { display:flex; gap:6px; }
+  .mt { border:1px solid #E1E6EC; background:#fff; border-radius:16px; padding:5px 13px; font-size:12px; color:#3C4656; cursor:pointer; }
+  .mt.on { background:#16233F; color:#fff; border-color:#16233F; font-weight:700; }
+  .chart-wrap { width:100%; overflow-x:auto; }
+  .bar { fill:#3B82C4; }
+  .bar:hover { fill:#0B5FB0; }
+  .blabel { font-size:9px; fill:#9AA3B0; }
+  .vlabel { font-size:9px; fill:#586274; font-weight:700; }
+  .chart-note { color:#8A94A3; font-size:11px; margin-top:8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="note-top">
+    <b>【モック＝取引一覧の "2軸ステータス" 版（1-6）】</b> 前払い化で、取引は「<b>配送の進行</b>」と「<b>お金（入金・送金）</b>」が並行して進むため、ステータスを2軸に分けています。
+    ＝1件が「配送＝配送開始／入金＝入金確認待ち」のように<b>2つ同時</b>に持てる（1本の直線では表せなかった状態）。フィルタも2軸＝運営のTo-Do（入金確認待ち・農家送金待ち）が絞れます。<br>
+    <b>※入金確認待ちは「注文（前払い）した瞬間」に始まる＝農家の承認を待たない</b>（配送軸の「農家確認中」と<b>同時スタート</b>）。農家が承認すると配送軸が動き、運営が着金を確認すると入金軸が動く＝別タイミングで進む。※状態名・色は叩き台。
+  </div>
+
+  <div class="app-tag">FISHLINK 管理画面</div>
+  <h1>取引一覧</h1>
+  <p class="desc">各注文を「配送」「入金」2軸のステータスで管理し、詳細画面から入金確認・農家送金・取引完了を行う</p>
+
+  <div class="topnav">
+    <span class="t on">取引一覧</span>
+    <span class="t">ユーザー</span>
+    <span class="t">料金設定</span>
+    <span class="t">紹介クーポン</span>
+    <span class="t">CAA参考価格</span>
+    <span class="t">トラブル報告<span class="badge">14</span></span>
+    <span class="t">FAQ</span>
+    <span class="t">規約・ポリシー</span>
+    <span class="t">ログアウト</span>
+  </div>
+
+  <div class="period">
+    <span class="p on">本日</span>
+    <span class="p">期間指定</span>
+    <span class="p">全期間</span>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="k">取引数</div><div class="v">224 件</div></div>
+    <div class="kpi"><div class="k">流通総額</div><div class="v">53,984,900 KHR</div></div>
+    <div class="kpi"><div class="k">手数料</div><div class="v">544,600 KHR</div></div>
+  </div>
+  <div class="kpi-note">※流通総額・手数料は「成立した取引」ベース（辞退・キャンセルは除外＝1-5）。取引数は全件。※トレンドグラフ・魚別/地域別ランキングは「分析」タブに集約（取引一覧は運営作業の場なのでグラフは置かない）。</div>
+
+  <div class="filters">
+    <div class="frow">
+      <span class="axis-label">配送ステータス<small>農家・買い手が進める</small></span>
+      <span class="chip on">すべて</span>
+      <span class="chip">農家確認中</span>
+      <span class="chip">準備開始</span>
+      <span class="chip">配送開始</span>
+      <span class="chip">受け取り完了</span>
+      <span class="chip">取引完了</span>
+      <span class="chip warn">辞退</span>
+      <span class="chip warn">キャンセル</span>
+    </div>
+    <div class="frow">
+      <span class="axis-label">入金ステータス<small>運営が動かす</small></span>
+      <span class="chip on">すべて</span>
+      <span class="chip todo">入金確認待ち</span>
+      <span class="chip">入金確認済</span>
+      <span class="chip todo">農家送金待ち</span>
+      <span class="chip">農家送金済</span>
+      <span class="chip warn">未払い（期限超過）</span>
+      <span class="chip">返金済</span>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>取引番号</th>
+        <th>配送ステータス</th>
+        <th>入金ステータス</th>
+        <th>注文日時</th>
+        <th>レストラン</th>
+        <th>農家</th>
+        <th>買い手支払い</th>
+        <th>詳細</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- 配送中だが入金未確認＝1本では表せなかった状態 -->
+      <tr>
+        <td class="txid">FL-260722-004</td>
+        <td><span class="bdg b-ship">配送開始</span></td>
+        <td><span class="bdg m-wait">入金確認待ち</span></td>
+        <td>2026/07/22 15:10</td>
+        <td>test_restaurant5</td>
+        <td>Ruosuke_farmer5</td>
+        <td class="amt">130,900 KHR</td>
+        <td><button class="detail-btn">詳細を見る</button></td>
+      </tr>
+      <!-- 受取完了＝農家送金待ち（運営のTo-Do） -->
+      <tr>
+        <td class="txid">FL-260722-003</td>
+        <td><span class="bdg b-recv">受け取り完了</span></td>
+        <td><span class="bdg m-paywait">農家送金待ち</span></td>
+        <td>2026/07/22 12:02</td>
+        <td>test_restaurant5</td>
+        <td>Ruosuke_farmer5</td>
+        <td class="amt">89,200 KHR</td>
+        <td><button class="detail-btn">詳細を見る</button></td>
+      </tr>
+      <!-- 準備中×入金確認済 -->
+      <tr>
+        <td class="txid">FL-260722-002</td>
+        <td><span class="bdg b-prep">準備開始</span></td>
+        <td><span class="bdg m-conf">入金確認済</span></td>
+        <td>2026/07/22 11:20</td>
+        <td>テストレストラン</td>
+        <td>テスト農家</td>
+        <td class="amt">31,600 KHR</td>
+        <td><button class="detail-btn">詳細を見る</button></td>
+      </tr>
+      <!-- キャンセル×返金済（1-1 ラベル・1-4 返金済） -->
+      <tr>
+        <td class="txid">FL-260722-001</td>
+        <td><span class="bdg b-cancel">キャンセル</span></td>
+        <td><span class="bdg m-refund">返金済</span></td>
+        <td>2026/07/22 14:23</td>
+        <td>test_restaurant5</td>
+        <td>Ruosuke_farmer5</td>
+        <td class="amt muted">130,900 KHR<span class="refund">返金済</span></td>
+        <td><button class="detail-btn">詳細を見る</button></td>
+      </tr>
+      <!-- 完了×送金済 -->
+      <tr>
+        <td class="txid">FL-260721-002</td>
+        <td><span class="bdg b-done">取引完了</span></td>
+        <td><span class="bdg m-paid">農家送金済</span></td>
+        <td>2026/07/21 09:44</td>
+        <td>test_restaurant5</td>
+        <td>Ruosuke_farmer5</td>
+        <td class="amt">38,400 KHR</td>
+        <td><button class="detail-btn">詳細を見る</button></td>
+      </tr>
+      <!-- 辞退×返金済 -->
+      <tr>
+        <td class="txid">FL-260721-001</td>
+        <td><span class="bdg b-decl">辞退</span></td>
+        <td><span class="bdg m-refund">返金済</span></td>
+        <td>2026/07/21 07:57</td>
+        <td>テストレストラン</td>
+        <td>テスト農家</td>
+        <td class="amt muted">11,100 KHR<span class="refund">返金済</span></td>
+        <td><button class="detail-btn">詳細を見る</button></td>
+      </tr>
+      <!-- 農家確認中×入金確認待ち（注文直後） -->
+      <tr>
+        <td class="txid">FL-260720-003</td>
+        <td><span class="bdg b-wait">農家確認中</span></td>
+        <td><span class="bdg m-wait">入金確認待ち</span></td>
+        <td>2026/07/20 18:31</td>
+        <td>test_restaurant5</td>
+        <td>Ruosuke_farmer5</td>
+        <td class="amt">50,800 KHR</td>
+        <td><button class="detail-btn">詳細を見る</button></td>
+      </tr>
+      <!-- 未払い（期限超過） -->
+      <tr>
+        <td class="txid">FL-260720-002</td>
+        <td><span class="bdg b-wait">農家確認中</span></td>
+        <td><span class="bdg m-unpaid">未払い（期限超過）</span></td>
+        <td>2026/07/20 16:05</td>
+        <td>テストレストラン</td>
+        <td>テスト農家</td>
+        <td class="amt muted">11,100 KHR</td>
+        <td><button class="detail-btn">詳細を見る</button></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="legend">
+    <span><b>配送軸：</b>農家確認中 → 準備開始 → 配送開始 → 受け取り完了 → 取引完了 ／ 辞退・キャンセル</span>
+    <span><b>入金軸：</b>入金確認待ち → 入金確認済 → 農家送金待ち → 農家送金済 ／ 未払い・返金済</span>
+  </div>
+  <div class="legend">
+    <span>🟠 <b>入金確認待ち／農家送金待ち＝運営のTo-Do</b>（入金軸で絞ると「今日やること」の一覧になる）</span>
+  </div>
+
+</div>
+</body>
+</html>
